@@ -5,9 +5,21 @@ project(pof VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD  20)
 
 
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+
 
 
 file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h)
 file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_executable(pharmaoffice ${incs} ${srcs})
+if(${CMAKE_CXX_PLATFORM_ID} STREQUAL "Windows")
+    set(APP WIN32)
+elseif()
+    set(APP "")
+endif()
+
+
+add_executable(pharmaoffice ${APP} ${incs} ${srcs})
+add_definitions(${CONAN_DEFINES})
+target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS})
+target_link_libraries(pharmaoffice PUBLIC ${CONAN_LIBS})

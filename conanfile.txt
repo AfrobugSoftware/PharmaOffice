@@ -1,5 +1,16 @@
-[requires]
+[options]
+boost:shared=True
+wxwidgets:shared=True
 
+[requires]
+boost/1.81.0
+wxwidgets/3.1.5@bincrafters/stable
+fmt/9.1.0
+spdlog/1.11.0
+zlib/1.2.13
+openssl/3.0.7
+nlohmann_json/3.11.2
+sqlite3/3.40.1
 
 [generators]
-camke
+cmake
