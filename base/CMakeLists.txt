@@ -1,0 +1,14 @@
+
+#make file for the base library
+project(base LANGUAGES CXX VERSION 0.0.1)
+
+
+file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h)
+file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
+SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+add_library(base SHARED ${incs} ${srcs})
+target_include_directories(base PUBLIC ${PROJECT_SOURCE_DIR}/include ${CONAN_INCLUDE_DIRS_BOOST})
+target_link_directories(base PRIVATE ${CONAN_LIB_DIRS_BOOST})
+target_link_libraries(base PRIVATE boost_serialization)

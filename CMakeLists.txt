@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD  20)
 
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-
+conan_basic_setup()
 
 
 file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h)
@@ -18,8 +18,10 @@ elseif()
     set(APP "")
 endif()
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/base)
+
 
 add_executable(pharmaoffice ${APP} ${incs} ${srcs})
 add_definitions(${CONAN_DEFINES})
-target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS})
-target_link_libraries(pharmaoffice PUBLIC ${CONAN_LIBS})
+target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(pharmaoffice PUBLIC ${CONAN_LIBS} base)
