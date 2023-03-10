@@ -127,8 +127,13 @@ namespace pof
         class DataView : public std::ranges::view_interface<DataView>
         {
         public:
-            DataView(const Data& data);
-            DataView(Data::const_iterator beg, Data::const_iterator en);
+            DataView(const Data& data) : mBegin(data.begin()),
+                mEnd(data.end())
+            {};
+            DataView(Data::const_iterator beg, Data::const_iterator en) : 
+                mBegin(beg),
+                mEnd(en)
+            {}
 
 
 
