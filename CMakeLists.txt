@@ -14,6 +14,7 @@ file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 if(${CMAKE_CXX_PLATFORM_ID} STREQUAL "Windows")
     set(APP WIN32)
+    add_compile_options(/bigobj)
 elseif()
     set(APP "")
 endif()
@@ -21,7 +22,7 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/base)
 
 
-add_executable(pharmaoffice ${APP} ${incs} ${srcs})
+add_executable(pharmaoffice ${incs} ${srcs})
 add_definitions(${CONAN_DEFINES})
 target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(pharmaoffice PUBLIC ${CONAN_LIBS} base)

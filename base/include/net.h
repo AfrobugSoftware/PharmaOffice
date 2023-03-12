@@ -12,15 +12,28 @@
 
 
 #include <boost/beast.hpp>
+#include <boost/beast/ssl.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
 #include <fmt/format.h>
 
-#include <boost/asio.hpp>
-#include <boost/asio/strand.hpp>
 
+#include <boost/asio/strand.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/deferred.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+
+
+
+#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <cstdlib>
 #include <functional>
@@ -29,11 +42,14 @@
 #include <string>
 #include <deque>
 #include <sstream>
+#include <chrono>
 #include <algorithm>
 
 #include <vector>
 #include <mutex>
 #include <future>
+#include <type_traits>
+#include <utility>
 
 
 
@@ -44,7 +60,21 @@ namespace websocket = beast::websocket;
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-#define PHARMOFFICE_USER_AGENT_STRING "pharmaoffice_1"
+using net::as_tuple_t;
+using net::awaitable;
+using net::co_spawn;
+using net::detached;
+using net::use_awaitable_t;
+using default_token = as_tuple_t<use_awaitable_t<>>;
+
+using executor_with_default = default_token::executor_with_default<net::any_io_executor>;
+using tcp_stream = typename beast::tcp_stream::rebind_executor<executor_with_default>::other;
+
+namespace this_coro = net::this_coro;
+
+
+using namespace std::literals::chrono_literals;
+#define PHARMAOFFICE_USER_AGENT_STRING "pharmaoffice_1"
 
 namespace pof {
 	namespace base {
@@ -75,7 +105,7 @@ namespace pof {
 			session(session&& rhs)
 			{
 				m_resolver = std::move(rhs.m_resolver);
-				m_stream = std::move(rhs.m_resolver);
+				m_stream = std::move(rhs.m_stream);
 				m_buffer = std::move(rhs.m_buffer);
 				m_req = std::move(rhs.m_req);
 				m_res = std::move(rhs.m_res);
@@ -84,7 +114,7 @@ namespace pof {
 
 			session& operator=(session&& rhs) {
 				m_resolver = std::move(rhs.m_resolver);
-				m_stream = std::move(rhs.m_resolver);
+				m_stream = std::move(rhs.m_stream);
 				m_buffer = std::move(rhs.m_buffer);
 				m_req = std::move(rhs.m_req);
 				m_res = std::move(rhs.m_res);
@@ -101,9 +131,10 @@ namespace pof {
 
 			template<http::verb verb>
 			future_t req(const std::string& host,
-				const std::string& port,
 				const std::string& target,
-				typename request_type::body_type const& body = http::empty_body{}) {
+				const std::string& port,
+				typename request_type::body_type const& body = http::empty_body{},
+				 std::chrono::steady_clock::duration = 60s) {
 				prepare_request(target, host, verb, body, 11);
 				m_resolver.async_resolve(host,
 					port,
@@ -196,7 +227,7 @@ namespace pof {
 				const std::string& host,
 				http::verb verb,
 				typename request_type::body_type const& body,
-				int version
+				int version = 11
 			)
 			{
 				if constexpr (std::is_same_v<request_body, http::string_body>) {
@@ -206,7 +237,8 @@ namespace pof {
 					m_req.method(verb);
 					m_req.target(target.c_str());
 					m_req.set(http::field::host, host.c_str());
-					m_req.set(http::field::user_agent, NITROLITE_USER_AGENT_STRING);
+					m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+					m_req.set(http::field::content_length, std::to_string(body.size()));
 					m_req.body() = body;
 					m_req.prepare_payload();
 				}
@@ -218,7 +250,8 @@ namespace pof {
 					req_.version(version);
 					req_.target(target.c_str());
 					req_.set(http::field::host, host.c_str());
-					req_.set(http::field::user_agent, NITROLITE_USER_AGENT_STRING);
+					req_.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+					req_.set(http::field::content_length, std::to_string(req_.body().size()));
 					m_req = std::move(req_);
 					m_req.prepare_payload();
 
@@ -229,7 +262,7 @@ namespace pof {
 					m_req.method(verb);
 					m_req.target(target.c_str());
 					m_req.set(http::field::host, host.c_str());
-					m_req.set(http::field::user_agent, NITROLITE_USER_AGENT_STRING);
+					m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
 				}
 				//ignore all other bodies for now
 			}
@@ -242,17 +275,206 @@ namespace pof {
 			beast::flat_buffer m_buffer;
 			request_type m_req;
 			response_type m_res;
-
+			std::chrono::steady_clock::duration mDur;
 			//promise
 			promise_t m_promise;
 
 		};
 		template<typename res_body, typename req_body = http::empty_body>
-		using http_session_weak_ptr = std::weak_ptr<session<res_body, req_body>>;
+		using session_weak_ptr = std::weak_ptr<session<res_body, req_body>>;
 
 		template<typename res_body, typename req_body = http::empty_body>
-		using http_session_shared_ptr = std::shared_ptr<session<res_body, req_body>>;
+		using session_shared_ptr = std::shared_ptr<session<res_body, req_body>>;
 
+
+		namespace ssl {
+			template<typename resp_body, typename req_body = boost::beast::http::empty_body>
+			class session : public std::enable_shared_from_this<session<resp_body, req_body>> {
+			public:
+				using req_body_t = req_body;
+				using resp_body_t = resp_body;
+				using req_t = http::request<req_body>;
+				using resp_t = http::response<resp_body>;
+				using promise_t = std::promise<typename resp_body_t::value_type>;
+				using future_t = std::future<typename resp_body_t::value_type>;
+
+				session(boost::asio::io_context& ios, boost::asio::ssl::context& ssl) :
+					m_io{ios},
+					m_ctx{ssl},
+					m_resolver{net::make_strand(ios.get_executor())}
+					,m_stream{net::make_strand(ios.get_executor()), ssl} {
+						
+				}
+
+				template<http::verb v>
+				future_t req(const std::string& host,
+							 const std::string& target,
+							 const std::string& port,
+							 const req_body_t& rbody = http::empty_body{},
+							 std::chrono::steady_clock::duration dur = 60s) {
+					//prepare the request
+					m_dur = dur;
+					prepare_request(host, target, v, rbody);
+					//co_spawan the run command
+					tcp::resolver::query q{ host, port };
+					m_resolver.async_resolve(q,
+						beast::bind_front_handler(&session::on_resolve, 
+							this->shared_from_this()));
+
+					return (m_promise.get_future());
+				}
+
+			//ASYNC/CALLBACKS FUNCTIONS
+			private:
+				void on_fail(std::error_code code)
+				{
+					if (beast::error_code(code) == net::error::eof) {
+						return;
+					}
+					spdlog::error("Error: {}", code.message());
+					throw std::system_error(code);
+				}
+				void on_resolve(std::error_code code, tcp::resolver::results_type results) {
+					if (code) {
+						on_fail(code);
+						return;
+					}
+					co_spawn(m_io.get_executor(), run(std::move(results)), [&](std::exception_ptr ptr, resp_t resp) {
+						if (ptr) {
+							m_promise.set_exception(ptr);
+						}
+						else {
+							m_promise.set_value(resp.body());
+						}
+					});
+				}
+				awaitable<resp_t> run(tcp::resolver::results_type results)
+				{
+					//hold an instance of the resource
+					auto this_ = this->shared_from_this();
+
+					//get the socket
+					auto& sock = beast::get_lowest_layer(m_stream).socket();
+					std::error_code ec{};
+					size_t bytes = 0;
+					tcp::resolver::results_type::endpoint_type ep{};
+					
+					//connect
+					beast::get_lowest_layer(m_stream).expires_after(m_dur);
+					spdlog::info("Connecting..");
+					std::tie(ec, ep) = co_await net::async_connect(sock,results);
+
+					if (ec) {
+						on_fail(ec);
+						co_return std::move(m_resp);
+					}
+					spdlog::info("Connected to {}", ep.address().to_string());
+					//handshake 
+					beast::get_lowest_layer(m_stream).expires_after(m_dur);
+					spdlog::info("Creating handshake");
+					std::tie(ec) = co_await m_stream.async_handshake(net::ssl::stream_base::client);
+					if (ec) {
+						on_fail(ec);
+						co_return std::move(m_resp);
+					}
+					spdlog::info("Completed");
+					
+					//write
+					beast::get_lowest_layer(m_stream).expires_after(m_dur);
+					std::tie(ec, bytes) = co_await http::async_write(m_stream, m_req);
+					if (ec) {
+						on_fail(ec);
+						co_return std::move(m_resp);
+					}
+					spdlog::info("Wrote {:d}", bytes);
+					std::cout << m_req << std::endl;
+					//read
+					beast::get_lowest_layer(m_stream).expires_after(m_dur);
+					std::tie(ec, bytes) = co_await http::async_read(m_stream, m_buf, m_resp);
+					if (ec) {
+						on_fail(ec);
+						co_return std::move(m_resp);
+					}
+					spdlog::info("Read {:d}", bytes);
+					std::cout << m_resp << std::endl;
+					//close
+					std::tie(ec) = co_await m_stream.async_shutdown(net::as_tuple(net::use_awaitable));
+					if (ec) {
+						on_fail(ec);
+					}
+					co_return std::move(m_resp);
+				}
+
+			private:
+				//PREPARE THE REQUEST 
+				void prepare_request(const std::string& host,
+					const std::string& target,
+					http::verb verb,
+					typename req_body_t const& body,
+					int version = 11
+				)
+				{
+					if constexpr (std::is_same_v<req_body_t, http::string_body>) {
+						//if not empty body
+						//string bodies
+						m_req.version(version);
+						m_req.method(verb);
+						m_req.target(target.c_str());
+						m_req.set(http::field::host, host.c_str());
+						m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+						m_req.set(http::field::content_length, std::to_string(body.size()));
+
+						m_req.body() = body;
+						m_req.prepare_payload();
+					}
+					else if constexpr (std::is_same_v<req_body_t, http::file_body>) {
+						//if request is a file body 
+						http::request<http::file_body> req_{ std::piecewise_construct,
+							std::make_tuple(std::move(body)) };
+						req_.method(verb);
+						req_.version(version);
+						req_.target(target.c_str());
+						req_.set(http::field::host, host.c_str());
+						req_.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+						req_.set(http::field::content_length, std::to_string(req_.body().size()));
+						m_req = std::move(req_);
+						m_req.prepare_payload();
+
+					}
+					else if constexpr (std::is_same_v<req_body_t, http::empty_body>) {
+						// the body is empty, usual get request have empty bodies
+						m_req.version(version);
+						m_req.method(verb);
+						m_req.target(target.c_str());
+						m_req.set(http::field::host, host.c_str());
+						m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+					}
+					//ignore all other bodies for now
+				}
+
+			private:
+				net::io_context& m_io;
+				net::ssl::context& m_ctx;
+				tcp::resolver m_resolver;
+
+
+				beast::ssl_stream<tcp_stream> m_stream;
+				beast::flat_buffer m_buf;
+				beast::http::request<req_body_t> m_req;
+				beast::http::response<resp_body_t> m_resp;
+				std::chrono::steady_clock::duration m_dur;
+
+				promise_t m_promise;
+
+			};
+
+			template<typename res_body, typename req_body = http::empty_body>
+			using session_weak_ptr = std::weak_ptr<session<res_body, req_body>>;
+
+			template<typename res_body, typename req_body = http::empty_body>
+			using session_shared_ptr = std::shared_ptr<session<res_body, req_body>>;
+
+		}
 		
 		
 	}

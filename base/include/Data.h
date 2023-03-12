@@ -18,7 +18,7 @@ namespace pof
     namespace v2 = boost::variant2;
 
     namespace base{
-        class Data{
+        class data{
         public:
             enum class state {
                 MODIFIED,
@@ -51,25 +51,25 @@ namespace pof
             using value_type = table_t::value_type;
 
             //ctors
-            Data();
-            Data(size_t count);
-            ~Data();
+            data();
+            data(size_t count);
+            ~data();
 
-            inline Data(const Data& rhs) : 
+            inline data(const data& rhs) : 
                 value(rhs.value),
                 bModified(false),
                 created(ch::steady_clock::now()),
                 modified(ch::steady_clock::now())
             {}
-            inline Data(Data&& rhs) noexcept :
+            inline data(data&& rhs) noexcept :
                 value(std::move(rhs.value)), 
                 bModified(false),
                 created(ch::steady_clock::now()),
                 modified(ch::steady_clock::now())
             {}
 
-            inline Data& operator=(const Data& rhs) { value = rhs.value; }
-            inline Data& operator=(Data&& rhs) noexcept { value = std::move(rhs.value); }
+            inline data& operator=(const data& rhs) { value = rhs.value; }
+            inline data& operator=(data&& rhs) noexcept { value = std::move(rhs.value); }
 
             void insert(row_t&& row);
             void insert(const typename row_t::first_type& vals);
@@ -85,7 +85,7 @@ namespace pof
             inline void resize(size_t size) { value.resize(size); }
 
             const row_t& operator[](size_t i) const;
-            bool operator==(const Data& rhs) const = default;
+            bool operator==(const data& rhs) const = default;
 
             //get the underlying table
             inline const table_t& tab() const { return value; }
@@ -124,22 +124,20 @@ namespace pof
 
         };
 
-        class DataView : public std::ranges::view_interface<DataView>
+        class dataView : public std::ranges::view_interface<dataView>
         {
         public:
-            DataView(const Data& data) : mBegin(data.begin()),
-                mEnd(data.end())
+            dataView(const pof::base::data& data_) : mBegin(data_.begin()),
+                mEnd(data_.end())
             {};
-            DataView(Data::const_iterator beg, Data::const_iterator en) : 
+            dataView(data::const_iterator beg, data::const_iterator en) : 
                 mBegin(beg),
                 mEnd(en)
             {}
 
-
-
         private:
-            Data::const_iterator mEnd;
-            Data::const_iterator mBegin;
+            data::const_iterator mEnd;
+            data::const_iterator mBegin;
         };
 
     };
