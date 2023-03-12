@@ -3,6 +3,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 
+
 #include <ranges>
 #include <chrono>
 #include <vector>
@@ -21,6 +22,7 @@ namespace pof
         class data{
         public:
             enum class state {
+                CREATED,
                 MODIFIED,
                 HIDDEN,
                 MAX_STATE
@@ -103,7 +105,7 @@ namespace pof
                 for (auto& row : value) {
                     for (auto& v : row.first) {
                         if (bModified) {
-                            
+                               
                         }
                     }
                 }
