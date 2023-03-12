@@ -295,8 +295,8 @@ namespace pof {
 				using resp_body_t = resp_body;
 				using req_t = http::request<req_body>;
 				using resp_t = http::response<resp_body>;
-				using promise_t = std::promise<typename resp_body_t::value_type>;
-				using future_t = std::future<typename resp_body_t::value_type>;
+				using promise_t = std::promise<resp_t>;
+				using future_t = std::future<resp_t>;
 
 				session(boost::asio::io_context& ios, boost::asio::ssl::context& ssl) :
 					m_io{ios},
@@ -344,7 +344,7 @@ namespace pof {
 							m_promise.set_exception(ptr);
 						}
 						else {
-							m_promise.set_value(resp.body());
+							m_promise.set_value(resp);
 						}
 					});
 				}
@@ -378,7 +378,7 @@ namespace pof {
 						co_return std::move(m_resp);
 					}
 					spdlog::info("Completed");
-					
+
 					//write
 					beast::get_lowest_layer(m_stream).expires_after(m_dur);
 					std::tie(ec, bytes) = co_await http::async_write(m_stream, m_req);

@@ -11,6 +11,7 @@ zlib/1.2.13
 openssl/3.0.7
 nlohmann_json/3.11.2
 sqlite3/3.40.1
+lz4/1.9.4
 
 [generators]
 cmake

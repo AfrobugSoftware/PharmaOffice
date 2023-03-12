@@ -41,12 +41,6 @@ pof::Application::Application()
 
 bool pof::Application::OnInit()
 {
-	auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(io, ctx);
-	std::string host = "example.com";
-	std::string service = "http";
-
-	auto f = sess->req<http::verb::get>(host, "/"s, service);
-	
 	return false;
 }
 
