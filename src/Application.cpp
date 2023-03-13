@@ -19,10 +19,10 @@ int test_main(int argc, char** const argv)
 {
 	spdlog::error("{:ec}", std::make_error_code(pof::base::errc::no_data));
 	auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(io, ctx);
-	std::string host = "www.boost.org";
+	std::string host = "www.google.com";
 	std::string service = "https";
 
-	auto f = sess->req<http::verb::post>(host, "/"s, service);
+	auto f = sess->req<http::verb::get>(host, "/"s, service);
 
 	auto w = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(io.get_executor());
 	std::thread t{ [&]() {io.run(); } };

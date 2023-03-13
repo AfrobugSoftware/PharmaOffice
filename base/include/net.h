@@ -323,7 +323,6 @@ namespace pof {
 
 					return (m_promise.get_future());
 				}
-
 			//ASYNC/CALLBACKS FUNCTIONS
 			private:
 				void on_fail(std::error_code code)

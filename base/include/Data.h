@@ -1,6 +1,8 @@
 #include <boost/variant2/variant.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/string.hpp>
 
 
 
@@ -8,6 +10,7 @@
 #include <chrono>
 #include <vector>
 #include <bitset>
+#include <cassert>
 
 
 namespace pof
@@ -27,10 +30,24 @@ namespace pof
                 HIDDEN,
                 MAX_STATE
             };
+            
+            enum class kind : std::uint32_t {
+                int32,
+                int64,
+                uint32,
+                uint64,
+                float32,
+                float64,
+                datetime,
+                text,
+                blob
+            };
 
-            using datetime_t = std::chrono::steady_clock::time_point;
+            using clock_t = std::chrono::steady_clock;
+            using datetime_t = clock_t::time_point;
             using text_t = std::string;
             using blob_t = std::vector<std::uint8_t>;
+            using metadata_t = std::vector<kind>;
 
             using data_t = v2::variant<
                 std::int32_t,
@@ -73,9 +90,15 @@ namespace pof
             inline data& operator=(const data& rhs) { value = rhs.value; }
             inline data& operator=(data&& rhs) noexcept { value = std::move(rhs.value); }
 
+            //metadata functions
+            inline void set_metadata(const metadata_t& md) { metadata = md; }
+            constexpr const metadata_t& get_metadata() const { return metadata; }
+
+
             void insert(row_t&& row);
             void insert(const typename row_t::first_type& vals);
             void insert(const typename row_t::first_type& vals, const typename row_t::second_type& st);
+            void insert(const typename row_t::first_type::value_type& d, size_t idx, size_t idy);
 
 
             const row_t& at(size_t i ) const; //throws std::out_of_range if out of bands
@@ -83,6 +106,14 @@ namespace pof
 
             constexpr size_t size() const { return value.size(); }
             inline void clear() { value.clear(); }
+            void clear_state(state s);
+            void clear_state(size_t x, state s);
+
+            void set_state(state s);
+            void set_state(size_t x, state s);
+
+            bool test_state(size_t x, state s);
+
             inline void reserve(size_t size) { value.reserve(size); }
             inline void resize(size_t size) { value.resize(size); }
 
@@ -99,13 +130,144 @@ namespace pof
 
             //modifying the wors
 
-
+            //TODO: test for the arch of the system, should not be built on a 32 bit machine?
+            //or change the datatype on a 32 bit machine ?
+            //how would the server handle different machine architecture?
             template<typename Archive>
-            void serialise(Archive& ar, const unsigned int version)  {
-                for (auto& row : value) {
-                    for (auto& v : row.first) {
-                        if (bModified) {
-                               
+            void save(Archive& ar, const unsigned int version = 1)  {
+                assert(!metadata.empty());
+                if (value.empty()) return; // nothing to serialise
+
+                //forms the header of the data:
+                //write time created and time last modified
+                ar & created.time_since_epoch().count();
+                ar & modified.time_since_epoch().count();
+                ar & static_cast<std::uint32_t>(value.size()); //size of rows
+                ar & static_cast<std::uint32_t>(value[0].first.size()); //write the size of the columns
+                ar & static_cast<std::uint32_t>(metadata.size());
+                for (auto& k : metadata) {
+                    ar & static_cast<std::underlying_type_t<kind>>(k);
+                }
+
+;                for (auto& row : value) 
+                 {
+                        auto& [r, s] = row;
+                        const size_t size = r.size();
+                        if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) ||
+                            !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
+                            continue;
+                        }
+
+                        for (int i = 0; i < size; i++) {
+                            auto k = metadata[i];
+                            auto& d = r[i];
+                            switch (k)
+                            {
+                            case pof::base::data::kind::int32:
+                                 ar & boost::variant2::get<std::int32_t>(d);
+                                break;
+                            case pof::base::data::kind::int64:
+                                ar & boost::variant2::get<std::int64_t>(d);
+                                break;
+                            case pof::base::data::kind::uint32:
+                                ar & boost::variant2::get<std::uint32_t>(d);
+                                break;
+                            case pof::base::data::kind::uint64:
+                                ar & boost::variant2::get<std::uint64_t>(d);
+                                break;
+                            case pof::base::data::kind::float32:
+                                ar & boost::variant2::get<float>(d);
+                                break;
+                            case pof::base::data::kind::float64:
+                                ar & boost::variant2::get<double>(d);
+                                break;
+                            case pof::base::data::kind::datetime:
+                            {
+                                auto& t = boost::variant2::get<datetime_t>(d);
+                                ar & t.time_since_epoch().count();
+                                break;
+                            }
+                            case pof::base::data::kind::text:
+                            {
+                                ar & boost::variant2::get<text_t>(d);
+                                break;
+                            }
+                            case pof::base::data::kind::blob:
+                                ar & boost::variant2::get<blob_t>(d);
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                }
+            }
+
+            template<typename Archiver>
+            void load(Archiver& ar, const unsigned int version = 1){
+                //read the header
+                clock_t::duration::rep rep = 0; 
+                std::uint32_t rowsize = 0, size = 0, colsize = 0;
+                ar >> rep;
+                created = datetime_t(clock_t::duration(rep));
+                ar >> rep;
+                modified = datetime_t(clock_t::duration(rep));
+
+                ar >> rowsize;
+                value.reserve(size);
+
+                ar >> colsize; //save for later
+                
+                //metadata size
+                ar >> size;
+                metadata.resize(size);
+                std::uint32_t k;
+                for (int i = 0; i < metadata.size(); i++) {
+                    arr >> k;
+                    metadata[i] = static_cast<kind>(k);
+                }
+                
+                for (int j = 0; j < rowsize; j++) {
+
+                    value.emplace_back(row_t{});
+                    auto& r = value.back().first;
+                    r.reserve(colsize);
+
+                    for (int i = 0; i < colsize; i++)
+                    {
+                        auto k = metadata[i];
+                        switch (k)
+                        {
+                        case pof::base::data::kind::int32:
+                        {
+                            std::int32_t temp;
+                            ar >> temp;
+                            r.emplace_back(temp);
+                            break;
+                        }
+                        case pof::base::data::kind::int64:
+                        {
+                            std::int64_t temp;
+                            ar >> temp;
+                            r.emplace_back(temp);
+                            break;
+                        }
+                        case pof::base::data::kind::uint32:
+
+                            break;
+                        case pof::base::data::kind::uint64:
+                            break;
+                        case pof::base::data::kind::float32:
+                            break;
+                        case pof::base::data::kind::float64:
+                            break;
+                        case pof::base::data::kind::datetime:
+                            break;
+                        case pof::base::data::kind::text:
+                            break;
+                        case pof::base::data::kind::blob:
+                            break;
+                        default:
+                            break;
                         }
                     }
                 }
@@ -122,6 +284,7 @@ namespace pof
             datetime_t created;
             datetime_t modified;
 
+            metadata_t metadata; //holds type information of the varaints
             table_t value;
 
         };
