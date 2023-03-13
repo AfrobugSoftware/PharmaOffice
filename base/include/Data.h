@@ -31,7 +31,7 @@ namespace pof
                 MAX_STATE
             };
             
-            enum class kind : std::uint32_t {
+            enum class kind : std::uint8_t {
                 int32,
                 int64,
                 uint32,
@@ -220,9 +220,9 @@ namespace pof
                 //metadata size
                 ar >> size;
                 metadata.resize(size);
-                std::uint32_t k;
+                std::uint8_t k;
                 for (int i = 0; i < metadata.size(); i++) {
-                    arr >> k;
+                    ar >> k;
                     metadata[i] = static_cast<kind>(k);
                 }
                 
@@ -239,33 +239,67 @@ namespace pof
                         {
                         case pof::base::data::kind::int32:
                         {
-                            std::int32_t temp;
+                            std::int32_t temp = 0;
                             ar >> temp;
                             r.emplace_back(temp);
                             break;
                         }
                         case pof::base::data::kind::int64:
                         {
-                            std::int64_t temp;
+                            std::int64_t temp = 0;
                             ar >> temp;
                             r.emplace_back(temp);
                             break;
                         }
                         case pof::base::data::kind::uint32:
-
+                        {
+                            std::uint32_t temp = 0;
+                            ar >> temp;
+                            r.emplace_back(temp);
                             break;
+                        }
                         case pof::base::data::kind::uint64:
+                        {
+                            std::uint64_t temp = 0;
+                            ar >> temp;
+                            r.emplace_back(temp);
                             break;
+                        }
                         case pof::base::data::kind::float32:
+                        {
+                            float temp = 0.0f;
+                            ar >> temp;
+                            r.emplace_back(temp);
                             break;
+                        }
                         case pof::base::data::kind::float64:
+                        {
+                            double temp = 0.0;
+                            ar >> temp;
+                            r.emplace_back(temp);
                             break;
+                        }
                         case pof::base::data::kind::datetime:
+                        {
+                            clock_t::duration::rep rep = 0;
+                            ar >> rep;
+                            r.emplace_back(datetime_t(clock_t::duration(rep)));
                             break;
+                        }
                         case pof::base::data::kind::text:
+                        {
+                            text_t temp{};
+                            ar >> temp;
+                            r.emplace_back(std::move(temp));
                             break;
+                        }
                         case pof::base::data::kind::blob:
+                        {
+                            blob_t temp{};
+                            ar >> temp;
+                            r.emplace_back(std::move(temp));
                             break;
+                        }
                         default:
                             break;
                         }
