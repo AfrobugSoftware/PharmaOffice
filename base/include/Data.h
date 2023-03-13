@@ -75,20 +75,22 @@ namespace pof
             ~data();
 
             inline data(const data& rhs) : 
+                metadata(rhs.metadata),
                 value(rhs.value),
-                bModified(false),
-                created(ch::steady_clock::now()),
-                modified(ch::steady_clock::now())
+                bModified(rhs.bModified),
+                created(rhs.created),
+                modified(rhs.modified)
             {}
             inline data(data&& rhs) noexcept :
+                metadata(std::move(rhs.metadata)),
                 value(std::move(rhs.value)), 
-                bModified(false),
-                created(ch::steady_clock::now()),
-                modified(ch::steady_clock::now())
+                bModified(rhs.bModified),
+                created(rhs.created),
+                modified(rhs.modified)
             {}
 
-            inline data& operator=(const data& rhs) { value = rhs.value; }
-            inline data& operator=(data&& rhs) noexcept { value = std::move(rhs.value); }
+            inline data& operator=(const data& rhs);
+            inline data& operator=(data&& rhs) noexcept;
 
             //metadata functions
             inline void set_metadata(const metadata_t& md) { metadata = md; }
@@ -98,9 +100,10 @@ namespace pof
             void insert(row_t&& row);
             void insert(const typename row_t::first_type& vals);
             void insert(const typename row_t::first_type& vals, const typename row_t::second_type& st);
-            void insert(const typename row_t::first_type::value_type& d, size_t idx, size_t idy);
+            void update(const typename row_t::first_type::value_type& d, size_t idx, size_t idy);
 
 
+            void emplace(typename row_t::first_type&& vals);
             const row_t& at(size_t i ) const; //throws std::out_of_range if out of bands
 
 

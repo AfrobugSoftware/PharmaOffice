@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <poflz4.h>
+#include <data.h>
 
 IMPLEMENT_APP(pof::Application)
 
