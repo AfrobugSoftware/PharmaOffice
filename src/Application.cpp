@@ -44,10 +44,11 @@ void test_data()
 {
 	using namespace pof::base;
 	pof::base::data data;
+	pof::base::data data2;
 	pof::base::adapt<int, float, pof::base::data::datetime_t>(data);
 
 	pof::base::packer p(data);
-	pof::base::unpacker up(data);
+	pof::base::unpacker up(data2);
 
 	std::random_device d{};
 	std::uniform_int_distribution<int > int_distro;
@@ -58,7 +59,7 @@ void test_data()
 	auto rd = std::bind(int_distro, gen);
 	auto rd2 = std::bind(float_distro, gen);
 	data.reserve(1000);
-	for (int i = 0; i < 10000; i++) {
+	for (int i = 0; i < 100000; i++) {
 		data.insert({ rd(), rd2(), pof::base::data::clock_t::now() });
 	}
 	
@@ -76,7 +77,7 @@ void test_data()
 	//unpackager(pof::base::data& data)
 
 
-	auto& [ro, so] = data[0];
+	auto& [ro, so] = data2[0];
 	std::cout << boost::variant2::get<0>(ro[0]) << std::endl;
 
 }	
