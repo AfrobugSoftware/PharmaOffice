@@ -6,8 +6,25 @@
 #include <thread>
 
 #include <fstream>
-#include <poflz4.h>
+
+#include <random>
+
 #include <data.h>
+#include <data_tuple.h>
+
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/asio/streambuf.hpp>
+
+
+#include <boost/serialization/vector.hpp>
+#include <sstream>
+#include <iostream>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/copy.hpp>
+
 
 IMPLEMENT_APP(pof::Application)
 
@@ -16,43 +33,57 @@ boost::asio::io_context io;
 boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23_client};
 using namespace std::literals::string_literals;
 
+namespace ar = boost::archive;
+
+static auto const flags = boost::archive::no_header | boost::archive::no_tracking;
+
+void test_data()
+{
+	using namespace pof::base;
+	pof::base::data data;
+	pof::base::adapt<int, float, pof::base::data::datetime_t>(data);
+
+	std::random_device d{};
+	std::uniform_int_distribution<int > int_distro;
+	std::uniform_real_distribution<float> float_distro;
+
+	std::mt19937 gen(d());
+
+	auto rd = std::bind(int_distro, gen);
+	auto rd2 = std::bind(float_distro, gen);
+	data.reserve(1000);
+	for (int i = 0; i < 10000; i++) {
+		data.insert({ rd(), rd2(), pof::base::data::clock_t::now() });
+	}
+	
+	std::stringstream os;
+
+	auto& [r, s] = data[0];
+	std::cout << boost::variant2::get<0>(r[0]) << std::endl;
+	
+	std::vector<char> compressed;
+	std::stringstream oss;
+	ar::binary_oarchive archive{ oss, flags };
+	archive << data;
+
+	boost::iostreams::filtering_ostream fos;
+	fos.push(boost::iostreams::bzip2_compressor());
+	fos.push(boost::iostreams::back_inserter(compressed));
+
+	boost::iostreams::copy(oss, fos);
+	std::cout << "Buffer size : " << oss.str().size() << std::endl;
+	std::cout << "The compressed size is: " << compressed.size() << std::endl;
+
+
+	auto& [ro, so] = data[0];
+	std::cout << boost::variant2::get<0>(ro[0]) << std::endl;
+
+}	
+
+
 int test_main(int argc, char** const argv)
 {
-	spdlog::error("{:ec}", std::make_error_code(pof::base::errc::no_data));
-	auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(io, ctx);
-	std::string host = "www.google.com";
-	std::string service = "https";
-
-	auto f = sess->req<http::verb::get>(host, "/"s, service);
-
-	auto w = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(io.get_executor());
-	std::thread t{ [&]() {io.run(); } };
-	try {
-		std::ofstream out("test.html");
-		auto data = f.get();
-		out << data.body();
-		out.flush();
-		out.close();
-
-		std::ifstream in("test.html");
-		std::ofstream o("testcompress");
-
-		spdlog::info("Compressing...");
-		auto start = std::chrono::system_clock::now();
-		lz4_stream::ostream stream(o);
-		std::copy(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>(),
-			std::ostreambuf_iterator<char>(stream));
-		auto stop = std::chrono::system_clock::now();
-		auto ti = std::chrono::duration<float, std::chrono::milliseconds::period>(stop - start).count();
-		spdlog::info("Done compressing into testcompress took {:.2f}ms", ti);
-		
-	}
-	catch (const std::exception& exp) {
-		//ignore
-		spdlog::critical(exp.what());
-	}
-	io.stop();
-	t.join();
+	test_data();
 	return 0;
 }
 

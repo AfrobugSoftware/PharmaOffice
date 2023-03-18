@@ -36,6 +36,7 @@ namespace pof {
 	namespace base {
 		enum class errc {
 			no_data,
+			metadata_mismatch,
 
 			//DO NOT INSERT AFTER THIS, MAX ERROR COUNT
 			max_size

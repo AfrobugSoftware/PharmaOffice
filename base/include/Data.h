@@ -1,8 +1,11 @@
+#pragma once
 #include <boost/variant2/variant.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
+#include <boost/serialization/split_member.hpp>
+
 
 
 
@@ -95,6 +98,7 @@ namespace pof
             //metadata functions
             inline void set_metadata(const metadata_t& md) { metadata = md; }
             constexpr const metadata_t& get_metadata() const { return metadata; }
+            constexpr metadata_t& get_metadata() { return metadata; }
 
 
             void insert(row_t&& row);
@@ -137,7 +141,7 @@ namespace pof
             //or change the datatype on a 32 bit machine ?
             //how would the server handle different machine architecture?
             template<typename Archive>
-            void save(Archive& ar, const unsigned int version = 1)  {
+            void save(Archive& ar, const unsigned int version = 1) const {
                 assert(!metadata.empty());
                 if (value.empty()) return; // nothing to serialise
 
@@ -156,8 +160,7 @@ namespace pof
                  {
                         auto& [r, s] = row;
                         const size_t size = r.size();
-                        if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) ||
-                            !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
+                        if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
                             continue;
                         }
 
@@ -314,6 +317,8 @@ namespace pof
             inline constexpr datetime_t tsCreated() const { return created; }
             inline constexpr datetime_t tsModified() const { return modified; }
         private:
+            friend class boost::serialization::access;
+            BOOST_SERIALIZATION_SPLIT_MEMBER()
             //serialise flags
             bool bModified; //serialise only modified rows
 

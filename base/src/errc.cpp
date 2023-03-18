@@ -6,6 +6,8 @@ static std::once_flag g_flag;
 pof::base::error_category::error_category() {
 	//PREPARE THE ERROR CODES MESSAGES
 	m_messages[to_underlying(errc::no_data)] = "NO DATA IN BUFFER";
+	m_messages[to_underlying(errc::metadata_mismatch)] = "DATA IN ROW DOES NOT MATCH THE METADATA FOR DATA OBJECT";
+
 
 }
 
@@ -27,7 +29,6 @@ std::error_condition pof::base::error_category::default_error_condition(int code
 
 const pof::base::error_category& pof::base::get_err_category() noexcept
 {
-	// TODO: insert return statement here
 	std::call_once(g_flag, []() {
 		g_error_category = std::make_unique<pof::base::error_category>();
 	});
