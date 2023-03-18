@@ -11,6 +11,7 @@
 
 #include <data.h>
 #include <data_tuple.h>
+#include <packages.h>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -37,11 +38,16 @@ namespace ar = boost::archive;
 
 static auto const flags = boost::archive::no_header | boost::archive::no_tracking;
 
+
+
 void test_data()
 {
 	using namespace pof::base;
 	pof::base::data data;
 	pof::base::adapt<int, float, pof::base::data::datetime_t>(data);
+
+	pof::base::packer p(data);
+	pof::base::unpacker up(data);
 
 	std::random_device d{};
 	std::uniform_int_distribution<int > int_distro;
@@ -56,23 +62,18 @@ void test_data()
 		data.insert({ rd(), rd2(), pof::base::data::clock_t::now() });
 	}
 	
-	std::stringstream os;
-
+	
 	auto& [r, s] = data[0];
 	std::cout << boost::variant2::get<0>(r[0]) << std::endl;
 	
-	std::vector<char> compressed;
-	std::stringstream oss;
-	ar::binary_oarchive archive{ oss, flags };
-	archive << data;
+	auto vec = p();
+	
+	std::cout << "PACK SIZE: " << vec.size() << std::endl;
 
-	boost::iostreams::filtering_ostream fos;
-	fos.push(boost::iostreams::bzip2_compressor());
-	fos.push(boost::iostreams::back_inserter(compressed));
-
-	boost::iostreams::copy(oss, fos);
-	std::cout << "Buffer size : " << oss.str().size() << std::endl;
-	std::cout << "The compressed size is: " << compressed.size() << std::endl;
+	up(vec);
+	//package classes
+	//packager(const pof::base::data& data)
+	//unpackager(pof::base::data& data)
 
 
 	auto& [ro, so] = data[0];
