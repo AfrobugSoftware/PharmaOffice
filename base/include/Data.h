@@ -46,7 +46,7 @@ namespace pof
                 blob
             };
 
-            using clock_t = std::chrono::steady_clock;
+            using clock_t = std::chrono::system_clock;
             using datetime_t = clock_t::time_point;
             using text_t = std::string;
             using blob_t = std::vector<std::uint8_t>;
@@ -125,6 +125,7 @@ namespace pof
             inline void resize(size_t size) { value.resize(size); }
 
             const row_t& operator[](size_t i) const;
+            row_t& operator[](size_t i);
             bool operator==(const data& rhs) const = default;
 
             //get the underlying table
@@ -316,6 +317,9 @@ namespace pof
 
             inline constexpr datetime_t tsCreated() const { return created; }
             inline constexpr datetime_t tsModified() const { return modified; }
+
+            inline constexpr void tsCreated(const datetime_t& dt) { created = dt; }
+            inline constexpr void tsModified(const datetime_t& dt) { modified = dt; }
         private:
             friend class boost::serialization::access;
             BOOST_SERIALIZATION_SPLIT_MEMBER()

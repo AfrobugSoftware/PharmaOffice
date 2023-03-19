@@ -17,7 +17,7 @@ namespace std {
 	template<>
 	struct hash<wxDataViewItem>
 	{
-		constexpr size_t operator()(const wxDataViewItem& item) const noexcept
+		size_t operator()(const wxDataViewItem& item) const noexcept
 		{
 			const size_t i = reinterpret_cast<size_t>(item.GetID());
 			return std::hash<size_t>{}(i);
@@ -46,7 +46,7 @@ namespace pof {
 		enum class Signals {
 				ADDED,
 				REMOVED,
-				CHANGED,
+				UPDATE,
 				LOADED,
 				MAX
 		};
@@ -77,12 +77,11 @@ namespace pof {
 
 		virtual bool IsEnabled(const wxDataViewItem& item, unsigned int col) const
 		{
-			size_t index = wxPtrToUInt(item.GetID());
-			index--;
-			return (index < mData.size());
+			const size_t i = GetIdxFromItem(item);
+			return (i < datastore.size());
 		}
 
-		static size_t GetIdxFromItem(const wxDataViewItem& item) {
+		constexpr static size_t GetIdxFromItem(const wxDataViewItem& item) {
 			size_t i = reinterpret_cast<size_t>(item.GetID());
 			return (--i);
 		}
@@ -94,6 +93,46 @@ namespace pof {
 		virtual bool IsVirtualListModel() const
 		{
 			return false;
+		}
+
+		virtual bool GetAttr(const wxDataViewItem& item, unsigned int col, wxDataViewItemAttr& attr) const
+		{
+			if (col >= GetColumnCount()) return false;
+			if (!item.IsOk()) return false;
+			auto attrIter = attributes.find(item);
+			if (attrIter != attributes.end()) {
+				attr = *(attrIter->second);
+				return true;
+			}
+		}
+
+		virtual wxString GetColumnType(unsigned int col) const
+		{
+			if (col >= GetColumnCount()) return wxString();
+			const pof::base::data::kind k = datastore.get_metadata()[col];
+			switch (k)
+			{
+			case pof::base::data::kind::int32:
+				return "int";
+			case pof::base::data::kind::int64:
+				return "long long";
+			case pof::base::data::kind::uint32:
+				break;
+			case pof::base::data::kind::uint64:
+				break;
+			case pof::base::data::kind::float32:
+				break;
+			case pof::base::data::kind::float64:
+				break;
+			case pof::base::data::kind::datetime:
+				break;
+			case pof::base::data::kind::text:
+				return "string";
+			case pof::base::data::kind::blob:
+				break;
+			default:
+				return wxString();
+			}
 		}
 
 		bool AddAttr(const wxDataViewItem& item, std::shared_ptr<wxDataViewItemAttr> attr){
@@ -147,12 +186,12 @@ namespace pof {
 		virtual int Compare(const wxDataViewItem& item1, const wxDataViewItem& item2, unsigned int column, bool ascending) const
 		{
 			if (column >= GetColumnCount()) return 0;
-			size_t i = GetIdxFromItem(item1);
-			size_t i2 = GetIdxFromItem(item2);
-			auto& [r, s] = datastore[i];
-			auto& [r2, s] = datastore[i2];
-			auto& val1 = r[column];
-			auto& val2 = r2[column];
+			const size_t i = GetIdxFromItem(item1);
+			const size_t i2 = GetIdxFromItem(item2);
+			const auto& [r, s] = datastore[i];
+			const auto& [r2, s2] = datastore[i2];
+			const auto& val1 = r[column];
+			const auto& val2 = r2[column];
 
 			if (ascending) {
 				if (val1 < val2) return -1;
@@ -215,7 +254,7 @@ namespace pof {
 			case pof::base::data::kind::datetime:
 			{
 				auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(d));
-				v = fmt::format("{:%y-%m-%d}", std::localtime(t));
+				v = fmt::format("{:%y-%m-%d}", fmt::localtime(t));
 				break;
 			}
 			case pof::base::data::kind::text:
@@ -229,6 +268,80 @@ namespace pof {
 			}
 		}
 
+		virtual bool SetValue(const wxVariant& variant, const wxDataViewItem& item, unsigned int col)
+		{
+			if (!item.IsOk() || col >= GetColumnCount()) return false;
+			const size_t i = GetIdxFromItem(item);
+			const auto iter = mSpecialColHandlers.find(col);
+			if (iter != mSpecialColHandlers.end()) {
+				auto& [get, set] = iter->second;
+				if (set) {
+					return set(i, col, variant);
+				}
+			}
+			pof::base::data::kind k = datastore.get_metadata()[col];
+			auto& [r, s] = datastore[i];
+			auto& dat = r[col];
+			switch (k)
+			{
+			case pof::base::data::kind::int32:
+				dat = static_cast<std::int32_t>(variant.GetLong());
+				break;
+			case pof::base::data::kind::int64:
+				dat = static_cast<std::int64_t>(variant.GetLongLong().GetValue());
+				break;
+			case pof::base::data::kind::uint32:
+				dat = static_cast<std::uint32_t>(variant.GetLong());
+				break;
+			case pof::base::data::kind::uint64:
+				dat = static_cast<std::uint64_t>(variant.GetULongLong().GetValue());
+				break;
+			case pof::base::data::kind::float32:
+				dat = static_cast<float>(variant.GetDouble());
+				break;
+			case pof::base::data::kind::float64:
+				dat = variant.GetDouble();
+				break;
+			case pof::base::data::kind::datetime:
+			{
+				auto dt = variant.GetDateTime();
+				dat = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+				break;
+			}
+			case pof::base::data::kind::text:
+				dat = variant.GetString().ToStdString();
+				break;
+			case pof::base::data::kind::blob:
+			{
+				return false; //should not be able to set a blob data from the view.
+			}
+			default:
+				return false;
+			}
+			datastore.tsModified(pof::base::data::clock_t::now());
+			s.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::MODIFIED));
+			ValueChanged(item, col);
+			sig(std::next(datastore.begin(), i), Signals::UPDATE);
+			return true;
+		}
+
+		void Reload()
+		{
+			Cleared();
+			for (size_t i = 0; i < datastore.size(); i++) {
+				ItemAdded(wxDataViewItem(0), wxDataViewItem(wxUIntToPtr(i + 1)));
+			}
+		}
+
+		virtual unsigned int GetChildren(const wxDataViewItem& item, wxDataViewItemArray& children) const
+		{
+			return -1;
+		}
+
+		virtual wxDataViewItem GetParent(const wxDataViewItem& item) const
+		{
+			return wxDataViewItem(0);
+		}
 
 
 	private:
@@ -236,6 +349,8 @@ namespace pof {
 		pof::base::packer pack;
 		pof::base::unpacker unpack;
 
+
+		signal_t sig;
 		item_attr_map attributes;
 		special_col_map mSpecialColHandlers;
 

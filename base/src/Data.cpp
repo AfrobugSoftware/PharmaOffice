@@ -8,8 +8,8 @@ pof::base::data::data()
 pof::base::data::data(size_t count)
 : value(count),
   bModified(false),
-  created(ch::steady_clock::now()),
-  modified(ch::steady_clock::now())
+  created(pof::base::data::clock_t::now()),
+  modified(pof::base::data::clock_t::now())
 {}
 
 pof::base::data::~data()
@@ -39,7 +39,7 @@ inline pof::base::data& pof::base::data::operator=(data&& rhs) noexcept
 void pof::base::data::insert(row_t&& row)
 {
 	assert(row.first.size() == metadata.size()); //not less than or greater than the row count
-	modified = ch::steady_clock::now();
+	modified = clock_t::now();
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
 
 	value.emplace_back(std::forward<row_t>(row));
@@ -49,7 +49,7 @@ void pof::base::data::insert(row_t&& row)
 void pof::base::data::insert(const typename row_t::first_type& vals)
 {
 	assert(vals.size() == metadata.size()); //not less than or greater than the row count
-	modified = ch::steady_clock::now();
+	modified = clock_t::now();
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
 
 	value.push_back({ vals, state_t{}});
@@ -59,7 +59,7 @@ void pof::base::data::insert(const typename row_t::first_type& vals)
 void pof::base::data::insert(const typename row_t::first_type& vals, const typename row_t::second_type& st)
 {
 	assert(vals.size() == metadata.size()); //not less than or greater than the row count
-	modified = ch::steady_clock::now();
+	modified = clock_t::now();
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
 	value.push_back({ std::forward<const row_t::first_type&>(vals), st });
 	value.back().second.set(pos);
@@ -116,6 +116,13 @@ bool pof::base::data::test_state(size_t x, state s)
 
 const pof::base::data::row_t& pof::base::data::operator[](size_t i) const
 {
+	if (i > value.size()) throw std::out_of_range("Row index is out of range");
+	return value[i];
+}
+
+pof::base::data::row_t& pof::base::data::operator[](size_t i)
+{
+	// TODO: insert return statement here
 	if (i > value.size()) throw std::out_of_range("Row index is out of range");
 	return value[i];
 }

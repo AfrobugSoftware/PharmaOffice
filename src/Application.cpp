@@ -13,18 +13,7 @@
 #include <data_tuple.h>
 #include <packages.h>
 
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/asio/streambuf.hpp>
-
-
-#include <boost/serialization/vector.hpp>
-#include <sstream>
-#include <iostream>
-#include <boost/iostreams/filter/bzip2.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/copy.hpp>
+#include "DataModel.h"
 
 
 IMPLEMENT_APP(pof::Application)
@@ -37,7 +26,6 @@ using namespace std::literals::string_literals;
 namespace ar = boost::archive;
 
 static auto const flags = boost::archive::no_header | boost::archive::no_tracking;
-
 
 
 void test_data()
@@ -64,6 +52,9 @@ void test_data()
 	}
 	
 	
+	pof::DataModel<int, std::string, std::string> rl;
+
+
 	auto& [r, s] = data[0];
 	std::cout << boost::variant2::get<0>(r[0]) << std::endl;
 	
