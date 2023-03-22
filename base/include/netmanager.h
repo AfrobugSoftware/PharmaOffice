@@ -1,5 +1,6 @@
 #pragma once
 #include "net.h"
+#include "errc.h"
 
 #include <boost/noncopyable.hpp>
 
@@ -14,17 +15,17 @@ namespace pof
 		{
 		public:
 			net_manager();
-			net_manager(net_manager&& manage);
-			net_manager& operator=(net_manager&& manage);
+			net_manager(net_manager&& manage) = delete;
+			net_manager& operator=(net_manager&& manage) = delete;
 
 			bool stop();
-
+			std::error_code setupssl();
 
 		private:
 			std::unique_ptr<net::executor_work_guard<boost::asio::io_context::executor_type>> m_workgaurd;
 			net::io_context m_io;
 			net::ssl::context m_ssl;
-			std::thread m_netthread;
+			std::thread m_thread;
 
 		};
 	};

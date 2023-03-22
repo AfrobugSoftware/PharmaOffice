@@ -20,6 +20,7 @@ elseif()
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/base)
+add_subdirectory(${PROJECT_SOURCE_DIR}/formulary)
 
 
 add_executable(pharmaoffice ${incs} ${srcs})
