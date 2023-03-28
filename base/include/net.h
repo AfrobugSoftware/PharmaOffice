@@ -291,8 +291,8 @@ namespace pof {
 			template<typename resp_body, typename req_body = boost::beast::http::empty_body>
 			class session : public std::enable_shared_from_this<session<resp_body, req_body>> {
 			public:
-				using req_body_t = req_body;
-				using resp_body_t = resp_body;
+				using req_body_t = typename req_body::value_type;
+				using resp_body_t = typename resp_body::value_type;
 				using req_t = http::request<req_body>;
 				using resp_t = http::response<resp_body>;
 				using promise_t = std::promise<resp_t>;
@@ -310,7 +310,7 @@ namespace pof {
 				future_t req(const std::string& host,
 							 const std::string& target,
 							 const std::string& port,
-							 const req_body_t& rbody = http::empty_body{},
+							 const req_body_t& rbody = http::empty_body::value_type{},
 							 std::chrono::steady_clock::duration dur = 60s) {
 					//prepare the request
 					m_dur = dur;
@@ -419,7 +419,7 @@ namespace pof {
 					int version = 11
 				)
 				{
-					if constexpr (std::is_same_v<req_body_t, http::string_body>) {
+					if constexpr (std::is_same_v<req_body_t, http::string_body::value_type>) {
 						//if not empty body
 						//string bodies
 						m_req.version(version);
@@ -432,7 +432,7 @@ namespace pof {
 						m_req.body() = body;
 						m_req.prepare_payload();
 					}
-					else if constexpr (std::is_same_v<req_body_t, http::file_body>) {
+					else if constexpr (std::is_same_v<req_body_t, http::file_body::value_type>) {
 						//if request is a file body 
 						http::request<http::file_body> req_{ std::piecewise_construct,
 							std::make_tuple(std::move(body)) };
@@ -446,7 +446,7 @@ namespace pof {
 						m_req.prepare_payload();
 
 					}
-					else if constexpr (std::is_same_v<req_body_t, http::empty_body>) {
+					else if constexpr (std::is_same_v<req_body_t, http::empty_body::value_type>) {
 						// the body is empty, usual get request have empty bodies
 						m_req.version(version);
 						m_req.method(verb);

@@ -21,6 +21,9 @@ namespace pof
 			bool stop();
 			std::error_code setupssl();
 
+			inline net::io_context& io() { return m_io; }
+			inline net::ssl::context& ssl() { return m_ssl; }
+
 		private:
 			std::unique_ptr<net::executor_work_guard<boost::asio::io_context::executor_type>> m_workgaurd;
 			net::io_context m_io;

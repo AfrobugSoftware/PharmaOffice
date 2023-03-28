@@ -16,6 +16,7 @@
 #include <wx/textctrl.h>
 #include <wx/valtext.h>
 #include <wx/button.h>
+#include <wx/checkbox.h>
 #include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -37,10 +38,14 @@ namespace pof {
 		wxStaticText* mWelcomText;
 		wxTextCtrl* mUserName;
 		wxTextCtrl* mPassword;
+		wxCheckBox* mKeepMeSigned;
 		wxPanel* m_panel5;
 		wxButton* mLogOn;
 		wxButton* mSignup;
 		wxPanel* m_panel4;
+
+		std::string mUsername;
+		std::string mUserPassword;
 
 	public:
 
@@ -52,6 +57,8 @@ namespace pof {
 
 		SignInDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE);
 		~SignInDialog();
+		const std::string& GetOfficeUserName() const { return mUsername; }
+		const std::string& GetOfficePassword() const { return mUserPassword; }
 
 	protected:
 		void onLogon(wxCommandEvent& evt);

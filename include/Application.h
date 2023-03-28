@@ -4,9 +4,12 @@
 #include <filesystem>
 #include <netmanager.h>
 
+#include <nlohmann/json.hpp>
+#include "SignInDialog.h"
 #include "Account.h"
 #include "Pharmacy.h"
 
+namespace js = nlohmann;
 namespace fs = std::filesystem;
 namespace pof {
 	class Application : public wxApp
@@ -20,7 +23,7 @@ namespace pof {
 		virtual bool OnInit() override;
 		virtual int OnExit() override;
 
-		void SignIn();
+		bool SignIn();
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		

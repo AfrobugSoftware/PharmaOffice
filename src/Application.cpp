@@ -102,10 +102,50 @@ pof::Application::Application()
 
 bool pof::Application::OnInit()
 {
-	return false;
+	//read settings 
+	//set up network
+	//sign in
+	// 
+	//set up other things
+	//lunch mainframe
+	return true;
 }
 
 int pof::Application::OnExit()
 {
 	return 0;
+}
+
+bool pof::Application::SignIn()
+{
+	pof::SignInDialog Dialog(nullptr);
+	if (Dialog.ShowModal() == wxID_OK){
+		auto username = Dialog.GetOfficeUserName();
+		auto pass = Dialog.GetOfficePassword();
+
+		//do verification how ??
+		//send to chws?
+		js::json payload;
+		payload["Username"] = username;
+		payload["Password"] = pass;
+		
+		http::string_body body;
+		body
+
+		auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(mNetManager.io(), mNetManager.ssl());
+
+		auto fut = sess->req<http::verb::post>("chws.com", "/accounts/signin", "https", );
+
+
+		//cache the sign in if the keep signed in was checked.
+
+		return true;
+	}
+	else {
+		spdlog::info("Sign in was cancelled");
+		return false;
+	}
+
+
+
 }

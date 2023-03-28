@@ -1,7 +1,8 @@
 #include "SignInDIalog.h"
 
 BEGIN_EVENT_TABLE(pof::SignInDialog, wxDialog)
-	
+	EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
+	EVT_BUTTON(pof::SignInDialog::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
 END_EVENT_TABLE()
 
 
@@ -56,13 +57,15 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 	
 	bSizer5->Add( mUserName, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	mPassword = new wxTextCtrl( m_panel3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mPassword = new wxTextCtrl( m_panel3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 	mPassword->SetMinSize( wxSize( 300,-1 ) );
 	
 	bSizer5->Add( mPassword, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
+	mKeepMeSigned = new wxCheckBox(m_panel3, wxID_ANY, wxT("Keep me signed in"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer5->Add(mKeepMeSigned, 0, wxALL, 5);
 	
-	bSizer5->Add( 0, 30, 0, wxEXPAND, 5 );
+	bSizer5->Add( 0, 20, 0, wxEXPAND, 5 );
 	
 	m_panel5 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer6;
@@ -120,5 +123,14 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 }
 
 pof::SignInDialog::~SignInDialog()
+{
+}
+
+void pof::SignInDialog::onLogon(wxCommandEvent& evt)
+{
+
+}
+
+void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
 }
