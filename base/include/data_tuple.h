@@ -63,6 +63,10 @@ namespace pof
 			}
 		};
 
+		//TODO:
+		//add a concept to the list of args types, they must be the type of the 
+		//selected data datatypes eg float double text_t blob etc..
+
 		template<typename... args>
 		void adapt(pof::base::data& d) {
 			using bft = std::tuple<args...>;

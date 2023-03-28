@@ -6,7 +6,7 @@ pof::base::net_manager::net_manager()
 	if (ec) {
 		
 	}
-	m_workgaurd = std::make_unique<net::executor_work_guard<net::io_context::executor_type>>(m_io);
+	m_workgaurd = std::make_unique<net::executor_work_guard<net::io_context::executor_type>>(m_io.get_executor());
 	m_thread = std::move(std::thread{static_cast<size_t(net::io_context::*)()>(&net::io_context::run), std::ref(m_io)});
 }
 

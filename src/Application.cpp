@@ -15,6 +15,7 @@
 
 #include "DataModel.h"
 
+#include "datatree.h"
 
 IMPLEMENT_APP(pof::Application)
 
@@ -72,6 +73,20 @@ void test_data()
 	std::cout << boost::variant2::get<0>(ro[0]) << std::endl;
 
 }	
+
+void test_tree()
+{
+	using string_node = pof::base::node<std::string>;
+	using string_leaf = pof::base::leaf<std::string>;
+
+	auto np = std::make_shared<string_node>("zino"s);
+	auto lp = std::make_shared<string_leaf>("ferife"s);
+
+	np->add_child(lp);
+
+	auto v = np->get_value("zino", 0);
+
+}
 
 
 int test_main(int argc, char** const argv)

@@ -358,11 +358,15 @@ namespace pof {
 					size_t bytes = 0;
 					tcp::resolver::results_type::endpoint_type ep{};
 					
+
+
 					//connect
 					beast::get_lowest_layer(m_stream).expires_after(m_dur);
+					std::chrono::system_clock::time_point starttime = std::chrono::system_clock::now();
+					std::chrono::system_clock::time_point stoptime;
+
 					spdlog::info("Connecting..");
 					std::tie(ec, ep) = co_await net::async_connect(sock,results);
-
 					if (ec) {
 						on_fail(ec);
 						co_return std::move(m_resp);
@@ -374,6 +378,8 @@ namespace pof {
 					std::tie(ec) = co_await m_stream.async_handshake(net::ssl::stream_base::client);
 					if (ec) {
 						on_fail(ec);
+						stoptime = std::chrono::system_clock::now();
+
 						co_return std::move(m_resp);
 					}
 					spdlog::info("Completed");

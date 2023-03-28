@@ -65,7 +65,7 @@ namespace pof {
 		void Unpack(const pof::base::pack_t& package) {
 			unpack(package);
 		}
-
+	
 		virtual bool HasContainerColumns(const wxDataViewItem& item) const
 		{
 			return false;
