@@ -7,6 +7,7 @@
 #include "Account.h"
 #include "Pharmacy.h"
 
+namespace fs = std::filesystem;
 namespace pof {
 	class Application : public wxApp
 	{
@@ -21,12 +22,15 @@ namespace pof {
 
 		void SignIn();
 
+		const fs::path& GetAssertsPath() const { return mAsserts; }
+		
 		pof::base::net_manager mNetManager;
-		signoutsig_t mSignOutSig; //send signal to all modules about a sign out
 	private:
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;
 
+		fs::path mAsserts;
+		fs::path mModules; //plugin 
 
 	};
 };

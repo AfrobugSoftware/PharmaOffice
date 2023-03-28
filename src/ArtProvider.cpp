@@ -1,0 +1,38 @@
+#include "ArtProvider.h"
+#include "Application.h"
+
+
+
+pof::ArtProvider::ArtProvider() {
+	CreateArtStore();
+}
+
+void pof::ArtProvider::CreateArtStore()
+{
+	auto AssertPath = wxGetApp().GetAssertsPath() / "Icons";
+	for (auto& DirEntry : fs::directory_iterator(AssertPath))
+	{
+		static const std::map<std::string_view, wxBitmapType> Exts{ {".jpg", wxBITMAP_TYPE_JPEG}, {".png", wxBITMAP_TYPE_PNG},  {".ico", wxBITMAP_TYPE_ICO}};
+		if (DirEntry.is_directory()) continue;
+		const auto exts = DirEntry.path().filename().extension().string();
+		auto iter = Exts.find(exts);
+		if (iter != Exts.end()) {
+			auto name = DirEntry.path().stem().string();
+			mArtMap.insert({ std::move(name), wxBitmap(DirEntry.path().string(), iter->second)});
+		}
+	}
+}
+
+wxSize pof::ArtProvider::DoGetSizeHint(const wxArtClient& client)
+{
+	return wxSize();
+}
+
+wxBitmap pof::ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& clinet, const wxSize& size)
+{
+	auto iter = mArtMap.find(id.ToStdString());
+	if (iter != mArtMap.end()) {
+		return iter->second;
+	}
+	return wxBitmap();
+}
