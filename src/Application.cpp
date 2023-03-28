@@ -107,6 +107,7 @@ bool pof::Application::OnInit()
 	//sign in
 	// 
 	//set up other things
+	// check for updates
 	//lunch mainframe
 	return true;
 }
@@ -128,16 +129,36 @@ bool pof::Application::SignIn()
 		js::json payload;
 		payload["Username"] = username;
 		payload["Password"] = pass;
-		
-		http::string_body body;
-		body
 
-		auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(mNetManager.io(), mNetManager.ssl());
+		wxBusyInfo info(wxBusyInfoFlags().Title("Logging In").Text("Connecting to chws..."));
+		auto sess = std::make_shared<pof::base::ssl::session<http::string_body, http::string_body>>(mNetManager.io(), mNetManager.ssl());
+		auto fut = sess->req<http::verb::post>("chws.com", "/accounts/signin", "https", payload.dump());
 
-		auto fut = sess->req<http::verb::post>("chws.com", "/accounts/signin", "https", );
-
-
+		info.UpdateText("Sending requests...");
 		//cache the sign in if the keep signed in was checked.
+		try {
+			std::future_status s = fut.wait_for(3ms);
+			constexpr std::array<std::string_view, 3> wait_text{".", "..", "..."};
+			size_t i = 0;
+			while (s != std::future_status::ready) {
+				//display visual feedback
+				info.UpdateText(fmt::format("Waiting{}", wait_text[i]));
+				i = ++i % 3;
+			}
+			auto data = fut.get();
+			js::json jsdata = js::json::parse(data.body());
+			info.UpdateText("Parsing response");
+			/**
+			*  {
+			*		"account_id" : 12324255453434256354,
+			*		"account_name" : "Zino"
+			*		"account_last_name" : ""
+			*  }
+			*/
+		}
+		catch (const std::exception& exp) {
+			
+		}
 
 		return true;
 	}

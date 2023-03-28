@@ -13,10 +13,10 @@ namespace pof {
 			T m_ident;
 			wxDataViewItem m_item;
 
-			using std::rel_ops::operator>;
+			/*using std::rel_ops::operator>;
 			using std::rel_ops::operator<=;
 			using std::rel_ops::operator>=;
-			using std::rel_ops::operator!=;
+			using std::rel_ops::operator!=;*/
 
 			bool operator==(const idx_t& i) {
 				return (m_ident == i.m_ident && m_item == i.m_item);

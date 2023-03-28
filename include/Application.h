@@ -1,5 +1,5 @@
 #include <wx/app.h>
-
+#include <wx/busyinfo.h>
 
 #include <filesystem>
 #include <netmanager.h>
@@ -31,7 +31,7 @@ namespace pof {
 	private:
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;
-
+		std::string mVersion;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
 

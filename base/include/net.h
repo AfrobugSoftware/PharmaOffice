@@ -288,7 +288,7 @@ namespace pof {
 
 
 		namespace ssl {
-			template<typename resp_body, typename req_body = boost::beast::http::empty_body>
+			template<typename resp_body = beast::http::string_body, typename req_body = boost::beast::http::empty_body>
 			class session : public std::enable_shared_from_this<session<resp_body, req_body>> {
 			public:
 				using req_body_t = typename req_body::value_type;
@@ -310,7 +310,7 @@ namespace pof {
 				future_t req(const std::string& host,
 							 const std::string& target,
 							 const std::string& port,
-							 const req_body_t& rbody = http::empty_body::value_type{},
+							 const req_body_t& rbody = req_body_t{},
 							 std::chrono::steady_clock::duration dur = 60s) {
 					//prepare the request
 					m_dur = dur;
@@ -415,7 +415,7 @@ namespace pof {
 				void prepare_request(const std::string& host,
 					const std::string& target,
 					http::verb verb,
-					typename req_body_t const& body,
+					req_body_t const& body,
 					int version = 11
 				)
 				{
@@ -465,8 +465,8 @@ namespace pof {
 
 				beast::ssl_stream<tcp_stream> m_stream;
 				beast::flat_buffer m_buf;
-				beast::http::request<req_body_t> m_req;
-				beast::http::response<resp_body_t> m_resp;
+				req_t m_req;
+				resp_t m_resp;
 				std::chrono::steady_clock::duration m_dur;
 
 				promise_t m_promise;
