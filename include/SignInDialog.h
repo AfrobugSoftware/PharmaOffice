@@ -18,7 +18,11 @@
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/dialog.h>
+#include <wx/msgdlg.h>
+#include <wx/progdlg.h>
 
+#include <nlohmann/json.hpp>
+#include <exception>
 ///////////////////////////////////////////////////////////////////////////
 
 
@@ -44,8 +48,7 @@ namespace pof {
 		wxButton* mSignup;
 		wxPanel* m_panel4;
 
-		std::string mUsername;
-		std::string mUserPassword;
+		std::string mUserData;
 
 	public:
 
@@ -57,8 +60,8 @@ namespace pof {
 
 		SignInDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE);
 		~SignInDialog();
-		const std::string& GetOfficeUserName() const { return mUsername; }
-		const std::string& GetOfficePassword() const { return mUserPassword; }
+	
+		inline constexpr const std::string& GetUserData() const { return mUserData; }
 
 	protected:
 		void onLogon(wxCommandEvent& evt);

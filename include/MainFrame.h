@@ -8,7 +8,13 @@
 #include <wx/srchctrl.h>
 #include <wx/frame.h>
 
-using namespace std::literals::string_literals;
+#include "LogSink.h"
+#include "ArtProvider.h"
+
+#include <spdlog/sinks/basic_file_sink.h>
+#include <memory.h>
+
+
 namespace pof {
 	class MainFrame : public wxFrame
 	{
@@ -17,16 +23,15 @@ namespace pof {
 		//menu ID
 		enum
 		{
-			ID_BACK_UP_DATA,
-			ID_NEW_PRODUCT,
-			ID_PRODUCT_SEARCH,
-			ID_LOG,
+			ID_BACK_UP_DATA = wxID_HIGHEST + 100,
 			ID_MODULE,
-			ID_IMPORT_JSON,
-			ID_USER_LOG_IN,
-			ID_USER_LOG_OUT,
 			ID_USER_PROFILE,
 			ID_USER_CREATE_ACCOUNT,
+			ID_MENU_VIEW_LOG,
+			ID_STATUS_BAR,
+			ID_TOOL_BAR
+
+
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -35,8 +40,17 @@ namespace pof {
 		void CreateToolBar();
 		void CreateMenuBar();
 		void CreateStatusBar();
+		void CreateTheAcceleratorTable();
+		void CreateLogView();
+
+
+		void OnAbout(wxCommandEvent& evt);
+
 
 	private:
+		wxAuiManager mAuiManager;
+		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
+
 		DECLARE_EVENT_TABLE()
 	};
 };

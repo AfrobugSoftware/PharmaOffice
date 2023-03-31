@@ -323,11 +323,17 @@ namespace pof {
 
 					return (m_promise.get_future());
 				}
+
+				void cancel() {
+					beast::get_lowest_layer(m_stream).socket().close();
+				}
 			//ASYNC/CALLBACKS FUNCTIONS
 			private:
 				void on_fail(std::error_code code)
 				{
-					if (beast::error_code(code) == net::error::eof) {
+					const int err = code.value();
+					if (err == net::error::eof
+						|| err == net::error::basic_errors::operation_aborted) {
 						return;
 					}
 					spdlog::error("Error: {}", code.message());

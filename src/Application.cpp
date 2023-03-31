@@ -109,64 +109,138 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
-	return true;
+	SetUpColorTable();
+
+
+	bool ret = false;
+	ret = SignIn();
+	//test ret
+	ret = CreateMainFrame();
+
+	return ret;
 }
 
 int pof::Application::OnExit()
 {
+	mNetManager.stop();
 	return 0;
+}
+
+void pof::Application::SetUpColorTable()
+{
+	wxTheColourDatabase->AddColour("Aqua", wxColour(240, 255, 255));
+	wxTheColourDatabase->AddColour("Navajo_white", wxColour(255, 222, 173));
+	wxTheColourDatabase->AddColour("Tomato", wxColour(255, 99, 71));
+	wxTheColourDatabase->AddColour("Papaya whip", wxColour(255, 239, 213));
+}
+
+bool pof::Application::CreateMainFrame()
+{
+	mMainFrame = new pof::MainFrame(nullptr,
+		wxID_ANY, wxDefaultPosition, wxSize(700, 500));
+
+	mMainFrame->Show();
+	return true;
+}
+
+bool pof::Application::CheckForUpdate()
+{
+	//check everytime or just after some days
+	return false;
+}
+
+bool pof::Application::LoadSettings(const fs::path& fp)
+{
+	if (fp.empty() || !fs::exists(fp)) return false;
+	std::fstream inifile(fp, std::ios::in);
+	if (!inifile.is_open()) false;
+	try {
+		boost::property_tree::ini_parser::read_ini(inifile, mSettings);
+	}
+	catch (const boost::property_tree::ini_parser_error& error) {
+		//need to find where to log errors
+		//cannot parse ini file,format error
+		return false;
+	}
+	return true;
+}
+
+bool pof::Application::SaveSettings(const fs::path& fp)
+{
+	if (fp.empty() || !fs::exists(fp)) return false;
+	std::fstream inifile(fp, std::ios::out);
+	if (!inifile.is_open()) false;
+
+	try {
+		boost::property_tree::write_ini(inifile, mSettings);
+	}
+	catch (const boost::property_tree::ini_parser_error& error) {
+		return false;
+	}
+	return true;
+}
+
+bool pof::Application::RegisterPharmacy()
+{
+	return false;
+}
+
+bool pof::Application::RegisterAccount()
+{
+	return false;
 }
 
 bool pof::Application::SignIn()
 {
 	pof::SignInDialog Dialog(nullptr);
-	if (Dialog.ShowModal() == wxID_OK){
-		auto username = Dialog.GetOfficeUserName();
-		auto pass = Dialog.GetOfficePassword();
-
-		//do verification how ??
-		//send to chws?
-		js::json payload;
-		payload["Username"] = username;
-		payload["Password"] = pass;
-
-		wxBusyInfo info(wxBusyInfoFlags().Title("Logging In").Text("Connecting to chws..."));
-		auto sess = std::make_shared<pof::base::ssl::session<http::string_body, http::string_body>>(mNetManager.io(), mNetManager.ssl());
-		auto fut = sess->req<http::verb::post>("chws.com", "/accounts/signin", "https", payload.dump());
-
-		info.UpdateText("Sending requests...");
-		//cache the sign in if the keep signed in was checked.
-		try {
-			std::future_status s = fut.wait_for(3ms);
-			constexpr std::array<std::string_view, 3> wait_text{".", "..", "..."};
-			size_t i = 0;
-			while (s != std::future_status::ready) {
-				//display visual feedback
-				info.UpdateText(fmt::format("Waiting{}", wait_text[i]));
-				i = ++i % 3;
+	while (1) {
+		if (Dialog.ShowModal() == wxID_OK) {
+				//handle response from server 
+			auto& data = Dialog.GetUserData();
+			if (data.empty()) {
+				continue;
 			}
-			auto data = fut.get();
-			js::json jsdata = js::json::parse(data.body());
-			info.UpdateText("Parsing response");
-			/**
-			*  {
-			*		"account_id" : 12324255453434256354,
-			*		"account_name" : "Zino"
-			*		"account_last_name" : ""
-			*  }
-			*/
+
+			js::json jsdata = js::json::parse(data);
+				/**
+				* PUT IN DOCUMENTATION
+				*  {
+				*		"id" : 12324255453434256354,
+				*		"priv" : 345, #this number is a bitset
+				*		"name" : "Zino",
+				*		"last_name" : "ferife",
+				*		"email" : "ferife_zino@yahoo.co.uk",
+				*		"phonenumber" : "",
+				*		"regnumber" : "",
+				*		"session_uuid" : "effgrgfsfe-afefe-fge33-feefegweeg"
+				*
+				*  }
+				*/
+			MainAccount.accountID = jsdata["id"];
+			MainAccount.name = jsdata["name"] + " "s + jsdata["last_name"];
+			MainAccount.email = jsdata["email"];
+			MainAccount.phonenumber = jsdata["phonenumber"];
+			MainAccount.regnumber = jsdata["regnumber"];
+			MainAccount.priv = Account::privilage_set_t{ jsdata["priv"] };
+			MainAccount.signintime = clock_t::now();
+
+			std::stringstream ss;
+			ss << jsdata["session_uuid"];
+			ss >> MainAccount.sessionID;
+
+
+			return true;
 		}
-		catch (const std::exception& exp) {
-			
+		else {
+			spdlog::info("Sign in was cancelled");
+			return false;
 		}
-
-		return true;
 	}
-	else {
-		spdlog::info("Sign in was cancelled");
-		return false;
-	}
+}
 
-
-
+boost::property_tree::ptree& pof::Application::operator[](const std::string& path)
+{
+	//path should point to an actual path to a setting
+	if (path.empty()) throw std::logic_error("CANNOT HAVE AN EMPTY PATH TO SETTINGS");
+	return mSettings.get_child(path);
 }
