@@ -1,19 +1,18 @@
 #include "MainFrame.h"
 
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
-	
+	EVT_CLOSE(pof::MainFrame::OnClose)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
 : wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this) {
 
 	CreateMenuBar();
-	CreateToolBar();
-
+	CreateModules();
 
 	CreateLogView();
 	CreateStatusBar();
-	SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
+	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
 }
 
@@ -22,14 +21,6 @@ pof::MainFrame::~MainFrame()
 	
 }
 
-void pof::MainFrame::CreateToolBar()
-{
-	wxAuiToolBar* bar = new wxAuiToolBar(this, ID_TOOL_BAR, wxDefaultPosition,
-		wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TBTOOL_TEXT_LEFT);
-
-	mAuiManager.AddPane(bar, wxAuiPaneInfo().Name("MainToolBar").ToolbarPane().Resizable().Floatable(false).
-	LeftDockable(false).RightDockable(false).BottomDockable(false).Top().Show());
-}
 
 void pof::MainFrame::CreateMenuBar()
 {
@@ -88,7 +79,28 @@ void pof::MainFrame::CreateLogView()
 
 }
 
+void pof::MainFrame::CreateModules()
+{
+	mModules = new pof::Modules(this, ID_MODULE);
+
+	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
+		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
+}
+
+void pof::MainFrame::CreateWorkSpace()
+{
+
+}
+
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
 
+}
+
+void pof::MainFrame::OnClose(wxCloseEvent& evt)
+{
+	spdlog::drop_all();
+	mLogView.reset();
+
+	evt.Skip();
 }

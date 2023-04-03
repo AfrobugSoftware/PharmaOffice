@@ -1,5 +1,5 @@
 #include "packages.h"
-static constexpr auto const flags = boost::archive::no_header | boost::archive::no_tracking;
+static constexpr auto const flags = boost::archive::no_header | boost::archive::no_tracking |boost::archive::no_xml_tag_checking;
 
 pof::base::pack_t pof::base::packer::operator()() const {
 	std::vector<char> compressed;

@@ -10,9 +10,12 @@
 
 #include "LogSink.h"
 #include "ArtProvider.h"
+#include "Modules.h"
+#include "Workspace.h"
 
 #include <spdlog/sinks/basic_file_sink.h>
-#include <memory.h>
+#include <memory>
+#include <functional>
 
 
 namespace pof {
@@ -37,18 +40,21 @@ namespace pof {
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
 		virtual ~MainFrame();
 	protected:
-		void CreateToolBar();
 		void CreateMenuBar();
 		void CreateStatusBar();
 		void CreateTheAcceleratorTable();
 		void CreateLogView();
-
+		void CreateModules();
+		void CreateWorkSpace();
 
 		void OnAbout(wxCommandEvent& evt);
+		void OnClose(wxCloseEvent& evt);
 
 
 	private:
 		wxAuiManager mAuiManager;
+		pof::Modules* mModules = nullptr;
+		pof::Workspace* mWorkspace = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
 
 		DECLARE_EVENT_TABLE()

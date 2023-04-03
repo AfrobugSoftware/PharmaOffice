@@ -61,7 +61,5 @@ namespace pof {
 		std::string phonenumber;
 		std::string regnumber;
 		//account details?
-
-
 	};
 };
