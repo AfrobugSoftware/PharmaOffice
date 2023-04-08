@@ -23,7 +23,7 @@ namespace pof{
 			WHOLESALE = 1 << 3
 		};
 		
-		using employeModel_t = std::shared_ptr<pof::DataModel<std::uint64_t, std::string, std::string>>;
+		using employeModel_t = std::shared_ptr<pof::DataModel>;
 		struct address {
 			std::string country;
 			std::string state;

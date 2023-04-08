@@ -9,7 +9,7 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 
 	CreateMenuBar();
 	CreateModules();
-
+	CreateWorkSpace();
 	CreateLogView();
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
@@ -82,14 +82,29 @@ void pof::MainFrame::CreateLogView()
 void pof::MainFrame::CreateModules()
 {
 	mModules = new pof::Modules(this, ID_MODULE);
-
+	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
+
+	//set the module to view pipeline
+	mModules->mModuleViews.insert({mModules->mProducts, });
+		
 }
 
 void pof::MainFrame::CreateWorkSpace()
 {
+	mWorkspace = new pof::Workspace(this, ID_WORKSPACE);
 
+
+	mAuiManager.AddPane(mWorkspace, wxAuiPaneInfo().Name("Workspace").CaptionVisible(false).CenterPane().Show());
+}
+
+void pof::MainFrame::CreateImageList()
+{
+	mImageList = std::make_unique<wxImageList>(16, 16);
+
+	mWorkspace->SetImageList(mImageList.get());
+	mModules->SetImageList(mImageList.get());
 }
 
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
@@ -104,3 +119,20 @@ void pof::MainFrame::OnClose(wxCloseEvent& evt)
 
 	evt.Skip();
 }
+
+void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)
+{
+	switch (notif) {
+	case Modules::Evt::ACTIVATED:
+		mWorkspace->AddSpace(win->second, mModules->GetText(win), mModules->GetImage(win)); //where are the windows kept and created
+		break;
+	case Modules::Evt::SEL_CHANGED:
+		break;
+	case Modules::Evt::COLLAPASED:
+		break;
+	default:
+		break;
+	}
+}
+a
+

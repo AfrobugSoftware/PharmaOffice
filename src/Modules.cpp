@@ -7,12 +7,24 @@ END_EVENT_TABLE()
 
 void pof::Modules::OnActivated(wxTreeEvent& evt)
 {
+	const auto item = evt.GetItem();
+	auto winIter = mModuleViews.find(item);
+	if (winIter == mModuleViews.end()) {
+		//what to do here 
+		return;
+	}
+	mSig(winIter, Evt::ACTIVATED);
 }
 
 void pof::Modules::OnSelected(wxTreeEvent& evt)
 {
 	const auto item = evt.GetItem();
-	mSig(item, Evt::SEL_CHANGED);
+	auto winIter = mModuleViews.find(item);
+	if (winIter == mModuleViews.end()) {
+		//what to do here 
+		return;
+	}
+	mSig(winIter, Evt::SEL_CHANGED);
 }
 
 void pof::Modules::SetupFont()
@@ -98,9 +110,8 @@ void pof::Modules::CreateTree()
 	
 	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 0);
 	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 0);
+	mRequisitions = mModuleTree->AppendItem(mTransactions, "Requisitions", 0);
 	mReports       = mModuleTree->AppendItem(mTransactions, "Reports", 0);
-
-	
 
 	
 	mModuleTree->Expand(mPharmacy);
@@ -120,8 +131,19 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mProducts, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mSales, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mOrders, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mReports, mFonts[FONT_CHILD]);
 
+}
+
+std::string pof::Modules::GetText(const_iterator item) const
+{
+	return mModuleTree->GetItemText(item->first).ToStdString();
+}
+
+int pof::Modules::GetImage(const_iterator item) const
+{
+	return mModuleTree->GetItemImage(item->first);
 }
 
 boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)

@@ -25,27 +25,39 @@ namespace pof {
 		wxPanel* m_panel3;
 
 	public:
+		enum {
+			WORKSPACEBOOK = wxID_HIGHEST + 3000
+		};
 
 		enum class Notif {
 			CLOSED,
 			OPENED,
 			DELETED,
-
+			ADDED,
+			SHOWN,
+			HIDEN
 		};
 		using signal_t = boost::signals2::signal<void(Notif notif, size_t page)>;
 
-		Workspace(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(829, 644), long style = wxTAB_TRAVERSAL);
+		Workspace(wxWindow* parent, wxWindowID id = WORKSPACEBOOK, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(829, 644), long style = wxTAB_TRAVERSAL);
 		~Workspace();
 
 		wxAuiNotebook& GetWorkspacebook() { return *mWorkspacebook; }
 		size_t GetLastPage() const { return mWorkspacebook->GetPageCount() - 1; }
 		size_t GetPageCount() const { return mWorkspacebook->GetPageCount(); }
 
+		inline void SetImageList(wxImageList* imglist) { mWorkspacebook->SetImageList(imglist); }
+
 		boost::signals2::connection AddNotifSlot(signal_t::slot_type&& slot);
-		bool AddSpace(wxWindow* space, const std::string& name = "EMPTY", int img = -1);
+		bool AddSpace(const wxWindow* space, const std::string& name = "EMPTY", int img = -1);
 		void Style();
 	protected:
+		void OnWorkspaceClose(wxAuiNotebookEvent& evt);
+
+
 		signal_t mSignal;
+
+		DECLARE_EVENT_TABLE()
 	};
 }
 

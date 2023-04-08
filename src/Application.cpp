@@ -53,7 +53,8 @@ void test_data()
 	}
 	
 	
-	pof::DataModel<int, std::string, std::string> rl;
+	pof::DataModel rl;
+	rl.Adapt<int, std::string, std::string>();
 
 
 	auto& [r, s] = data[0];
@@ -109,6 +110,7 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
+	wxInitAllImageHandlers();
 	SetUpColorTable();
 
 

@@ -1,4 +1,9 @@
 #include "Workspace.h"
+BEGIN_EVENT_TABLE(pof::Workspace, wxPanel)
+	EVT_AUINOTEBOOK_PAGE_CLOSED(pof::Workspace::WORKSPACEBOOK, pof::Workspace::OnWorkspaceClose)
+END_EVENT_TABLE()
+
+
 
 pof::Workspace::Workspace( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
 {
@@ -27,13 +32,34 @@ boost::signals2::connection pof::Workspace::AddNotifSlot(signal_t::slot_type&& s
 	return mSignal.connect(std::forward<signal_t::slot_type>(slot));
 }
 
-bool pof::Workspace::AddSpace(wxWindow* space, const std::string& name, int img)
+bool pof::Workspace::AddSpace(const wxWindow* space, const std::string& name, int img)
 {
-	return mWorkspacebook->AddPage(space, name, false, img);
+	if (!space) return false;
+	// check if already inserted
+	auto pageidx = mWorkspacebook->GetPageIndex(space);
+	if (pageidx != wxNOT_FOUND) {
+		if (!space->IsShown()) space->Show();
+		mWorkspacebook->SetSelection(pageidx);
+		mSignal(pof::Workspace::Notif::ADDED, pageidx);
+		return true;
+	}
+	auto ret = mWorkspacebook->AddPage(space, name, true, img);
+	mSignal(pof::Workspace::Notif::ADDED, mWorkspacebook->GetSelection());
+	return ret;
 }
 
 
 
 void pof::Workspace::Style()
 {
+}
+
+void pof::Workspace::OnWorkspaceClose(wxAuiNotebookEvent& evt)
+{
+	auto pageIndex = evt.GetSelection();
+	if (pageIndex != wxNOT_FOUND) {
+		mWorkspacebook->RemovePage(pageIndex);
+		mSignal(Notif::CLOSED, pageIndex);
+	}
+	evt.Veto();
 }

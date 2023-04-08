@@ -16,6 +16,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <memory>
 #include <functional>
+#include <unordered_map>
 
 
 namespace pof {
@@ -28,6 +29,7 @@ namespace pof {
 		{
 			ID_BACK_UP_DATA = wxID_HIGHEST + 100,
 			ID_MODULE,
+			ID_WORKSPACE,
 			ID_USER_PROFILE,
 			ID_USER_CREATE_ACCOUNT,
 			ID_MENU_VIEW_LOG,
@@ -46,15 +48,19 @@ namespace pof {
 		void CreateLogView();
 		void CreateModules();
 		void CreateWorkSpace();
+		void CreateImageList();
 
 		void OnAbout(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
 
+		//slots
+		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 
 	private:
 		wxAuiManager mAuiManager;
 		pof::Modules* mModules = nullptr;
 		pof::Workspace* mWorkspace = nullptr;
+		std::unique_ptr<wxImageList> mImageList = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
 
 		DECLARE_EVENT_TABLE()
