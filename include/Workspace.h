@@ -49,7 +49,7 @@ namespace pof {
 		inline void SetImageList(wxImageList* imglist) { mWorkspacebook->SetImageList(imglist); }
 
 		boost::signals2::connection AddNotifSlot(signal_t::slot_type&& slot);
-		bool AddSpace(const wxWindow* space, const std::string& name = "EMPTY", int img = -1);
+		bool AddSpace(wxWindow* space, const std::string& name = "EMPTY", int img = -1);
 		void Style();
 	protected:
 		void OnWorkspaceClose(wxAuiNotebookEvent& evt);

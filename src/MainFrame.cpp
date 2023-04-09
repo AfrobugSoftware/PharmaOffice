@@ -87,7 +87,7 @@ void pof::MainFrame::CreateModules()
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
 
 	//set the module to view pipeline
-	mModules->mModuleViews.insert({mModules->mProducts, });
+	//mModules->mModuleViews.insert({mModules->mProducts, });
 		
 }
 
@@ -134,5 +134,4 @@ void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt
 		break;
 	}
 }
-a
 

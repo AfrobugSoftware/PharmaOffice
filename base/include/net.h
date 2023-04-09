@@ -74,6 +74,7 @@ namespace this_coro = net::this_coro;
 
 
 using namespace std::literals::chrono_literals;
+using namespace std::literals::string_literals;
 #define PHARMAOFFICE_USER_AGENT_STRING "pharmaoffice_1"
 
 namespace pof {

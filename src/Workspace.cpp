@@ -32,7 +32,7 @@ boost::signals2::connection pof::Workspace::AddNotifSlot(signal_t::slot_type&& s
 	return mSignal.connect(std::forward<signal_t::slot_type>(slot));
 }
 
-bool pof::Workspace::AddSpace(const wxWindow* space, const std::string& name, int img)
+bool pof::Workspace::AddSpace(wxWindow* space, const std::string& name, int img)
 {
 	if (!space) return false;
 	// check if already inserted
