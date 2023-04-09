@@ -425,7 +425,7 @@ namespace pof {
 					int version = 11
 				)
 				{
-					if constexpr (std::is_same_v<req_body_t, http::string_body::value_type>) {
+					if constexpr (std::is_same_v<req_body, http::string_body>) {
 						//if not empty body
 						//string bodies
 						m_req.version(version);
@@ -438,7 +438,7 @@ namespace pof {
 						m_req.body() = body;
 						m_req.prepare_payload();
 					}
-					else if constexpr (std::is_same_v<req_body_t, http::file_body::value_type>) {
+					else if constexpr (std::is_same_v<req_body, http::file_body>) {
 						//if request is a file body 
 						http::request<http::file_body> req_{ std::piecewise_construct,
 							std::make_tuple(std::move(body)) };
@@ -452,13 +452,26 @@ namespace pof {
 						m_req.prepare_payload();
 
 					}
-					else if constexpr (std::is_same_v<req_body_t, http::empty_body::value_type>) {
+					else if constexpr (std::is_same_v<req_body, http::empty_body>) {
 						// the body is empty, usual get request have empty bodies
 						m_req.version(version);
 						m_req.method(verb);
 						m_req.target(target.c_str());
 						m_req.set(http::field::host, host.c_str());
 						m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+					}
+					else if constexpr (std::is_same_v<req_body, http::vector_body>) {
+						m_req.version(version);
+						m_req.method(verb);
+						m_req.target(target.c_str());
+						m_req.set(http::field::host, host.c_str());
+						m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
+						m_req.set(http::field::content_type, "application/bin"s);
+						m_req.set(http::field::content_length, std::to_string(body.size()));
+
+						m_req.body() = std::move(body);
+						m_req.prepare_payload();
+
 					}
 					//ignore all other bodies for now
 				}

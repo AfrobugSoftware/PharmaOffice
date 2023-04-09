@@ -19,22 +19,30 @@ namespace pof {
 			using future_t = typename session_t::future_t;
 			using clock_t = std::chrono::system_clock;
 
-			datareq(const std::string& tar) : target(tar) {}
+			datareq(const std::string hst, const std::string& tar, const std::string& port):
+				m_host(hst),
+				m_port(port),
+				m_target(tar) {}
 
 			//blocks 
 			void operator()() const {
-			
+				auto req = std::make_shared<session_t>();
+				req_future = std::move(req->req<verb>(host, target, port));
 			}
 			void operator()(const pack_t& pack) {
-				
+				if constexpr (verb != http::verb::post) return;
+				auto req = std::make_shared<session_t>();
+				req_future = std::move(req->req<verb>(host, target, port, std::move(pack)));
 			}
 
 			inline std::future_status wait_for(clock_t::duration dur) {
 				return req_future.wait_for(dur);
 			}
-			const std::string& get_taget() const { return target; }
+			const std::string& get_taget() const { return m_target; }
 		private:
-			std::string target;
+			std::string m_host;
+			std::string m_port;
+			std::string m_target;
 			future_t req_future;
 
 		};
