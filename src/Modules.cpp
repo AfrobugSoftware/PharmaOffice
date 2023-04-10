@@ -66,7 +66,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer3 = new wxBoxSizer(wxVERTICAL);
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
-		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
+		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
 	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 0 );
 	CreateTree();
 	
@@ -89,9 +89,9 @@ void pof::Modules::CreateTree()
 {
 	mModuleTree->SetIndent(20);
 
-	
-	wxImageList* imgList = new wxImageList();
-	imgList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN));
+	const wxSize xy = wxArtProvider::GetSizeHint(wxART_LIST);
+	wxImageList* imgList = new wxImageList(xy.x, xy.y);
+	imgList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
 	
 	
 	mModuleTree->AssignImageList(imgList);
@@ -106,7 +106,7 @@ void pof::Modules::CreateTree()
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 0);
 	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 0);
 	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 0);
-	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products");
+	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 0);
 	
 	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 0);
 	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 0);

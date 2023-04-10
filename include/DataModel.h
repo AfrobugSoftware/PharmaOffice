@@ -8,6 +8,7 @@
 #include <Data.h>
 #include <data_tuple.h>
 #include <packages.h>
+#include <datareq.h>
 
 #include <boost/signals2.hpp>
 #include <unordered_map>
@@ -33,7 +34,10 @@ namespace pof {
 		using const_iterator = pof::base::data::const_iterator;
 		using row_type = pof::base::data::value_type;
 		using item_attr_map = std::unordered_map<wxDataViewItem, std::shared_ptr<wxDataViewItemAttr>>;
-		
+		using get_data_req_t = pof::base::datareq<boost::beast::http::verb::get>;
+		using set_data_req_t = pof::base::datareq<boost::beast::http::verb::post>;
+
+
 		typedef std::function<wxVariant(size_t, size_t)> get_function_t;
 		typedef std::function<bool(size_t, size_t, const wxVariant&)> set_function_t;
 		typedef std::pair<get_function_t, set_function_t> SpeicalColHandler_t;

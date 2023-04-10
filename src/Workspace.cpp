@@ -1,6 +1,6 @@
 #include "Workspace.h"
 BEGIN_EVENT_TABLE(pof::Workspace, wxPanel)
-	EVT_AUINOTEBOOK_PAGE_CLOSED(pof::Workspace::WORKSPACEBOOK, pof::Workspace::OnWorkspaceClose)
+	EVT_AUINOTEBOOK_PAGE_CLOSE(pof::Workspace::WORKSPACEBOOK, pof::Workspace::OnWorkspaceClose)
 END_EVENT_TABLE()
 
 
@@ -11,10 +11,15 @@ pof::Workspace::Workspace( wxWindow* parent, wxWindowID id, const wxPoint& pos, 
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
 	
 	mWorkspacebook = new wxAuiNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE|wxAUI_NB_MIDDLE_CLICK_CLOSE|wxAUI_NB_SCROLL_BUTTONS|wxAUI_NB_TAB_EXTERNAL_MOVE|wxAUI_NB_TAB_MOVE|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TOP|wxAUI_NB_WINDOWLIST_BUTTON|wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxNO_BORDER );
-	mWorkspacebook->SetBackgroundColour( wxColour( 255, 255, 255 ) );
+	mWorkspacebook->SetBackgroundColour(wxTheColourDatabase->Find("Aqua"));
 	
+	auto workspacetabart = new pof::WorkspaceTabArt;
+	mWorkspacebook->SetArtProvider(workspacetabart);
+
+	//test panel
 	m_panel3 = new wxPanel( mWorkspacebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	mWorkspacebook->AddPage( m_panel3, wxT("a page"), true, wxNullBitmap );
+	m_panel3->SetBackgroundColour(*wxWHITE);
+	mWorkspacebook->AddPage( m_panel3, wxT("This is a test page..."), true, wxNullBitmap );
 	
 	bSizer4->Add( mWorkspacebook, 1, wxEXPAND | wxALL, 0 );
 	

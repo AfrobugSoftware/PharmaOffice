@@ -25,7 +25,8 @@ void pof::ArtProvider::CreateArtStore()
 
 wxSize pof::ArtProvider::DoGetSizeHint(const wxArtClient& client)
 {
-	return wxSize();
+	//should return a size for a particular clients
+	return wxSize(48,48);
 }
 
 wxBitmap pof::ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& clinet, const wxSize& size)

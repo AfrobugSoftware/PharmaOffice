@@ -334,8 +334,9 @@ namespace pof {
 				{
 					const int err = code.value();
 					if (err == net::error::eof
-						|| err == net::error::basic_errors::operation_aborted) {
-						return;
+						|| err == net::error::basic_errors::operation_aborted 
+						|| err == net::ssl::error::stream_truncated) { //ignore stream truncated error
+						return; 
 					}
 					spdlog::error("Error: {}", code.message());
 					throw std::system_error(code);
@@ -346,11 +347,15 @@ namespace pof {
 						return;
 					}
 					co_spawn(m_io.get_executor(), run(std::move(results)), [&](std::exception_ptr ptr, resp_t resp) {
-						if (ptr) {
-							m_promise.set_exception(ptr);
-						}
-						else {
-							m_promise.set_value(resp);
+						try {
+							if (ptr) {
+								m_promise.set_exception(ptr);
+							}
+							else {
+								m_promise.set_value(resp);
+							}
+						}catch (std::future_error& exp) {
+							//what to do here ?? incase of broken future pipes
 						}
 					});
 				}

@@ -5,7 +5,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/split_member.hpp>
-
+#include <boost/uuid/uuid.hpp>
 
 
 
@@ -43,7 +43,8 @@ namespace pof
                 float64,
                 datetime,
                 text,
-                blob
+                blob,
+                uuid
             };
 
             using clock_t = std::chrono::system_clock;
@@ -51,6 +52,7 @@ namespace pof
             using text_t = std::string;
             using blob_t = std::vector<std::uint8_t>;
             using metadata_t = std::vector<kind>;
+            using uuid_t = boost::uuids::uuid;
 
             using data_t = v2::variant<
                 std::int32_t,
@@ -61,7 +63,8 @@ namespace pof
                 double,
                 datetime_t,
                 text_t,
-                blob_t
+                blob_t,
+                uuid_t
             >;
             
             using state_t = std::bitset<static_cast<size_t>(std::underlying_type_t<state>(state::MAX_STATE))>;
@@ -202,6 +205,11 @@ namespace pof
                             case pof::base::data::kind::blob:
                                 ar & boost::variant2::get<blob_t>(d);
                                 break;
+                            case pof::base::data::kind::uuid:
+                            {
+                                ar & boost::variant2::get<uuid_t>(d).data;
+                                break;
+                            }
                             default:
                                 break;
                             }
@@ -306,6 +314,12 @@ namespace pof
                             ar >> temp;
                             r.emplace_back(std::move(temp));
                             break;
+                        }
+                        case pof::base::data::kind::uuid:
+                        {
+                            uuid_t uuid;
+                            ar >> uuid.data;
+                            r.emplace_back(std::move(uuid));
                         }
                         default:
                             break;

@@ -1,20 +1,51 @@
 #pragma once
 #include <boost/noncopyable.hpp>
+#include <ranges>
+#include <algorithm>
 #include "DataModel.h"
 
 namespace pof {
 	class ProductManager : private boost::noncopyable {
 	public:
-		ProductManager() {}
+		enum : std::uint8_t {
+			PRODUCT_UUID,
+			PRODUCT_NAME,
+			PRODUCT_CLASS,
+			PRODUCT_UNIT_TYPE,
+			PRODUCT_DOSAGE, // in figures, 
+			PRODUCT_DOSAGE_WORDS, //In words
+			PROUDCT_STRENGTH, // GIVEN IN mg, g %v/v, %m/v -> need to have a list of approved stengths
+			PRODUCT_GENERIC_NAME, //FOR PHARMACEUTICES WITH GENERIC NAME
+			PRODUCT_USAGE_INFO,
+			
+
+			PRODUCT_SIDEEFFECTS,
+			PRODUCT_BARCODE,
+		};
+
+		enum : std::uint8_t {
+			INVENTORY_ID,
+			INVENTORY_PRODUCT_UUID, //same UUID AS THE PRODUCT
+			INVENTORY_EXPIRE_DATE, // MMYY FORMAT 
+			INVENTORY_INPUT_DATE, // DATE ADDED 
+			INVENTORY_STOCK_COUNT, //TRACK THE PRESENT STOCK
+			INVENTORY_MANUFACTURER_NAME,
+			INVENTORY_MANUFACTURER_ADDRESS_ID,
+			INVENTORY_LOT_NUMBER, //HAVE MULTIPLE BACTHES -> 
+		};
+
+
+		ProductManager();
 		~ProductManager() {}
 
-		inline const pof::DataModel& GetBaseProductData() const { return mProductBaseData; }
-		inline const pof::DataModel& GetAdditionalProductData() const { return mProductAdditionalData; }
-		const pof::DataModel& GetInventoryForProduct(pof::DataModel::const_iterator ProductItem) const;
+		bool LoadProductData();
+		bool LoadInventoryData();
+
+		inline const pof::DataModel& GetBaseProductData() const { return mProductData; }
+		const pof::DataModel& GetInventoryForProduct() const { return mInventoryData; }
 
 	private:
-		pof::DataModel mProductBaseData;
-		pof::DataModel mProductAdditionalData;
+		pof::DataModel mProductData;
 		pof::DataModel mInventoryData;
 	};
 

@@ -14,6 +14,7 @@
 #include <vector>
 #include <boost/signals2/signal.hpp>
 #include "ArtProvider.h"
+#include "WorkspaceTabArt.h"
 
 namespace pof {
 	class Workspace : public wxPanel
