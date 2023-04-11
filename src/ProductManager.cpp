@@ -12,6 +12,7 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
+		pof::base::data::text_t,
 		pof::base::data::text_t
 	>();
 	

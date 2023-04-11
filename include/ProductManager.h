@@ -17,7 +17,7 @@ namespace pof {
 			PROUDCT_STRENGTH, // GIVEN IN mg, g %v/v, %m/v -> need to have a list of approved stengths
 			PRODUCT_GENERIC_NAME, //FOR PHARMACEUTICES WITH GENERIC NAME
 			PRODUCT_USAGE_INFO,
-			
+			PRODUCT_UNIT_PRICE,
 
 			PRODUCT_SIDEEFFECTS,
 			PRODUCT_BARCODE,
@@ -45,6 +45,7 @@ namespace pof {
 		const pof::DataModel& GetInventoryForProduct() const { return mInventoryData; }
 
 	private:
+		//should also contain the product view
 		pof::DataModel mProductData;
 		pof::DataModel mInventoryData;
 	};

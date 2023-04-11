@@ -10,8 +10,8 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 
-file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h)
-file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h ${PROJECT_SOURCE_DIR}/include/controls/*.h)
+file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/controls/*.cpp)
 
 if(CMAKE_SYSTEM MATCHES Windows)
     set(APP WIN32)
