@@ -7,6 +7,7 @@
 #include <chrono>
 #include <sstream>
 
+#include <boost/uuid/uuid.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
@@ -51,6 +52,7 @@ namespace pof {
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 	private:
+		boost::uuids::uuid mApplicationUUID;
 		pof::MainFrame* mMainFrame;
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;
