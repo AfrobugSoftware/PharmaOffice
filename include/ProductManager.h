@@ -40,14 +40,26 @@ namespace pof {
 
 		bool LoadProductData();
 		bool LoadInventoryData();
+		bool LoadCategories();
 
-		inline const pof::DataModel& GetBaseProductData() const { return mProductData; }
-		const pof::DataModel& GetInventoryForProduct() const { return mInventoryData; }
+
+		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
+		const pof::DataModel& GetInventoryForProduct() const { return *mInventoryData; }
+		const pof::base::data& GetCategories() const { return mCategories; }
+
+
+		void ReSizeColumns();
 
 	private:
+
+		pof::base::data mCategories; 
+		pof::base::packer mPacker{mCategories};
+		pof::base::unpacker mUnpacker{mCategories};
+
+
 		//should also contain the product view
-		pof::DataModel mProductData;
-		pof::DataModel mInventoryData;
+		std::unique_ptr<pof::DataModel> mProductData;
+		std::unique_ptr<pof::DataModel> mInventoryData;
 	};
 
 };

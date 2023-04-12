@@ -13,6 +13,8 @@
 #include "Modules.h"
 #include "Workspace.h"
 
+#include "ProductView.h"
+
 #include <spdlog/sinks/basic_file_sink.h>
 #include <memory>
 #include <functional>
@@ -34,8 +36,10 @@ namespace pof {
 			ID_USER_CREATE_ACCOUNT,
 			ID_MENU_VIEW_LOG,
 			ID_STATUS_BAR,
-			ID_TOOL_BAR
+			ID_TOOL_BAR,
 
+			//MENUS
+			ID_MENU_VIEW_SHOW_MODULES,
 
 		};
 
@@ -49,6 +53,8 @@ namespace pof {
 		void CreateModules();
 		void CreateWorkSpace();
 		void CreateImageList();
+		void CreateViews();
+
 
 		void OnAbout(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
@@ -62,6 +68,9 @@ namespace pof {
 		pof::Workspace* mWorkspace = nullptr;
 		std::unique_ptr<wxImageList> mImageList = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
+
+		//views
+		pof::ProductView* mProductView = nullptr;
 
 		DECLARE_EVENT_TABLE()
 	};

@@ -24,8 +24,9 @@ pof::MainFrame::~MainFrame()
 
 void pof::MainFrame::CreateMenuBar()
 {
-	constexpr const size_t MenuCount = 6;
+	constexpr const size_t MenuCount = 7;
 	auto Menus = std::array<wxMenu*, MenuCount>{
+		new wxMenu,
 		new wxMenu,
 		new wxMenu,
 		new wxMenu,
@@ -39,6 +40,7 @@ void pof::MainFrame::CreateMenuBar()
 		"Products",
 		"Formulary",
 		"Prescriptions",
+		"View",
 		"Extentions",
 		"Help"
 	};
@@ -107,9 +109,20 @@ void pof::MainFrame::CreateImageList()
 	mModules->SetImageList(mImageList.get());
 }
 
+void pof::MainFrame::CreateViews()
+{
+	mProductView = new pof::ProductView(mWorkspace, )
+}
+
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
-
+	wxAboutDialogInfo info;
+	info.SetName(wxT("D-Glopa PharmaOffice"));
+	info.SetVersion(wxT("0.0.1 pre beta"));
+	info.SetDescription(wxT("Pharmacy mamagement system aid in the managment of pharmaceutical products, sale, transactions, prescription, expiry and so much more"));
+	info.SetCopyright(wxT("(C) 2023 D-Glopa Technologies"));
+	info.AddDeveloper("Ferife Zino :)");
+	wxAboutBox(info);
 }
 
 void pof::MainFrame::OnClose(wxCloseEvent& evt)

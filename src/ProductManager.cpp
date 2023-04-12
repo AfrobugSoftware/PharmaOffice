@@ -1,7 +1,9 @@
 #include "ProductManager.h"
 
 pof::ProductManager::ProductManager() {
-	mProductData.Adapt<
+	mProductData = std::make_unique<pof::DataModel>();
+	mInventoryData = std::make_unique<pof::DataModel>();
+	mProductData->Adapt<
 		pof::base::data::uuid_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
@@ -16,7 +18,7 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t
 	>();
 	
-	mInventoryData.Adapt<
+	mInventoryData->Adapt<
 		std::uint64_t,
 		pof::base::data::uuid_t,
 		pof::base::data::datetime_t,
@@ -26,6 +28,8 @@ pof::ProductManager::ProductManager() {
 		std::uint64_t,
 		pof::base::data::text_t
 	>();
+
+
 
 }
 

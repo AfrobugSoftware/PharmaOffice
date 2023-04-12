@@ -52,7 +52,7 @@ namespace pof {
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 	private:
-		boost::uuids::uuid mApplicationUUID;
+		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;
