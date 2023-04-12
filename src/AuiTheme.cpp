@@ -13,11 +13,11 @@ wxColour pof::AuiTheme::sSashColour = *wxWHITE;
 wxColour pof::AuiTheme::sBackgroundColour = *wxWHITE;
 wxColour pof::AuiTheme::sBorderColour = *wxBLACK;
 wxColour pof::AuiTheme::sActiveCaptionColour = *wxWHITE;
-wxColour pof::AuiTheme::sActiveGradientColour = *wxRED;
+wxColour pof::AuiTheme::sActiveGradientColour = *wxWHITE;
 wxColour pof::AuiTheme::sActiveTextCaptionColour = *wxBLACK;
-wxColour pof::AuiTheme::sInactiveTextCaptionColour = *wxWHITE;
+wxColour pof::AuiTheme::sInactiveTextCaptionColour = *wxBLACK;
 wxColour pof::AuiTheme::sInactiveCaptionColour = *wxWHITE;
-wxColour pof::AuiTheme::sInactiveGradientColour = *wxBLACK;
+wxColour pof::AuiTheme::sInactiveGradientColour = *wxWHITE;
 
 void pof::AuiTheme::Update(wxAuiDockArt* art)
 {

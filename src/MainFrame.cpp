@@ -6,7 +6,8 @@ END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
 : wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this, AUIMGRSTYLE) {
-
+	SetBackgroundColour(*wxWHITE); //wrap in theme
+	SetupAuiTheme();
 	CreateMenuBar();
 	CreateWorkSpace();
 	CreateLogView();
@@ -96,7 +97,7 @@ void pof::MainFrame::CreateModules()
 
 void pof::MainFrame::CreateWorkSpace()
 {
-	mWorkspace = new pof::Workspace(this, ID_WORKSPACE);
+	mWorkspace = new pof::Workspace(this, ID_WORKSPACE, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 
 
 	mAuiManager.AddPane(mWorkspace, wxAuiPaneInfo().Name("Workspace").CaptionVisible(false).CenterPane().Show());
@@ -112,8 +113,15 @@ void pof::MainFrame::CreateImageList()
 
 void pof::MainFrame::CreateViews()
 {
-	mProductView = new pof::ProductView(mWorkspace, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mProductView = new pof::ProductView(this, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mProductView->Hide();
+}
 
+void pof::MainFrame::SetupAuiTheme()
+{
+	auto auiArtProvider = mAuiManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+	pof::AuiTheme::Register(std::bind_front(&pof::MainFrame::OnAuiThemeChangeSlot, this));
 }
 
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
@@ -148,5 +156,11 @@ void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt
 	default:
 		break;
 	}
+}
+
+void pof::MainFrame::OnAuiThemeChangeSlot()
+{
+	auto auiArtProvider = mAuiManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
 }
 

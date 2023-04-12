@@ -21,6 +21,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 {
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(AUIMGRSTYLE);
+	SetBackgroundColour(*wxWHITE); //move to theme
 	CreateToolBar();
 	CreateDataView();
 
@@ -89,7 +90,7 @@ void pof::ProductView::OnAuiThemeChange()
 void pof::ProductView::CreateDataView()
 {
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+	m_dataViewCtrl1 = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product Name"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductClass = m_dataViewCtrl1->AppendIconTextColumn(wxT("Product Class"), 2, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);

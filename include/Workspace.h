@@ -22,8 +22,8 @@ namespace pof {
 	private:
 
 	protected:
-		wxAuiNotebook* mWorkspacebook;
-		wxPanel* m_panel3;
+		wxAuiNotebook* mWorkspacebook = nullptr;
+		wxPanel* m_panel3 = nullptr;
 
 	public:
 		enum {
@@ -40,7 +40,7 @@ namespace pof {
 		};
 		using signal_t = boost::signals2::signal<void(Notif notif, size_t page)>;
 
-		Workspace(wxWindow* parent, wxWindowID id = WORKSPACEBOOK, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(829, 644), long style = wxTAB_TRAVERSAL);
+		Workspace(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(829, 644), long style = wxTAB_TRAVERSAL);
 		~Workspace();
 
 		wxAuiNotebook& GetWorkspacebook() { return *mWorkspacebook; }
