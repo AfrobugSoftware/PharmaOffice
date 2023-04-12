@@ -52,9 +52,10 @@ namespace pof {
 		boost::signals2::connection AddNotifSlot(signal_t::slot_type&& slot);
 		bool AddSpace(wxWindow* space, const std::string& name = "EMPTY", int img = -1);
 		void Style();
+
+
 	protected:
 		void OnWorkspaceClose(wxAuiNotebookEvent& evt);
-
 
 		signal_t mSignal;
 

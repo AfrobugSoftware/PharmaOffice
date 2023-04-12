@@ -8,6 +8,7 @@
 #include <wx/srchctrl.h>
 #include <wx/frame.h>
 
+#include "AuiTheme.h"
 #include "LogSink.h"
 #include "ArtProvider.h"
 #include "Modules.h"
@@ -25,6 +26,7 @@ namespace pof {
 	class MainFrame : public wxFrame
 	{
 	public:
+		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 
 		//menu ID
 		enum
@@ -34,12 +36,13 @@ namespace pof {
 			ID_WORKSPACE,
 			ID_USER_PROFILE,
 			ID_USER_CREATE_ACCOUNT,
-			ID_MENU_VIEW_LOG,
 			ID_STATUS_BAR,
 			ID_TOOL_BAR,
+			ID_PRODUCT_VIEW,
 
 			//MENUS
 			ID_MENU_VIEW_SHOW_MODULES,
+			ID_MENU_VIEW_LOG,
 
 		};
 
@@ -55,12 +58,14 @@ namespace pof {
 		void CreateImageList();
 		void CreateViews();
 
+		void SetupAuiTheme();
 
 		void OnAbout(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
 
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
+		void OnAuiThemeChangeSlot();
 
 	private:
 		wxAuiManager mAuiManager;

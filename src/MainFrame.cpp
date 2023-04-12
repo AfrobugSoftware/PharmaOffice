@@ -5,12 +5,13 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
-: wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this) {
+: wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this, AUIMGRSTYLE) {
 
 	CreateMenuBar();
-	CreateModules();
 	CreateWorkSpace();
 	CreateLogView();
+	CreateViews();
+	CreateModules();
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
@@ -89,7 +90,7 @@ void pof::MainFrame::CreateModules()
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
 
 	//set the module to view pipeline
-	//mModules->mModuleViews.insert({mModules->mProducts, });
+	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
 		
 }
 
@@ -111,14 +112,15 @@ void pof::MainFrame::CreateImageList()
 
 void pof::MainFrame::CreateViews()
 {
-	mProductView = new pof::ProductView(mWorkspace, )
+	mProductView = new pof::ProductView(mWorkspace, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+
 }
 
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
 	wxAboutDialogInfo info;
 	info.SetName(wxT("D-Glopa PharmaOffice"));
-	info.SetVersion(wxT("0.0.1 pre beta"));
+	info.SetVersion(wxT("0.0.1 pre beta")); //version string need to come from settings
 	info.SetDescription(wxT("Pharmacy mamagement system aid in the managment of pharmaceutical products, sale, transactions, prescription, expiry and so much more"));
 	info.SetCopyright(wxT("(C) 2023 D-Glopa Technologies"));
 	info.AddDeveloper("Ferife Zino :)");

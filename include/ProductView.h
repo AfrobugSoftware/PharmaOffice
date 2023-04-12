@@ -22,6 +22,8 @@
 #include <wx/sizer.h>
 #include <wx/panel.h>
 
+#include "AuiTheme.h"
+
 namespace pof
 {
 	class ProductView : public wxPanel
@@ -73,16 +75,18 @@ namespace pof
 		wxDataViewColumn* mStockLevel = nullptr;
 
 	public:
-
+		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		ProductView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(727, 557), long style = wxNO_BORDER | wxTAB_TRAVERSAL); wxAuiManager m_mgr;
 
 		~ProductView();
 		void ReSizeColumns();
 		void SaveColumnWidths();
+		void SetupAuiTheme();
 
 
 		//events
 		void OnResize(wxSizeEvent& evt);
+		void OnAuiThemeChange();
 
 	protected:
 		void CreateDataView();

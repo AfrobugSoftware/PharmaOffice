@@ -48,8 +48,6 @@ namespace pof {
 		const pof::base::data& GetCategories() const { return mCategories; }
 
 
-		void ReSizeColumns();
-
 	private:
 
 		pof::base::data mCategories; 

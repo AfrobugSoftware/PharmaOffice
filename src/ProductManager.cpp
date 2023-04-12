@@ -33,4 +33,19 @@ pof::ProductManager::ProductManager() {
 
 }
 
+bool pof::ProductManager::LoadProductData()
+{
+	return false;
+}
+
+bool pof::ProductManager::LoadInventoryData()
+{
+	return false;
+}
+
+bool pof::ProductManager::LoadCategories()
+{
+	return false;
+}
+
 

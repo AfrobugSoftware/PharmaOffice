@@ -1,6 +1,7 @@
 #include <wx/app.h>
 #include <wx/busyinfo.h>
 #include <wx/msgdlg.h>
+#include <wx/aui/framemanager.h>
 
 #include <filesystem>
 #include <netmanager.h>

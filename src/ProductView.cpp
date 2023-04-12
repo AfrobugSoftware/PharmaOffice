@@ -20,10 +20,11 @@ static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
 pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
 {
 	m_mgr.SetManagedWindow(this);
-	m_mgr.SetFlags(wxAUI_MGR_DEFAULT);
+	m_mgr.SetFlags(AUIMGRSTYLE);
 	CreateToolBar();
 	CreateDataView();
 
+	SetupAuiTheme();
 	m_mgr.Update();
 }
 
@@ -41,31 +42,48 @@ void pof::ProductView::ReSizeColumns()
 	
 	int colWidth = static_cast<int>(width * (15.0f * fact));
 	colWidth = colWidth > mSerialNumCol->GetWidth() ? colWidth : mSerialNumCol->GetWidth();
-	mSerialNumCol->SetMinWidth(colWidth);
+	mSerialNumCol->SetWidth(colWidth);
 
 
 	colWidth = static_cast<int>(width * (55.0f * fact));
 	colWidth = colWidth > mProductNameCol->GetWidth() ? colWidth : mProductNameCol->GetWidth();
-	mProductNameCol->SetMinWidth(colWidth);
+	mProductNameCol->SetWidth(colWidth);
 
 	colWidth = static_cast<int>(width * (10.0f * fact));
 	colWidth = colWidth > mProductClass ->GetWidth() ? colWidth : mProductClass->GetWidth();
-	mProductClass->SetMinWidth(colWidth);
+	mProductClass->SetWidth(colWidth);
 
 	colWidth = static_cast<int>(width * (10.0f * fact));
 	colWidth = colWidth > mProductUnitPriceCol->GetWidth() ? colWidth : mProductUnitPriceCol->GetWidth();
-	mProductUnitPriceCol->SetMinWidth(colWidth);
+	mProductUnitPriceCol->SetWidth(colWidth);
 
 	colWidth = static_cast<int>(width * (10.0f * fact));
 	colWidth = colWidth > mStockLevel->GetWidth() ? colWidth : mStockLevel->GetWidth();
-	mProductUnitPriceCol->SetMinWidth(colWidth);
+	mProductUnitPriceCol->SetWidth(colWidth);
 
+}
+
+void pof::ProductView::SaveColumnWidths()
+{
+}
+
+void pof::ProductView::SetupAuiTheme()
+{
+	auto auiArtProvider = m_mgr.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::ProductView::OnAuiThemeChange, this));
 }
 
 void pof::ProductView::OnResize(wxSizeEvent& evt)
 {
 	ReSizeColumns();
 	evt.Skip();
+}
+
+void pof::ProductView::OnAuiThemeChange()
+{
+	auto auiArtProvider = m_mgr.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
 }
 
 void pof::ProductView::CreateDataView()
@@ -95,6 +113,6 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 	m_auiToolBar1->Realize();
 
-	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane());
+	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 40).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 }
