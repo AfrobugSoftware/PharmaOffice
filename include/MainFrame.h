@@ -43,6 +43,8 @@ namespace pof {
 			//MENUS
 			ID_MENU_VIEW_SHOW_MODULES,
 			ID_MENU_VIEW_LOG,
+			ID_MENU_ACCOUNT_SIGN_OUT,
+
 
 		};
 

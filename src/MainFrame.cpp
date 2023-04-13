@@ -26,8 +26,9 @@ pof::MainFrame::~MainFrame()
 
 void pof::MainFrame::CreateMenuBar()
 {
-	constexpr const size_t MenuCount = 7;
+	constexpr const size_t MenuCount = 8;
 	auto Menus = std::array<wxMenu*, MenuCount>{
+		new wxMenu,
 		new wxMenu,
 		new wxMenu,
 		new wxMenu,
@@ -38,6 +39,7 @@ void pof::MainFrame::CreateMenuBar()
 	};
 
 	auto MenuTitle = std::array<wxString, MenuCount>{
+		"Accounts",
 		"Pharmacy",
 		"Products",
 		"Formulary",

@@ -39,6 +39,7 @@ void pof::Modules::SetupFont()
 }
 pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
+	SetDoubleBuffered(true);
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
@@ -68,6 +69,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
 		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
 	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 0 );
+	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();
 	
 	m_panel2->SetSizer( bSizer3 );

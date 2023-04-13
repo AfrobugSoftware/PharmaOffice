@@ -105,15 +105,26 @@ void pof::ProductView::CreateDataView()
 void pof::ProductView::CreateToolBar()
 {
 	m_auiToolBar1 = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	m_auiToolBar1->SetToolBitmapSize(wxSize(16,16));
 
-	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(500, -1), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	m_searchCtrl1->ShowSearchButton(true);
 #endif
 	m_searchCtrl1->ShowCancelButton(true);
+	m_searchCtrl1->SetDescriptiveText("Search products by name");
+	wxMenu* menu = new wxMenu;
+	menu->AppendRadioItem(ID_SEARCH_BY_NAME, "Search by name");
+	menu->AppendRadioItem(ID_SEARCH_BY_CATEGORY, "Search by category");
+	menu->Check(ID_SEARCH_BY_NAME, true);
+
+	m_searchCtrl1->SetMenu(menu);
 	m_auiToolBar1->AddControl(m_searchCtrl1);
+
+
+
 	m_auiToolBar1->Realize();
 
-	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 40).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 }
