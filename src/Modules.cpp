@@ -102,7 +102,7 @@ void pof::Modules::CreateTree()
 
 	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 0);
 	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 0);
-	mApplication   = mModuleTree->AppendItem(root, "Settings", 0);
+	mWarehouse   = mModuleTree->AppendItem(root, "Warehouse", 0);
 
 
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 0);
@@ -125,7 +125,7 @@ void pof::Modules::Style()
 	SetupFont();
 	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
-	mModuleTree->SetItemFont(mApplication, mFonts[FONT_MAIN]);
+	mModuleTree->SetItemFont(mWarehouse, mFonts[FONT_MAIN]);
 	
 	mModuleTree->SetItemFont(mPrescriptions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mPaitents, mFonts[FONT_CHILD]);

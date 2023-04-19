@@ -18,6 +18,7 @@
 #include "Account.h"
 #include "Pharmacy.h"
 #include "MainFrame.h"
+#include "ProductManager.h"
 
 
 namespace js = nlohmann;
@@ -50,6 +51,7 @@ namespace pof {
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		
 		pof::base::net_manager mNetManager;
+		pof::ProductManager mProductManager;
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 	private:

@@ -12,6 +12,12 @@ pof::base::data::data(size_t count)
   modified(pof::base::data::clock_t::now())
 {}
 
+pof::base::data::data(data&& d) noexcept
+{
+	metadata = std::move(d.metadata);
+	value = std::move(d.value);
+}
+
 pof::base::data::~data()
 {
 
@@ -75,6 +81,10 @@ void pof::base::data::update(const typename row_t::first_type::value_type& d, si
 	row.second.set((std::underlying_type_t<state>)state::MODIFIED);
 	bModified = true;
 	modified = clock_t::now();
+}
+
+void pof::base::data::emplace(typename row_t::first_type&& vals)
+{
 }
 
 const pof::base::data::row_t & pof::base::data::at(size_t i) const

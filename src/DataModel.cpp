@@ -1,10 +1,38 @@
 #include "DataModel.h"
 
+pof::DataModel::DataModel(const DataModel& model)
+	:pack{datastore},
+	unpack{datastore} {
+	datastore = model.datastore;
+}
+
+pof::DataModel::DataModel(DataModel&& model) noexcept
+	: pack{ datastore }, unpack{datastore} {
+	datastore = std::move(model.datastore);
+}
+
+pof::DataModel& pof::DataModel::operator=(const DataModel& model)
+{
+	datastore = model.datastore;
+	return (*this);
+}
+
+pof::DataModel& pof::DataModel::operator=(DataModel&& model) noexcept
+{
+	datastore = std::move(model.datastore);
+	return (*this);
+}
+
 pof::base::pack_t pof::DataModel::Pack() const {
 	return pack();
 }
 void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 	unpack(package);
+}
+
+void pof::DataModel::Emplace(pof::base::data&& d)
+{
+	datastore = std::forward<pof::base::data>(d);
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
@@ -67,7 +95,7 @@ wxString pof::DataModel::GetColumnType(unsigned int col) const
 	case pof::base::data::kind::float64:
 		break;
 	case pof::base::data::kind::datetime:
-		break;
+		return "datetime";
 	case pof::base::data::kind::text:
 		return "string";
 	case pof::base::data::kind::blob:

@@ -3,7 +3,13 @@
 #include <ranges>
 #include <algorithm>
 #include "DataModel.h"
-
+/// <summary>
+/// ADD PHARMACOLOGICAL UNITS AS A CLASS
+///		a ratio for converting from one unit to another and illegal conversion
+///		also to and from string
+/// 
+///		Prescriptions page called backlog
+/// </summary>
 namespace pof {
 	class ProductManager : private boost::noncopyable {
 	public:
@@ -47,6 +53,7 @@ namespace pof {
 		const pof::DataModel& GetInventoryForProduct() const { return *mInventoryData; }
 		const pof::base::data& GetCategories() const { return mCategories; }
 
+		void EmplaceProductData(pof::base::data&& data);
 
 	private:
 

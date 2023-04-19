@@ -67,6 +67,7 @@ namespace pof {
 		std::string GetText(const_iterator item) const;
 		int GetImage(const_iterator item) const;
 
+		bool CheckPrivilage();
 		inline void SetImageList(wxImageList* imglist) { mModuleTree->SetImageList(imglist); }
 		boost::signals2::connection SetSlot(signal_t::slot_type&& slot);
 	protected:
@@ -84,7 +85,7 @@ namespace pof {
 		//std::array<wxWindow*, 6> mModuleWindows;
 		wxTreeItemId mPharmacy;
 		wxTreeItemId mTransactions;
-		wxTreeItemId mApplication;
+		wxTreeItemId mWarehouse;
 
 		wxTreeItemId mPrescriptions;
 		wxTreeItemId mPaitents;
@@ -94,7 +95,7 @@ namespace pof {
 		wxTreeItemId mOrders;
 		wxTreeItemId mRequisitions;
 		wxTreeItemId mReports;
-
+		wxTreeItemId mSupply;
 
 
 

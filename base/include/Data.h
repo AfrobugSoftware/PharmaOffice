@@ -78,6 +78,8 @@ namespace pof
             //ctors
             data();
             data(size_t count);
+            data(const data& d);
+            data(data&& d) noexcept;
             ~data();
 
             inline data(const data& rhs) : 

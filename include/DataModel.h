@@ -57,10 +57,20 @@ namespace pof {
 		DataModel() : pack(datastore), unpack(datastore) {
 		}
 		
+		DataModel(const DataModel& model);
+		DataModel(DataModel&& model) noexcept;
+
+
 		virtual ~DataModel() {}
+
+		DataModel& operator=(const DataModel& model);
+		DataModel& operator=(DataModel&& model) noexcept;
+
+
 
 		pof::base::pack_t Pack() const;
 		void Unpack(const pof::base::pack_t& package);
+		void Emplace(pof::base::data&& d);
 	
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);

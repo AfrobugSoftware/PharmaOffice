@@ -2,6 +2,7 @@
 
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -50,6 +51,8 @@ void pof::MainFrame::CreateMenuBar()
 	};
 
 
+	//product menu
+	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
 	SetMenuBar(bar);
@@ -143,6 +146,63 @@ void pof::MainFrame::OnClose(wxCloseEvent& evt)
 	mLogView.reset();
 
 	evt.Skip();
+}
+
+void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
+{
+	wxFileDialog dialog(this);
+	if (dialog.ShowModal() == wxID_OK)
+	{
+		std::string filename = dialog.GetPath().ToStdString();
+		if (filename.empty()) return;
+		std::filesystem::path fp(filename);
+		if (fp.extension().string() != ".json") {
+			wxMessageBox("File is not a JSON file, with proper extension", "JSON IMPORT");
+			return;
+		}
+		std::fstream fs(fp, std::ios::in);
+		if (!fs.is_open()) {
+			wxMessageBox("Cannot Open JSON FILE, file corrrupted", "JSON IMPORT", wxICON_ERROR | wxOK);
+			return;
+		}
+		try {
+			pof::base::data datastore;
+			nlohmann::json js;
+			fs >> js;
+			if (js.empty()) {
+				wxMessageBox("JSON READ ERROR, FILE CORRUPTED", "JSON IMPORT", wxICON_ERROR | wxOK);
+				return;
+			}
+
+			wxProgressDialog progress("Importing json", "Reading file...", js.size());
+			size_t value = 0;
+			for (auto iter = js.begin(); iter != js.end(); iter++) {
+				nlohmann::json& tempjs = *iter;
+				pof::base::data::row_t row; 
+
+				row.first.emplace_back(tempjs["Category id"]);
+				row.first.emplace_back(tempjs["Name"]); //name
+				row.first.emplace_back(tempjs["Package size"]);
+				row.first.emplace_back(tempjs["Serial number"]);
+				row.first.emplace_back(tempjs["Stock count"]);
+				row.first.emplace_back(tempjs["Unit price"]);
+
+				datastore.insert(std::move(row));
+
+				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {
+					wxMessageBox("IMPORT CANCELED", "JSON IMPORT");
+					return;
+				}
+			}
+			//write the data to the product manager 
+			
+		}
+		catch (const std::exception& exp) {
+			wxMessageBox(exp.what(), "JSON IMPORT", wxICON_ERROR | wxOK);
+			return;
+		}
+	}
+
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

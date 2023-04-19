@@ -7,16 +7,22 @@
 #include <wx/aui/auibar.h>
 #include <wx/srchctrl.h>
 #include <wx/frame.h>
+#include <wx/progdlg.h>
+
 
 #include "AuiTheme.h"
 #include "LogSink.h"
 #include "ArtProvider.h"
 #include "Modules.h"
 #include "Workspace.h"
-
 #include "ProductView.h"
+#include <Data.h>
 
 #include <spdlog/sinks/basic_file_sink.h>
+#include <nlohmann/json.hpp>
+
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <functional>
 #include <unordered_map>
@@ -44,6 +50,7 @@ namespace pof {
 			ID_MENU_VIEW_SHOW_MODULES,
 			ID_MENU_VIEW_LOG,
 			ID_MENU_ACCOUNT_SIGN_OUT,
+			ID_MENU_PRODUCT_IMPORT_JSON,
 
 
 		};
@@ -64,6 +71,9 @@ namespace pof {
 
 		void OnAbout(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
+		
+		//menu evts
+		void OnImportJson(wxCommandEvent& evt);
 
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
