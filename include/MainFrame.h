@@ -17,6 +17,7 @@
 #include "Workspace.h"
 #include "ProductView.h"
 #include <Data.h>
+#include <data_tuple.h>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <nlohmann/json.hpp>

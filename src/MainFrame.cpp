@@ -167,6 +167,7 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		}
 		try {
 			pof::base::data datastore;
+			pof::base::adapt<size_t, std::string, size_t, size_t, size_t, std::string>(datastore);
 			nlohmann::json js;
 			fs >> js;
 			if (js.empty()) {
@@ -174,28 +175,28 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 				return;
 			}
 
-			wxProgressDialog progress("Importing json", "Reading file...", js.size());
+			wxProgressDialog progress("Importing json", "Reading file...", js.size(), this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
 			size_t value = 0;
 			for (auto iter = js.begin(); iter != js.end(); iter++) {
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
 
-				row.first.emplace_back(tempjs["Category id"]);
-				row.first.emplace_back(tempjs["Name"]); //name
-				row.first.emplace_back(tempjs["Package size"]);
-				row.first.emplace_back(tempjs["Serial number"]);
-				row.first.emplace_back(tempjs["Stock count"]);
-				row.first.emplace_back(tempjs["Unit price"]);
+				row.first.emplace_back(static_cast<size_t>(tempjs["Category id"]));
+				row.first.emplace_back(static_cast<std::string>(tempjs["Name"])); //name
+				row.first.emplace_back(static_cast<size_t>(tempjs["Package size"]));
+				row.first.emplace_back(static_cast<size_t>(tempjs["Serial number"]));
+				row.first.emplace_back(static_cast<size_t>(tempjs["Stock count"]));
+				row.first.emplace_back(static_cast<std::string>(tempjs["Unit price"]));
 
 				datastore.insert(std::move(row));
-
 				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {
 					wxMessageBox("IMPORT CANCELED", "JSON IMPORT");
 					return;
 				}
+				std::this_thread::sleep_for(3ms);
 			}
 			//write the data to the product manager 
-			
+			wxMessageBox(fmt::format("Complete! Loaded {:d} products.", datastore.size()), "JSON IMPORT", wxICON_INFORMATION | wxOK);
 		}
 		catch (const std::exception& exp) {
 			wxMessageBox(exp.what(), "JSON IMPORT", wxICON_ERROR | wxOK);

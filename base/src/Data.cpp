@@ -12,34 +12,31 @@ pof::base::data::data(size_t count)
   modified(pof::base::data::clock_t::now())
 {}
 
-pof::base::data::data(data&& d) noexcept
-{
-	metadata = std::move(d.metadata);
-	value = std::move(d.value);
-}
-
 pof::base::data::~data()
 {
 
 }
 
-inline pof::base::data& pof::base::data::operator=(const data& rhs)
+pof::base::data& pof::base::data::operator=(const data& rhs)
 {
-	// TODO: insert return statement here
 	metadata = rhs.metadata;
 	value = rhs.value;
 	bModified = rhs.bModified;
 	created = rhs.created;
 	modified = rhs.modified;
+
+	return (*this);
 }
 
-inline pof::base::data& pof::base::data::operator=(data&& rhs) noexcept
+pof::base::data& pof::base::data::operator=(data&& rhs) noexcept
 {
 	metadata = std::move(rhs.metadata);
 	value = std::move(rhs.value);
 	bModified = rhs.bModified;
 	created = rhs.created;
 	modified = rhs.modified;
+
+	return (*this);
 }
 
 void pof::base::data::insert(row_t&& row)

@@ -78,8 +78,6 @@ namespace pof
             //ctors
             data();
             data(size_t count);
-            data(const data& d);
-            data(data&& d) noexcept;
             ~data();
 
             inline data(const data& rhs) : 
@@ -97,8 +95,8 @@ namespace pof
                 modified(rhs.modified)
             {}
 
-            inline data& operator=(const data& rhs);
-            inline data& operator=(data&& rhs) noexcept;
+            data& operator=(const data& rhs);
+            data& operator=(data&& rhs) noexcept;
 
             //metadata functions
             inline void set_metadata(const metadata_t& md) { metadata = md; }
