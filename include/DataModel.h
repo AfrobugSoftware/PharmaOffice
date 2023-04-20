@@ -13,6 +13,7 @@
 #include <boost/signals2.hpp>
 #include <unordered_map>
 #include <functional>
+#include <algorithm>
 
 namespace std {
 	template<>

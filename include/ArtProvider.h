@@ -13,6 +13,7 @@ namespace pof {
 	class ArtProvider : public wxArtProvider
 	{
 	public:
+		using bitmap_map_t = std::unordered_map<std::string, wxBitmap>;
 		ArtProvider();
 
 	protected:
@@ -20,6 +21,7 @@ namespace pof {
 		virtual wxSize DoGetSizeHint(const wxArtClient& client)  override;
 		virtual wxBitmap CreateBitmap(const wxArtID& id, const wxArtClient& clinet, const wxSize& size) override;
 	private:
+		std::unordered_map<std::string, bitmap_map_t> mArtMapByClient;
 		std::unordered_map<std::string, wxBitmap> mArtMap;
 	};
 };

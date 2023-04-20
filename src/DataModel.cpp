@@ -33,6 +33,12 @@ void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 void pof::DataModel::Emplace(pof::base::data&& d)
 {
 	datastore = std::forward<pof::base::data>(d);
+	wxDataViewItemArray itemArray;
+	itemArray.resize(datastore.size());
+	size_t i = 0;
+	std::generate(itemArray.begin(), itemArray.end(), 
+		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
+	ItemsAdded(wxDataViewItem{ 0 }, std::move(itemArray));
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
@@ -179,7 +185,7 @@ int pof::DataModel::Compare(const wxDataViewItem& item1, const wxDataViewItem& i
 bool pof::DataModel::HasValue(const wxDataViewItem& item, unsigned col) const
 {
 	const size_t i = GetIdxFromItem(item);
-	return (i >= datastore.size());
+	return (i < datastore.size());
 }
 
 void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned int col) const
@@ -196,45 +202,51 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 			return;
 		}
 	}
+	if (col >= GetColumnCount()) return; //col not a specail col and not in range
 
 	const auto& [r, s] = datastore[i];
 	const pof::base::data::kind k = datastore.get_metadata()[col];
 	const auto& d = r[col];
 
-	switch (k)
-	{
-	case pof::base::data::kind::int32:
-		v = std::to_string(boost::variant2::get<std::int32_t>(d));
-		break;
-	case pof::base::data::kind::int64:
-		v = std::to_string(boost::variant2::get<std::int64_t>(d));
-		break;
-	case pof::base::data::kind::uint32:
-		v = std::to_string(boost::variant2::get<std::uint32_t>(d));
-		break;
-	case pof::base::data::kind::uint64:
-		v = std::to_string(boost::variant2::get<std::uint64_t>(d));
-		break;
-	case pof::base::data::kind::float32:
-		v = std::to_string(boost::variant2::get<float>(d));
-		break;
-	case pof::base::data::kind::float64:
-		v = std::to_string(boost::variant2::get<double>(d));
-		break;
-	case pof::base::data::kind::datetime:
-	{
-		auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(d));
-		v = fmt::format("{:%y-%m-%d}", fmt::localtime(t));
-		break;
+	try {
+		switch (k)
+		{
+		case pof::base::data::kind::int32:
+			v = std::to_string(boost::variant2::get<std::int32_t>(d));
+			break;
+		case pof::base::data::kind::int64:
+			v = std::to_string(boost::variant2::get<std::int64_t>(d));
+			break;
+		case pof::base::data::kind::uint32:
+			v = std::to_string(boost::variant2::get<std::uint32_t>(d));
+			break;
+		case pof::base::data::kind::uint64:
+			v = std::to_string(boost::variant2::get<std::uint64_t>(d));
+			break;
+		case pof::base::data::kind::float32:
+			v = std::to_string(boost::variant2::get<float>(d));
+			break;
+		case pof::base::data::kind::float64:
+			v = std::to_string(boost::variant2::get<double>(d));
+			break;
+		case pof::base::data::kind::datetime:
+		{
+			auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(d));
+			v = fmt::format("{:%y-%m-%d}", fmt::localtime(t));
+			break;
+		}
+		case pof::base::data::kind::text:
+			v = boost::variant2::get<pof::base::data::text_t>(d);
+			break;
+		case pof::base::data::kind::blob:
+			//cannot display a blob type
+			break;
+		default:
+			break;
+		}
 	}
-	case pof::base::data::kind::text:
-		v = boost::variant2::get<pof::base::data::text_t>(d);
-		break;
-	case pof::base::data::kind::blob:
-		//cannot display a blob type
-		break;
-	default:
-		break;
+	catch (const std::exception& exp) {
+		spdlog::critical(exp.what());
 	}
 }
 

@@ -1,0 +1,84 @@
+#pragma once
+
+#include <wx/artprov.h>
+#include <wx/string.h>
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/icon.h>
+#include <wx/gdicmn.h>
+#include <wx/aui/aui.h>
+#include <wx/aui/auibar.h>
+#include <wx/font.h>
+#include <wx/colour.h>
+#include <wx/settings.h>
+#include <wx/dataview.h>
+#include <wx/sizer.h>
+#include <wx/panel.h>
+#include <wx/propgrid/propgrid.h>
+#include <wx/propgrid/manager.h>
+#include <wx/propgrid/advprops.h>
+#include <wx/splitter.h>
+#include <Data.h>
+
+
+namespace pof
+{
+	class ProductInfo : public wxPanel 
+	{
+		private:
+		
+		protected:
+			wxSplitterWindow* m_splitter1;
+			wxPanel* m_panel1;
+			wxAuiToolBar* m_auiToolBar1;
+			wxAuiToolBarItem* m_tool1;
+			wxAuiToolBarItem* mProductNameText;
+			wxDataViewCtrl* InventoryView;
+			wxDataViewColumn* mInputDate;
+			wxDataViewColumn* mBactchNo;
+			wxDataViewColumn* mExpiryDate;
+			wxDataViewColumn* mStockCount;
+			wxDataViewColumn* mManuFactureName;
+			wxPanel* m_panel2;
+			wxPropertyGridManager* m_propertyGridManager1;
+			wxPropertyGridPage* m_propertyGridPage1;
+			wxPGProperty* m_propertyGridItem1;
+			wxPGProperty* mNameItem;
+			wxPGProperty* mGenericNameItem;
+			wxPGProperty* mPackageSizeItem;
+			wxPGProperty* mProductClass;
+			wxPGProperty* mFormulationItem;
+			wxPGProperty* mMoreProductInfo;
+			wxPGProperty* mDirForUse;
+			wxPGProperty* mHealthCond;
+			wxPGProperty* mProductDescription;
+			wxPGProperty* mSettings;
+			wxPGProperty* mMinStockCount;
+			wxPGProperty* mExpDateCount;
+			wxPGProperty* mExpDatePeriod;
+			wxPGProperty* mSaleSettings;
+			wxPGProperty* mUnitPrice;
+		
+			DECLARE_EVENT_TABLE();
+
+		public:
+			
+			enum {
+				ID_TOOL_ADD_INVENTORY,
+				ID_TOOL_REMV_EXPIRE_BATCH,
+			};
+
+			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
+			~ProductInfo();
+			
+			void Load(const pof::base::data::row_t& row); 
+
+
+			void m_splitter1OnIdle( wxIdleEvent& )
+			{
+				m_splitter1->SetSashPosition( 571 );
+				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
+			}
+		
+	};	
+}

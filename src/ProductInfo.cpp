@@ -1,0 +1,144 @@
+
+#include "ProductInfo.h"
+#include "Application.h"
+
+BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
+	
+END_EVENT_TABLE()
+
+
+pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+{
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer( wxVERTICAL );
+	
+	m_splitter1 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER );
+	m_splitter1->Connect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
+	
+	m_panel1 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer2;
+	bSizer2 = new wxBoxSizer( wxVERTICAL );
+	
+	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW ); 
+	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
+	
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxEmptyString, wxArtProvider::GetBitmap(wxART_GO_BACK, wxART_TOOLBAR), "Back", wxITEM_NORMAL);
+	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
+	m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add Inventory", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Remove all expired batches", wxITEM_NORMAL);
+
+	m_auiToolBar1->Realize(); 
+	
+	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
+	
+	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE );
+	mInputDate = InventoryView->AppendTextColumn( wxT("Input Date"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mBactchNo = InventoryView->AppendTextColumn( wxT("Batch No"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mExpiryDate = InventoryView->AppendTextColumn( wxT("Expiry Date"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mStockCount = InventoryView->AppendTextColumn( wxT("Entry Stock Amount"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	bSizer2->Add( InventoryView, 1, wxALL|wxEXPAND, 0 );
+	
+	m_panel1->SetSizer( bSizer2 );
+	m_panel1->Layout();
+	bSizer2->Fit( m_panel1 );
+	m_panel2 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer3;
+	bSizer3 = new wxBoxSizer( wxVERTICAL );
+	
+	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL);
+	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS ); 
+	
+	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
+	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product Details"), wxT("Product Details") ) ); 
+	mNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("Name"), wxT("Name") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mNameItem, wxT("The product brand name") );
+	mGenericNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("Generic Name"), wxT("Generic Name") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mGenericNameItem, wxT("The generic name for the product") );
+	mPackageSizeItem = m_propertyGridPage1->Append( new wxIntProperty( wxT("Package Size"), wxT("Package Size") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mPackageSizeItem, wxT("Size of a single unit of product for sale. For example, for anti-malaria with 6 tablets would have package size set to 6 and formulation set to tablets") );
+	
+	wxPGChoices choices;
+	choices.Add("POM");
+	choices.Add("OTC");
+	mProductClass = m_propertyGridPage1->Append( new wxEnumProperty( wxT("Class"), wxT("Class") , choices));
+	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription.") );
+	
+	wxPGChoices formulationChoices;
+	formulationChoices.Add("TABLET");
+	formulationChoices.Add("CAPSULE");
+	formulationChoices.Add("SOLUTION");
+	formulationChoices.Add("SUSPENSION");
+	formulationChoices.Add("IV");
+	formulationChoices.Add("IM");
+	formulationChoices.Add("EMULSION");
+	formulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("Formulation"), wxT("Formulation"), formulationChoices));
+	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
+	
+	mMoreProductInfo = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("More Product Information"), wxT("More Product Information") ) ); 
+	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("Direction For Use"), wxT("Direction For Use") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mDirForUse, wxT("Information of usage. This would be printed on the label when sold over the counter") );
+	mHealthCond = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("Health Conditions"), wxT("Health Conditions") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mHealthCond, wxT("A list of possible health ") );
+	mProductDescription = m_propertyGridPage1->Append( new wxLongStringProperty( wxT("Description"), wxT("Description") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mProductDescription, wxT("Describes the product in a way that it can be added to a formulary") );
+	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings") ) ); 
+	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("Minimum Stock Count"), wxT("Minimum Stock Count") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mMinStockCount, wxT("The amount of stock that should indicate stock level is low. ") );
+	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("Expire Alert"), wxT("Expire Alert") ) );
+	m_propertyGridPage1->SetPropertyHelpString( mExpDateCount, wxT("Number of (Days, Weeks, Months) before expiry date that an alert should be sent") );
+	
+	wxPGChoices expChoices;
+	expChoices.Add("DAY");
+	expChoices.Add("WEEK");
+	expChoices.Add("MONTH");
+
+	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("Expire Alert Period"), wxT("Expire Alert Period"), expChoices) );
+	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
+	
+	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Sale"), wxT("Sale") ) ); 
+	mUnitPrice = m_propertyGridPage1->Append( new wxFloatProperty( wxT("Unit Price"), wxT("Unit Price")) );
+	m_propertyGridPage1->SetPropertyHelpString( mUnitPrice, wxT("Price per Package size of the Product\n") );
+
+	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
+	
+	
+	m_panel2->SetSizer( bSizer3 );
+	m_panel2->Layout();
+	bSizer3->Fit( m_panel2 );
+	m_splitter1->SplitVertically( m_panel1, m_panel2, 571 );
+	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
+	
+	
+	this->SetSizer( bSizer1 );
+	this->Layout();
+
+
+
+}
+
+pof::ProductInfo::~ProductInfo()
+{
+}
+
+void pof::ProductInfo::Load(const pof::base::data::row_t& row)
+{
+	try {
+		auto& Name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
+		if (Name.empty()) return; //nothing to load
+
+		mProductNameText->SetLabel(fmt::format("{} - INVENTORY HISTORY", Name));
+
+		//should get data from the server on the selected product 
+		
+		auto& Model = wxGetApp().mProductManager.GetInventory();
+		//unpack data from where 
+		//Model->Unpack(...);
+ 	}
+	catch (const std::exception& exp) {
+		spdlog::critical(exp.what());
+	}
+
+}

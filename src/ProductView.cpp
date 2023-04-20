@@ -1,4 +1,6 @@
 #include "ProductView.h"
+#include "Application.h"
+
 BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_SIZE(pof::ProductView::OnResize)
 END_EVENT_TABLE()
@@ -91,12 +93,16 @@ void pof::ProductView::CreateDataView()
 {
 
 	m_dataViewCtrl1 = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	auto& pm = wxGetApp().mProductManager;
+	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
+
+	
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product Name"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductClass = m_dataViewCtrl1->AppendIconTextColumn(wxT("Product Class"), 2, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product Unit Price"), 3, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mStockLevel = m_dataViewCtrl1->AppendProgressColumn(wxT("Stock Level"), 4, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	m_dataViewCtrl1->AppendProgressColumn(wxEmptyString, 100 , wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE); // null column
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Name"), 1, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), 2, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), 3, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), 4, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	m_dataViewCtrl1->AppendTextColumn(wxEmptyString, 100 , wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE); // null column
 
 	m_mgr.AddPane(m_dataViewCtrl1, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
 	

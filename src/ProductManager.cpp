@@ -51,6 +51,7 @@ bool pof::ProductManager::LoadCategories()
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)
 {
 	mProductData->Emplace(std::forward<pof::base::data>(data));
+
 }
 
 

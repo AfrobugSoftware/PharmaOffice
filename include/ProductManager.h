@@ -2,6 +2,7 @@
 #include <boost/noncopyable.hpp>
 #include <ranges>
 #include <algorithm>
+#include <shared_mutex>
 #include "DataModel.h"
 /// <summary>
 /// ADD PHARMACOLOGICAL UNITS AS A CLASS
@@ -50,7 +51,10 @@ namespace pof {
 
 
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
+		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
+
 		const pof::DataModel& GetInventoryForProduct() const { return *mInventoryData; }
+		inline std::unique_ptr<pof::DataModel>& GetInventory() { return mInventoryData; }
 		const pof::base::data& GetCategories() const { return mCategories; }
 
 		void EmplaceProductData(pof::base::data&& data);
@@ -63,7 +67,9 @@ namespace pof {
 
 
 		//should also contain the product view
+		std::shared_mutex mProductDataMutex;
 		std::unique_ptr<pof::DataModel> mProductData;
+		std::shared_mutex mInventoryDataMutex;
 		std::unique_ptr<pof::DataModel> mInventoryData;
 	};
 

@@ -1,4 +1,5 @@
 #include "MainFrame.h"
+#include "Application.h"
 
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
@@ -167,7 +168,14 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		}
 		try {
 			pof::base::data datastore;
-			pof::base::adapt<size_t, std::string, size_t, size_t, size_t, std::string>(datastore);
+			pof::base::adapt<
+				size_t, 
+				std::string, 
+				size_t,
+				size_t, 
+				std::string,
+				size_t 
+			>(datastore);
 			nlohmann::json js;
 			fs >> js;
 			if (js.empty()) {
@@ -181,22 +189,24 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
 
-				row.first.emplace_back(static_cast<size_t>(tempjs["Category id"]));
+				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Serial number"]));
 				row.first.emplace_back(static_cast<std::string>(tempjs["Name"])); //name
-				row.first.emplace_back(static_cast<size_t>(tempjs["Package size"]));
-				row.first.emplace_back(static_cast<size_t>(tempjs["Serial number"]));
-				row.first.emplace_back(static_cast<size_t>(tempjs["Stock count"]));
+				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Package size"]));
+				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Stock count"]));
 				row.first.emplace_back(static_cast<std::string>(tempjs["Unit price"]));
+				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Category id"]));
 
 				datastore.insert(std::move(row));
 				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {
 					wxMessageBox("IMPORT CANCELED", "JSON IMPORT");
 					return;
 				}
+				spdlog::info("{}", iter.key());
 				std::this_thread::sleep_for(3ms);
 			}
 			//write the data to the product manager 
 			wxMessageBox(fmt::format("Complete! Loaded {:d} products.", datastore.size()), "JSON IMPORT", wxICON_INFORMATION | wxOK);
+			wxGetApp().mProductManager.EmplaceProductData(std::move(datastore));
 		}
 		catch (const std::exception& exp) {
 			wxMessageBox(exp.what(), "JSON IMPORT", wxICON_ERROR | wxOK);
