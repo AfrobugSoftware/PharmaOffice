@@ -3,6 +3,7 @@
 
 BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_SIZE(pof::ProductView::OnResize)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
 END_EVENT_TABLE()
 
 
@@ -26,7 +27,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	SetBackgroundColour(*wxWHITE); //move to theme
 	CreateToolBar();
 	CreateDataView();
-
+	CreateProductInfo();
 	SetupAuiTheme();
 	m_mgr.Update();
 }
@@ -89,13 +90,28 @@ void pof::ProductView::OnAuiThemeChange()
 	pof::AuiTheme::Update(auiArtProvider);
 }
 
+void pof::ProductView::OnProductActivated(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+	
+	auto Model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	if (Model) {
+		auto& datastore = Model->GetDatastore();
+		const size_t idx = pof::DataModel::GetIdxFromItem(item);
+		const pof::base::data::row_t& row = datastore[idx];
+		mProductinfo->Load(row);
+		SwapCenterPane(true);
+	}
+}
+
 void pof::ProductView::CreateDataView()
 {
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	m_dataViewCtrl1 = new wxDataViewCtrl(this, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
 	auto& pm = wxGetApp().mProductManager;
 	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
-
+	pm.GetProductData()->DecRef();
 	
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Name"), 1, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
@@ -132,5 +148,27 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+
+}
+
+void pof::ProductView::CreateProductInfo()
+{
+	mProductinfo = new pof::ProductInfo(this, ID_PRODUCTINFO);
+	mProductinfo->AttachBackSlot([&]() { SwapCenterPane(false); });
+
+	m_mgr.AddPane(mProductinfo, wxAuiPaneInfo().Name("ProductInfo").CenterPane().Hide());
+
+}
+
+void pof::ProductView::SwapCenterPane(bool IsInventoryView)
+{
+	auto& Pane = m_mgr.GetPane("ProductInfo");
+	auto& ProductPane = m_mgr.GetPane("DataView");
+	auto& ProductToolBarPane = m_mgr.GetPane("ProductToolBar");
+	if (!Pane.IsOk() || !ProductPane.IsOk() || !ProductToolBarPane.IsOk()) return;
+	Pane.Show(IsInventoryView);
+	ProductPane.Show(!IsInventoryView);
+	ProductToolBarPane.Show(!IsInventoryView);
+	m_mgr.Update();
 
 }

@@ -28,6 +28,7 @@ namespace pof {
 
 			PRODUCT_SIDEEFFECTS,
 			PRODUCT_BARCODE,
+			PRODUCT_MAX
 		};
 
 		enum : std::uint8_t {
@@ -39,11 +40,12 @@ namespace pof {
 			INVENTORY_MANUFACTURER_NAME,
 			INVENTORY_MANUFACTURER_ADDRESS_ID,
 			INVENTORY_LOT_NUMBER, //HAVE MULTIPLE BACTHES -> 
+			INVENTORY_MAX
 		};
-
-
+		
+		~ProductManager();
 		ProductManager();
-		~ProductManager() {}
+	
 
 		bool LoadProductData();
 		bool LoadInventoryData();
@@ -61,15 +63,14 @@ namespace pof {
 
 	private:
 
+		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 
 		pof::base::packer mPacker{mCategories};
 		pof::base::unpacker mUnpacker{mCategories};
 
 
 		//should also contain the product view
-		std::shared_mutex mProductDataMutex;
 		std::unique_ptr<pof::DataModel> mProductData;
-		std::shared_mutex mInventoryDataMutex;
 		std::unique_ptr<pof::DataModel> mInventoryData;
 	};
 

@@ -23,6 +23,7 @@
 #include <wx/panel.h>
 
 #include "AuiTheme.h"
+#include "ProductInfo.h"
 
 namespace pof
 {
@@ -36,6 +37,7 @@ namespace pof
 			ID_TOOLBAR = 1000,
 			ID_ADD_PRODUCT = wxID_HIGHEST + 2000,
 			ID_REMOVE_PRODUCT,
+			ID_PRODUCTINFO,
 			ID_BACK,
 			ID_FORWARD,
 			ID_DATA_VIEW,
@@ -72,6 +74,7 @@ namespace pof
 		wxDataViewColumn* mProductClass = nullptr;
 		wxDataViewColumn* mProductUnitPriceCol = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
+		pof::ProductInfo* mProductinfo = nullptr;
 
 	public:
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
@@ -87,9 +90,12 @@ namespace pof
 		void OnResize(wxSizeEvent& evt);
 		void OnAuiThemeChange();
 
+		void OnProductActivated(wxDataViewEvent& evt);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();
+		void CreateProductInfo();
+		void SwapCenterPane(bool IsInventoryView);
 
 	private:
 		DECLARE_EVENT_TABLE()

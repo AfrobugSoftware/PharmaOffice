@@ -33,6 +33,12 @@ pof::ProductManager::ProductManager() {
 
 }
 
+pof::ProductManager::~ProductManager()
+{
+	mProductData.release();
+	mInventoryData.release();
+}
+
 bool pof::ProductManager::LoadProductData()
 {
 	return false;

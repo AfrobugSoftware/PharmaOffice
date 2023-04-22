@@ -20,6 +20,9 @@
 #include <wx/splitter.h>
 #include <Data.h>
 
+#include <bitset>
+#include <boost/signals2/signal.hpp>
+#include "ProductManager.h"
 
 namespace pof
 {
@@ -59,11 +62,26 @@ namespace pof
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
 		
+			wxPGChoices ProductClassChoices;
+			wxPGChoices FormulationChoices;
+			wxPGChoices ExpChoices;
+
+
 			DECLARE_EVENT_TABLE();
 
 		public:
+			struct PropertyUpdate {
+				constexpr const static size_t elems = pof::ProductManager::PRODUCT_MAX;
+				std::bitset<elems> mUpdatedElememts;
+				pof::base::data::row_t mUpdatedElementsValues;
+			};
 			
+			using back_signal_t = boost::signals2::signal<void(void)>;
+			using update_signal_t = boost::signals2::signal<void(const PropertyUpdate&)>;
+
+
 			enum {
+				ID_TOOL_GO_BACK = wxID_HIGHEST + 2000,
 				ID_TOOL_ADD_INVENTORY,
 				ID_TOOL_REMV_EXPIRE_BATCH,
 			};
@@ -72,13 +90,18 @@ namespace pof
 			~ProductInfo();
 			
 			void Load(const pof::base::data::row_t& row); 
-
+			boost::signals2::connection AttachBackSlot(back_signal_t::slot_type&& slot);
+			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
 
 			void m_splitter1OnIdle( wxIdleEvent& )
 			{
 				m_splitter1->SetSashPosition( 571 );
 				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 			}
-		
+	protected:
+		void OnGoBack(wxCommandEvent& evt);
+
+		back_signal_t mBackSignal;
+		update_signal_t mUpdatePropertySignal;
 	};	
 }

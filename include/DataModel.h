@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <functional>
 #include <algorithm>
+#include <shared_mutex>
 
 namespace std {
 	template<>
@@ -106,8 +107,12 @@ namespace pof {
 			pof::base::adapt<args...>(datastore);
 		}
 
+		//inline std::shared_mutex& GetDatastoreMutex() { return datastoremutex; }
+		inline pof::base::data& GetDatastore() { return datastore; }
+
 		void Reload();
 	private:
+		//std::shared_mutex datastoremutex;
 		pof::base::data datastore;
 		pof::base::packer pack;
 		pof::base::unpacker unpack;
