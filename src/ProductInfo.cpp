@@ -4,6 +4,7 @@
 
 BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
+	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 END_EVENT_TABLE()
 
 
@@ -33,11 +34,14 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
 	
 	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE );
-	mInputDate = InventoryView->AppendTextColumn( wxT("Input Date"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mBactchNo = InventoryView->AppendTextColumn( wxT("Batch No"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mExpiryDate = InventoryView->AppendTextColumn( wxT("Expiry Date"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mStockCount = InventoryView->AppendTextColumn( wxT("Entry Stock Amount"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
+
+	
+	mInputDate = InventoryView->AppendTextColumn( wxT("Input Date"), pof::ProductManager::INVENTORY_INPUT_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mBactchNo = InventoryView->AppendTextColumn( wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mExpiryDate = InventoryView->AppendTextColumn( wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mStockCount = InventoryView->AppendTextColumn( wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	bSizer2->Add( InventoryView, 1, wxALL|wxEXPAND, 0 );
 	
 	m_panel1->SetSizer( bSizer2 );
@@ -112,8 +116,6 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	this->SetSizer( bSizer1 );
 	this->Layout();
 
-
-
 }
 
 pof::ProductInfo::~ProductInfo()
@@ -136,6 +138,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		m_auiToolBar1->Realize();
 		m_auiToolBar1->Refresh();
 		m_auiToolBar1->Update();
+		mProductData = row;
  	}
 	catch (const std::exception& exp) {
 		spdlog::critical(exp.what());
@@ -156,4 +159,18 @@ boost::signals2::connection pof::ProductInfo::AttachPropertyUpdateSlot(update_si
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
+}
+
+void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
+{
+	pof::InventoryDialog dialog(nullptr);
+	if (dialog.ShowModal() == wxID_OK) {
+		auto& Inven = dialog.GetData();
+		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
+
+		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
+	}
+	else {
+		//rejected
+	}
 }

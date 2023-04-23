@@ -247,3 +247,8 @@ boost::property_tree::ptree& pof::Application::operator[](const std::string& pat
 	if (path.empty()) throw std::logic_error("CANNOT HAVE AN EMPTY PATH TO SETTINGS");
 	return mSettings.get_child(path);
 }
+
+pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDateTime& dt)
+{
+	return clock_t::from_time_t(dt.GetTicks());
+}

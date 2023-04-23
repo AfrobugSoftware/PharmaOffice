@@ -23,6 +23,7 @@
 #include <bitset>
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
+#include "InventoryDialog.h"
 
 namespace pof
 {
@@ -100,8 +101,10 @@ namespace pof
 			}
 	protected:
 		void OnGoBack(wxCommandEvent& evt);
+		void OnAddInventory(wxCommandEvent& evt);
 
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
+		pof::base::data::row_t mProductData;
 	};	
 }

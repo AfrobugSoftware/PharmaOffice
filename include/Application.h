@@ -54,6 +54,9 @@ namespace pof {
 		pof::ProductManager mProductManager;
 
 		boost::property_tree::ptree& operator[](const std::string& path);
+
+		//utility functions
+		static clock_t::time_point FromDateTime(const wxDateTime& dt);
 	private:
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;

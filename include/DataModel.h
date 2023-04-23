@@ -73,6 +73,7 @@ namespace pof {
 		pof::base::pack_t Pack() const;
 		void Unpack(const pof::base::pack_t& package);
 		void Emplace(pof::base::data&& d);
+		void EmplaceData(pof::base::data::row_t&& r); //no checking for column to metadata match
 	
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);

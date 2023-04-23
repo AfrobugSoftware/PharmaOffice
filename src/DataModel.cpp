@@ -41,6 +41,13 @@ void pof::DataModel::Emplace(pof::base::data&& d)
 	ItemsAdded(wxDataViewItem{ 0 }, std::move(itemArray));
 }
 
+void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
+{
+	datastore.insert(std::forward<pof::base::data::row_t>(r));
+	const size_t count = datastore.size();
+	ItemAdded(wxDataViewItem{ 0 }, wxDataViewItem{ reinterpret_cast<void*>(count) });
+}
+
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
 {
 	return false;

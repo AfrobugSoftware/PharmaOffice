@@ -1,0 +1,131 @@
+#include "InventoryDialog.h"
+#include "Application.h"
+#include "ProductManager.h" //circular dependcies ? 
+
+BEGIN_EVENT_TABLE(pof::InventoryDialog, wxDialog)
+EVT_BUTTON(wxID_OK, InventoryDialog::OnOk)
+EVT_BUTTON(wxID_CANCEL, InventoryDialog::OnCancel)
+EVT_BUTTON(InventoryDialog::ID_CALENDAR, InventoryDialog::OnCalendar)
+END_EVENT_TABLE()
+
+pof::InventoryDialog::InventoryDialog(wxWindow* parent)
+: wxDialog(parent, wxID_ANY, wxEmptyString){
+	CreateDialog();
+	SizeDialog();
+}
+
+bool pof::InventoryDialog::TransferDataFromWindow()
+{
+	mInventoryData.first.resize(pof::ProductManager::INVENTORY_MAX);
+	mInventoryData.first[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::Application::clock_t::now();
+	mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
+	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
+
+	return true;
+}
+
+bool pof::InventoryDialog::TransferDataToWindow()
+{
+	return true;
+}
+
+void pof::InventoryDialog::CreateDialog()
+{
+	SetBackgroundColour(*wxWHITE);
+	ClearBackground();
+	texts[0] = new wxStaticText;
+	texts[1] = new wxStaticText;
+	texts[2] = new wxStaticText;
+	texts[3] = new wxStaticText;
+	texts[4] = new wxStaticText;
+
+	texts[0]->Create(this, wxID_ANY, "ENTER INVENTORY", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[0]->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	texts[1]->Create(this, wxID_ANY, "Batch Number: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[2]->Create(this, wxID_ANY, "Quantity In: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[3]->Create(this, wxID_ANY, "Expiry Date: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[4]->Create(this, wxID_ANY, "Please Enter Inventory For Product", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	
+	mOkCancel[0] = new wxButton;
+	mOkCancel[1] = new wxButton;
+	mOkCancel[0]->Create(this, wxID_OK, "OK");
+	mOkCancel[1]->Create(this, wxID_CANCEL, "Cancel");
+	//look for a calender icon
+
+	mQuantityInControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
+		std::numeric_limits<int>::max());
+	mExpiryDate = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
+	mBatchNumber->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
+}
+
+void pof::InventoryDialog::SizeDialog()
+{
+	wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* boxSizer = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* okCancleSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxFlexGridSizer* flexSizer = new wxFlexGridSizer(3,3, 5,5);
+
+	okCancleSizer->AddStretchSpacer();
+	okCancleSizer->Add(mOkCancel[0], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, 5));
+	okCancleSizer->Add(mOkCancel[1], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, 5));
+
+	flexSizer->Add(texts[1], wxSizerFlags().Align(wxLEFT));
+	flexSizer->Add(mBatchNumber, wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->AddStretchSpacer();
+
+	flexSizer->Add(texts[2], wxSizerFlags().Align(wxLEFT));
+	flexSizer->Add(mQuantityInControl, wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->AddStretchSpacer();
+
+	flexSizer->Add(texts[3], wxSizerFlags().Align(wxLEFT));
+	flexSizer->Add(mExpiryDate, wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->AddStretchSpacer();
+
+	boxSizer->Add(texts[0], wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	boxSizer->Add(texts[4], wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	boxSizer->Add(flexSizer, wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
+	boxSizer->Add(okCancleSizer, wxSizerFlags().Expand().Border(wxALL, 5));
+
+	topSizer->Add(boxSizer, wxSizerFlags().Expand().Border(wxALL, 5));
+	SetSizer(topSizer);
+	topSizer->SetSizeHints(this);
+	Center();
+}
+
+void pof::InventoryDialog::OnOk(wxCommandEvent& evt)
+{
+	wxWindowID ret_code;
+	if (Validate() && TransferDataFromWindow()){
+		ret_code = wxID_OK;
+	}else{
+		ret_code = ID_IMPROPER_DATE;
+	}
+
+	if (IsModal()) EndModal(ret_code);
+	else
+	{
+		SetReturnCode(ret_code);
+		this->Show(false);
+	}
+}
+
+void pof::InventoryDialog::OnCancel(wxCommandEvent& evt)
+{
+	if (wxMessageBox(wxT("Are you sure you want to cancel Inventory entry"), wxT("Inventory entry"), wxYES | wxNO) == wxYES)
+	{
+		if (IsModal()) EndModal(wxID_CANCEL);
+		else
+		{
+			SetReturnCode(wxID_CANCEL);
+			this->Show(false);
+		}
+	}
+}
+
+void pof::InventoryDialog::OnCalendar(wxCommandEvent& evt)
+{
+	
+}
+
