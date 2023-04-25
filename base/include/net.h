@@ -544,16 +544,6 @@ namespace pof {
 					bool is_writing = !m_msg_que.empty();
 					m_msg_que.push_front(std::move(mes));
 				}
-
-				void connect(const std::string& host, const std::string& port){
-
-					
-				}
-
-				void handshake() {
-				
-					
-				}
 			protected:
 				void on_resolve(std::error_code ec, tcp::resolver::results_type&& results)
 				{
