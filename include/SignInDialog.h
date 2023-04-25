@@ -20,6 +20,8 @@
 #include <wx/dialog.h>
 #include <wx/msgdlg.h>
 #include <wx/progdlg.h>
+#include <wx/hyperlink.h>
+
 
 #include <nlohmann/json.hpp>
 #include <exception>
@@ -46,6 +48,9 @@ namespace pof {
 		wxPanel* m_panel5;
 		wxButton* mLogOn;
 		wxButton* mSignup;
+		wxPanel* mPharmacySignupPanel;
+		wxHyperlinkCtrl* mLoginPharmacyLink;
+		wxHyperlinkCtrl* mHelpLink;
 		wxPanel* m_panel4;
 
 		std::string mUserData;

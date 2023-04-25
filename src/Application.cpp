@@ -99,6 +99,11 @@ int test_main(int argc, char** const argv)
 
 pof::Application::Application()
 {
+	SetAppName("PharmaOffice");
+	SetAppDisplayName("PharmaOffice");
+	SetVendorName("D-GLOPA NIGERIA LIMITED");
+	SetVendorDisplayName("D-GLOPA NIGERIA LIMITED");
+
 }
 
 bool pof::Application::OnInit()

@@ -32,6 +32,7 @@ void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 
 void pof::DataModel::Emplace(pof::base::data&& d)
 {
+	Cleared();
 	datastore = std::forward<pof::base::data>(d);
 	wxDataViewItemArray itemArray;
 	itemArray.resize(datastore.size());

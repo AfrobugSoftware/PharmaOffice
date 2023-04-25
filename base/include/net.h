@@ -31,6 +31,7 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 
+#include <boost/signals2/signal.hpp>
 
 
 #include <spdlog/spdlog.h>
@@ -504,8 +505,137 @@ namespace pof {
 			template<typename res_body, typename req_body = http::empty_body>
 			using session_shared_ptr = std::shared_ptr<session<res_body, req_body>>;
 
+
+			class wb_session {
+			public:
+				using clock_t = std::chrono::system_clock;
+				using time_rep_t = clock_t::time_point::rep;
+				enum : std::uint8_t {
+					WB_HELLO,
+					WB_DATA,
+					WB_CONFIG,
+					WB_PING,
+				};
+
+				struct wb_message_header {
+					std::uint8_t mType;
+					std::uint32_t mIdentifier;
+					time_rep_t mTimeStamp;
+					std::uint32_t mMessageLength;
+				};
+				constexpr static const size_t wb_message_header_length = sizeof(wb_message_header);
+				using wb_message_body = std::vector<std::uint8_t>;
+				using wb_message = std::tuple<wb_message_header, wb_message_body>;
+				using recieve_signal_t = boost::signals2::signal<void(const wb_message&)>;
+
+				wb_session(boost::asio::io_context& ios, 
+					boost::asio::ssl::context& ssl,
+					const std::string& host, const std::string& port, const std::string& path = "/"s) :
+						m_stream(boost::asio::make_strand(ios), ssl), m_resolver(boost::asio::make_strand(ios)){
+					boost::asio::ip::tcp::resolver::query q{ host, port };
+					m_resolver.async_resolve(q, std::bind_front(&wb_session::on_resolve, this));
+				}
+
+				~wb_session() {
+					m_stream.next_layer().close();
+				}
+
+				void write(const wb_message& mes){
+					bool is_writing = !m_msg_que.empty();
+					m_msg_que.push_front(std::move(mes));
+				}
+
+				void connect(const std::string& host, const std::string& port){
+
+					
+				}
+
+				void handshake() {
+				
+					
+				}
+			protected:
+				void on_resolve(std::error_code ec, tcp::resolver::results_type&& results)
+				{
+					if (ec) {
+						fail(ec);
+						return;
+					}
+					co_spawn(m_stream.get_executor(), 
+						run(std::forward<tcp::resolver::results_type>(results)), 
+						[&](std::exception_ptr ptr) {
+						if (ptr) {
+							std::rethrow_exception(ptr);
+						}
+						});
+				}
+
+				awaitable<void> run(tcp::resolver::results_type&& results)
+				{
+					//connect
+					auto [ec, ep] = co_await boost::beast::get_lowest_layer(m_stream).async_connect(std::forward<tcp::resolver::results_type>(results));
+					if (ec) {
+						fail(ec);
+						co_return;
+					}
+
+					//ssl handshake
+
+
+					//wb socket handshake
+
+				}
+				//do functions
+				/**
+				* Works as a client 
+				*/
+				awaitable<void> do_write() {
+					for (auto& msg: m_msg_que) {
+						auto& header = std::get<0>(msg);
+						auto [ec, size] = co_await m_stream.async_write(boost::asio::buffer(std::addressof(header), wb_message_header_length));
+						if (ec) {
+							fail(ec);
+							co_return;
+						}
+						if (header.mMessageLength != 0) {
+							std::tie(ec, size) = co_await m_stream.async_write(boost::asio::buffer(std::get<1>(msg)));
+							if (ec) {
+								fail(ec);
+								co_return;
+							}
+						}
+						m_msg_que.pop_front();
+					}
+				}
+
+				awaitable<void> do_read() {
+				
+				}
+
+
+				void fail(std::error_code ec) {
+					const size_t code = ec.value();
+					if (code == boost::beast::errc::connection_aborted) {
+						return;
+					}
+					throw std::system_error(ec);
+				}
+
+				recieve_signal_t recieve_sig;
+			private:
+				tcp::resolver m_resolver;
+
+				std::string m_target;
+				std::deque<wb_message> m_msg_que;
+				boost::beast::flat_buffer m_read_buf;
+				boost::beast::websocket::stream<tcp_stream> m_stream;
+
+			};
 		}
 		
+
+		
+
 		
 	}
 }
