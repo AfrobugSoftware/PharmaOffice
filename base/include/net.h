@@ -52,7 +52,7 @@
 #include <type_traits>
 #include <utility>
 
-
+#include "taskmanager.h"
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -339,6 +339,9 @@ namespace pof {
 						|| err == net::ssl::error::stream_truncated) { //ignore stream truncated error
 						return; 
 					}
+					else if (err == http::error::end_of_stream) {
+						m_stream.shutdown(code);
+					}
 					spdlog::error("Error: {}", code.message());
 					throw std::system_error(code);
 				}
@@ -347,7 +350,7 @@ namespace pof {
 						on_fail(code);
 						return;
 					}
-					co_spawn(m_io.get_executor(), run(std::move(results)), [&](std::exception_ptr ptr, resp_t resp) {
+					co_spawn(m_stream.get_executor(), run(std::move(results)), [&](std::exception_ptr ptr, resp_t resp) {
 						try {
 							if (ptr) {
 								m_promise.set_exception(ptr);
@@ -514,36 +517,63 @@ namespace pof {
 					WB_HELLO,
 					WB_DATA,
 					WB_CONFIG,
-					WB_PING,
+				};
+				/**
+				*only one slot should process a message, if
+				* the slot that services the signal returns true while the rest 
+				* returns false, a search down is also halted when done
+				*/
+				struct combiner {
+					using result_type = bool;
+					template<typename Iterator>
+					bool operator()(Iterator first, Iterator last) {
+						while (first != last) {
+							if ((*first)) {
+								return true;
+							}
+							first++;
+						}
+						return false;
+					}
+
 				};
 
 				struct wb_message_header {
-					std::uint8_t mType;
 					std::uint32_t mIdentifier;
-					time_rep_t mTimeStamp;
+					std::uint32_t mType;
 					std::uint32_t mMessageLength;
+					time_rep_t mTimeStamp;
 				};
 				constexpr static const size_t wb_message_header_length = sizeof(wb_message_header);
 				using wb_message_body = std::vector<std::uint8_t>;
 				using wb_message = std::tuple<wb_message_header, wb_message_body>;
-				using recieve_signal_t = boost::signals2::signal<void(const wb_message&)>;
+				using recieve_signal_t = boost::signals2::signal<bool(const wb_message&), combiner>;
 
 				wb_session(boost::asio::io_context& ios, 
 					boost::asio::ssl::context& ssl,
 					const std::string& host, const std::string& port, const std::string& path = "/"s) :
-						m_stream(boost::asio::make_strand(ios), ssl), m_resolver(boost::asio::make_strand(ios)){
+					m_stream(boost::asio::make_strand(ios), ssl), m_resolver(boost::asio::make_strand(ios)), m_host{ host }, m_target{path} {
 					boost::asio::ip::tcp::resolver::query q{ host, port };
 					m_resolver.async_resolve(q, std::bind_front(&wb_session::on_resolve, this));
+					m_stream.control_callback(std::bind_front(&pof::base::ssl::wb_session::control_frame, this));
 				}
 
 				~wb_session() {
-					m_stream.next_layer().close();
+					m_stream.next_layer().next_layer().close();
 				}
 
 				void write(const wb_message& mes){
 					bool is_writing = !m_msg_que.empty();
 					m_msg_que.push_front(std::move(mes));
+					if (!is_writing) {
+						co_spawn(m_stream.get_executor(), do_write(), [&](std::exception_ptr ptr) {
+							if (ptr) {
+								std::rethrow_exception(ptr); //is this something ? or capture the exception, print to log and shut down websocket? 
+							}
+						});
+					}
 				}
+
 			protected:
 				void on_resolve(std::error_code ec, tcp::resolver::results_type&& results)
 				{
@@ -563,6 +593,7 @@ namespace pof {
 				awaitable<void> run(tcp::resolver::results_type&& results)
 				{
 					//connect
+					m_stream.binary(true); //set binary
 					auto [ec, ep] = co_await boost::beast::get_lowest_layer(m_stream).async_connect(std::forward<tcp::resolver::results_type>(results));
 					if (ec) {
 						fail(ec);
@@ -573,7 +604,15 @@ namespace pof {
 
 
 					//wb socket handshake
+					std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
 
+
+					//spawn a read
+					co_spawn(m_stream.get_executor(), do_read(), [&](std::exception_ptr ptr) {
+						if (ptr) {
+							std::rethrow_exception(ptr); //rethrow or handle??
+						}
+					});
 				}
 				//do functions
 				/**
@@ -582,44 +621,83 @@ namespace pof {
 				awaitable<void> do_write() {
 					for (auto& msg: m_msg_que) {
 						auto& header = std::get<0>(msg);
-						auto [ec, size] = co_await m_stream.async_write(boost::asio::buffer(std::addressof(header), wb_message_header_length));
+						const std::array<boost::asio::const_buffer, 2> bufs{ boost::asio::buffer(std::addressof(header),
+							wb_message_header_length), boost::asio::buffer(std::get<1>(msg)) };
+						auto [ec, size] = co_await m_stream.async_write(bufs);
 						if (ec) {
 							fail(ec);
 							co_return;
 						}
-						if (header.mMessageLength != 0) {
-							std::tie(ec, size) = co_await m_stream.async_write(boost::asio::buffer(std::get<1>(msg)));
-							if (ec) {
-								fail(ec);
-								co_return;
-							}
-						}
 						m_msg_que.pop_front();
 					}
 				}
-
+				/*read is still a problem*/
 				awaitable<void> do_read() {
-				
+					for (;;) {
+						//read header
+						std::array<std::uint8_t, wb_message_header_length> buf = {};
+						auto header = new (buf.data()) wb_message_header;
+						wb_message_body body;
+
+						auto [ec, size] = co_await m_stream.async_read_some(m_read_buf.prepare(wb_message_header_length));
+						if (ec ||  size != wb_message_header_length) {
+							fail(ec);
+							co_return;
+						}
+						m_read_buf.commit(wb_message_header_length);
+						auto mutbuf = m_read_buf.data();
+						std::copy(static_cast<std::uint8_t*>(mutbuf.data()), 
+								static_cast<std::uint8_t*>(mutbuf.data()) + mutbuf.size(), buf.begin());
+						m_read_buf.consume(wb_message_header_length);
+
+
+						if (header->mMessageLength != 0) {
+							//read body
+							body.resize(header->mMessageLength);
+							std::tie(ec, size) = co_await m_stream.async_read_some(m_read_buf.prepare(header->mMessageLength));
+							if (ec || size != header->mMessageLength) {
+								fail(ec);
+								co_return;
+							}
+							m_read_buf.commit(header->mMessageLength);
+							mutbuf = m_read_buf.data();
+							std::copy(static_cast<std::uint8_t*>(mutbuf.data()), 
+							static_cast<std::uint8_t*>(mutbuf.data()) + mutbuf.size(), body.begin());
+							m_read_buf.consume(header->mMessageLength);
+
+						}
+
+						wb_message msg{ *header, body };
+						pof::base::task_manager::instance().service().post([&, msg = std::move(msg)]() {
+								recieve_sig(msg);
+						});
+					}
 				}
 
 
 				void fail(std::error_code ec) {
 					const size_t code = ec.value();
-					if (code == boost::beast::errc::connection_aborted) {
+					if (code == boost::beast::errc::connection_aborted ||
+							code == boost::asio::error::operation_aborted ||
+							boost::system::error_code(ec) == boost::beast::websocket::error::closed) {
 						return;
 					}
 					throw std::system_error(ec);
+				}
+
+				void control_frame(boost::beast::websocket::frame_type frame, boost::beast::string_view payload) {
+					//timers??
 				}
 
 				recieve_signal_t recieve_sig;
 			private:
 				tcp::resolver m_resolver;
 
+				std::string m_host;
 				std::string m_target;
 				std::deque<wb_message> m_msg_que;
 				boost::beast::flat_buffer m_read_buf;
-				boost::beast::websocket::stream<tcp_stream> m_stream;
-
+				boost::beast::websocket::stream<beast::ssl_stream<tcp_stream>> m_stream;
 			};
 		}
 		
