@@ -46,6 +46,8 @@ namespace pof{
 		virtual ~Pharmacy();
 
 		inline const std::bitset<8>& GetPharmacyType() const { return pharmacyType; }
+		inline const std::string& GetName() const { return name; }
+		inline const address& GetAddress() const { return addy; }
 		inline void SetPharmacyType(const std::bitset<8>& bitset) { pharmacyType = bitset; }
 		inline void SetPharmacyType(PharmacyType ty) {
 			pharmacyType.set(static_cast<size_t>(std::underlying_type_t<PharmacyType>(ty)));
@@ -54,7 +56,6 @@ namespace pof{
 		nl::json Pack() const;
 		void UnPack(const nl::json& js);
 
-	private:
 		boost::uuids::uuid pharmacyID;
 		boost::uuids::uuid branchID; //this particular branch
 		std::bitset<8> pharmacyType;

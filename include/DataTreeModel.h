@@ -4,11 +4,11 @@
 #include "datatree.h"
 
 namespace pof {
-	template<typename T, typename... args>
 	class DataTreeModel : public wxDataViewTreeStore
 	{
 
 	public:	
+		template<typename T>
 		struct idx_t{
 			T m_ident;
 			wxDataViewItem m_item;
@@ -30,7 +30,7 @@ namespace pof {
 
 		DataTreeModel() = default;
 	protected:
-		std::shared_ptr<pof::base::node<idx_t>> m_root;
+		std::shared_ptr<pof::base::node<idx_t<std::string>>> m_root;
 
 	};
 

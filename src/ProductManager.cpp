@@ -4,18 +4,22 @@ pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();
 	mInventoryData = std::make_unique<pof::DataModel>();
 	mProductData->Adapt<
-		pof::base::data::uuid_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		std::uint32_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t
+		pof::base::data::uuid_t, //UUID
+		std::uint64_t, //SERIAL NUM
+		pof::base::data::text_t, // NAME
+		pof::base::data::text_t, // GENERIC NAME
+		pof::base::data::text_t, //CLASS
+		pof::base::data::text_t, //UNIT TYPE
+		std::uint32_t, // DOSAGE
+		pof::base::data::text_t, //DOSEAGE WORDS
+		pof::base::data::text_t, // STRENGTH
+		pof::base::data::text_t, // USAGE INFO
+		pof::base::data::text_t, // UNIT PRICE
+		std::uint64_t, //PACAKGE SIZE
+		std::uint64_t, //STOCK COUNT
+		pof::base::data::text_t, //SIDE EFFECTS
+		pof::base::data::text_t, //BARCODE
+		std::uint64_t //CATEGORY ID
 	>();
 	
 	mInventoryData->Adapt<

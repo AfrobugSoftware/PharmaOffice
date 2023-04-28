@@ -115,10 +115,14 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
-
+	StyleProductPropertyManager();
 }
 
 pof::ProductInfo::~ProductInfo()
+{
+}
+
+void pof::ProductInfo::StyleProductPropertyManager()
 {
 }
 
@@ -144,6 +148,15 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		spdlog::critical(exp.what());
 	}
 
+}
+
+void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
+{
+	auto& d = row.first;
+	mNameItem->SetValue(wxVariant(boost::variant2::get<std::string>(d[pof::ProductManager::PRODUCT_NAME])));
+	mPackageSizeItem->SetValue(wxVariant(boost::variant2::get<std::int32_t>(d[pof::ProductManager::PRODUCT_PACKAGE_SIZE])));
+
+	//
 }
 
 boost::signals2::connection pof::ProductInfo::AttachBackSlot(back_signal_t::slot_type&& slot)

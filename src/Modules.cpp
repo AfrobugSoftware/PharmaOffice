@@ -1,4 +1,6 @@
 #include "Modules.h"
+#include "Application.h"
+
 BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_ITEM_ACTIVATED(pof::Modules::ID_TREE, pof::Modules::OnActivated)
 	EVT_TREE_SEL_CHANGED(pof::Modules::ID_TREE, pof::Modules::OnSelected)
@@ -47,13 +49,22 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
-	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0);
+	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
 	wxStaticText* m_staticText1;
-	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, wxT("PHARMAOFFICE"), wxDefaultPosition, wxDefaultSize, 0);
+	const auto& AccountName = wxGetApp().MainAccount.GetName();
+	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 5);
+
+	wxStaticText* m_staticText2;
+	const auto& PharmacyName = wxGetApp().MainPharamcy.GetName();
+	m_staticText2 = new wxStaticText(m_panel1, wxID_ANY, PharmacyName, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText2->Wrap(-1);
+	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
+	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 5);
+
 
 
 	m_panel1->SetSizer(bSizer2);

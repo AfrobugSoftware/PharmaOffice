@@ -14,10 +14,18 @@ namespace pof
 		{
 			if constexpr (std::is_integral_v<arg_t>) {
 				if constexpr (sizeof(arg_t) == 4) {
-					meta.push_back(pof::base::data::kind::int32);
+					if constexpr (std::is_signed_v<arg_t>) {
+						meta.push_back(pof::base::data::kind::int32);
+					}else {
+						meta.push_back(pof::base::data::kind::uint32);
+					}
 				}
 				else {
-					meta.push_back(pof::base::data::kind::int64);
+					if constexpr (std::is_signed_v<arg_t>) {
+						meta.push_back(pof::base::data::kind::int64);
+					}else{
+						meta.push_back(pof::base::data::kind::uint64);
+					}
 				}
 			}
 			else if constexpr (std::is_floating_point_v<arg_t>) {

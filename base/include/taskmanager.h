@@ -17,9 +17,9 @@ namespace pof
 			bool stop();
 			constexpr inline boost::asio::io_service& service() { return m_service; }
 			static task_manager& instance();
+			task_manager();
 
 		private:
-			task_manager();
 			std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_service::executor_type>> m_workgaurd;
 			boost::asio::io_service m_service;
 			std::thread m_taskThread;

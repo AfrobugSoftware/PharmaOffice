@@ -90,7 +90,9 @@ namespace pof
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
 			~ProductInfo();
 			
-			void Load(const pof::base::data::row_t& row); 
+			void StyleProductPropertyManager();
+			void Load(const pof::base::data::row_t& row);
+			void LoadProductProperty(const pof::base::data::row_t& row);
 			boost::signals2::connection AttachBackSlot(back_signal_t::slot_type&& slot);
 			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
 

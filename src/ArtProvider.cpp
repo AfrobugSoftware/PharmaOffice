@@ -10,23 +10,28 @@ pof::ArtProvider::ArtProvider() {
 void pof::ArtProvider::CreateArtStore()
 {
 	auto AssertPath = wxGetApp().GetAssertsPath() / "Icons";
-	for (auto& DirEntry : fs::directory_iterator(AssertPath))
-	{
-		static const std::map<std::string_view, wxBitmapType> Exts{ {".jpg", wxBITMAP_TYPE_JPEG}, {".png", wxBITMAP_TYPE_PNG},  {".ico", wxBITMAP_TYPE_ICO}};
-		if (DirEntry.is_directory()) continue;
-		const auto exts = DirEntry.path().filename().extension().string();
-		auto iter = Exts.find(exts);
-		if (iter != Exts.end()) {
-			auto name = DirEntry.path().stem().string();
-			mArtMap.insert({ std::move(name), wxBitmap(DirEntry.path().string(), iter->second)});
+	try {
+		for (auto& DirEntry : fs::directory_iterator(AssertPath))
+		{
+			static const std::map<std::string_view, wxBitmapType> Exts{ {".jpg", wxBITMAP_TYPE_JPEG}, {".png", wxBITMAP_TYPE_PNG},  {".ico", wxBITMAP_TYPE_ICO} };
+			if (DirEntry.is_directory()) continue;
+			const auto exts = DirEntry.path().filename().extension().string();
+			auto iter = Exts.find(exts);
+			if (iter != Exts.end()) {
+				auto name = DirEntry.path().stem().string();
+				mArtMap.insert({ std::move(name), wxBitmap(DirEntry.path().string(), iter->second) });
+			}
 		}
+	}
+	catch (std::filesystem::filesystem_error& error) {
+		spdlog::critical(error.what());
 	}
 }
 
 wxSize pof::ArtProvider::DoGetSizeHint(const wxArtClient& client)
 {
 	//should return a size for a particular clients
-	return wxSize(48,48);
+	return wxArtProvider::DoGetSizeHint(client);
 }
 
 wxBitmap pof::ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& clinet, const wxSize& size)
@@ -35,5 +40,5 @@ wxBitmap pof::ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& cl
 	if (iter != mArtMap.end()) {
 		return iter->second;
 	}
-	return wxBitmap();
+	return wxArtProvider::CreateBitmap(id, clinet, size);
 }

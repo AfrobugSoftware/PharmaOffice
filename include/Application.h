@@ -42,6 +42,7 @@ namespace pof {
 
 		bool CreateMainFrame();
 		bool CheckForUpdate();
+		bool SetUpPaths();
 		bool LoadSettings(const fs::path& fp);
 		bool SaveSettings(const fs::path& fp);
 		bool RegisterPharmacy();
@@ -49,9 +50,12 @@ namespace pof {
 		bool SignIn();
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
+		void TestAccountAndPharmacy();
 		
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
+		pof::Pharmacy MainPharamcy;
+		pof::Account MainAccount;
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 
@@ -60,8 +64,6 @@ namespace pof {
 	private:
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
-		pof::Pharmacy MainPharamcy;
-		pof::Account MainAccount;
 		std::string mVersion;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 

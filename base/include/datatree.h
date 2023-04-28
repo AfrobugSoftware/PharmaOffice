@@ -20,6 +20,7 @@ namespace pof
 		public:
 
 			using row_t = pof::base::data::row_t;
+			using identifier_type = T;
 			basenode() = default;
 			basenode(const T& identify) : m_identifyer(identify) {}
 			virtual ~basenode() {}
@@ -37,7 +38,7 @@ namespace pof
 			}
 
 			constexpr const T& get_identifier() const { return m_identifyer; }
-			void set_identifier(const T& ident) { m_identifyer = ident; }
+			void set_identifier(T&& ident) { m_identifyer = std::forward<T>(ident); }
 		protected:
 			T m_identifyer;
 			std::weak_ptr<basenode> m_parent;
@@ -122,6 +123,7 @@ namespace pof
 		{
 		public:
 			//or shouold be a boolean that return
+			using base_t = basenode<T>;
 			leaf() = default;
 			leaf(const T& ident) : basenode<T>(ident) {}
 			virtual ~leaf() {}

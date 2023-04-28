@@ -4,6 +4,7 @@
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
+	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -54,6 +55,7 @@ void pof::MainFrame::CreateMenuBar()
 
 	//product menu
 	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
+	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
 	SetMenuBar(bar);
@@ -168,14 +170,7 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		}
 		try {
 			pof::base::data datastore;
-			pof::base::adapt<
-				size_t, 
-				std::string, 
-				size_t,
-				size_t, 
-				std::string,
-				size_t 
-			>(datastore);
+			datastore.set_metadata(wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata());
 			nlohmann::json js;
 			fs >> js;
 			if (js.empty()) {
@@ -188,13 +183,15 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 			for (auto iter = js.begin(); iter != js.end(); iter++) {
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
+				row.first.resize(pof::ProductManager::PRODUCT_MAX);
 
-				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Serial number"]));
-				row.first.emplace_back(static_cast<std::string>(tempjs["Name"])); //name
-				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Package size"]));
-				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Stock count"]));
-				row.first.emplace_back(static_cast<std::string>(tempjs["Unit price"]));
-				row.first.emplace_back(static_cast<std::int64_t>(tempjs["Category id"]));
+				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Serial number"]));
+				row.first[pof::ProductManager::PRODUCT_NAME] = pof::base::data::data_t(static_cast<std::string>(tempjs["Name"])); //name
+				row.first[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Package size"]));
+				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Stock count"]));
+				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(static_cast<std::string>(tempjs["Unit price"]));
+
+				row.first[pof::ProductManager::PRODUCT_CATEGORY] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Category id"]));
 
 				datastore.insert(std::move(row));
 				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {

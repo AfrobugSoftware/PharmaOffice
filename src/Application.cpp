@@ -115,13 +115,16 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
+	SetUpPaths();
 	wxInitAllImageHandlers();
+	wxArtProvider::Push(new pof::ArtProvider);
 	SetUpColorTable();
 
 
 	bool ret = false;
 	ret = SignIn();
 	//test ret
+	TestAccountAndPharmacy();
 	ret = CreateMainFrame();
 
 	return ret;
@@ -155,6 +158,13 @@ bool pof::Application::CheckForUpdate()
 {
 	//check everytime or just after some days
 	return false;
+}
+
+bool pof::Application::SetUpPaths()
+{
+	mAsserts = std::filesystem::current_path() / "asserts";
+	mModules = std::filesystem::current_path() / "plugins";
+	return true;
 }
 
 bool pof::Application::LoadSettings(const fs::path& fp)
@@ -244,6 +254,12 @@ bool pof::Application::SignIn()
 			return false;
 		}
 	}
+}
+
+void pof::Application::TestAccountAndPharmacy()
+{
+	MainAccount.name = "Zino Ferife"s;
+	MainPharamcy.name = "D-GLOPA NIGERIA LIMITED"s;
 }
 
 boost::property_tree::ptree& pof::Application::operator[](const std::string& path)

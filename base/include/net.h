@@ -339,8 +339,8 @@ namespace pof {
 						|| err == net::ssl::error::stream_truncated) { //ignore stream truncated error
 						return; 
 					}
-					else if (err == http::error::end_of_stream) {
-						m_stream.shutdown(code);
+					else if (boost::system::error_code(code) == http::error::end_of_stream) {
+						m_stream.shutdown();
 					}
 					spdlog::error("Error: {}", code.message());
 					throw std::system_error(code);
@@ -554,7 +554,7 @@ namespace pof {
 					const std::string& host, const std::string& port, const std::string& path = "/"s) :
 					m_stream(boost::asio::make_strand(ios), ssl), m_resolver(boost::asio::make_strand(ios)), m_host{ host }, m_target{path} {
 					boost::asio::ip::tcp::resolver::query q{ host, port };
-					m_resolver.async_resolve(q, std::bind_front(&wb_session::on_resolve, this));
+					m_resolver.async_resolve(q, beast::bind_front_handler(&wb_session::on_resolve, this));
 					m_stream.control_callback(std::bind_front(&pof::base::ssl::wb_session::control_frame, this));
 				}
 
@@ -575,14 +575,14 @@ namespace pof {
 				}
 
 			protected:
-				void on_resolve(std::error_code ec, tcp::resolver::results_type&& results)
+				void on_resolve(std::error_code ec, tcp::resolver::results_type results)
 				{
 					if (ec) {
 						fail(ec);
 						return;
 					}
 					co_spawn(m_stream.get_executor(), 
-						run(std::forward<tcp::resolver::results_type>(results)), 
+						run(std::move(results)), 
 						[&](std::exception_ptr ptr) {
 						if (ptr) {
 							std::rethrow_exception(ptr);
@@ -590,11 +590,11 @@ namespace pof {
 						});
 				}
 
-				awaitable<void> run(tcp::resolver::results_type&& results)
+				awaitable<void> run(tcp::resolver::results_type results)
 				{
 					//connect
 					m_stream.binary(true); //set binary
-					auto [ec, ep] = co_await boost::beast::get_lowest_layer(m_stream).async_connect(std::forward<tcp::resolver::results_type>(results));
+					auto [ec, ep] = co_await boost::beast::get_lowest_layer(m_stream).async_connect(std::move(results));
 					if (ec) {
 						fail(ec);
 						co_return;
@@ -604,7 +604,7 @@ namespace pof {
 
 
 					//wb socket handshake
-					std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
+				//	std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
 
 
 					//spawn a read
