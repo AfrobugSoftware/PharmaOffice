@@ -1,4 +1,11 @@
 #include "SaleView.h"
+#include "Application.h"
+BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
+	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
+	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)
+	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
+END_EVENT_TABLE()
+
 
 pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
 {
@@ -17,14 +24,14 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	mProductNameText->Wrap( -1 );
 	bSizer7->Add( mProductNameText, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mProductNameValue = new wxTextCtrl( mTopTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	mProductNameValue = new wxTextCtrl( mTopTools,ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
 	bSizer7->Add( mProductNameValue, 0, wxALL, 5 );
 	
 	mScanProduct = new wxStaticText( mTopTools, wxID_ANY, wxT("Scan Product: "), wxDefaultPosition, wxDefaultSize, 0 );
 	mScanProduct->Wrap( -1 );
 	bSizer7->Add( mScanProduct, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mScanProductValue = new wxTextCtrl( mTopTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	mScanProductValue = new wxTextCtrl( mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
 	bSizer7->Add( mScanProductValue, 0, wxALL, 5 );
 	
 	
@@ -37,10 +44,14 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer( wxVERTICAL );
 	
-	m_dataViewCtrl1 = new wxDataViewCtrl( mDataPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	mSerialNumber = m_dataViewCtrl1->AppendTextColumn( wxT("SERIAL NUMBER"), 0 );
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRODUCT NAME"), 0 );
-	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn( wxT("QUANTITY"), 0 );
+	m_dataViewCtrl1 = new wxDataViewCtrl( mDataPane, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, 0 );
+	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
+
+
+	mSerialNumber = m_dataViewCtrl1->AppendTextColumn( wxT("SERIAL NUMBER"), pof::SaleManager::PRODUCT_SERIAL_NUM );
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME );
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRODUCT CATEGORY"), pof::SaleManager::PRODUCT_CATEGORY );
+	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn( wxT("QUANTITY"), pof::SaleManager::PRODUCT_QUANTITY);
 	mPriceCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRICE"), 0 );
 	bSizer6->Add( m_dataViewCtrl1, 1, wxALL|wxEXPAND, 0 );
 	
@@ -122,13 +133,13 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	
 	bSizer4->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	mClear = new wxButton( mSalePaymentButtonsPane, wxID_ANY, wxT("CLEAR"), wxDefaultPosition, wxDefaultSize, 0 );
+	mClear = new wxButton( mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer4->Add( mClear, 0, wxALL, 5 );
 	
-	mSave = new wxButton( mSalePaymentButtonsPane, wxID_ANY, wxT("SAVE"), wxDefaultPosition, wxDefaultSize, 0 );
+	mSave = new wxButton( mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer4->Add( mSave, 0, wxALL, 5 );
 	
-	mCheckout = new wxButton( mSalePaymentButtonsPane, wxID_ANY, wxT("CHECK OUT"), wxDefaultPosition, wxDefaultSize, 0 );
+	mCheckout = new wxButton( mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer4->Add( mCheckout, 0, wxALL, 5 );
 	
 	
@@ -150,4 +161,19 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 
 pof::SaleView::~SaleView()
 {
+}
+
+void pof::SaleView::OnClear(wxCommandEvent& evt)
+{
+	wxMessageBox("CLEAR", "CLEARING");
+}
+
+void pof::SaleView::OnCheckout(wxCommandEvent& evt)
+{
+	wxMessageBox("CHECKOUT", "CHECKOUT");
+}
+
+void pof::SaleView::OnSave(wxCommandEvent& evt)
+{
+	wxMessageBox("SAVE", "SAVE");
 }

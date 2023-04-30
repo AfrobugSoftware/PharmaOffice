@@ -19,6 +19,7 @@
 #include "Pharmacy.h"
 #include "MainFrame.h"
 #include "ProductManager.h"
+#include "SaleManager.h"
 
 
 namespace js = nlohmann;
@@ -54,6 +55,9 @@ namespace pof {
 		
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
+		pof::SaleManager mSaleManager;
+
+
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;
 

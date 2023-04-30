@@ -16,6 +16,8 @@
 #include "Modules.h"
 #include "Workspace.h"
 #include "ProductView.h"
+#include "SaleView.h"
+
 #include <Data.h>
 #include <data_tuple.h>
 
@@ -46,6 +48,7 @@ namespace pof {
 			ID_STATUS_BAR,
 			ID_TOOL_BAR,
 			ID_PRODUCT_VIEW,
+			ID_SALE_VIEW,
 
 			//MENUS
 			ID_MENU_VIEW_SHOW_MODULES,
@@ -90,6 +93,7 @@ namespace pof {
 
 		//views
 		pof::ProductView* mProductView = nullptr;
+		pof::SaleView* mSaleView = nullptr;
 
 		DECLARE_EVENT_TABLE()
 	};

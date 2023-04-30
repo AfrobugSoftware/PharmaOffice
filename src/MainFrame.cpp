@@ -100,6 +100,7 @@ void pof::MainFrame::CreateModules()
 
 	//set the module to view pipeline
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
+	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
 		
 }
 
@@ -122,7 +123,10 @@ void pof::MainFrame::CreateImageList()
 void pof::MainFrame::CreateViews()
 {
 	mProductView = new pof::ProductView(this, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mSaleView = new pof::SaleView(this, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	
 	mProductView->Hide();
+	mSaleView->Hide();
 }
 
 void pof::MainFrame::SetupAuiTheme()

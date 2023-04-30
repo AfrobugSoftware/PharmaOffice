@@ -2,6 +2,16 @@
 
 pof::SaleManager::SaleManager()
 {
+	SaleData = std::make_unique<pof::DataModel>();
+	ProductSaleHistory = std::make_unique<pof::DataModel>();
+
+
+}
+
+pof::SaleManager::~SaleManager()
+{
+	SaleData.release();
+	//ProductSaleHistory.release();
 }
 
 void pof::SaleManager::DoSale()
