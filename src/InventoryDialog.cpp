@@ -19,6 +19,7 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 	mInventoryData.first.resize(pof::ProductManager::INVENTORY_MAX);
 	mInventoryData.first[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::Application::clock_t::now();
 	mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
+	mInventoryData.first[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(mQuantityInControl->GetValue());
 	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
 
 	return true;

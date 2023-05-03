@@ -143,6 +143,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		m_auiToolBar1->Refresh();
 		m_auiToolBar1->Update();
 		mProductData = row;
+		LoadProductProperty(row);
  	}
 	catch (const std::exception& exp) {
 		spdlog::critical(exp.what());

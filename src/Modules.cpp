@@ -49,6 +49,8 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
+	bSizer2->Add(0, 20, 0, wxEXPAND, 5);
+
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
@@ -56,15 +58,16 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	const auto& AccountName = wxGetApp().MainAccount.GetName();
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText1->Wrap(-1);
-	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 5);
+	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
 	wxStaticText* m_staticText2;
 	const auto& PharmacyName = wxGetApp().MainPharamcy.GetName();
 	m_staticText2 = new wxStaticText(m_panel1, wxID_ANY, PharmacyName, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText2->Wrap(-1);
 	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
-	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 5);
+	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 2);
 
+	bSizer2->Add(0, 5, 0, wxEXPAND, 5);
 
 
 	m_panel1->SetSizer(bSizer2);
@@ -79,7 +82,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
 		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
-	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 0 );
+	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 5 );
 	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();
 	

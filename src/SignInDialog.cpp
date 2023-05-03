@@ -93,19 +93,19 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 	bSizer5->Add( m_panel5, 0, wxEXPAND | wxALL, 0 );
 	
 	
-	bSizer5->Add( 0, 0, 1, wxEXPAND, 5 );
+	bSizer5->Add( 0, 20, 0, wxEXPAND, 5 );
 	
 	mPharmacySignupPanel = new wxPanel(m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer7->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer7->Add(0,0, 1, wxEXPAND, 5);
 
-	mLoginPharmacyLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Log In Pharmacy"), wxT("http://www.wxformbuilder.org"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+	mLoginPharmacyLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Log In Pharmacy"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 	bSizer7->Add(mLoginPharmacyLink, 0, wxALL, 5);
 
-	mHelpLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Help"), wxT("http://www.wxformbuilder.org"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+	mHelpLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Help"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 	bSizer7->Add(mHelpLink, 0, wxALL, 5);
 
 
