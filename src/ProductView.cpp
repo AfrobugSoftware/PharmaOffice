@@ -143,6 +143,9 @@ void pof::ProductView::CreateToolBar()
 	m_searchCtrl1->SetMenu(menu);
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
+	m_auiToolBar1->AddStretchSpacer();
+	m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, "Add product", wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
 
 
 	m_auiToolBar1->Realize();
