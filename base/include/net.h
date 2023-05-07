@@ -1,15 +1,6 @@
 #pragma once
-#pragma once
-//nitrolite uses http for communication with the outside world
-//it seralised tuples as json can be sent to servers that understands the schema
-
-//targets are resources on the server which are tables in the database
-//very request froms a session with the server connecting to it, sending a message and reading a response
-//The io_context is created by applications that uses this session object
-//Lunched to makes a request and signalled to the calling module when there is a response, most likely the modules that made the request 
-//
-
-
+//pharmaoffice uses http for communication with the outside world
+//it seralised tuples as j
 
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
@@ -24,14 +15,21 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/deferred.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/cancellation_signal.hpp>
+#include <boost/asio/bind_cancellation_slot.hpp>
 
 #include <boost/signals2/signal.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
+#include <boost/lockfree/lockfree_forward.hpp> //lets see what you can give us
+#include <boost/crc.hpp>
 
 
 #include <spdlog/spdlog.h>
@@ -48,6 +46,7 @@
 
 #include <vector>
 #include <mutex>
+#include <shared_mutex>
 #include <future>
 #include <type_traits>
 #include <utility>
@@ -70,6 +69,8 @@ using default_token = as_tuple_t<use_awaitable_t<>>;
 
 using executor_with_default = default_token::executor_with_default<net::any_io_executor>;
 using tcp_stream = typename beast::tcp_stream::rebind_executor<executor_with_default>::other;
+using namespace boost::asio::experimental::awaitable_operators;
+
 
 namespace this_coro = net::this_coro;
 
@@ -84,7 +85,7 @@ namespace pof {
 		//the session is a single request and reponse cycle 
 		//should runs on the thread or threads that call one of the ios
 		//TODO: create an sslsession for session over ssl
-
+		using timer_t = default_token::as_default_on_t<boost::asio::steady_timer>;
 		template<class response_body, class request_body = http::empty_body>
 		class session : public std::enable_shared_from_this<session<response_body, request_body>>
 		{
@@ -539,15 +540,15 @@ namespace pof {
 				};
 
 				struct wb_message_header {
-					std::uint32_t mIdentifier;
-					std::uint32_t mType;
-					std::uint32_t mMessageLength;
-					time_rep_t mTimeStamp;
+					std::uint32_t mIdentifier = 0;
+					std::uint32_t mType = 0;
+					std::uint32_t mMessageLength = 0;
+					time_rep_t mTimeStamp = 0;
 				};
 				constexpr static const size_t wb_message_header_length = sizeof(wb_message_header);
 				using wb_message_body = std::vector<std::uint8_t>;
 				using wb_message = std::tuple<wb_message_header, wb_message_body>;
-				using recieve_signal_t = boost::signals2::signal<bool(const wb_message&), combiner>;
+				using recieve_signal_t = boost::signals2::signal<bool(std::error_code, const wb_message&), combiner>;
 
 				wb_session(boost::asio::io_context& ios, 
 					boost::asio::ssl::context& ssl,
@@ -562,16 +563,17 @@ namespace pof {
 					m_stream.next_layer().next_layer().close();
 				}
 
-				void write(const wb_message& mes){
+				bool write(const wb_message& mes){
 					bool is_writing = !m_msg_que.empty();
-					m_msg_que.push_front(std::move(mes));
-					if (!is_writing) {
+					bool wrote =  m_msg_que.push(std::move(mes));
+					if (!is_writing && wrote) { //if we were currently not writing and we wrote to the ringbuffer, then spawn
 						co_spawn(m_stream.get_executor(), do_write(), [&](std::exception_ptr ptr) {
 							if (ptr) {
 								std::rethrow_exception(ptr); //is this something ? or capture the exception, print to log and shut down websocket? 
 							}
 						});
 					}
+					return wrote;
 				}
 
 			protected:
@@ -607,6 +609,8 @@ namespace pof {
 				//	std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
 
 
+
+
 					//spawn a read
 					co_spawn(m_stream.get_executor(), do_read(), [&](std::exception_ptr ptr) {
 						if (ptr) {
@@ -619,30 +623,82 @@ namespace pof {
 				* Works as a client 
 				*/
 				awaitable<void> do_write() {
-					for (auto& msg: m_msg_que) {
+					std::error_code ec;
+					size_t size = 0;
+					size_t retry = 0;
+					while(!m_msg_que.empty()) {
+						
+						auto& msg = m_msg_que.front();
+
 						auto& header = std::get<0>(msg);
+						auto& body = std::get<1>(msg);
+
+						//crc?
+
 						const std::array<boost::asio::const_buffer, 2> bufs{ boost::asio::buffer(std::addressof(header),
-							wb_message_header_length), boost::asio::buffer(std::get<1>(msg)) };
-						auto [ec, size] = co_await m_stream.async_write(bufs);
+							wb_message_header_length), boost::asio::buffer(body) };
+						timer_t timer(co_await boost::asio::this_coro::executor);
+						timer.expires_after(1s); //write for one second
+						auto complete = co_await ( boost::asio::async_write(m_stream, bufs) || timer.async_wait());
+						switch (complete.index())
+						{
+						case 0:
+							timer.cancel();
+							retry = 0;
+							break;
+						case 1:
+						{
+							//time out, retry? 
+							if (retry < 3) {
+								retry++;
+								continue;
+							}
+							std::tie(ec) = std::get<1>(complete);
+							pof::base::task_manager::instance().service().post([&, msg = std::move(msg)]() {
+								recieve_sig(ec, msg);
+							});
+							m_msg_que.pop();
+						}
+						default:
+							break;
+						}
 						if (ec) {
 							fail(ec);
 							co_return;
 						}
-						m_msg_que.pop_front();
+						m_msg_que.pop();
 					}
 				}
 				/*read is still a problem*/
 				awaitable<void> do_read() {
 					for (;;) {
 						//read header
+						std::error_code ec;
+						size_t size = 0;
 						std::array<std::uint8_t, wb_message_header_length> buf = {};
 						auto header = new (buf.data()) wb_message_header;
 						wb_message_body body;
 
-						auto [ec, size] = co_await m_stream.async_read_some(m_read_buf.prepare(wb_message_header_length));
+						timer_t timer(co_await boost::asio::this_coro::executor);
+						timer.expires_after(1s);
+
+						auto complete = co_await (m_stream.async_read_some(m_read_buf.prepare(wb_message_header_length))
+								|| timer.async_wait());
+						switch (complete.index())
+						{
+						case 0:
+							timer.cancel();
+							break;
+						case 1:
+							//what happens if we timeout ? 
+							continue; //
+						default:
+							break;
+						}
+
+						std::tie(ec, size) = std::get<0>(complete);
 						if (ec ||  size != wb_message_header_length) {
-							fail(ec);
-							co_return;
+							fail(ec); //failing here throws an execption, should it? 
 						}
 						m_read_buf.commit(wb_message_header_length);
 						auto mutbuf = m_read_buf.data();
@@ -650,11 +706,25 @@ namespace pof {
 								static_cast<std::uint8_t*>(mutbuf.data()) + mutbuf.size(), buf.begin());
 						m_read_buf.consume(wb_message_header_length);
 
-
 						if (header->mMessageLength != 0) {
 							//read body
+							timer.expires_after(5s); //reading body data might take longer
 							body.resize(header->mMessageLength);
-							std::tie(ec, size) = co_await m_stream.async_read_some(m_read_buf.prepare(header->mMessageLength));
+							auto complete2 = co_await (m_stream.async_read_some(m_read_buf.prepare(header->mMessageLength)) || 
+									timer.async_wait());
+							switch (complete2.index())
+							{
+							case 0:
+								timer.cancel();
+								break;
+							case 1:
+								// time out retry or fail?
+								continue; //ignore this data block and try to read another data block from header ? 
+							default:
+								break;
+							}
+							//carry on reading
+							std::tie(ec, size) = std::get<0>(complete2);
 							if (ec || size != header->mMessageLength) {
 								fail(ec);
 								co_return;
@@ -669,7 +739,7 @@ namespace pof {
 
 						wb_message msg{ *header, body };
 						pof::base::task_manager::instance().service().post([&, msg = std::move(msg)]() {
-								recieve_sig(msg);
+							recieve_sig(std::error_code{}, msg);
 						});
 					}
 				}
@@ -695,7 +765,8 @@ namespace pof {
 
 				std::string m_host;
 				std::string m_target;
-				std::deque<wb_message> m_msg_que;
+
+				boost::lockfree::spsc_queue<wb_message> m_msg_que{100}; //only buffer a hundrend messages
 				boost::beast::flat_buffer m_read_buf;
 				boost::beast::websocket::stream<beast::ssl_stream<tcp_stream>> m_stream;
 			};

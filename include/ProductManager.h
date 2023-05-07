@@ -63,6 +63,10 @@ namespace pof {
 		const pof::base::data& GetCategories() const { return mCategories; }
 
 		void EmplaceProductData(pof::base::data&& data);
+		
+		//add a product from UI
+		void AddProductData();
+
 
 	private:
 
@@ -70,6 +74,8 @@ namespace pof {
 		pof::base::data mCategories; 
 		pof::base::packer mPacker{mCategories};
 		pof::base::unpacker mUnpacker{mCategories};
+
+
 
 
 		//should also contain the product view

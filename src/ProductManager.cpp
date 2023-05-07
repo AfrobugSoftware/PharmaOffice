@@ -64,4 +64,8 @@ void pof::ProductManager::EmplaceProductData(pof::base::data&& data)
 
 }
 
+void pof::ProductManager::AddProductData()
+{
+}
+
 
