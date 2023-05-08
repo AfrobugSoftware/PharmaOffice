@@ -2,8 +2,9 @@
 #include "Application.h"
 
 BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
-	EVT_SIZE(pof::ProductView::OnResize)
-	EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
+EVT_SIZE(pof::ProductView::OnResize)
+EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
+EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
 END_EVENT_TABLE()
 
 
@@ -103,6 +104,18 @@ void pof::ProductView::OnProductActivated(wxDataViewEvent& evt)
 		mProductinfo->Load(row);
 		SwapCenterPane(true);
 	}
+}
+
+void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+	const size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto Model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	auto& row = Model->GetDatastore()[idx];
+	auto& meta = Model->GetDatastore().get_metadata();
+	auto DataObject = new pof::DataObject("PRODUCTDATA"s, row, meta);
+	evt.SetDataObject(DataObject);
 }
 
 void pof::ProductView::CreateDataView()

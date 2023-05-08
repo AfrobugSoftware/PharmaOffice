@@ -4,6 +4,8 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
 	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)
 	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
+	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
+	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
 END_EVENT_TABLE()
 
 
@@ -157,10 +159,20 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
+
+	SetupDropTarget();
 }
 
 pof::SaleView::~SaleView()
 {
+}
+
+void pof::SaleView::SetupDropTarget()
+{
+	//allow drops from the dataobject
+	auto DataObject = new pof::DataObject("PRODUCTDATA", mDropRow, wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata());
+	auto DropTarget = new pof::DropTarget(DataObject, std::bind_front(&pof::SaleView::DropData, this));
+	SetDropTarget(DropTarget);
 }
 
 void pof::SaleView::OnClear(wxCommandEvent& evt)
@@ -176,4 +188,27 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 void pof::SaleView::OnSave(wxCommandEvent& evt)
 {
 	wxMessageBox("SAVE", "SAVE");
+}
+
+void pof::SaleView::OnDropPossible(wxDataViewEvent& evt)
+{
+	spdlog::info("Drop possible");
+}
+
+void pof::SaleView::OnDrop(wxDataViewEvent& evt)
+{
+	spdlog::info("Dropped");
+}
+
+void pof::SaleView::DropData(const pof::DataObject& dat)
+{
+	auto& meta = dat.GetMeta();
+	auto& row = dat.GetSetData();
+	if (row.has_value()) {
+		auto val = row.value();
+		spdlog::info("Droping {}", boost::variant2::get<std::string>(val.first[pof::ProductManager::PRODUCT_NAME]));
+	}
+	else {
+		spdlog::error("Drop data invalid or does not exist");
+	}
 }

@@ -15,6 +15,7 @@
 #include <wx/button.h>
 
 #include "SaleManager.h"
+#include "DropTarget.h"
 
 namespace pof
 {
@@ -65,11 +66,17 @@ namespace pof
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();
-
+		void SetupDropTarget();
 	protected:
 		void OnClear(wxCommandEvent& evt);
 		void OnCheckout(wxCommandEvent& evt);
 		void OnSave(wxCommandEvent& evt);
+		void OnDropPossible(wxDataViewEvent& evt);
+		void OnDrop(wxDataViewEvent& evt);
+
+		void DropData(const pof::DataObject& dat);
+	private:
+		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 
 		DECLARE_EVENT_TABLE();
 	};

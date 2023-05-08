@@ -24,6 +24,7 @@
 
 #include "AuiTheme.h"
 #include "ProductInfo.h"
+#include "DataObject.h"
 
 namespace pof
 {
@@ -91,6 +92,8 @@ namespace pof
 		void OnAuiThemeChange();
 
 		void OnProductActivated(wxDataViewEvent& evt);
+		void OnBeginDrag(wxDataViewEvent& evt);
+
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

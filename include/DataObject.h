@@ -19,6 +19,7 @@ namespace pof {
 		DataObject(const std::string& format, row_t& value, meta_t& meta) : mValue(value), mMeta(meta) {
 			mFormat.SetId(format);
 		}
+
 		virtual ~DataObject() { }
 
 		virtual size_t GetFormatCount(Direction dir) const override {

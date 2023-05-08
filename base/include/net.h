@@ -603,10 +603,15 @@ namespace pof {
 					}
 
 					//ssl handshake
-
+					beast::get_lowest_layer(m_stream).expires_after(1s);
+					spdlog::info("Creating handshake");
+					std::tie(ec) = co_await m_stream.next_layer().async_handshake(net::ssl::stream_base::client);
+					if (ec) {
+						fail(ec);
+					}
 
 					//wb socket handshake
-				//	std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
+					//std::tie(ec) = co_await m_stream.async_handshake(m_host, m_target, );
 
 
 
@@ -639,7 +644,7 @@ namespace pof {
 							wb_message_header_length), boost::asio::buffer(body) };
 						timer_t timer(co_await boost::asio::this_coro::executor);
 						timer.expires_after(1s); //write for one second
-						auto complete = co_await ( boost::asio::async_write(m_stream, bufs) || timer.async_wait());
+						auto complete = co_await (m_stream.async_write(bufs) || timer.async_wait());
 						switch (complete.index())
 						{
 						case 0:
