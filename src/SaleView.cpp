@@ -4,6 +4,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
 	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)
 	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
+	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
 END_EVENT_TABLE()
@@ -199,6 +200,10 @@ void pof::SaleView::OnDropPossible(wxDataViewEvent& evt)
 void pof::SaleView::OnDrop(wxDataViewEvent& evt)
 {
 	spdlog::info("Dropped");
+}
+
+void pof::SaleView::OnBeginDrag(wxDataViewEvent& evt)
+{
 }
 
 void pof::SaleView::DropData(const pof::DataObject& dat)

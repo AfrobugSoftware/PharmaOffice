@@ -5,6 +5,19 @@ pof::SaleManager::SaleManager()
 	SaleData = std::make_unique<pof::DataModel>();
 	ProductSaleHistory = std::make_unique<pof::DataModel>();
 
+	SaleData->Adapt<std::uint64_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::text_t>();
+
+	ProductSaleHistory->Adapt<std::uint64_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::text_t>();
 
 }
 

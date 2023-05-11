@@ -75,6 +75,8 @@ namespace pof
 		void OnDropPossible(wxDataViewEvent& evt);
 		void OnDrop(wxDataViewEvent& evt);
 
+		void OnBeginDrag(wxDataViewEvent& evt);
+
 		void DropData(const pof::DataObject& dat);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
