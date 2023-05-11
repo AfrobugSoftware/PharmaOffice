@@ -22,4 +22,20 @@ namespace pof {
 	private:
 		TargetSignal mTargetSignal;
 	};
+
+	class TreeItemDropTarget : public wxDropTarget {
+	public:
+		using DropTargetSignal_t = boost::signals2::signal<void(const pof::TreeItemDataObject::data_t&)>;
+		TreeItemDropTarget(pof::TreeItemDataObject* obj, DropTargetSignal_t::slot_type&& slot);
+
+		virtual wxDragResult OnEnter(wxCoord x, wxCoord y, wxDragResult def) override
+		{
+			return OnDragOver(x, y, def);
+		}
+
+		virtual wxDragResult OnData(wxCoord x, wxCoord y, wxDragResult def) override;
+		virtual void OnLeave() override;
+	private:
+		DropTargetSignal_t mTargetSignal;
+	};
 };

@@ -45,6 +45,12 @@ namespace pof {
 			INVENTORY_LOT_NUMBER, //HAVE MULTIPLE BACTHES -> 
 			INVENTORY_MAX
 		};
+
+		enum : std::uint8_t {
+			CATEGORY_ID,
+			CATEGORY_NAME,
+			CATEGORY_MAX
+		};
 		
 		~ProductManager();
 		ProductManager();

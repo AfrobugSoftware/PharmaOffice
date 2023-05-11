@@ -5,6 +5,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
+	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_LOG, pof::MainFrame::OnShowLog)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -55,6 +56,11 @@ void pof::MainFrame::CreateMenuBar()
 
 	//product menu
 	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
+
+	//view
+	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log", nullptr);
+
+	//about
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
@@ -81,7 +87,7 @@ void pof::MainFrame::CreateLogView()
 		wxDefaultSize, wxTE_READONLY | wxTE_MULTILINE | wxTE_RICH2);
 	auto sink = std::make_shared<spdlog::sinks::LogSink_mt>(mLogView);
 
-	mAuiManager.AddPane(mLogView.get(), wxAuiPaneInfo().Name("LogView").Caption("LOGS").Bottom().Show());
+	mAuiManager.AddPane(mLogView.get(), wxAuiPaneInfo().Name("LogView").Caption("LOGS").Bottom().Show().MinSize(-1, 200));
 #else
 	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log.txt");
 #endif // DEBUG
@@ -155,6 +161,16 @@ void pof::MainFrame::OnClose(wxCloseEvent& evt)
 	evt.Skip();
 }
 
+void pof::MainFrame::OnShowLog(wxCommandEvent& WXUNUSED(evt))
+{
+	auto& pane = mAuiManager.GetPane("LogView");
+	if (pane.IsOk() && !pane.IsShown()) {
+		pane.Show();
+		mAuiManager.Update();
+	}
+	
+}
+
 void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 {
 	wxFileDialog dialog(this);
@@ -188,13 +204,17 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
 				row.first.resize(pof::ProductManager::PRODUCT_MAX);
+				/*row.first[pof::ProductManager::PRODUCT_UUID] = boost::uuids::uuid();
+				row.first[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::string();
+				row.first[pof::ProductManager::PRODUCT_CLASS] = std::string();
+				row.first[pof::ProductManager::PRODUCT_BARCODE] = std::string();*/
+
 
 				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Serial number"]));
 				row.first[pof::ProductManager::PRODUCT_NAME] = pof::base::data::data_t(static_cast<std::string>(tempjs["Name"])); //name
 				row.first[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Package size"]));
 				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Stock count"]));
 				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(static_cast<std::string>(tempjs["Unit price"]));
-
 				row.first[pof::ProductManager::PRODUCT_CATEGORY] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Category id"]));
 
 				datastore.insert(std::move(row));

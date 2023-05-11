@@ -19,7 +19,10 @@
 #include <array>
 #include <unordered_map>
 
+
+#include <spdlog/spdlog.h>
 #include "ArtProvider.h"
+#include "DataObject.h"
 
 namespace std {
 	template<>
@@ -47,7 +50,8 @@ namespace pof {
 		enum class Evt {
 			ACTIVATED,
 			COLLAPASED,
-			SEL_CHANGED
+			SEL_CHANGED,
+			DRAG_END
 		};
 
 		enum {
@@ -66,6 +70,7 @@ namespace pof {
 
 		std::string GetText(const_iterator item) const;
 		int GetImage(const_iterator item) const;
+		const_iterator::value_type GetModuleItem(wxTreeItemId item) const;
 
 		bool CheckPrivilage();
 		inline void SetImageList(wxImageList* imglist) { mModuleTree->SetImageList(imglist); }
@@ -73,7 +78,8 @@ namespace pof {
 	protected:
 		void OnActivated(wxTreeEvent& evt);
 		void OnSelected(wxTreeEvent& evt);
-
+		void OnBeginDrag(wxTreeEvent& evt);
+		void OnEndDrag(wxTreeEvent& evt);
 
 		void SetupFont();
 
@@ -104,7 +110,6 @@ namespace pof {
 		wxPanel* m_panel2;
 		wxTreeCtrl* mModuleTree;
 		signal_t mSig;
-
 		std::unordered_map<wxTreeItemId, wxWindow*> mModuleViews;
 
 		DECLARE_EVENT_TABLE()

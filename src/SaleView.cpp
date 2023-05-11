@@ -54,7 +54,8 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME );
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRODUCT CATEGORY"), pof::SaleManager::PRODUCT_CATEGORY );
 	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn( wxT("QUANTITY"), pof::SaleManager::PRODUCT_QUANTITY);
-	mPriceCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRICE"), 0 );
+	mPriceCol = m_dataViewCtrl1->AppendTextColumn( wxT("PRICE"), pof::SaleManager::PRODUCT_PRICE);
+	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn( wxT("EXT PRICE"), pof::SaleManager::PRODUCT_EXT_PRICE);
 	bSizer6->Add( m_dataViewCtrl1, 1, wxALL|wxEXPAND, 0 );
 	
 	
@@ -206,7 +207,18 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 	auto& row = dat.GetSetData();
 	if (row.has_value()) {
 		auto val = row.value();
-		spdlog::info("Droping {}", boost::variant2::get<std::string>(val.first[pof::ProductManager::PRODUCT_NAME]));
+		auto row = pof::base::data::row_t();
+		row.first.resize(pof::SaleManager::MAX);
+		row.second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+		auto& v = row.first;
+		v[pof::SaleManager::PRODUCT_SERIAL_NUM] = val.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
+		v[pof::SaleManager::PRODUCT_CATEGORY] = "MEDICINE"s;
+		v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+		v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(0);
+		v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+
+		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
 	}
 	else {
 		spdlog::error("Drop data invalid or does not exist");

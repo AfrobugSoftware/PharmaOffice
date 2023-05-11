@@ -44,7 +44,8 @@ namespace pof
                 datetime,
                 text,
                 blob,
-                uuid
+                uuid,
+                null //null kind represents a datum that is null, used for tigther packing
             };
 
             using clock_t = std::chrono::system_clock;
@@ -151,11 +152,11 @@ namespace pof
 
                 //forms the header of the data:
                 //write time created and time last modified
+                ar & static_cast<std::uint32_t>(version); //write the version
                 ar & created.time_since_epoch().count();
                 ar & modified.time_since_epoch().count();
                 ar & static_cast<std::uint32_t>(value.size()); //size of rows
-                ar & static_cast<std::uint32_t>(value[0].first.size()); //write the size of the columns
-                ar & static_cast<std::uint32_t>(metadata.size());
+                ar & static_cast<std::uint32_t>(metadata.size()); //size of cols also size of meta
                 for (auto& k : metadata) {
                     ar & static_cast<std::underlying_type_t<kind>>(k);
                 }
@@ -221,20 +222,18 @@ namespace pof
             void load(Archiver& ar, const unsigned int version = 1){
                 //read the header
                 clock_t::duration::rep rep = 0; 
-                std::uint32_t rowsize = 0, size = 0, colsize = 0;
+                std::uint32_t rowsize = 0, colsize = 0, ver = 0;
+                ar >> ver; //read in the version .. check version type
                 ar >> rep;
                 created = datetime_t(clock_t::duration(rep));
                 ar >> rep;
                 modified = datetime_t(clock_t::duration(rep));
 
                 ar >> rowsize;
-                value.reserve(size);
-
+                value.reserve(rowsize);
                 ar >> colsize; //save for later
-                
                 //metadata size
-                ar >> size;
-                metadata.resize(size);
+                metadata.resize(colsize);
                 std::uint8_t k;
                 for (int i = 0; i < metadata.size(); i++) {
                     ar >> k;

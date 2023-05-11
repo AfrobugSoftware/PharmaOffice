@@ -76,7 +76,8 @@ namespace pof {
 
 		void OnAbout(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
-		
+		void OnShowLog(wxCommandEvent& evt);
+
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);
 

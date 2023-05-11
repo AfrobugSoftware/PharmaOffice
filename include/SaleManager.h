@@ -16,6 +16,7 @@ namespace pof {
 			PRODUCT_CATEGORY,
 			PRODUCT_PRICE,
 			PRODUCT_QUANTITY,
+			PRODUCT_EXT_PRICE,
 			MAX
 		};
 

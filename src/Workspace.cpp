@@ -16,14 +16,11 @@ pof::Workspace::Workspace( wxWindow* parent, wxWindowID id, const wxPoint& pos, 
 	
 	auto workspacetabart = new pof::WorkspaceTabArt;
 	mWorkspacebook->SetArtProvider(workspacetabart);
-
-	////test panel
-	//m_panel3 = new wxPanel( mWorkspacebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	//m_panel3->SetBackgroundColour(*wxWHITE);
-	//mWorkspacebook->AddPage( m_panel3, wxT("This is a test page..."), true, wxNullBitmap );
 	
 	bSizer4->Add( mWorkspacebook, 1, wxEXPAND | wxALL, 0 );
 	
+	SetDropTarget(new pof::TreeItemDropTarget(new pof::TreeItemDataObject{pof::TreeItemDataObject::data_t{}},
+		std::bind_front(&pof::Workspace::OnDroppedTreeITtem, this)));
 	
 	this->SetSizer( bSizer4 );
 	this->Layout();
@@ -68,4 +65,9 @@ void pof::Workspace::OnWorkspaceClose(wxAuiNotebookEvent& evt)
 		mSignal(Notif::CLOSED, pageIndex);
 	}
 	evt.Veto();
+}
+
+void pof::Workspace::OnDroppedTreeITtem(const pof::TreeItemDataObject::data_t& item)
+{
+	AddSpace(std::get<1>(item), std::get<2>(item), std::get<3>(item));
 }

@@ -15,6 +15,7 @@
 #include <boost/signals2/signal.hpp>
 #include "ArtProvider.h"
 #include "WorkspaceTabArt.h"
+#include "DropTarget.h"
 
 namespace pof {
 	class Workspace : public wxPanel
@@ -56,6 +57,7 @@ namespace pof {
 
 	protected:
 		void OnWorkspaceClose(wxAuiNotebookEvent& evt);
+		void OnDroppedTreeITtem(const pof::TreeItemDataObject::data_t& item);
 
 		signal_t mSignal;
 

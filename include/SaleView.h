@@ -35,6 +35,7 @@ namespace pof
 		wxDataViewColumn* mSerialNumber;
 		wxDataViewColumn* mProductNameCol;
 		wxDataViewColumn* mQuantityColumn;
+		wxDataViewColumn* mExtPriceColumn;
 		wxDataViewColumn* mPriceCol;
 		wxPanel* mSaleOutputPane;
 		wxPanel* mSaleDisplayPane;

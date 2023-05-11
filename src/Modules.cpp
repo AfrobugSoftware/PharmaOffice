@@ -4,6 +4,8 @@
 BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_ITEM_ACTIVATED(pof::Modules::ID_TREE, pof::Modules::OnActivated)
 	EVT_TREE_SEL_CHANGED(pof::Modules::ID_TREE, pof::Modules::OnSelected)
+	EVT_TREE_BEGIN_DRAG(pof::Modules::ID_TREE, pof::Modules::OnBeginDrag)
+	EVT_TREE_END_DRAG(pof::Modules::ID_TREE, pof::Modules::OnEndDrag)
 END_EVENT_TABLE()
 
 
@@ -27,6 +29,46 @@ void pof::Modules::OnSelected(wxTreeEvent& evt)
 		return;
 	}
 	mSig(winIter, Evt::SEL_CHANGED);
+}
+
+void pof::Modules::OnBeginDrag(wxTreeEvent& evt)
+{
+	spdlog::info("Starting drag");
+	evt.Allow();
+	auto item = evt.GetItem();
+	auto iter = mModuleViews.find(item);
+	if (iter == mModuleViews.end()) return;
+	pof::TreeItemDataObject itemData(std::make_tuple(iter->first, iter->second,
+			GetText(iter), GetImage(iter)));
+	wxDropSource source(itemData);
+	wxDragResult result = source.DoDragDrop(wxDrag_CopyOnly);
+
+	switch (result)
+	{
+	case wxDragError:
+		break;
+	case wxDragNone:
+
+		break;
+	case wxDragCopy:
+		break;
+	case wxDragMove:
+		break;
+	case wxDragLink:
+		break;
+	case wxDragCancel:
+		//canceled 
+		break;
+	default:
+		break;
+	}
+	evt.Veto();
+}
+
+void pof::Modules::OnEndDrag(wxTreeEvent& evt)
+{
+	evt.Veto();
+	spdlog::info("Ending drag");
 }
 
 void pof::Modules::SetupFont()
@@ -160,6 +202,15 @@ std::string pof::Modules::GetText(const_iterator item) const
 int pof::Modules::GetImage(const_iterator item) const
 {
 	return mModuleTree->GetItemImage(item->first);
+}
+
+pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemId item) const
+{
+	auto iter = mModuleViews.find(item);
+	if (iter == mModuleViews.end()) {
+		return std::make_pair<wxTreeItemId, wxWindow*>(wxTreeItemId{}, nullptr);
+	}
+	return *iter;
 }
 
 boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)
