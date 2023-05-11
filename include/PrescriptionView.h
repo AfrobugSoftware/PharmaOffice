@@ -8,6 +8,7 @@
 #include <wx/srchctrl.h>
 #include <wx/combobox.h>
 #include <wx/choice.h>
+#include <wx/datectrl.h>
 
 #include <nlohmann/json.hpp>
 #include "DataModel.h"
@@ -62,6 +63,7 @@ namespace pof {
 			ID_REFRESH,
 			ID_PSCHOICE,
 			ID_PRESCRIPTION_SOURCE,
+			ID_PRESCRIPTION_DATE,
 			ID_GET_PRESCRIPTION_SOURCES,
 			ID_BACK
 		};
@@ -104,7 +106,9 @@ namespace pof {
 
 	private:
 		std::unique_ptr<wxAuiManager> mPanelManager;
-		
+		wxDatePickerCtrl* mPrescriptionDate;
+
+
 		wxDataViewCtrl* mDataView;
 		//pof::DispensaryView* mDispensaryView;
 		std::unique_ptr<pof::DataModel> mModel;

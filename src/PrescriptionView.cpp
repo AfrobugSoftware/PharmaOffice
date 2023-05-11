@@ -37,6 +37,7 @@ void pof::PrescriptionView::CreateToolBar()
 	bar->AddControl(search);
 	bar->AddSeparator();
 	mPrescriptionSourceChoiceBox = new wxChoice(bar, ID_PRESCRIPTION_SOURCE, wxDefaultPosition, wxSize(200, -1), wxArrayString{});
+	bar->AddTool(ID_GET_PRESCRIPTION_SOURCES, wxT("Prescription source"), wxNullBitmap);
 	bar->AddControl(mPrescriptionSourceChoiceBox, "Prescription sources");
 	mPrescriptionSourceChoiceBox->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
 		wxPaintDC dc(mPrescriptionSourceChoiceBox);
@@ -53,13 +54,15 @@ void pof::PrescriptionView::CreateToolBar()
 		});
 	mPrescriptionSourceChoiceBox->SetHelpText("Select Prescription Source");
 	mPrescriptionSourceChoiceBox->SetLabelText("Select Prescription Source");
-	bar->AddTool(ID_GET_PRESCRIPTION_SOURCES, wxT("Prescription source"),
-		wxArtProvider::GetBitmap("download"));
+	
 
 	bar->AddStretchSpacer();
-	bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add fake prescription"), wxArtProvider::GetBitmap("action_add"));
-	bar->AddTool(ID_SUBSCRIBE, wxT("Connect"), wxArtProvider::GetBitmap("reply"));
-	bar->AddTool(ID_REFRESH, wxT("Refresh"), wxArtProvider::GetBitmap("file"));
+	mPrescriptionDate = new wxDatePickerCtrl(bar, ID_PRESCRIPTION_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	bar->AddControl(mPrescriptionDate, wxT("Prescription Date"));
+	bar->AddSpacer(10);
+	bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add Fake Prescription"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR));
+	bar->AddTool(ID_SUBSCRIBE, wxT("Connect"), wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_TOOLBAR));
+	bar->AddTool(ID_REFRESH, wxT("Refresh"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
 	bar->Realize();
 	mPanelManager->AddPane(bar, wxAuiPaneInfo().Name(wxT("Tool")).Caption(wxT("Tool bar")).ToolbarPane().Top()
 		.Resizable().MinSize(wxSize(-1, 30)).DockFixed()
