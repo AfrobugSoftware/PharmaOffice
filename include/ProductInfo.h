@@ -98,7 +98,7 @@ namespace pof
 
 			void m_splitter1OnIdle( wxIdleEvent& )
 			{
-				m_splitter1->SetSashPosition( 571 );
+				m_splitter1->SetSashPosition( 700 );
 				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 			}
 	protected:

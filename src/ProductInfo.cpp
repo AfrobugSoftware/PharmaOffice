@@ -13,14 +13,14 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
-	m_splitter1 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER );
+	m_splitter1 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
 	m_splitter1->Connect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 	
 	m_panel1 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW ); 
+	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
 	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
 	
 	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap(wxART_GO_BACK, wxART_TOOLBAR), "Back", wxITEM_NORMAL);
@@ -33,7 +33,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
 	
-	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE );
+	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
 	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
 
 	
@@ -51,7 +51,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL);
+	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS ); 
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
@@ -109,7 +109,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
-	m_splitter1->SplitVertically( m_panel1, m_panel2, 800 ); //splitter posistion
+	m_splitter1->SplitVertically( m_panel1, m_panel2, 400); //splitter posistion
 	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
 	
 	
@@ -124,6 +124,7 @@ pof::ProductInfo::~ProductInfo()
 
 void pof::ProductInfo::StyleProductPropertyManager()
 {
+	m_propertyGridManager1->SetBackgroundColour(*wxWHITE); //FROM THEME
 }
 
 void pof::ProductInfo::Load(const pof::base::data::row_t& row)

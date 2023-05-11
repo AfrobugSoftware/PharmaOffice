@@ -55,10 +55,10 @@ void pof::MainFrame::CreateMenuBar()
 
 
 	//product menu
-	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
+	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json\tCtrl-J", nullptr);
 
 	//view
-	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log", nullptr);
+	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
 
 	//about
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
@@ -107,6 +107,7 @@ void pof::MainFrame::CreateModules()
 	//set the module to view pipeline
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
 	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
+	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
 		
 }
 
@@ -129,10 +130,12 @@ void pof::MainFrame::CreateImageList()
 void pof::MainFrame::CreateViews()
 {
 	mProductView = new pof::ProductView(this, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	mSaleView = new pof::SaleView(this, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mSaleView = new pof::SaleView(this, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mPrescriptionView = new pof::PrescriptionView(this, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	
 	mProductView->Hide();
 	mSaleView->Hide();
+	mPrescriptionView->Hide();
 }
 
 void pof::MainFrame::SetupAuiTheme()
