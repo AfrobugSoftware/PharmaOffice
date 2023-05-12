@@ -85,6 +85,7 @@ namespace pof
 				ID_TOOL_GO_BACK = wxID_HIGHEST + 2000,
 				ID_TOOL_ADD_INVENTORY,
 				ID_TOOL_REMV_EXPIRE_BATCH,
+				ID_PROPERTY_GRID,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -104,9 +105,11 @@ namespace pof
 	protected:
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
+		void OnPropertyChanged(wxPropertyGridEvent& evt);
 
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;
+		PropertyUpdate mPropertyUpdate;
 	};	
 }

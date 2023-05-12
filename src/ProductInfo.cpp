@@ -5,6 +5,7 @@
 BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
+	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
 END_EVENT_TABLE()
 
 
@@ -51,7 +52,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
+	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS ); 
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
@@ -188,4 +189,11 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	else {
 		//rejected
 	}
+}
+
+void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
+{
+	wxPGProperty* props = evt.GetProperty();
+	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
+	if(props->IsCategory()) return;
 }

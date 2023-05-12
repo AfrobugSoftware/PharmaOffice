@@ -118,6 +118,23 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 	evt.SetDataObject(DataObject);
 }
 
+void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
+{
+	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
+	auto& DataStore = DatModelptr->GetDatastore();
+	auto Iter = std::find_if(DataStore.begin(), DataStore.end(), [&](const pof::base::data::row_t& elem) -> bool {
+		return  (boost::variant2::get<std::uint64_t>(elem.first[pof::ProductManager::PRODUCT_SERIAL_NUM]) ==
+			boost::variant2::get<uint64_t>(mUpdatedElem.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM]));
+	});
+	if (Iter == DataStore.end()) return; //nothing to update
+
+	for (size_t i = 0; i < pof::ProductManager::PRODUCT_MAX; i++) {
+		if (mUpdatedElem.mUpdatedElememts.test(i)) {
+			Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
+		}
+	}
+}
+
 void pof::ProductView::CreateDataView()
 {
 
@@ -171,6 +188,7 @@ void pof::ProductView::CreateProductInfo()
 {
 	mProductinfo = new pof::ProductInfo(this, ID_PRODUCTINFO);
 	mProductinfo->AttachBackSlot([&]() { SwapCenterPane(false); });
+	mProductinfo->AttachPropertyUpdateSlot(std::bind_front(&pof::ProductView::OnProductInfoUpdated, this));
 
 	m_mgr.AddPane(mProductinfo, wxAuiPaneInfo().Name("ProductInfo").CenterPane().Hide());
 

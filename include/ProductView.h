@@ -94,6 +94,7 @@ namespace pof
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
 
+		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();
