@@ -30,6 +30,7 @@
 
 namespace pof
 {
+	//aslo use for adding a product to the database
 	class ProductInfo : public wxPanel 
 	{
 		private:
@@ -55,6 +56,8 @@ namespace pof
 			wxPGProperty* mPackageSizeItem;
 			wxPGProperty* mProductClass;
 			wxPGProperty* mFormulationItem;
+			wxPGProperty* mStrengthValueItem;
+			wxPGProperty* mStrengthTypeItem;
 			wxPGProperty* mMoreProductInfo;
 			wxPGProperty* mDirForUse;
 			wxPGProperty* mHealthCond;
@@ -69,6 +72,7 @@ namespace pof
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
 			wxPGChoices ExpChoices;
+			wxPGChoices StrengthChoices;
 
 
 			DECLARE_EVENT_TABLE();

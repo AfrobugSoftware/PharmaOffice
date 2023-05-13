@@ -177,8 +177,8 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, "Add product", wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
-
+	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
+	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), wxT("Creates a new Category for medical products"));
 
 	m_auiToolBar1->Realize();
 

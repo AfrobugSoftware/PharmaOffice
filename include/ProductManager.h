@@ -18,12 +18,13 @@ namespace pof {
 			PRODUCT_UUID,
 			PRODUCT_SERIAL_NUM,
 			PRODUCT_NAME,
-			PRODUCT_GENERIC_NAME, //FOR PHARMACEUTICES WITH GENERIC NAME
+			PRODUCT_GENERIC_NAME, //FOR PHARMACEUTICES WITH GENERIC NAME, MIGHT CONTAIN MORE THAN ONE GENERIC NAME FOR EXAMPLE ATHERTHER/LUMEFANTRINE 
 			PRODUCT_CLASS,
 			PRODUCT_FORMULATION,
 			PRODUCT_DOSAGE, // in figures, comma seperated
 			PRODUCT_DOSAGE_WORDS, //In words
-			PROUDCT_STRENGTH, // GIVEN IN mg, g %v/v, %m/v -> need to have a list of approved stengths, omma seperated
+			PRODUCT_STRENGTH, // GIVEN IN mg, g %v/v, %m/v -> need to have a list of approved stengths,
+			PRODUCT_STRENGTH_TYPE, // GIVEN as mg, g %v/v, %m/v -> need to have a list of approved stengths,
 			PRODUCT_USAGE_INFO,
 			PRODUCT_DESCRIP, 
 			PRODUCT_HEALTH_CONDITIONS, //COMMA SEPERATED

@@ -12,7 +12,8 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t, //FORMULATION
 		pof::base::data::text_t, // DOSAGE COMMA SEPARATED
 		pof::base::data::text_t, //DOSEAGE WORDS COMMA SEPARATED
-		pof::base::data::text_t, // STRENGTH COMMA SEPARATED
+		pof::base::data::text_t, // STRENGTH
+		pof::base::data::text_t, // STRENGTH TYPE
 		pof::base::data::text_t, // USAGE INFO
 		pof::base::data::text_t, // PRODUCT DESCRIPTION
 		pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
