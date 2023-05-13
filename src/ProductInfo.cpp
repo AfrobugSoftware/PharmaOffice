@@ -57,16 +57,16 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
 	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product Details"), wxT("Product Details") ) ); 
-	mNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("Name"), wxT("Name") ) );
+	mNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("NAME"), wxT("Name") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mNameItem, wxT("The product brand name") );
-	mGenericNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("Generic Name"), wxT("Generic Name") ) );
+	mGenericNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("GENERIC NAME"), wxT("Generic Name") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mGenericNameItem, wxT("The generic name for the product") );
-	mPackageSizeItem = m_propertyGridPage1->Append( new wxIntProperty( wxT("Package Size"), wxT("Package Size") ) );
+	mPackageSizeItem = m_propertyGridPage1->Append( new wxIntProperty( wxT("PACKAGE SIZE"), wxT("Package Size") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mPackageSizeItem, wxT("Size of a single unit of product for sale. For example, for anti-malaria with 6 tablets would have package size set to 6 and formulation set to tablets") );
 
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
-	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("Class"), wxT("Class"), ProductClassChoices));
+	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("CLASS"), wxT("Class"), ProductClassChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription.") );
 	
 	FormulationChoices.Add("TABLET");
@@ -77,31 +77,31 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("Formulation"), wxT("Formulation"), FormulationChoices));
+	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxT("Formulation"), FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
 	
 	mMoreProductInfo = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("More Product Information"), wxT("More Product Information") ) ); 
-	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("Direction For Use"), wxT("Direction For Use") ) );
+	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("DIRECTION FOR USE"), wxT("Direction For Use") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mDirForUse, wxT("Information of usage. This would be printed on the label when sold over the counter") );
-	mHealthCond = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("Health Conditions"), wxT("Health Conditions") ) );
+	mHealthCond = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("HEALTH CONDITIONS"), wxT("Health Conditions") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mHealthCond, wxT("A list of possible health ") );
-	mProductDescription = m_propertyGridPage1->Append( new wxLongStringProperty( wxT("Description"), wxT("Description") ) );
+	mProductDescription = m_propertyGridPage1->Append( new wxLongStringProperty( wxT("DESCRIPTION"), wxT("Description") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mProductDescription, wxT("Describes the product in a way that it can be added to a formulary") );
 	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings") ) ); 
-	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("Minimum Stock Count"), wxT("Minimum Stock Count") ) );
+	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("MINIMUM STOCK COUNT"), wxT("Minimum Stock Count") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mMinStockCount, wxT("The amount of stock that should indicate stock level is low. ") );
-	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("Expire Alert"), wxT("Expire Alert") ) );
+	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("EXPIRE ALERT"), wxT("Expire Alert") ) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDateCount, wxT("Number of (Days, Weeks, Months) before expiry date that an alert should be sent") );
 	
 	ExpChoices.Add("DAY");
 	ExpChoices.Add("WEEK");
 	ExpChoices.Add("MONTH");
 
-	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("Expire Alert Period"), wxT("Expire Alert Period"), ExpChoices) );
+	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE ALERT PERIOD"), wxT("Expire Alert Period"), ExpChoices) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
 	
 	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Sale"), wxT("Sale") ) ); 
-	mUnitPrice = m_propertyGridPage1->Append( new wxFloatProperty( wxT("Unit Price"), wxT("Unit Price")) );
+	mUnitPrice = m_propertyGridPage1->Append( new wxFloatProperty( wxT("UNIT PRICE"), wxT("Unit Price")) );
 	m_propertyGridPage1->SetPropertyHelpString( mUnitPrice, wxT("Price per Package size of the Product\n") );
 
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
@@ -172,9 +172,27 @@ boost::signals2::connection pof::ProductInfo::AttachPropertyUpdateSlot(update_si
 	return mUpdatePropertySignal.connect(std::forward<pof::ProductInfo::update_signal_t::slot_type>(slot));
 }
 
+void pof::ProductInfo::CreateNameToProductElemTable()
+{
+	mNameToProductElem.insert({"CLASS", pof::ProductManager::PRODUCT_CLASS});
+	mNameToProductElem.insert({"NAME", pof::ProductManager::PRODUCT_NAME});
+	mNameToProductElem.insert({"GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME});
+	mNameToProductElem.insert({"PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE});
+	mNameToProductElem.insert({"UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE});
+	mNameToProductElem.insert({"MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT});
+	mNameToProductElem.insert({ "DIRECTION FOR USE", pof::ProductManager::PRODUCT_USAGE_INFO });
+	mNameToProductElem.insert({ "HEALTH CONDITIONS", pof::ProductManager::PRODUCT_HEALTH_CONDITIONS });
+	mNameToProductElem.insert({ "DESCRIPTION", pof::ProductManager::PRODUCT_DESCRIP });
+
+	
+}
+
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
+	if (mPropertyUpdate.has_value()) {
+		mUpdatePropertySignal(mPropertyUpdate.value());
+	}
 }
 
 void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
@@ -194,6 +212,83 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 {
 	wxPGProperty* props = evt.GetProperty();
-	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	if(props->IsCategory()) return;
+
+	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
+	if (PropIter == mNameToProductElem.end()) return;
+	if (!mPropertyUpdate.has_value()) {
+		mPropertyUpdate.emplace();
+	}
+	int ProductElemIdx = PropIter->second;
+	mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx);
+	mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+	auto PropertyValue = evt.GetPropertyValue();
+	auto& v = mPropertyUpdate->mUpdatedElementsValues.first;
+	auto& v = mPropertyUpdate->mUpdatedElementsValues.first;
+	switch (ProductElemIdx)
+	{
+	case pof::ProductManager::PRODUCT_NAME:
+		v[pof::ProductManager::PRODUCT_NAME] = std::move(PropertyValue.GetString().ToStdString());
+		break;
+	case pof::ProductManager::PRODUCT_GENERIC_NAME:
+		v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(PropertyValue.GetString().ToStdString());
+		break;
+	case pof::ProductManager::PRODUCT_CLASS:
+		v[pof::ProductManager::PRODUCT_CLASS] = std::move(ProductClassChoices.GetLabel(PropertyValue.GetInteger()).ToStdString());
+		break;
+	case pof::ProductManager::PRODUCT_PACKAGE_SIZE:
+		v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = PropertyValue.GetInteger();
+		break;
+	case pof::ProductManager::PRODUCT_UNIT_PRICE:
+		v[pof::ProductManager::PRODUCT_UNIT_PRICE] = std::move(PropertyValue.GetString().ToStdString());
+		break;
+	case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
+		v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = PropertyValue.GetInteger();
+		break;
+	case pof::ProductManager::PRODUCT_USAGE_INFO:
+	{
+		auto values = std::move(PropertyValue.GetArrayString());
+		std::vector<std::string> arrayString;
+		arrayString.reserve(values.size());
+		for (auto& str : values) {
+			arrayString.emplace_back(std::move(str.ToStdString()));
+		}
+		v[pof::ProductManager::PRODUCT_USAGE_INFO] = std::move(fmt::format("{}", fmt::join(arrayString, ",")));
+		break;
+	}
+	case pof::ProductManager::PRODUCT_HEALTH_CONDITIONS:
+	{
+		auto values = std::move(PropertyValue.GetArrayString());
+		std::vector<std::string> arrayString;
+		arrayString.reserve(values.size());
+		for (auto& str : values) {
+			arrayString.emplace_back(std::move(str.ToStdString()));
+		}
+		v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = std::move(fmt::format("{}", fmt::join(arrayString, ",")));
+		break;
+	}
+	case pof::ProductManager::PRODUCT_DESCRIP:
+		v[pof::ProductManager::PRODUCT_DESCRIP] = std::move(PropertyValue.GetString().ToStdString());
+		break;
+	case pof::ProductManager::PRODUCT_DOSAGE:
+
+		break;
+	case pof::ProductManager::PRODUCT_DOSAGE_WORDS:
+		break;
+	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
+		break;
+	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
+		break;
+	case pof::ProductManager::PRODUCT_SIDEEFFECTS:
+		break;
+	case pof::ProductManager::PRODUCT_FORMULATION:
+		v[pof::ProductManager::PRODUCT_FORMULATION] = 
+				std::move(FormulationChoices.GetLabel(PropertyValue.GetInteger()).ToStdString());
+		break;
+	default:
+		return;
+	}
+	
+	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
+	evt.Veto(); //might not be necessary
 }

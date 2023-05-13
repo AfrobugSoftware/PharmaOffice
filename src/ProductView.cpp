@@ -133,6 +133,8 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 			Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
 		}
 	}
+	Iter->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>
+			(pof::base::data::state::MODIFIED));
 }
 
 void pof::ProductView::CreateDataView()

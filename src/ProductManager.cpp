@@ -9,17 +9,25 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t, // NAME
 		pof::base::data::text_t, // GENERIC NAME
 		pof::base::data::text_t, //CLASS
-		pof::base::data::text_t, //UNIT TYPE
-		std::uint32_t, // DOSAGE
-		pof::base::data::text_t, //DOSEAGE WORDS
-		pof::base::data::text_t, // STRENGTH
+		pof::base::data::text_t, //FORMULATION
+		pof::base::data::text_t, // DOSAGE COMMA SEPARATED
+		pof::base::data::text_t, //DOSEAGE WORDS COMMA SEPARATED
+		pof::base::data::text_t, // STRENGTH COMMA SEPARATED
 		pof::base::data::text_t, // USAGE INFO
+		pof::base::data::text_t, // PRODUCT DESCRIPTION
+		pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
 		pof::base::data::text_t, // UNIT PRICE
 		std::uint64_t, //PACAKGE SIZE
 		std::uint64_t, //STOCK COUNT
 		pof::base::data::text_t, //SIDE EFFECTS
 		pof::base::data::text_t, //BARCODE
-		std::uint64_t //CATEGORY ID
+		std::uint64_t, //CATEGORY ID
+
+		//PRODUCT SETTINGS
+		std::uint32_t, //MIN_STOCJ_COUNT
+		pof::base::data::text_t, //EXPIRE PERIOD
+		pof::base::data::datetime_t //EXPIRE DATE
+
 	>();
 	
 	mInventoryData->Adapt<

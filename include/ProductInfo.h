@@ -21,6 +21,9 @@
 #include <Data.h>
 
 #include <bitset>
+#include <unordered_map>
+#include <optional>
+
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
 #include "InventoryDialog.h"
@@ -96,6 +99,8 @@ namespace pof
 			void LoadProductProperty(const pof::base::data::row_t& row);
 			boost::signals2::connection AttachBackSlot(back_signal_t::slot_type&& slot);
 			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
+			void CreateNameToProductElemTable();
+
 
 			void m_splitter1OnIdle( wxIdleEvent& )
 			{
@@ -110,6 +115,7 @@ namespace pof
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;
-		PropertyUpdate mPropertyUpdate;
+		std::optional<PropertyUpdate> mPropertyUpdate;
+		std::unordered_map<std::string, size_t> mNameToProductElem;
 	};	
 }
