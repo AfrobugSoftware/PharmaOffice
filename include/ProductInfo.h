@@ -62,6 +62,7 @@ namespace pof
 			wxPGProperty* mDirForUse;
 			wxPGProperty* mHealthCond;
 			wxPGProperty* mProductDescription;
+			wxPGProperty* mSideEffects;
 			wxPGProperty* mSettings;
 			wxPGProperty* mMinStockCount;
 			wxPGProperty* mExpDateCount;

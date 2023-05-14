@@ -83,13 +83,15 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 
 	mMoreProductInfo = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("MORE PRODUCT INFORMATION"), wxT("More Product Information") ) ); 
-	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("DIRECTION FOR USE"), wxPG_LABEL );
+	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("DIRECTION FOR USE"), wxPG_LABEL ));
 	m_propertyGridPage1->SetPropertyHelpString( mDirForUse, wxT("Information of usage. This would be printed on the label when sold over the counter") );
 	mHealthCond = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("HEALTH CONDITIONS"), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString( mHealthCond, wxT("A list of possible health ") );
 	mProductDescription = m_propertyGridPage1->Append( new wxLongStringProperty( wxT("DESCRIPTION"), wxPG_LABEL) );
 	m_propertyGridPage1->SetPropertyHelpString( mProductDescription, wxT("Describes the product in a way that it can be added to a formulary") );
-	
+	mSideEffects = m_propertyGridPage1->Append(new wxArrayStringProperty(wxT("SIDE EFFECTS"), wxPG_LABEL));
+	m_propertyGridPage1->SetPropertyHelpString(mSideEffects, wxT("Possible Side effects associated this this product"));
+
 	mStrengthValueItem = m_propertyGridPage1->Append(new wxStringProperty(wxT("STRENGTH/CONC."), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString(mStrengthValueItem, wxT("The pharmalogical strength of the medication"));
 
@@ -195,18 +197,20 @@ boost::signals2::connection pof::ProductInfo::AttachPropertyUpdateSlot(update_si
 
 void pof::ProductInfo::CreateNameToProductElemTable()
 {
-	mNameToProductElem.insert({"CLASS", pof::ProductManager::PRODUCT_CLASS});
-	mNameToProductElem.insert({"NAME", pof::ProductManager::PRODUCT_NAME});
-	mNameToProductElem.insert({"GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME});
-	mNameToProductElem.insert({"PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE});
-	mNameToProductElem.insert({"UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE});
-	mNameToProductElem.insert({"MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT});
+	mNameToProductElem.insert({ "CLASS", pof::ProductManager::PRODUCT_CLASS });
+	mNameToProductElem.insert({ "NAME", pof::ProductManager::PRODUCT_NAME });
+	mNameToProductElem.insert({ "GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME });
+	mNameToProductElem.insert({ "PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
+	mNameToProductElem.insert({ "UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE });
+	mNameToProductElem.insert({ "MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT });
 	mNameToProductElem.insert({ "DIRECTION FOR USE", pof::ProductManager::PRODUCT_USAGE_INFO });
 	mNameToProductElem.insert({ "HEALTH CONDITIONS", pof::ProductManager::PRODUCT_HEALTH_CONDITIONS });
 	mNameToProductElem.insert({ "DESCRIPTION", pof::ProductManager::PRODUCT_DESCRIP });
-	mNameToProductElem.insert({ "STRENGTH/CONC. ", pof::ProductManager::PRODUCT_STRENGTH});
+	mNameToProductElem.insert({ "STRENGTH/CONC. ", pof::ProductManager::PRODUCT_STRENGTH });
 	mNameToProductElem.insert({ "STRENGTH TYPE", pof::ProductManager::PRODUCT_STRENGTH_TYPE });
-	
+	mNameToProductElem.insert({ "SIDE EFFECTS", pof::ProductManager::PRODUCT_SIDEEFFECTS});
+	mNameToProductElem.insert({ "EXPIRE ALERT PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
+	mNameToProductElem.insert({ "EXPIRE ALERT", pof::ProductManager::PRODUCT_TO_EXPIRE_DATE });
 }
 
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
@@ -223,8 +227,17 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
-
 		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
+
+		if (!mPropertyUpdate.has_value()) {
+			mPropertyUpdate.emplace();
+		}
+
+		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]) 
+				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+
 	}
 	else {
 		//rejected
@@ -256,7 +269,6 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
 	auto PropertyValue = evt.GetPropertyValue();
 	auto& v = mPropertyUpdate->mUpdatedElementsValues.first;
-	auto& v = mPropertyUpdate->mUpdatedElementsValues.first;
 	switch (ProductElemIdx)
 	{
 	case pof::ProductManager::PRODUCT_NAME:
@@ -287,20 +299,12 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	case pof::ProductManager::PRODUCT_DESCRIP:
 		v[pof::ProductManager::PRODUCT_DESCRIP] = std::move(PropertyValue.GetString().ToStdString());
 		break;
-	case pof::ProductManager::PRODUCT_DOSAGE:
-	{
-		v[pof::ProductManager::PRODUCT_DOSAGE] = std::move(JoinArrayList(PropertyValue));
-		break;
-	}
-	case pof::ProductManager::PRODUCT_DOSAGE_WORDS:
-
-		break;
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
-		break;
 	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
+		v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = std::move("");
 		break;
 	case pof::ProductManager::PRODUCT_SIDEEFFECTS:
-
+		v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(JoinArrayList(PropertyValue));
 		break;
 	case pof::ProductManager::PRODUCT_FORMULATION:
 		v[pof::ProductManager::PRODUCT_FORMULATION] = 

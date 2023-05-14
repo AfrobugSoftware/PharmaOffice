@@ -21,8 +21,6 @@ namespace pof {
 			PRODUCT_GENERIC_NAME, //FOR PHARMACEUTICES WITH GENERIC NAME, MIGHT CONTAIN MORE THAN ONE GENERIC NAME FOR EXAMPLE ATHERTHER/LUMEFANTRINE 
 			PRODUCT_CLASS,
 			PRODUCT_FORMULATION,
-			PRODUCT_DOSAGE, // in figures, comma seperated
-			PRODUCT_DOSAGE_WORDS, //In words
 			PRODUCT_STRENGTH, // GIVEN IN mg, g %v/v, %m/v -> need to have a list of approved stengths,
 			PRODUCT_STRENGTH_TYPE, // GIVEN as mg, g %v/v, %m/v -> need to have a list of approved stengths,
 			PRODUCT_USAGE_INFO,
@@ -38,7 +36,7 @@ namespace pof {
 			//Product setting
 			PRODUCT_MIN_STOCK_COUNT,
 			PRODUCT_EXPIRE_PERIOD,
-			PRODUCT_TO_EXPIRE_DATE,
+			PRODUCT_TO_EXPIRE_DATE, //NUMBER OF PERIOD TO WAIT TO BE INFORMED
 
 			PRODUCT_MAX
 		};
