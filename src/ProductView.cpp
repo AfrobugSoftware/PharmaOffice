@@ -30,6 +30,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateDataView();
 	CreateProductInfo();
 	SetupAuiTheme();
+	CreateAttibutes();
 	m_mgr.Update();
 }
 
@@ -135,6 +136,9 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	}
 	Iter->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>
 			(pof::base::data::state::MODIFIED));
+	int idx = std::distance(DataStore.begin(), Iter);
+	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
+	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
 }
 
 void pof::ProductView::CreateDataView()
@@ -194,6 +198,12 @@ void pof::ProductView::CreateProductInfo()
 
 	m_mgr.AddPane(mProductinfo, wxAuiPaneInfo().Name("ProductInfo").CenterPane().Hide());
 
+}
+
+void pof::ProductView::CreateAttibutes()
+{
+	mUpdatedAttr = std::make_shared<wxDataViewItemAttr>();
+	mUpdatedAttr->SetBackgroundColour(wxTheColourDatabase->Find("Tomato"));
 }
 
 void pof::ProductView::SwapCenterPane(bool IsInventoryView)

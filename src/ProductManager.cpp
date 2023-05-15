@@ -10,8 +10,6 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t, // GENERIC NAME
 		pof::base::data::text_t, //CLASS
 		pof::base::data::text_t, //FORMULATION
-		pof::base::data::text_t, // DOSAGE COMMA SEPARATED
-		pof::base::data::text_t, //DOSEAGE WORDS COMMA SEPARATED
 		pof::base::data::text_t, // STRENGTH
 		pof::base::data::text_t, // STRENGTH TYPE
 		pof::base::data::text_t, // USAGE INFO

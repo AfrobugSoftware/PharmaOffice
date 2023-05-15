@@ -139,6 +139,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
+	CreateNameToProductElemTable();
 	StyleProductPropertyManager();
 }
 
@@ -176,12 +177,139 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 
 }
 
+
 void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 {
 	auto& d = row.first;
-	mNameItem->SetValue(wxVariant(boost::variant2::get<std::string>(d[pof::ProductManager::PRODUCT_NAME])));
-	mPackageSizeItem->SetValue(wxVariant(boost::variant2::get<std::int32_t>(d[pof::ProductManager::PRODUCT_PACKAGE_SIZE])));
-
+	for (int i = 0; i < d.size(); i++) {
+		auto& datum = d[i];
+		switch (i)
+		{
+		case pof::ProductManager::PRODUCT_NAME:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mNameItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mNameItem->SetValue(wxVariant());
+			}
+			break;
+		}
+		case pof::ProductManager::PRODUCT_GENERIC_NAME:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mGenericNameItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mGenericNameItem->SetValue(wxVariant());
+			}
+			break;
+		}
+		case pof::ProductManager::PRODUCT_CLASS:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				const auto Ar = std::move(ProductClassChoices.GetLabels());
+				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
+				if ((Iter != Ar.end())) {
+					auto idx = std::distance(Ar.begin(), Iter);
+					mProductClass->SetValue(wxVariant(static_cast<int>(idx)));
+				}
+			}
+			else {
+				mProductClass->SetValue(wxVariant());
+			}
+			break;
+		case pof::ProductManager::PRODUCT_PACKAGE_SIZE:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::uint64))
+			{
+				mPackageSizeItem->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(datum))));
+			}
+			else {
+				mPackageSizeItem->SetValue(wxVariant());
+			}
+			break;
+		}
+		case pof::ProductManager::PRODUCT_UNIT_PRICE:
+			break;
+		case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
+			break;
+		case pof::ProductManager::PRODUCT_USAGE_INFO:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mDirForUse->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mDirForUse->SetValue(wxVariant());
+			}
+			break;
+		case pof::ProductManager::PRODUCT_HEALTH_CONDITIONS:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mHealthCond->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mHealthCond->SetValue(wxVariant());
+			}
+			break;
+		case pof::ProductManager::PRODUCT_DESCRIP:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mProductDescription->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mProductDescription->SetValue(wxVariant());
+			}
+			break;
+		case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
+		case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
+			break;
+		case pof::ProductManager::PRODUCT_SIDEEFFECTS:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mSideEffects->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mSideEffects->SetValue(wxVariant());
+			}
+			break;
+		}
+		case pof::ProductManager::PRODUCT_FORMULATION:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				auto Ar = std::move(FormulationChoices.GetLabels());
+				auto FormIter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
+				if ((FormIter != Ar.end())) {
+					auto idx = std::distance(Ar.begin(), FormIter);
+					mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
+				}
+			}
+			else {
+				mFormulationItem->SetValue(wxVariant());
+			}
+			break;
+		}
+		case pof::ProductManager::PRODUCT_STRENGTH:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				mStrengthValueItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+			}
+			else {
+				mStrengthValueItem->SetValue(wxVariant());
+			}
+			break;
+		case pof::ProductManager::PRODUCT_STRENGTH_TYPE:
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
+				auto Ar = std::move(StrengthChoices.GetLabels());
+				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
+				if ((Iter != Ar.end())) {
+					auto idx = std::distance(Ar.begin(), Iter);
+					mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
+				}
+			}
+			else {
+				mStrengthTypeItem->SetValue(wxVariant());
+			}
+			break;
+		default:
+			break;
+		}
+	}
 	//
 }
 
@@ -211,6 +339,7 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "SIDE EFFECTS", pof::ProductManager::PRODUCT_SIDEEFFECTS});
 	mNameToProductElem.insert({ "EXPIRE ALERT PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "EXPIRE ALERT", pof::ProductManager::PRODUCT_TO_EXPIRE_DATE });
+	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
 }
 
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
@@ -218,6 +347,7 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 	mBackSignal();
 	if (mPropertyUpdate.has_value()) {
 		mUpdatePropertySignal(mPropertyUpdate.value());
+		mPropertyUpdate = {};
 	}
 }
 
@@ -227,10 +357,12 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
-		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
 
 		if (!mPropertyUpdate.has_value()) {
 			mPropertyUpdate.emplace();
+			mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
+				mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
 		}
 
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
@@ -238,6 +370,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]) 
 				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 
+		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
 	}
 	else {
 		//rejected
@@ -258,15 +391,17 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 {
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
-
+	spdlog::info("{}", evt.GetPropertyName().ToStdString());
 	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
 	if (PropIter == mNameToProductElem.end()) return;
 	if (!mPropertyUpdate.has_value()) {
 		mPropertyUpdate.emplace();
+		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
+			mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
 	}
 	int ProductElemIdx = PropIter->second;
 	mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx);
-	mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
 	auto PropertyValue = evt.GetPropertyValue();
 	auto& v = mPropertyUpdate->mUpdatedElementsValues.first;
 	switch (ProductElemIdx)
@@ -281,13 +416,13 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_CLASS] = std::move(ProductClassChoices.GetLabel(PropertyValue.GetInteger()).ToStdString());
 		break;
 	case pof::ProductManager::PRODUCT_PACKAGE_SIZE:
-		v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = PropertyValue.GetInteger();
+		v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(PropertyValue.GetInteger());
 		break;
 	case pof::ProductManager::PRODUCT_UNIT_PRICE:
 		v[pof::ProductManager::PRODUCT_UNIT_PRICE] = std::move(PropertyValue.GetString().ToStdString());
 		break;
 	case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
-		v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = PropertyValue.GetInteger();
+		v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint32_t>(PropertyValue.GetInteger());
 		break;
 	case pof::ProductManager::PRODUCT_USAGE_INFO:
 		v[pof::ProductManager::PRODUCT_USAGE_INFO] = std::move(JoinArrayList(PropertyValue));
@@ -301,7 +436,7 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		break;
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
 	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
-		v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = std::move("");
+		//v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = std::move("");
 		break;
 	case pof::ProductManager::PRODUCT_SIDEEFFECTS:
 		v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(JoinArrayList(PropertyValue));

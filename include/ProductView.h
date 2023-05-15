@@ -77,6 +77,10 @@ namespace pof
 		wxDataViewColumn* mStockLevel = nullptr;
 		pof::ProductInfo* mProductinfo = nullptr;
 
+
+		//attibutes
+		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
+
 	public:
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		ProductView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(727, 557), long style = wxNO_BORDER | wxTAB_TRAVERSAL); wxAuiManager m_mgr;
@@ -99,6 +103,7 @@ namespace pof
 		void CreateDataView();
 		void CreateToolBar();
 		void CreateProductInfo();
+		void CreateAttibutes();
 		void SwapCenterPane(bool IsInventoryView);
 
 	private:
