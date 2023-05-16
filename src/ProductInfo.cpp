@@ -177,6 +177,22 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 
 }
 
+wxArrayString SplitIntoArrayString(const std::string& string)
+{
+	wxArrayString Split;
+	auto pos = string.find_first_of(",");
+	size_t pos2 = 0;
+	if (pos == std::string::npos) return wxArrayString();
+
+	Split.push_back(std::move(string.substr(0, pos)));
+	while ((pos2 = string.find_first_of(",", pos + 1)) != std::string::npos) {
+		Split.push_back(std::move(string.substr(pos + 1, pos2 - (pos + 1))));
+		pos = pos2;
+	}
+	Split.push_back(std::move(string.substr(pos + 1, string.size() - (pos + 1))));
+	return Split;
+}
+
 
 void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 {
@@ -198,10 +214,10 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 		case pof::ProductManager::PRODUCT_GENERIC_NAME:
 		{
 			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mGenericNameItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+				mGenericNameItem->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
 			}
 			else {
-				mGenericNameItem->SetValue(wxVariant());
+				mGenericNameItem->SetValue(wxVariant(wxArrayString()));
 			}
 			break;
 		}
@@ -238,15 +254,15 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 				mDirForUse->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
 			}
 			else {
-				mDirForUse->SetValue(wxVariant());
+				mDirForUse->SetValue(wxVariant(wxArrayString()));
 			}
 			break;
 		case pof::ProductManager::PRODUCT_HEALTH_CONDITIONS:
 			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mHealthCond->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+				mHealthCond->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
 			}
 			else {
-				mHealthCond->SetValue(wxVariant());
+				mHealthCond->SetValue(wxVariant(wxArrayString()));
 			}
 			break;
 		case pof::ProductManager::PRODUCT_DESCRIP:
@@ -263,10 +279,10 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 		case pof::ProductManager::PRODUCT_SIDEEFFECTS:
 		{
 			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mSideEffects->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
+				mSideEffects->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
 			}
 			else {
-				mSideEffects->SetValue(wxVariant());
+				mSideEffects->SetValue(wxVariant(wxArrayString()));
 			}
 			break;
 		}
@@ -346,8 +362,10 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
 	if (mPropertyUpdate.has_value()) {
+		wxBusyInfo info("Saving...");
 		mUpdatePropertySignal(mPropertyUpdate.value());
 		mPropertyUpdate = {};
+		RemovePropertyModification();
 	}
 }
 
@@ -457,4 +475,18 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	
 	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	evt.Veto(); //might not be necessary
+}
+
+void pof::ProductInfo::RemovePropertyModification()
+{
+	auto grid = m_propertyGridPage1->GetGrid();
+	if (!grid->IsAnyModified()) return;
+
+	auto gridIter = grid->GetIterator();
+	while (!gridIter.AtEnd()) {
+		if (gridIter.GetProperty()->HasFlag(wxPG_PROP_MODIFIED)) {
+			gridIter.GetProperty()->SetFlagRecursively(wxPG_PROP_MODIFIED, false);
+		}
+		gridIter++;
+	}
 }

@@ -249,6 +249,12 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 		case pof::base::data::kind::blob:
 			//cannot display a blob type
 			break;
+		case pof::base::data::kind::uuid:
+			v = boost::uuids::to_string(boost::variant2::get<pof::base::data::uuid_t>(d));
+			break;
+		case pof::base::data::kind::currency:
+			v = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(d));
+			break;
 		default:
 			break;
 		}
@@ -305,6 +311,11 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 	{
 		return false; //should not be able to set a blob data from the view.
 	}
+	case pof::base::data::kind::uuid:
+		return false;
+	case pof::base::data::kind::currency:
+		dat = pof::base::data::currency_t{ variant.GetString().ToStdString() };
+		break;
 	default:
 		return false;
 	}

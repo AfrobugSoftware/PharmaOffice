@@ -7,37 +7,28 @@ pof::base::currency::currency()
 
 pof::base::currency::currency(const std::string& string)
 {
-	if ((string.size() - 1) > m_data.size()) {
-		throw pof::base::currency_exception("double value is bigger than the max currency size");
+	try {
+		double d = atof(string.c_str());
+		if (std::signbit(d)) {
+			throw pof::base::currency_exception("Cannot have negetive currency");
+		}
+		auto integer = static_cast<std::int64_t>(std::floor(d * 100));
+		auto str = fmt::to_string(integer);
+		std::copy_n(str.begin(), str.size(), m_data.begin());
 	}
-	auto pos = string.find_first_of(".");
-	if (pos == std::string::npos) {
-		throw pof::base::currency_exception("invalid conversion from double");
+	catch (const std::exception& exp) {
+		std::rethrow_exception(std::current_exception());
 	}
-
-	std::memset(m_data.data(), 0, m_data.size());
-	std::copy_n(string.begin(), pos + 1, m_data.begin());
-	std::copy_n(string.begin() + pos, string.size() - pos, m_data.begin() + 2);
 }
 
 pof::base::currency::currency(double cur)
 {
 	if (std::signbit(cur)) {
-		//no negetiive currency
 		throw pof::base::currency_exception("Currency cannot be negetive");
 	}
-	auto string = fmt::format("{:.2}", cur);
-	if ((string.size() - 1) > m_data.size()) {
-		throw pof::base::currency_exception("double value is bigger than the max currency size");
-	}
-	auto pos = string.find_first_of(".");
-	if (pos == std::string::npos) {
-		throw pof::base::currency_exception("invalid conversion from double");
-	}
-
-	std::memset(m_data.data(), 0, m_data.size());
-	std::copy_n(string.begin(), pos + 1, m_data.begin());
-	std::copy_n(string.begin() + pos, string.size() - pos, m_data.begin() + 2);
+	auto integer = static_cast<std::int64_t>(std::floor(cur * 100));
+	auto str = fmt::to_string(integer);
+	std::copy_n(str.begin(), str.size(), m_data.begin());
 }
 
 pof::base::currency::currency(const cur_t& cur_data)
@@ -158,21 +149,18 @@ pof::base::currency::operator std::string() const
 
 pof::base::currency::operator double() const
 {
-	const std::string_view lower(m_data.begin(), m_data.begin() + 2);
-	const std::string_view upper(m_data.begin() + 2, m_data.end());
 	double total = 0.0;
 	try {
-		total = atof(upper.data());
-		total += (atof(lower.data()) * 0.001);
+		double d = atof(reinterpret_cast<const char*>(m_data.data()));
+		total = (d * 0.001); 
 	}
 	catch (const std::exception& exp) {
-		//spdlog::critical(exp.what());
 		total = 0.0;
 	}
 	return total;
 }
 
-pof::base::currency pof::base::operator""cu(long double fig)
+pof::base::currency pof::base::operator""_cu(long double fig)
 {
 	return currency(fig);
 }

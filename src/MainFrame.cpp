@@ -217,7 +217,7 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 				row.first[pof::ProductManager::PRODUCT_NAME] = pof::base::data::data_t(static_cast<std::string>(tempjs["Name"])); //name
 				row.first[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Package size"]));
 				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Stock count"]));
-				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(static_cast<std::string>(tempjs["Unit price"]));
+				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(pof::base::data::currency_t(static_cast<std::string>(tempjs["Unit price"])));
 				row.first[pof::ProductManager::PRODUCT_CATEGORY] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Category id"]));
 
 				datastore.insert(std::move(row));

@@ -117,6 +117,8 @@ namespace pof
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
 
+		void RemovePropertyModification();
+
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;

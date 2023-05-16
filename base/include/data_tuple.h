@@ -48,6 +48,9 @@ namespace pof
 			else if constexpr (std::is_same_v<pof::base::data::uuid_t, arg_t>) {
 				meta.push_back(pof::base::data::kind::uuid);
 			}
+			else if constexpr (std::is_same_v<pof::base::data::currency_t, arg_t>) {
+				meta.push_back(pof::base::data::kind::currency);
+			}
 			else {
 				assert(false && "INVALID TYPE SPECIFIED");
 			}

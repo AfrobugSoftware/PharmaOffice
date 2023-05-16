@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cmath>
 
-using namespace std::rel_ops;
 using namespace std::literals::string_literals;
 namespace pof {
 	namespace base {
@@ -78,7 +77,7 @@ namespace pof {
 			cur_t m_data = {0};
 
 		};	
-		currency operator""cu(long double fig);
+		currency operator""_cu(long double fig);
 		class  curlocale : public std::numpunct<char>
 		{
 		protected:
@@ -108,10 +107,14 @@ public:
 
 	template <typename FormatContext>
 	auto format(const pof::base::currency& p, FormatContext& ctx) const -> decltype(ctx.out()) {
-		std::stringstream os;
-		std::locale local(std::locale(), new pof::base::curlocale);
-		os.imbue(local);
+		static std::stringstream os;
+		static std::locale local(std::locale(), new pof::base::curlocale);
+		static bool bue = false;
+		if (!bue) { os.imbue(local); bue = true; }
+
 		os << std::setprecision(2) << std::fixed << static_cast<double>(p);
-		return fmt::format_to(ctx.out(), "{} {}", pof::base::currency::cur_type, os.str());
+		auto out = fmt::format_to(ctx.out(), "{} {}", pof::base::currency::cur_type, os.str());
+		os.str(std::string());
+		return out;
 	}
 };

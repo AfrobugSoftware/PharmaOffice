@@ -4,8 +4,10 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 
 
@@ -15,6 +17,8 @@
 #include <bitset>
 #include <cassert>
 
+
+#include "currency.h"
 
 namespace pof
 {
@@ -45,6 +49,7 @@ namespace pof
                 text,
                 blob,
                 uuid,
+                currency,
                 null //null kind represents a datum that is null, used for tigther packing
             };
 
@@ -54,6 +59,7 @@ namespace pof
             using blob_t = std::vector<std::uint8_t>;
             using metadata_t = std::vector<kind>;
             using uuid_t = boost::uuids::uuid;
+            using currency_t = pof::base::currency;
 
             using data_t = v2::variant<
                 std::int32_t,
@@ -65,7 +71,8 @@ namespace pof
                 datetime_t,
                 text_t,
                 blob_t,
-                uuid_t
+                uuid_t,
+                currency_t
             >;
             
             using state_t = std::bitset<static_cast<size_t>(std::underlying_type_t<state>(state::MAX_STATE))>;
@@ -211,6 +218,9 @@ namespace pof
                                 ar & boost::variant2::get<uuid_t>(d).data;
                                 break;
                             }
+                            case pof::base::data::kind::currency:
+                                ar & boost::variant2::get<currency_t>(d).data();
+                                break;
                             default:
                                 break;
                             }
@@ -316,9 +326,15 @@ namespace pof
                         }
                         case pof::base::data::kind::uuid:
                         {
-                            uuid_t uuid;
+                            uuid_t uuid = {0};
                             ar >> uuid.data;
                             r.emplace_back(std::move(uuid));
+                        }
+                        case pof::base::data::kind::currency:
+                        {
+                            pof::base::currency::cur_t data = {0};
+                            ar >> data;
+                            r.emplace_back(pof::base::currency(std::move(data)));
                         }
                         default:
                             break;
