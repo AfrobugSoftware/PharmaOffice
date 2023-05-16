@@ -8,7 +8,7 @@ pof::SaleManager::SaleManager()
 	SaleData->Adapt<std::uint64_t,
 		pof::base::data::text_t,
 		std::uint64_t,
-		pof::base::data::text_t,
+		pof::base::data::currency_t,
 		std::uint64_t,
 		pof::base::data::text_t>();
 

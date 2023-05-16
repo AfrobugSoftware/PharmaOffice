@@ -73,6 +73,7 @@ namespace pof {
 			//literal
 
 			inline constexpr const cur_t& data() const { return m_data; }
+			inline constexpr cur_t& data() { return m_data; }
 		private:
 			cur_t m_data = {0};
 

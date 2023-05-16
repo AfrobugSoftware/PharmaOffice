@@ -49,6 +49,9 @@ size_t pof::DataObject::GetDataSize(const wxDataFormat& format) const
 		case pof::base::data::kind::uuid:
 			count += boost::variant2::get<pof::base::data::uuid_t>(datum).size();
 			break;
+		case pof::base::data::kind::currency:
+			count += boost::variant2::get<pof::base::data::currency_t>(datum).data().size();
+			break;
 		default:
 			break;
 		}
@@ -126,6 +129,12 @@ bool pof::DataObject::GetDataHere(const wxDataFormat& format, void* buffer) cons
 		{
 			auto& uuid = boost::variant2::get < pof::base::data::uuid_t>(datum);
 			stream.write(reinterpret_cast<const char*>(uuid.data), uuid.size());
+			break;
+		}
+		case pof::base::data::kind::currency:
+		{
+			auto& cur = boost::variant2::get<pof::base::data::currency_t>(datum);
+			stream.write(reinterpret_cast<const char*>(cur.data().data()), cur.data().size());
 			break;
 		}
 		default:
@@ -235,6 +244,14 @@ bool pof::DataObject::SetData(const wxDataFormat& format, size_t len, const void
 			stream.read(reinterpret_cast<char*>(uuid.data), uuid.size());
 			datum = std::move(uuid);
 			break;
+		}
+		case pof::base::data::kind::currency:
+		{
+			pof::base::data::currency_t cur{};
+			stream.read(reinterpret_cast<char*>(cur.data().data()), cur.data().size());
+			datum = std::move(cur);
+			break;
+
 		}
 		default:
 			return false; //invalid metadata type
