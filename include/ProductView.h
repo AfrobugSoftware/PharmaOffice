@@ -74,8 +74,10 @@ namespace pof
 		wxDataViewColumn* mProductNameCol = nullptr;
 		wxDataViewColumn* mProductClass = nullptr;
 		wxDataViewColumn* mProductUnitPriceCol = nullptr;
+		wxDataViewColumn* mProductCostPriceCol = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
 		pof::ProductInfo* mProductinfo = nullptr;
+
 
 
 		//attibutes
@@ -99,6 +101,8 @@ namespace pof
 		void OnBeginDrag(wxDataViewEvent& evt);
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
+		void ShowCostPriceColumn();
+		void HideCostPriceColumn();
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

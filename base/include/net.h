@@ -563,9 +563,9 @@ namespace pof {
 					m_stream.next_layer().next_layer().close();
 				}
 
-				bool write(const wb_message& mes){
+				bool write(wb_message&& mes){
 					bool is_writing = !m_msg_que.empty();
-					bool wrote =  m_msg_que.push(std::move(mes));
+					bool wrote =  m_msg_que.push(std::forward<wb_message>(mes));
 					if (!is_writing && wrote) { //if we were currently not writing and we wrote to the ringbuffer, then spawn
 						co_spawn(m_stream.get_executor(), do_write(), [&](std::exception_ptr ptr) {
 							if (ptr) {

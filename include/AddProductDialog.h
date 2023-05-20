@@ -23,6 +23,7 @@ namespace pof {
 		wxTextCtrl* mProductDescCtrl;
 		wxTextCtrl* mProductDirForUseCtrl;
 		wxTextCtrl* mProductUnitPriceCtrl;
+		wxTextCtrl* mProductCostPriceCtrl;
 		wxSpinCtrl* mProductPackageSizeCtrl;
 		wxStaticText* descp[10];
 		wxButton* mOkButton;
@@ -32,5 +33,7 @@ namespace pof {
 		float validate_float;
 		wxArrayString choices;
 
+
+		pof::base::data::row_t mProductData;
 	};
 };

@@ -60,13 +60,19 @@ void pof::ProductView::ReSizeColumns()
 	mProductClass->SetWidth(colWidth);
 
 	colWidth = static_cast<int>(width * (10.0f * fact));
-	colWidth = colWidth > mProductUnitPriceCol->GetWidth() ? colWidth : mProductUnitPriceCol->GetWidth();
-	mProductUnitPriceCol->SetWidth(colWidth);
-
-	colWidth = static_cast<int>(width * (10.0f * fact));
 	colWidth = colWidth > mStockLevel->GetWidth() ? colWidth : mStockLevel->GetWidth();
 	mProductUnitPriceCol->SetWidth(colWidth);
 
+	colWidth = static_cast<int>(width * (10.0f * fact));
+	colWidth = colWidth > mProductUnitPriceCol->GetWidth() ? colWidth : mProductUnitPriceCol->GetWidth();
+	mProductUnitPriceCol->SetWidth(colWidth);
+
+	if (mProductCostPriceCol != nullptr) {
+		colWidth = static_cast<int>(width * (10.0f * fact));
+		colWidth = colWidth > mProductCostPriceCol->GetWidth() ? colWidth : mProductCostPriceCol->GetWidth();
+		mProductUnitPriceCol->SetWidth(colWidth);
+
+	}
 }
 
 void pof::ProductView::SaveColumnWidths()
@@ -139,6 +145,15 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	int idx = std::distance(DataStore.begin(), Iter);
 	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
 	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
+}
+
+void pof::ProductView::ShowCostPriceColumn()
+{
+
+}
+
+void pof::ProductView::HideCostPriceColumn()
+{
 }
 
 void pof::ProductView::CreateDataView()

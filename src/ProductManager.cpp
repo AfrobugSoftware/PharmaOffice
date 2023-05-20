@@ -16,6 +16,7 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t, // PRODUCT DESCRIPTION
 		pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
 		pof::base::data::currency_t, // UNIT PRICE
+		pof::base::data::currency_t, // COST PRICE
 		std::uint64_t, //PACAKGE SIZE
 		std::uint64_t, //STOCK COUNT
 		pof::base::data::text_t, //SIDE EFFECTS
