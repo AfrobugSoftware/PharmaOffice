@@ -69,7 +69,7 @@ namespace pof
 			wxPGProperty* mExpDatePeriod;
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
-		
+			double mStubPrice;
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
 			wxPGChoices ExpChoices;

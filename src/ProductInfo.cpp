@@ -124,8 +124,13 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
 	
 	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("SALE"), wxT("Sale") )); 
+
 	mUnitPrice = m_propertyGridPage1->Append( new wxFloatProperty( wxT("UNIT PRICE"), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString( mUnitPrice, wxT("Price per Package size of the Product\n") );
+	wxFloatingPointValidator<double> val(2, &mStubPrice, wxNUM_VAL_ZERO_AS_BLANK);
+	val.SetRange(0, 999999999999);
+	mUnitPrice->SetValidator(val);
+
 
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
 	
@@ -182,7 +187,10 @@ wxArrayString SplitIntoArrayString(const std::string& string)
 	wxArrayString Split;
 	auto pos = string.find_first_of(",");
 	size_t pos2 = 0;
-	if (pos == std::string::npos) return wxArrayString();
+	if (pos == std::string::npos) {
+		if (!string.empty()) Split.push_back(string);
+		return Split;
+	}
 
 	Split.push_back(std::move(string.substr(0, pos)));
 	while ((pos2 = string.find_first_of(",", pos + 1)) != std::string::npos) {
@@ -246,7 +254,13 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 			break;
 		}
 		case pof::ProductManager::PRODUCT_UNIT_PRICE:
+		{
+			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
+				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
+				mUnitPrice->SetValue(wxVariant(d));
+			}
 			break;
+		}
 		case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
 			break;
 		case pof::ProductManager::PRODUCT_USAGE_INFO:
@@ -437,7 +451,7 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(PropertyValue.GetInteger());
 		break;
 	case pof::ProductManager::PRODUCT_UNIT_PRICE:
-		v[pof::ProductManager::PRODUCT_UNIT_PRICE] = std::move(PropertyValue.GetString().ToStdString());
+		v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::currency_t(PropertyValue.GetDouble());
 		break;
 	case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
 		v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint32_t>(PropertyValue.GetInteger());
