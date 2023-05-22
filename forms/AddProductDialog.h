@@ -1,0 +1,111 @@
+///////////////////////////////////////////////////////////////////////////
+// C++ code generated with wxFormBuilder (version Jun 17 2015)
+// http://www.wxformbuilder.org/
+//
+// PLEASE DO "NOT" EDIT THIS FILE!
+///////////////////////////////////////////////////////////////////////////
+
+#ifndef __NONAME_H__
+#define __NONAME_H__
+
+#include <wx/artprov.h>
+#include <wx/xrc/xmlres.h>
+#include <wx/string.h>
+#include <wx/stattext.h>
+#include <wx/gdicmn.h>
+#include <wx/font.h>
+#include <wx/colour.h>
+#include <wx/settings.h>
+#include <wx/sizer.h>
+#include <wx/panel.h>
+#include <wx/textctrl.h>
+#include <wx/choice.h>
+#include <wx/scrolwin.h>
+#include <wx/statbox.h>
+#include <wx/checkbox.h>
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/icon.h>
+#include <wx/bmpbuttn.h>
+#include <wx/button.h>
+#include <wx/datectrl.h>
+#include <wx/dateevt.h>
+#include <wx/dialog.h>
+
+///////////////////////////////////////////////////////////////////////////
+
+namespace pof
+{
+	
+	///////////////////////////////////////////////////////////////////////////////
+	/// Class AddProdutDialog
+	///////////////////////////////////////////////////////////////////////////////
+	class AddProdutDialog : public wxDialog 
+	{
+		private:
+		
+		protected:
+			wxPanel* m_panel1;
+			wxStaticText* TitleText;
+			wxPanel* m_panel2;
+			wxPanel* m_panel4;
+			wxScrolledWindow* m_scrolledWindow2;
+			wxStaticText* mProductName;
+			wxTextCtrl* mProductNameValue;
+			wxStaticText* mProductGenericName;
+			wxTextCtrl* m_textCtrl12;
+			wxStaticText* mFormulation;
+			wxChoice* mFormulationValue;
+			wxStaticText* mStrength;
+			wxTextCtrl* mStrengthValue;
+			wxStaticText* mStrengthType;
+			wxChoice* mStrengthTypeValue;
+			wxPanel* m_panel5;
+			wxScrolledWindow* m_scrolledWindow1;
+			wxPanel* m_panel71;
+			wxStaticText* mCostPriceLabel;
+			wxTextCtrl* mCostPriceValue;
+			wxStaticText* mSalePriceLabel;
+			wxTextCtrl* m_textCtrl7;
+			wxCheckBox* mDoMarkup;
+			wxStaticText* mCategoryLabel;
+			wxChoice* mCategoryValue;
+			wxStaticText* mPackageSizeLabel;
+			wxTextCtrl* m_textCtrl121;
+			wxStaticText* mProductDescription;
+			wxTextCtrl* mProductDescriptionValue;
+			wxBitmapButton* mMoreDescription;
+			wxStaticText* mDirectionForUse;
+			wxTextCtrl* mDirForUseValue;
+			wxBitmapButton* mMoreDirForUse;
+			wxStaticText* mHealthConditions;
+			wxTextCtrl* mHealthConditionsValue;
+			wxBitmapButton* mMoreHealthConditons;
+			wxStaticText* mSideEffectsLabel;
+			wxTextCtrl* mSideEffectsValue;
+			wxBitmapButton* mMoreSideffects;
+			wxPanel* m_panel8;
+			wxButton* mScanProduct;
+			wxPanel* m_panel6;
+			wxScrolledWindow* m_scrolledWindow3;
+			wxStaticText* mBacthNumber;
+			wxTextCtrl* mBatchNumbeValue;
+			wxStaticText* m_staticText8;
+			wxDatePickerCtrl* m_datePicker1;
+			wxStaticText* mQuntity;
+			wxTextCtrl* mQunatityValue;
+			wxPanel* m_panel7;
+			wxStdDialogButtonSizer* m_sdbSizer2;
+			wxButton* m_sdbSizer2OK;
+			wxButton* m_sdbSizer2Cancel;
+		
+		public:
+			
+			AddProdutDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1122,762 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			~AddProdutDialog();
+		
+	};
+	
+} // namespace pof
+
+#endif //__NONAME_H__

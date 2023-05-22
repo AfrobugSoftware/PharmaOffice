@@ -5,6 +5,13 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 EVT_SIZE(pof::ProductView::OnResize)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
 EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
+
+//TOOLS
+EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
+EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
+EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
+
+
 END_EVENT_TABLE()
 
 
@@ -71,7 +78,6 @@ void pof::ProductView::ReSizeColumns()
 		colWidth = static_cast<int>(width * (10.0f * fact));
 		colWidth = colWidth > mProductCostPriceCol->GetWidth() ? colWidth : mProductCostPriceCol->GetWidth();
 		mProductUnitPriceCol->SetWidth(colWidth);
-
 	}
 }
 
@@ -125,6 +131,40 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 	evt.SetDataObject(DataObject);
 }
 
+void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
+{
+}
+
+void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
+{
+	pof::AddProdutDialog dialog(this);
+	if (dialog.ShowModal() == wxID_OK) {
+		wxMessageBox("Product Added", "ADD PRODUCT");
+	}
+}
+
+void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
+{
+	wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
+
+	if (dialog.ShowModal() == wxID_OK) {
+		auto CategoryName = dialog.GetValue().ToStdString();
+		if (CategoryName.empty()) return;
+		//what else are we gonna do with category
+	
+		CategoryAddSignal(CategoryName);
+	}
+
+}
+
+void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
+{
+}
+
+void pof::ProductView::OnContextMenu(wxCommandEvent& evt)
+{
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -149,11 +189,15 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 
 void pof::ProductView::ShowCostPriceColumn()
 {
-
+	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 }
 
 void pof::ProductView::HideCostPriceColumn()
 {
+	if (mProductCostPriceCol) {
+		m_dataViewCtrl1->DeleteColumn(mProductCostPriceCol);
+		mProductCostPriceCol = nullptr;
+	}
 }
 
 void pof::ProductView::CreateDataView()
@@ -198,6 +242,8 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), wxT("Creates a new Category for medical products"));
+	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR), wxT("List of Products that are expired, or expired alerted"));
+
 
 	m_auiToolBar1->Realize();
 

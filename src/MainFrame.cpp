@@ -6,6 +6,9 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_LOG, pof::MainFrame::OnShowLog)
+	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_JSON, pof::MainFrame::OnExportJson)
+	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_EXCEL, pof::MainFrame::OnExportExcel)
+	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_CSV, pof::MainFrame::OnExportCSV)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -56,6 +59,12 @@ void pof::MainFrame::CreateMenuBar()
 
 	//product menu
 	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json\tCtrl-J", nullptr);
+	wxMenu* exportSubMenu = new wxMenu;
+	exportSubMenu->Append(ID_MENU_EXPORT_JSON, "JSON", nullptr);
+	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
+	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
+	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export\tCtrl-E", exportSubMenu);
+
 
 	//view
 	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
@@ -174,9 +183,22 @@ void pof::MainFrame::OnShowLog(wxCommandEvent& WXUNUSED(evt))
 	
 }
 
+void pof::MainFrame::OnExportJson(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
+{
+}
+
 void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 {
 	wxFileDialog dialog(this);
+	dialog.Center();
 	if (dialog.ShowModal() == wxID_OK)
 	{
 		std::string filename = dialog.GetPath().ToStdString();

@@ -25,6 +25,9 @@
 #include "AuiTheme.h"
 #include "ProductInfo.h"
 #include "DataObject.h"
+#include "AddProductDialog.h"
+
+#include <boost/signals2/signal.hpp>
 
 namespace pof
 {
@@ -54,12 +57,9 @@ namespace pof
 			ID_INVENTORY_VIEW_TOOL_ADD,
 			ID_INVENTORY_PRODUCT_NAME,
 			ID_CATEGORY_LIST_CONTROL,
-			ID_PRODUCT_CONTEXT_EDIT,
+			ID_PRODUCT_CONTEXT_QUICKEDIT,
 			ID_PRODUCT_CONTEXT_REMOVE,
-			ID_PRODUCT_CONTEXT_EXPORT,
-			ID_PRODUCT_CONTEXT_EXPORT_JSON,
-			ID_PRODUCT_CONTEXT_EXPORT_EXCEL,
-			ID_PRODUCT_CONTEXT_EDIT_BOX,
+			ID_PRODUCT_EXPIRE,
 			ID_EXPIRY_VIEW,
 			ID_SELECT_MULTIPLE,
 			ID_UNSELECT_MULTIPLE,
@@ -84,6 +84,7 @@ namespace pof
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
 
 	public:
+		boost::signals2::signal<void(const std::string&)> CategoryAddSignal;
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		ProductView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(727, 557), long style = wxNO_BORDER | wxTAB_TRAVERSAL); wxAuiManager m_mgr;
 
@@ -99,10 +100,19 @@ namespace pof
 
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
+		void OnExpiredProducts(wxCommandEvent& evt);
+		void OnAddProduct(wxCommandEvent& evt);
+		void OnAddCategory(wxCommandEvent& evt);
+		void OnSearchFlag(wxCommandEvent& evt);
+		void OnContextMenu(wxCommandEvent& evt);
+	
+
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
 		void ShowCostPriceColumn();
 		void HideCostPriceColumn();
+		void SearchCategory();
+		void SearchName();
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

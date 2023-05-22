@@ -1,7 +1,16 @@
+///////////////////////////////////////////////////////////////////////////
+// C++ code generated with wxFormBuilder (version Jun 17 2015)
+// http://www.wxformbuilder.org/
+//
+// PLEASE DO "NOT" EDIT THIS FILE!
+///////////////////////////////////////////////////////////////////////////
 
-#include "AddProductDialog.h"
+#include "noname.h"
 
-pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+///////////////////////////////////////////////////////////////////////////
+using namespace pof;
+
+AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour( wxColour( 255, 255, 255 ) );
@@ -299,11 +308,6 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	this->Centre( wxBOTH );
 }
 
-pof::AddProdutDialog::~AddProdutDialog()
+AddProdutDialog::~AddProdutDialog()
 {
-}
-
-bool pof::AddProdutDialog::TransferDataFromWindow()
-{
-	return false;
 }

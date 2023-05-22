@@ -262,12 +262,18 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
 				mUnitPrice->SetValue(wxVariant(d));
 			}
+			else {
+				mUnitPrice->SetValue(wxVariant{0.00});
+			}
 			break;
 		}
 		case pof::ProductManager::PRODUCT_COST_PRICE:
 			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
 				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
 				mCostPrice->SetValue(wxVariant(d));
+			}
+			else {
+				mCostPrice->SetValue(wxVariant{ 0.00 });
 			}
 			break;
 		case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
@@ -369,6 +375,7 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME });
 	mNameToProductElem.insert({ "PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
 	mNameToProductElem.insert({ "UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE });
+	mNameToProductElem.insert({ "COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE });
 	mNameToProductElem.insert({ "MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT });
 	mNameToProductElem.insert({ "DIRECTION FOR USE", pof::ProductManager::PRODUCT_USAGE_INFO });
 	mNameToProductElem.insert({ "HEALTH CONDITIONS", pof::ProductManager::PRODUCT_HEALTH_CONDITIONS });
