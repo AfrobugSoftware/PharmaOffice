@@ -1,6 +1,5 @@
 #pragma once
 #include <wx/artprov.h>
-#include <wx/xrc/xmlres.h>
 #include <wx/string.h>
 #include <wx/stattext.h>
 #include <wx/gdicmn.h>
@@ -22,6 +21,9 @@
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <wx/dialog.h>
+#include <wx/msgdlg.h>
+#include <wx/valtext.h>
+#include <wx/valnum.h>
 
 
 #include "Data.h"
@@ -50,6 +52,8 @@ namespace pof
 		wxTextCtrl* mStrengthValue;
 		wxStaticText* mStrengthType;
 		wxChoice* mStrengthTypeValue;
+		wxStaticText* mClassLabel;
+		wxChoice* mClassValue;
 		wxPanel* m_panel5;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxPanel* m_panel71;
@@ -90,6 +94,14 @@ namespace pof
 		wxButton* m_sdbSizer2Cancel;
 
 		pof::base::data::row_t datum;
+		wxArrayString ProductClassChoices;
+		wxArrayString FormulationChoices;
+		wxArrayString ExpChoices;
+		wxArrayString StrengthChoices;
+		double mFloatValidator;
+
+		void WriteToDatabase();
+
 
 	public:
 		//controls id
