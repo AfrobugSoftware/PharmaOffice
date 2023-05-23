@@ -31,14 +31,14 @@ pof::ProductManager::ProductManager() {
 	>();
 	
 	mInventoryData->Adapt<
-		std::uint64_t,
-		pof::base::data::uuid_t,
-		pof::base::data::datetime_t,
-		pof::base::data::datetime_t,
-		std::uint64_t,
-		pof::base::data::text_t,
-		std::uint64_t,
-		pof::base::data::text_t
+		std::uint64_t, //ID
+		pof::base::data::uuid_t, //UUID
+		pof::base::data::datetime_t, // EXPIRE DATE
+		pof::base::data::datetime_t, // ADDED DATE
+		std::uint64_t, // STOCK COUNT
+		pof::base::data::text_t, // MANUFACTURE NAME
+		std::uint64_t,  // MANUFACTURER ADDRESS ID
+		pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
 	>();
 
 

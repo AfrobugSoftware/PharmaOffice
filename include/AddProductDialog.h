@@ -24,6 +24,7 @@
 #include <wx/msgdlg.h>
 #include <wx/valtext.h>
 #include <wx/valnum.h>
+#include <wx/textdlg.h>
 
 
 #include "Data.h"
@@ -45,7 +46,7 @@ namespace pof
 		wxStaticText* mProductName;
 		wxTextCtrl* mProductNameValue;
 		wxStaticText* mProductGenericName;
-		wxTextCtrl* m_textCtrl12;
+		wxTextCtrl* mGenericNameValue;
 		wxStaticText* mFormulation;
 		wxChoice* mFormulationValue;
 		wxStaticText* mStrength;
@@ -60,12 +61,12 @@ namespace pof
 		wxStaticText* mCostPriceLabel;
 		wxTextCtrl* mCostPriceValue;
 		wxStaticText* mSalePriceLabel;
-		wxTextCtrl* m_textCtrl7;
+		wxTextCtrl* mSalePriceValue;
 		wxCheckBox* mDoMarkup;
 		wxStaticText* mCategoryLabel;
 		wxChoice* mCategoryValue;
 		wxStaticText* mPackageSizeLabel;
-		wxTextCtrl* m_textCtrl121;
+		wxTextCtrl* mPackageSizeValue;
 		wxStaticText* mProductDescription;
 		wxTextCtrl* mProductDescriptionValue;
 		wxBitmapButton* mMoreDescription;
@@ -94,25 +95,37 @@ namespace pof
 		wxButton* m_sdbSizer2Cancel;
 
 		pof::base::data::row_t datum;
+		pof::base::data::row_t datumInven;
+
 		wxArrayString ProductClassChoices;
 		wxArrayString FormulationChoices;
 		wxArrayString ExpChoices;
 		wxArrayString StrengthChoices;
-		double mFloatValidator;
-
-		void WriteToDatabase();
-
-
+		double mFloatValidator  = 0.0;
+		std::string mScanProductString;
 	public:
 		//controls id
 		enum {
-			ID_PRODUCT_NAME,
+			ID_PRODUCT_NAME = 23003345,
+			ID_SCAN_PRODUCT,
+			ID_MORE_DESCRIP,
+			ID_MORE_DIRFORUSE,
+			ID_MORE_SIDEEFFECTS,
+			ID_MORE_HEALTHCON,
 		};
 		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1122, 762), long style = wxDEFAULT_DIALOG_STYLE);
 		~AddProdutDialog();
 
 		virtual bool TransferDataFromWindow() override final;
 		inline constexpr pof::base::data::row_t GetAddedProduct() const { return datum; }
+		inline constexpr pof::base::data::row_t GetAddedInventory() const { return datumInven; }
+		void OnScanProduct(wxCommandEvent& evt);
+		void OnMoreDescription(wxCommandEvent& evt);
+		void OnMoreDirForUse(wxCommandEvent& evt);
+		void OnMoreSideffects(wxCommandEvent& evt);
+		void OnMoreHealthConditions(wxCommandEvent& evt);
+
+		DECLARE_EVENT_TABLE()
 	};
 
 
