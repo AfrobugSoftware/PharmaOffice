@@ -49,7 +49,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mProductName = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Product Brand Name"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductName->Wrap( -1 );
-	fgSizer2->Add( mProductName, 0, wxALL, 5 );
+	fgSizer2->Add( mProductName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mProductNameValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mProductNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
@@ -57,7 +57,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mProductGenericName = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Generic Name"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductGenericName->Wrap( -1 );
-	fgSizer2->Add( mProductGenericName, 0, wxALL, 5 );
+	fgSizer2->Add( mProductGenericName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mGenericNameValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mGenericNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
@@ -65,7 +65,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mFormulation = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0 );
 	mFormulation->Wrap( -1 );
-	fgSizer2->Add( mFormulation, 0, wxALL, 5 );
+	fgSizer2->Add( mFormulation, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 
 	FormulationChoices.Add("TABLET");
@@ -84,7 +84,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mStrength = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Strength"), wxDefaultPosition, wxDefaultSize, 0 );
 	mStrength->Wrap( -1 );
-	fgSizer2->Add( mStrength, 0, wxALL, 5 );
+	fgSizer2->Add( mStrength, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	wxFloatingPointValidator<double> val(2, &mFloatValidator, wxNUM_VAL_ZERO_AS_BLANK);
 	val.SetRange(0, 999999999999);
@@ -94,7 +94,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mStrengthType = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Strength Type"), wxDefaultPosition, wxDefaultSize, 0 );
 	mStrengthType->Wrap( -1 );
-	fgSizer2->Add( mStrengthType, 0, wxALL, 5 );
+	fgSizer2->Add( mStrengthType, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	StrengthChoices.Add("g");
 	StrengthChoices.Add("mg");
@@ -115,7 +115,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mClassLabel= new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Product Class"), wxDefaultPosition, wxDefaultSize, 0);
 	mClassLabel->Wrap(-1);
-	fgSizer2->Add(mClassLabel, 0, wxALL, 5);
+	fgSizer2->Add(mClassLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
@@ -198,7 +198,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mProductDescription = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Description"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductDescription->Wrap( -1 );
-	fgSizer3->Add( mProductDescription, 0, wxALL, 5 );
+	fgSizer3->Add( mProductDescription, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mProductDescriptionValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mProductDescriptionValue, 1, wxALL|wxEXPAND, 5 );
@@ -208,7 +208,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mDirectionForUse = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Direction For Use"), wxDefaultPosition, wxDefaultSize, 0 );
 	mDirectionForUse->Wrap( -1 );
-	fgSizer3->Add( mDirectionForUse, 0, wxALL, 5 );
+	fgSizer3->Add( mDirectionForUse, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mDirForUseValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mDirForUseValue, 0, wxALL|wxEXPAND, 5 );
@@ -218,7 +218,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mHealthConditions = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Health Conditions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mHealthConditions->Wrap( -1 );
-	fgSizer3->Add( mHealthConditions, 0, wxALL, 5 );
+	fgSizer3->Add( mHealthConditions, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mHealthConditionsValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mHealthConditionsValue, 0, wxALL|wxEXPAND, 5 );
@@ -228,7 +228,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mSideEffectsLabel = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Adverse Reactions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mSideEffectsLabel->Wrap( -1 );
-	fgSizer3->Add( mSideEffectsLabel, 0, wxALL, 5 );
+	fgSizer3->Add( mSideEffectsLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mSideEffectsValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mSideEffectsValue, 1, wxALL|wxEXPAND, 5 );
@@ -278,21 +278,21 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mBacthNumber = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mBacthNumber->Wrap( -1 );
-	fgSizer21->Add( mBacthNumber, 0, wxALL, 5 );
+	fgSizer21->Add( mBacthNumber, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mBatchNumbeValue = new wxTextCtrl( m_scrolledWindow3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer21->Add( mBatchNumbeValue, 1, wxALL|wxEXPAND, 5 );
 	
 	m_staticText8 = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Product Expiry Date"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText8->Wrap( -1 );
-	fgSizer21->Add( m_staticText8, 0, wxALL, 5 );
+	fgSizer21->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	m_datePicker1 = new wxDatePickerCtrl( m_scrolledWindow3, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT|wxDP_DROPDOWN );
 	fgSizer21->Add( m_datePicker1, 1, wxALL|wxEXPAND, 5 );
 	
 	mQuntity = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0 );
 	mQuntity->Wrap( -1 );
-	fgSizer21->Add( mQuntity, 0, wxALL, 5 );
+	fgSizer21->Add( mQuntity, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mQunatityValue = new wxTextCtrl( m_scrolledWindow3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mQunatityValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
