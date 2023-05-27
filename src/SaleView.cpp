@@ -7,6 +7,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
+	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
 END_EVENT_TABLE()
 
 
@@ -27,14 +28,14 @@ pof::SaleView::SaleView( wxWindow* parent, wxWindowID id, const wxPoint& pos, co
 	mProductNameText->Wrap( -1 );
 	bSizer7->Add( mProductNameText, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mProductNameValue = new wxTextCtrl( mTopTools,ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	mProductNameValue = new wxSearchCtrl( mTopTools,ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ) );
 	bSizer7->Add( mProductNameValue, 0, wxALL, 5 );
 	
 	mScanProduct = new wxStaticText( mTopTools, wxID_ANY, wxT("Scan Product: "), wxDefaultPosition, wxDefaultSize, 0 );
 	mScanProduct->Wrap( -1 );
 	bSizer7->Add( mScanProduct, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mScanProductValue = new wxTextCtrl( mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	mScanProductValue = new wxSearchCtrl( mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
 	bSizer7->Add( mScanProductValue, 0, wxALL, 5 );
 	
 	
@@ -203,6 +204,10 @@ void pof::SaleView::OnDrop(wxDataViewEvent& evt)
 }
 
 void pof::SaleView::OnBeginDrag(wxDataViewEvent& evt)
+{
+}
+
+void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 {
 }
 

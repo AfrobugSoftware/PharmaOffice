@@ -6,6 +6,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/serialization/variant.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
@@ -172,6 +173,7 @@ namespace pof
                  {
                         auto& [r, s] = row;
                         const size_t size = r.size();
+                        std::bitset<32> aval_row;
                         if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
                             continue;
                         }

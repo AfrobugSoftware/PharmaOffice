@@ -31,39 +31,39 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	bSizer2->Fit( m_panel1 );
 	bSizer1->Add( m_panel1, 0, wxEXPAND | wxALL, 5 );
 	
-	m_panel2 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel2 = new wxScrolledWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
+	m_panel2->SetScrollRate( 5, 5 );
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_panel4 = new wxPanel( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel4 = new wxPanel( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxStaticBoxSizer* sbSizer7;
 	sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( m_panel4, wxID_ANY, wxT("Product Details") ), wxVERTICAL );
 	
-	m_scrolledWindow2 = new wxScrolledWindow( sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledWindow2->SetScrollRate( 5, 5 );
+	mProductDetailsPanel = new wxPanel( sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxFlexGridSizer* fgSizer2;
 	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer2->AddGrowableCol( 1 );
 	fgSizer2->SetFlexibleDirection( wxBOTH );
 	fgSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	mProductName = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Product Brand Name"), wxDefaultPosition, wxDefaultSize, 0 );
+	mProductName = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Product Brand Name"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductName->Wrap( -1 );
 	fgSizer2->Add( mProductName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mProductNameValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mProductNameValue = new wxTextCtrl( mProductDetailsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mProductNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	fgSizer2->Add( mProductNameValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mProductGenericName = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Generic Name"), wxDefaultPosition, wxDefaultSize, 0 );
+	mProductGenericName = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Generic Name"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductGenericName->Wrap( -1 );
 	fgSizer2->Add( mProductGenericName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mGenericNameValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mGenericNameValue = new wxTextCtrl( mProductDetailsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mGenericNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	fgSizer2->Add( mGenericNameValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mFormulation = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0 );
+	mFormulation = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0 );
 	mFormulation->Wrap( -1 );
 	fgSizer2->Add( mFormulation, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
@@ -76,23 +76,23 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	mFormulationValue = new wxChoice( m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
+	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );
 	mFormulationValue->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
 	fgSizer2->Add( mFormulationValue, 0, wxALL|wxEXPAND, 5 );
 	
-	mStrength = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Strength"), wxDefaultPosition, wxDefaultSize, 0 );
+	mStrength = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Strength"), wxDefaultPosition, wxDefaultSize, 0 );
 	mStrength->Wrap( -1 );
 	fgSizer2->Add( mStrength, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	wxFloatingPointValidator<double> val(2, &mFloatValidator, wxNUM_VAL_ZERO_AS_BLANK);
 	val.SetRange(0, 999999999999);
 
-	mStrengthValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mStrengthValue = new wxTextCtrl( mProductDetailsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer2->Add( mStrengthValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mStrengthType = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Strength Type"), wxDefaultPosition, wxDefaultSize, 0 );
+	mStrengthType = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Strength Type"), wxDefaultPosition, wxDefaultSize, 0 );
 	mStrengthType->Wrap( -1 );
 	fgSizer2->Add( mStrengthType, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
@@ -109,25 +109,25 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 
 	StrengthChoices.Add("mol");
 	StrengthChoices.Add("mmol");
-	mStrengthTypeValue = new wxChoice( m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, StrengthChoices, 0 );
+	mStrengthTypeValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, StrengthChoices, 0 );
 	mStrengthTypeValue->SetSelection( 0 );
 	fgSizer2->Add( mStrengthTypeValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mClassLabel= new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Product Class"), wxDefaultPosition, wxDefaultSize, 0);
+	mClassLabel= new wxStaticText(mProductDetailsPanel, wxID_ANY, wxT("Product Class"), wxDefaultPosition, wxDefaultSize, 0);
 	mClassLabel->Wrap(-1);
 	fgSizer2->Add(mClassLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
-	mClassValue = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, ProductClassChoices, 0);
+	mClassValue = new wxChoice(mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, ProductClassChoices, 0);
 	mClassValue->SetSelection(0);
 	fgSizer2->Add(mClassValue, 1, wxALL | wxEXPAND, 5);
 
 
-	m_scrolledWindow2->SetSizer( fgSizer2 );
-	m_scrolledWindow2->Layout();
-	fgSizer2->Fit( m_scrolledWindow2 );
-	sbSizer7->Add( m_scrolledWindow2, 1, wxEXPAND | wxALL, 5 );
+	mProductDetailsPanel->SetSizer( fgSizer2 );
+	mProductDetailsPanel->Layout();
+	fgSizer2->Fit( mProductDetailsPanel );
+	sbSizer7->Add( mProductDetailsPanel, 1, wxEXPAND | wxALL, 5 );
 	
 	
 	m_panel4->SetSizer( sbSizer7 );
@@ -139,12 +139,11 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	wxStaticBoxSizer* sbSizer8;
 	sbSizer8 = new wxStaticBoxSizer( new wxStaticBox( m_panel5, wxID_ANY, wxT("Product Additional Details") ), wxVERTICAL );
 	
-	m_scrolledWindow1 = new wxScrolledWindow( sbSizer8->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledWindow1->SetScrollRate( 5, 5 );
+	mProductAddDetails = new wxPanel( sbSizer8->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 	
-	m_panel71 = new wxPanel( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel71 = new wxPanel( mProductAddDetails, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
 	
@@ -196,50 +195,50 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer3->SetFlexibleDirection( wxBOTH );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	mProductDescription = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Description"), wxDefaultPosition, wxDefaultSize, 0 );
+	mProductDescription = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Description"), wxDefaultPosition, wxDefaultSize, 0 );
 	mProductDescription->Wrap( -1 );
 	fgSizer3->Add( mProductDescription, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mProductDescriptionValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mProductDescriptionValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mProductDescriptionValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mMoreDescription = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+	mMoreDescription = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
 	fgSizer3->Add( mMoreDescription, 0, wxALL, 5 );
 	
-	mDirectionForUse = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Direction For Use"), wxDefaultPosition, wxDefaultSize, 0 );
+	mDirectionForUse = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Direction For Use"), wxDefaultPosition, wxDefaultSize, 0 );
 	mDirectionForUse->Wrap( -1 );
 	fgSizer3->Add( mDirectionForUse, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mDirForUseValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mDirForUseValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mDirForUseValue, 0, wxALL|wxEXPAND, 5 );
 	
-	mMoreDirForUse = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+	mMoreDirForUse = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
 	fgSizer3->Add( mMoreDirForUse, 0, wxALL, 5 );
 	
-	mHealthConditions = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Health Conditions"), wxDefaultPosition, wxDefaultSize, 0 );
+	mHealthConditions = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Health Conditions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mHealthConditions->Wrap( -1 );
 	fgSizer3->Add( mHealthConditions, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mHealthConditionsValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mHealthConditionsValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mHealthConditionsValue, 0, wxALL|wxEXPAND, 5 );
 	
-	mMoreHealthConditons = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+	mMoreHealthConditons = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
 	fgSizer3->Add( mMoreHealthConditons, 0, wxALL, 5 );
 	
-	mSideEffectsLabel = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Adverse Reactions"), wxDefaultPosition, wxDefaultSize, 0 );
+	mSideEffectsLabel = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Adverse Reactions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mSideEffectsLabel->Wrap( -1 );
 	fgSizer3->Add( mSideEffectsLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mSideEffectsValue = new wxTextCtrl( m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mSideEffectsValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mSideEffectsValue, 1, wxALL|wxEXPAND, 5 );
 	
-	mMoreSideffects = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+	mMoreSideffects = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
 	fgSizer3->Add( mMoreSideffects, 0, wxALL, 5 );
 	
 	
 	bSizer5->Add( fgSizer3, 1, wxEXPAND, 5 );
 	
-	m_panel8 = new wxPanel( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel8 = new wxPanel( mProductAddDetails, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer8;
 	bSizer8 = new wxBoxSizer( wxHORIZONTAL );
 	
@@ -253,10 +252,10 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	bSizer5->Add( m_panel8, 0, wxEXPAND | wxALL, 5 );
 	
 	
-	m_scrolledWindow1->SetSizer( bSizer5 );
-	m_scrolledWindow1->Layout();
-	bSizer5->Fit( m_scrolledWindow1 );
-	sbSizer8->Add( m_scrolledWindow1, 1, wxEXPAND | wxALL, 5 );
+	mProductAddDetails->SetSizer( bSizer5 );
+	mProductAddDetails->Layout();
+	bSizer5->Fit( mProductAddDetails );
+	sbSizer8->Add( mProductAddDetails, 1, wxEXPAND | wxALL, 5 );
 	
 	
 	m_panel5->SetSizer( sbSizer8 );
@@ -268,41 +267,40 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	wxStaticBoxSizer* sbSizer3;
 	sbSizer3 = new wxStaticBoxSizer( new wxStaticBox( m_panel6, wxID_ANY, wxT("Product Inventory") ), wxVERTICAL );
 	
-	m_scrolledWindow3 = new wxScrolledWindow( sbSizer3->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledWindow3->SetScrollRate( 5, 5 );
+	mProductInvenPanel = new wxPanel( sbSizer3->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxFlexGridSizer* fgSizer21;
 	fgSizer21 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer21->AddGrowableCol( 1 );
 	fgSizer21->SetFlexibleDirection( wxBOTH );
 	fgSizer21->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	mBacthNumber = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
+	mBacthNumber = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mBacthNumber->Wrap( -1 );
 	fgSizer21->Add( mBacthNumber, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mBatchNumbeValue = new wxTextCtrl( m_scrolledWindow3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mBatchNumbeValue = new wxTextCtrl( mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer21->Add( mBatchNumbeValue, 1, wxALL|wxEXPAND, 5 );
 	
-	m_staticText8 = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Product Expiry Date"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText8 = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Product Expiry Date"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText8->Wrap( -1 );
 	fgSizer21->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	m_datePicker1 = new wxDatePickerCtrl( m_scrolledWindow3, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT|wxDP_DROPDOWN );
+	m_datePicker1 = new wxDatePickerCtrl( mProductInvenPanel, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT|wxDP_DROPDOWN );
 	fgSizer21->Add( m_datePicker1, 1, wxALL|wxEXPAND, 5 );
 	
-	mQuntity = new wxStaticText( m_scrolledWindow3, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0 );
+	mQuntity = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0 );
 	mQuntity->Wrap( -1 );
 	fgSizer21->Add( mQuntity, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-	mQunatityValue = new wxTextCtrl( m_scrolledWindow3, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mQunatityValue = new wxTextCtrl( mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mQunatityValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add( mQunatityValue, 0, wxALL|wxEXPAND, 5 );
 	
 	
-	m_scrolledWindow3->SetSizer( fgSizer21 );
-	m_scrolledWindow3->Layout();
-	fgSizer21->Fit( m_scrolledWindow3 );
-	sbSizer3->Add( m_scrolledWindow3, 1, wxEXPAND | wxALL, 5 );
+	mProductInvenPanel->SetSizer( fgSizer21 );
+	mProductInvenPanel->Layout();
+	fgSizer21->Fit( mProductInvenPanel );
+	sbSizer3->Add( mProductInvenPanel, 1, wxEXPAND | wxALL, 5 );
 	
 	
 	m_panel6->SetSizer( sbSizer3 );
@@ -348,8 +346,9 @@ pof::AddProdutDialog::~AddProdutDialog()
 
 bool pof::AddProdutDialog::TransferDataFromWindow()
 {
-	datum.second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
-	auto& v = datum.first;
+	datum.emplace();
+	datum->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+	auto& v = datum->first;
 	v.resize(pof::ProductManager::PRODUCT_MAX);
 
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = static_cast<std::uint64_t>(9099090);
@@ -370,16 +369,17 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(mSideEffectsValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 
-	datumInven.second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
-	auto& i = datumInven.first;
+	//only emplace when the fields are 
+	datumInven.emplace();
+	datumInven->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+	auto& i = datumInven->first;
 	i.resize(pof::ProductManager::INVENTORY_MAX);
-	i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(9999999); //
+	i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(9999999); //test
 	i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
 	i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 	i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
-	
-
-
+	i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA"; //test
+	i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
 
 	return true;
 }

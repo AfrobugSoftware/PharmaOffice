@@ -13,6 +13,7 @@
 #include <wx/panel.h>
 #include <wx/dataview.h>
 #include <wx/button.h>
+#include <wx/srchctrl.h>
 
 #include "SaleManager.h"
 #include "DropTarget.h"
@@ -27,9 +28,9 @@ namespace pof
 		wxPanel* mMainPane;
 		wxPanel* mTopTools;
 		wxStaticText* mProductNameText;
-		wxTextCtrl* mProductNameValue;
+		wxSearchCtrl* mProductNameValue;
 		wxStaticText* mScanProduct;
-		wxTextCtrl* mScanProductValue;
+		wxSearchCtrl* mScanProductValue;
 		wxPanel* mDataPane;
 		wxDataViewCtrl* m_dataViewCtrl1;
 		wxDataViewColumn* mSerialNumber;
@@ -69,6 +70,10 @@ namespace pof
 		~SaleView();
 		void SetupDropTarget();
 	protected:
+		//sale operations
+		void UpdateSaleDisplay();
+		void Checkout();
+
 		void OnClear(wxCommandEvent& evt);
 		void OnCheckout(wxCommandEvent& evt);
 		void OnSave(wxCommandEvent& evt);
@@ -76,6 +81,8 @@ namespace pof
 		void OnDrop(wxDataViewEvent& evt);
 
 		void OnBeginDrag(wxDataViewEvent& evt);
+		void OnProductNameSearch(wxCommandEvent& evt);
+
 
 		void DropData(const pof::DataObject& dat);
 	private:

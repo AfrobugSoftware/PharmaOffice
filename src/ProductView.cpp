@@ -139,6 +139,14 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 {
 	pof::AddProdutDialog dialog(this);
 	if (dialog.ShowModal() == wxID_OK) {
+		auto productopt = dialog.GetAddedProduct();
+		if (productopt.has_value()) {
+			wxGetApp().mProductManager.GetProductData()->EmplaceData(std::move(productopt.value()));
+		}
+		auto productinvenopt = dialog.GetAddedInventory();
+		if (productinvenopt.has_value()) {
+			wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(productinvenopt.value()));
+		}
 		wxMessageBox("Product Added", "ADD PRODUCT");
 	}
 }
@@ -198,6 +206,14 @@ void pof::ProductView::HideCostPriceColumn()
 		m_dataViewCtrl1->DeleteColumn(mProductCostPriceCol);
 		mProductCostPriceCol = nullptr;
 	}
+}
+
+void pof::ProductView::SearchCategory()
+{
+}
+
+void pof::ProductView::SearchName()
+{
 }
 
 void pof::ProductView::CreateDataView()

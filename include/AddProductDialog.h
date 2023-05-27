@@ -26,6 +26,7 @@
 #include <wx/valnum.h>
 #include <wx/textdlg.h>
 
+#include <optional>
 
 #include "Data.h"
 #include "ProductManager.h"
@@ -40,9 +41,9 @@ namespace pof
 	protected:
 		wxPanel* m_panel1;
 		wxStaticText* TitleText;
-		wxPanel* m_panel2;
+		wxScrolledWindow* m_panel2;
 		wxPanel* m_panel4;
-		wxScrolledWindow* m_scrolledWindow2;
+		wxPanel* mProductDetailsPanel;
 		wxStaticText* mProductName;
 		wxTextCtrl* mProductNameValue;
 		wxStaticText* mProductGenericName;
@@ -56,7 +57,7 @@ namespace pof
 		wxStaticText* mClassLabel;
 		wxChoice* mClassValue;
 		wxPanel* m_panel5;
-		wxScrolledWindow* m_scrolledWindow1;
+		wxPanel* mProductAddDetails;
 		wxPanel* m_panel71;
 		wxStaticText* mCostPriceLabel;
 		wxTextCtrl* mCostPriceValue;
@@ -82,7 +83,7 @@ namespace pof
 		wxPanel* m_panel8;
 		wxButton* mScanProduct;
 		wxPanel* m_panel6;
-		wxScrolledWindow* m_scrolledWindow3;
+		wxPanel* mProductInvenPanel;
 		wxStaticText* mBacthNumber;
 		wxTextCtrl* mBatchNumbeValue;
 		wxStaticText* m_staticText8;
@@ -94,8 +95,8 @@ namespace pof
 		wxButton* m_sdbSizer2OK;
 		wxButton* m_sdbSizer2Cancel;
 
-		pof::base::data::row_t datum;
-		pof::base::data::row_t datumInven;
+		std::optional<pof::base::data::row_t> datum;
+		std::optional<pof::base::data::row_t> datumInven;
 
 		wxArrayString ProductClassChoices;
 		wxArrayString FormulationChoices;
@@ -117,8 +118,8 @@ namespace pof
 		~AddProdutDialog();
 
 		virtual bool TransferDataFromWindow() override final;
-		inline constexpr pof::base::data::row_t GetAddedProduct() const { return datum; }
-		inline constexpr pof::base::data::row_t GetAddedInventory() const { return datumInven; }
+		inline constexpr std::optional<pof::base::data::row_t> GetAddedProduct() const { return datum; }
+		inline constexpr std::optional<pof::base::data::row_t> GetAddedInventory() const { return datumInven; }
 		void OnScanProduct(wxCommandEvent& evt);
 		void OnMoreDescription(wxCommandEvent& evt);
 		void OnMoreDirForUse(wxCommandEvent& evt);
