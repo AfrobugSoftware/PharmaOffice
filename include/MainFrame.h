@@ -61,8 +61,9 @@ namespace pof {
 			ID_MENU_PRODUCT_EXPORT,
 			ID_MENU_EXPORT_JSON,
 			ID_MENU_EXPORT_EXCEL,
-			ID_MENU_EXPORT_CSV
-
+			ID_MENU_EXPORT_CSV,
+			ID_MENU_PRODUCT_SAVE,
+			ID_MENU_PRODUCT_LOAD,
 
 		};
 
@@ -86,6 +87,10 @@ namespace pof {
 		void OnExportJson(wxCommandEvent& evt);
 		void OnExportExcel(wxCommandEvent& evt);
 		void OnExportCSV(wxCommandEvent& evt);
+
+		//test 
+		void OnTestSave(wxCommandEvent& evt);
+		void OnTestLoad(wxCommandEvent& evt);
 
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);

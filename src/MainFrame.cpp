@@ -9,6 +9,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_JSON, pof::MainFrame::OnExportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_EXCEL, pof::MainFrame::OnExportExcel)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_CSV, pof::MainFrame::OnExportCSV)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SAVE, pof::MainFrame::OnTestSave)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -64,6 +66,11 @@ void pof::MainFrame::CreateMenuBar()
 	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
 	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export\tCtrl-E", exportSubMenu);
+
+	//TEST
+	Menus[2]->Append(ID_MENU_PRODUCT_SAVE, "Save\tCtrl-S", nullptr);
+	Menus[2]->Append(ID_MENU_PRODUCT_LOAD, "Load\tCtrl-L", nullptr);
+
 
 
 	//view
@@ -193,6 +200,42 @@ void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
 
 void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
 {
+}
+
+void pof::MainFrame::OnTestSave(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+	std::fstream fs("packed.dat", std::ios::out | std::ios::binary);
+	if (!fs.is_open()) return;
+
+	auto& modelPrt = wxGetApp().mProductManager.GetProductData();
+	auto packed = modelPrt->Pack();
+
+	fs.write(reinterpret_cast<const char*>(packed.data()), packed.size());
+}
+
+void pof::MainFrame::OnTestLoad(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+	std::fstream fs("packed.dat", std::ios::in | std::ios::binary);
+	if (!fs.is_open()) return;
+
+	fs.seekg(0, std::ios::end);
+	size_t size = fs.tellg();
+	fs.seekg(0, std::ios::beg);
+
+	pof::base::pack_t pack;
+	pack.resize(size);
+
+	fs.read(pack.data(), size);
+
+	auto& modelPtr = wxGetApp().mProductManager.GetProductData();
+	try {
+		modelPtr->Unpack(std::move(pack));
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 }
 
 void pof::MainFrame::OnImportJson(wxCommandEvent& evt)

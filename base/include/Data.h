@@ -178,49 +178,74 @@ namespace pof
                             continue;
                         }
 
-                        for (int i = 0; i < size; i++) {
+                        for (std::uint8_t i = 0; i < size; i++) {
                             auto k = metadata[i];
                             auto& d = r[i];
+                            if (d.index() != static_cast<std::underlying_type_t<kind>>(k)) continue; //skip null cols
+
                             switch (k)
                             {
                             case pof::base::data::kind::int32:
+                                 ar & i;
+                                 ar & static_cast<std::underlying_type_t<kind>>(k);
                                  ar & boost::variant2::get<std::int32_t>(d);
                                 break;
                             case pof::base::data::kind::int64:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<std::int64_t>(d);
                                 break;
                             case pof::base::data::kind::uint32:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<std::uint32_t>(d);
                                 break;
                             case pof::base::data::kind::uint64:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<std::uint64_t>(d);
                                 break;
                             case pof::base::data::kind::float32:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<float>(d);
                                 break;
                             case pof::base::data::kind::float64:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<double>(d);
                                 break;
                             case pof::base::data::kind::datetime:
                             {
                                 auto& t = boost::variant2::get<datetime_t>(d);
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & t.time_since_epoch().count();
                                 break;
                             }
                             case pof::base::data::kind::text:
                             {
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<text_t>(d);
                                 break;
                             }
                             case pof::base::data::kind::blob:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<blob_t>(d);
                                 break;
                             case pof::base::data::kind::uuid:
                             {
+                                //the array might be serializing a pointer, need to test
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<uuid_t>(d).data;
                                 break;
                             }
                             case pof::base::data::kind::currency:
+                                ar & i;
+                                ar & static_cast<std::underlying_type_t<kind>>(k);
                                 ar & boost::variant2::get<currency_t>(d).data();
                                 break;
                             default:
@@ -230,6 +255,7 @@ namespace pof
                 }
             }
 
+         
             template<typename Archiver>
             void load(Archiver& ar, const unsigned int version = 1){
                 //read the header
@@ -252,97 +278,117 @@ namespace pof
                     metadata[i] = static_cast<kind>(k);
                 }
                 
-                for (int j = 0; j < rowsize; j++) {
+                //maybe I do not need to loop this by row size
+                //read until the stream is at end of file
+                value.emplace_back(row_t{});
+                std::reference_wrapper<row_t::first_type> r = value.back().first;
+                r.get().resize(colsize);
 
-                    value.emplace_back(row_t{});
-                    auto& r = value.back().first;
-                    r.reserve(colsize);
+               std::uint8_t col = 0;
+               std::uint8_t old_col = 0;
+               std::uint8_t s = 0;
+               size_t count = value.size();
+               while(count <= rowsize) {
+                    try {
+                        ar >> col;
+                        if (col < old_col) {
+                            value.emplace_back(row_t{});
+                            count = value.size();
+                            r = value.back().first;
+                            r.get().resize(colsize);
+                        }
+                        old_col = col;
+                        ar >> s;
+                        kind k = static_cast<kind>(s);
 
-                    for (int i = 0; i < colsize; i++)
-                    {
-                        auto k = metadata[i];
                         switch (k)
                         {
                         case pof::base::data::kind::int32:
                         {
                             std::int32_t temp = 0;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::int64:
                         {
                             std::int64_t temp = 0;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::uint32:
                         {
                             std::uint32_t temp = 0;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::uint64:
                         {
                             std::uint64_t temp = 0;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::float32:
                         {
                             float temp = 0.0f;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::float64:
                         {
                             double temp = 0.0;
                             ar >> temp;
-                            r.emplace_back(temp);
+                            r.get()[col] = temp;
                             break;
                         }
                         case pof::base::data::kind::datetime:
                         {
                             clock_t::duration::rep rep = 0;
                             ar >> rep;
-                            r.emplace_back(datetime_t(clock_t::duration(rep)));
+                            r.get()[col] = datetime_t(clock_t::duration(rep));
                             break;
                         }
                         case pof::base::data::kind::text:
                         {
                             text_t temp{};
                             ar >> temp;
-                            r.emplace_back(std::move(temp));
+                            r.get()[col] = std::move(temp);
                             break;
                         }
                         case pof::base::data::kind::blob:
                         {
                             blob_t temp{};
                             ar >> temp;
-                            r.emplace_back(std::move(temp));
+                            r.get()[col] = std::move(temp);
                             break;
                         }
                         case pof::base::data::kind::uuid:
                         {
-                            uuid_t uuid = {0};
+                            uuid_t uuid = { 0 };
                             ar >> uuid.data;
-                            r.emplace_back(std::move(uuid));
+                            r.get()[col] = (std::move(uuid));
                         }
                         case pof::base::data::kind::currency:
                         {
-                            pof::base::currency::cur_t data = {0};
+                            pof::base::currency::cur_t data = { 0 };
                             ar >> data;
-                            r.emplace_back(pof::base::currency(std::move(data)));
+                            r.get()[col] = (pof::base::currency(std::move(data)));
                         }
                         default:
                             break;
                         }
                     }
+                    catch (const std::exception& exp) {
+                        //hopefully this would be a read passed eof error
+                       // spdlog::error(exp.what());
+                        break;
+                    }
                 }
+              
             }
 
 
@@ -351,6 +397,7 @@ namespace pof
 
             inline constexpr void tsCreated(const datetime_t& dt) { created = dt; }
             inline constexpr void tsModified(const datetime_t& dt) { modified = dt; }
+            inline constexpr bool empty() const { return value.empty(); }
         private:
             friend class boost::serialization::access;
             BOOST_SERIALIZATION_SPLIT_MEMBER()
