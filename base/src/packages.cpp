@@ -22,6 +22,5 @@ void pof::base::unpacker::operator()(const pack_t& package)
 
 	ar::binary_iarchive archive{ ifs, flags };
 	
-	m_data.clear();
 	archive >> m_data;
 }

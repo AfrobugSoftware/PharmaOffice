@@ -27,7 +27,19 @@ pof::base::pack_t pof::DataModel::Pack() const {
 	return pack();
 }
 void pof::DataModel::Unpack(const pof::base::pack_t& package) {
+	if (!datastore.empty()) {
+		datastore.clear();
+		Cleared();
+	}
+
 	unpack(package);
+
+	wxDataViewItemArray itemArray;
+	itemArray.resize(datastore.size());
+	size_t i = 0;
+	std::generate(itemArray.begin(), itemArray.end(),
+		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
+	ItemsAdded(wxDataViewItem{ 0 }, std::move(itemArray));
 }
 
 void pof::DataModel::Emplace(pof::base::data&& d)
