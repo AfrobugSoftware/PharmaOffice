@@ -29,6 +29,7 @@ pof::base::pack_t pof::DataModel::Pack() const {
 void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 	if (!datastore.empty()) {
 		datastore.clear();
+		attributes.clear();
 		Cleared();
 	}
 
@@ -100,6 +101,7 @@ bool pof::DataModel::GetAttr(const wxDataViewItem& item, unsigned int col, wxDat
 		attr = *(attrIter->second);
 		return true;
 	}
+	return false;
 }
 
 wxString pof::DataModel::GetColumnType(unsigned int col) const
@@ -113,18 +115,23 @@ wxString pof::DataModel::GetColumnType(unsigned int col) const
 	case pof::base::data::kind::int64:
 		return "long long";
 	case pof::base::data::kind::uint32:
+		return "unsigned int";
 		break;
 	case pof::base::data::kind::uint64:
+		return "unsigned long long";
 		break;
 	case pof::base::data::kind::float32:
+		return "float";
 		break;
 	case pof::base::data::kind::float64:
+		return "double";
 		break;
 	case pof::base::data::kind::datetime:
 		return "datetime";
 	case pof::base::data::kind::text:
 		return "string";
 	case pof::base::data::kind::blob:
+		return "blob";
 		break;
 	default:
 		return wxString();
