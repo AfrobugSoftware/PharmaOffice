@@ -2,10 +2,6 @@
 #include "relation.h"
 #include <sqlite3.h>
 #include <boost/noncopyable.hpp>
-#include <boost/fusion/algorithm.hpp>
-#include <boost/fusion/container.hpp>
-#include <boost/fusion/adapted/std_tuple.hpp>
-#include <boost/fusion/include/std_tuple.hpp>
 
 #include <unordered_map>
 #include <optional>
@@ -68,10 +64,6 @@ namespace pof {
 			}
 			else if constexpr (std::is_same_v<arg_type, pof::base::data::currency_t>) {
 				return (SQLITE_OK == sqlite3_bind_blob(statement, position, value.data().data(), value.data().size(), SQLITE_TRANSIENT));
-			}
-			else if constexpr (std::is_enum_v<arg_type>) {
-				auto en = static_cast<std::uint32_t>(std::get<col_id>(tuple));
-				return (SQLITE_OK == sqlite3_bind_int(statement, position, en));
 			}
 			else
 			{
@@ -150,24 +142,43 @@ namespace pof {
 
 		}
 
-		template<typename tuple_t>
+		template<size_t N>
 		struct loop {
-			template<typename Iter1, typename IterEnd>
-			static bool bind(Iter1 iter, IterEnd end, sqlite3_stmt* stmt, size_t pos) {
-				bool ret = do_bind(stmt, *iter, pos);
-				auto next = boost::fusion::next(iter);
-				if (next == end) return ret;
-				return (ret && bind(next, end, stmt, pos + 1));
+			template<typename tuple_t>
+			static bool bind(sqlite3_stmt* stmt, const tuple_t& tuple) {
+				bool ret = loop<N - 1>::template bind(stmt,tuple);
+
+				const auto& val = std::get<N>(tuple);
+				bool ret2 = do_bind(stmt, val, N);
+				return (ret2 && ret);
 			}
 
-			template<typename Iter1, typename IterEnd, typename array_t>
-			static bool bind_para(Iter1 iter, IterEnd end, sqlite3_stmt* stmt, size_t pos, array_t&& arr)
+			template<typename tuple_t, typename array_t>
+			static bool bind_para(sqlite3_stmt* stmt, const tuple_t& tuple, array_t&& arr)
 			{
-				bool ret = do_bind_para(stmt, *iter, arr[pos]);
-				auto next = boost::fusion::next(iter);
-				if (next == end) return ret;
-				return (ret && bind_para(next, end, stmt, pos, std::forward<array_t>(arr)));
+				bool ret = loop<N - 1>::template bind_para(stmt, tuple, std::forward<array_t>(arr));
+				const auto& val = std::get<N>(tuple);
+				bool ret2 = do_bind_para(stmt, val, arr[N]);
+				return (ret2 && ret);
 			}
+		};
+
+		template<>
+		struct loop<0>
+		{
+			template<typename tuple_t>
+			static bool bind(sqlite3_stmt* stmt, const tuple_t& tuple) {
+				const auto& val = std::get<0>(tuple);
+				return  do_bind(stmt, val, 0);
+			}
+
+			template<typename tuple_t, typename array_t>
+			static bool bind_para(sqlite3_stmt* stmt, const tuple_t& tuple, array_t&& arr)
+			{
+				const auto& val = std::get<0>(tuple);
+				return do_bind_para(stmt, val, arr[0]);
+			}
+
 		};
 
 		class database : public boost::noncopyable {
@@ -208,9 +219,7 @@ namespace pof {
 			bool bind(stmt_t stmt, const std::tuple<Args...>& args) {
 				using tuple_t = std::tuple<Args...>;
 				constexpr const size_t s = sizeof...(Args);
-				auto beg = boost::fusion::begin(args);
-				auto end = boost::fusion::end(args);
-				return loop<tuple_t>::template bind(beg, end, stmt, 0);
+				return loop<s - 1>::template bind(stmt, args);
 			}
 
 			template<typename... Args>
@@ -219,9 +228,7 @@ namespace pof {
 				using tuple_t = std::tuple<Args...>;
 				using array_t = std::array<std::string_view, sizeof...(Args)>;
 				constexpr const size_t s = sizeof...(Args);
-				auto beg = boost::fusion::begin(args);
-				auto end = boost::fusion::end(args);
-				return loop<tuple_t>::template bind_para(beg, end, stmt, 0, std::foward<array_t>(para));
+				return loop<s - 1>::template bind_para(stmt, args, std::forward<array_t>(para));
 			}
 		private:
 			sqlite3* m_connection;
