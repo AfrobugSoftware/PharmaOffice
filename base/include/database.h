@@ -142,6 +142,93 @@ namespace pof {
 
 		}
 
+		template<typename arg_type, size_t N>
+		auto do_retrive(sqlite3_stmt* statement) -> std::tuple<arg_type>
+		{
+			const size_t col = (size_t)sqlite3_column_count(statement) - (count + 1);
+			using arg_t = typename std::decay_t<Arg_type>;
+
+			static_assert(is_database_type<arg_t>::value, "Type in tuple is not a valid database type");
+			if constexpr (std::is_integral_v<arg_t>)
+			{
+				//64 bit intergers has a special download function in sqlite
+				if constexpr (sizeof(arg_t) == sizeof(std::uint64_t))
+				{
+					return std::make_tuple(sqlite3_column_int64(statement, col));
+				}
+				return std::make_tuple(sqlite3_column_int(statement, col));
+			}
+			else if constexpr (std::is_floating_point_v<arg_t>)
+			{
+				if constexpr (std::is_same_v<arg_t, float>)
+				{
+					//sqlite uses REAL type as double, need to safely cast, removes annoying warnings
+					return std::make_tuple(static_cast<arg_t>(sqlite3_column_double(statement, col)));
+				}
+				return std::make_tuple(sqlite3_column_double(statement, col));
+			}
+			else if constexpr (std::is_same_v<arg_t, pof::base::data::blob_t>)
+			{
+				const blob_t::value_type* val_ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_column_blob(statement, col));
+				if (val_ptr)
+				{
+					const size_t size = sqlite3_column_bytes(statement, col);
+					pof::base::data::blob_t vec(size);
+					std::copy(val_ptr, val_ptr + size, vec.begin());
+					return std::make_tuple(std::move(vec));
+				}
+				return std::make_tuple(pof::base::data::blob_t{});
+			}
+			else if constexpr (std::is_same_v<arg_t, pof::base::data::text_t>)
+			{
+				const char* txt = (const char*)(sqlite3_column_text(statement, col));
+				if (txt)
+				{
+					return std::make_tuple(std::string(txt));
+				}
+				return std::make_tuple(std::string{});
+			}
+			else if constexpr (std::is_same_v<arg_t, pof::base::data::datetime_t>)
+			{
+				pof::base::data::clock_t::rep rep = sqlite3_column_int64(statement, col);
+				return std::make_tuple(pof::base::data::datetime_t(pof::base::data::clock_t::duration(rep)));
+			}
+			else if constexpr (std::is_same_v<arg_t, pof::base::data::uuid_t>)
+			{
+				const pof::base::data::blob_t::value_type* val_ptr = 
+					static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_column_blob(statement, col));
+				if (val_ptr)
+				{
+					const size_t size = sqlite3_column_bytes(statement, col);
+					if (size == 16) //128 bit ids
+					{
+						pof::base::data::uuid_t id;
+						std::copy(val_ptr, val_ptr + size, id.data);
+						return std::make_tuple(std::move(id));
+					}
+				}
+				return std::make_tuple(boost::uuids::nil_uuid());
+			}
+			else if constexpr (std::is_same_v<arg_t, pof::base::data::currency_t>) {
+				const pof::base::data::blob_t::value_type* val_ptr =
+					static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_column_blob(statement, col));
+				if (val_ptr)
+				{
+					const size_t size = sqlite3_column_bytes(statement, col);
+					pof::base::data::currency_t buf;
+					std::copy(val_ptr, val_ptr + size, buf.data().data());
+					return std::make_tuple(std::move(buf));
+					
+				}
+				return std::make_tuple(pof::base::data::currency_t{});
+			}
+			else if constexpr (std::is_enum_v<arg_t>) {
+				auto en = static_cast<arg_t>(sqlite3_column_int(statement, col));
+				return std::make_tuple(en);
+			}
+		}
+
+
 		template<size_t N>
 		struct loop {
 			template<typename tuple_t>
@@ -189,6 +276,9 @@ namespace pof {
 
 			database(const std::filesystem::path& path);
 			~database();
+			database(database&& db) noexcept;
+			database& operator=(database&& db) noexcept;
+
 
 			std::optional<stmt_t> prepare(const query_t& query);
 			void reset(stmt_t stmt);
@@ -197,21 +287,27 @@ namespace pof {
 			bool remove_map(const std::string& name);
 			std::optional<stmt_t> get_map(const std::string& value);
 
+			bool execute(const query_t& query);
+			bool execute(stmt_t stmt);
+
 			template<typename... Args>
-			auto execute(const query_t& query) -> std::optional<pof::base::relation<Args...>>
+			auto retrive(const std::string& name) -> std::optional<pof::base::relation<Args...>>
 			{
-				
+				auto iter = m_stmap.find(name);
+				if (iter == m_stmap.end()) return std::nullopt;
+				stmt_t stmt = iter->second;
+				int ret = SQLITE_OK;
+
+
+
+
 			}
 
 			template<typename... Args>
-			auto execute_stmt(const std::string& name) -> std::optional<pof::base::relation<Args...>>
+			auto retrive(stmt_t stmt) -> std::optional<pof::base::relation<Args...>>
 			{
+				if (stmt == nullptr) return std::nullopt;
 
-			}
-
-			template<typename... Args>
-			auto execute_stmt(stmt_t stmt) -> std::optional<pof::base::relation<Args...>>
-			{
 
 			}
 
@@ -229,6 +325,13 @@ namespace pof {
 				using array_t = std::array<std::string_view, sizeof...(Args)>;
 				constexpr const size_t s = sizeof...(Args);
 				return loop<s - 1>::template bind_para(stmt, args, std::forward<array_t>(para));
+			}
+
+			//for insert statments that inserts an entire relation
+			template<typename... Args>
+			bool store(stmt_t stmt, pof::base::relation<Args...>&& rel)
+			{
+
 			}
 		private:
 			sqlite3* m_connection;

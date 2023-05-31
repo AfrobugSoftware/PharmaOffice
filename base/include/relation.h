@@ -43,7 +43,7 @@ namespace pof {
 		class relation : public std::vector<std::tuple<Args...>>
 		{
 		public:
-			constexpr const static size_t size = sizeof...(Args);
+			constexpr const static size_t arg_size = sizeof...(Args);
 			using tuple_t = std::tuple<Args...>;
 			using base_t = std::vector<std::tuple<Args...>>;
 

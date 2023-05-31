@@ -21,6 +21,15 @@ pof::base::database::~database()
 	sqlite3_close(m_connection);
 }
 
+pof::base::database::database(database&& db) noexcept
+{
+}
+
+database& pof::base::database::operator=(database&& db) noexcept
+{
+	// TODO: insert return statement here
+}
+
 std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const query_t& query)
 {
 	return std::optional<stmt_t>();
@@ -48,4 +57,14 @@ std::optional<pof::base::database::stmt_t> pof::base::database::get_map(const st
 {
 
 	return std::nullopt;
+}
+
+bool pof::base::database::execute(const query_t& query)
+{
+	return false;
+}
+
+bool pof::base::database::execute(stmt_t stmt)
+{
+	return false;
 }

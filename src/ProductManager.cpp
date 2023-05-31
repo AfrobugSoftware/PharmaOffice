@@ -36,6 +36,7 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::datetime_t, // EXPIRE DATE
 		pof::base::data::datetime_t, // ADDED DATE
 		std::uint64_t, // STOCK COUNT
+		pof::base::data::currency_t, //CURRENCY
 		pof::base::data::text_t, // MANUFACTURE NAME
 		std::uint64_t,  // MANUFACTURER ADDRESS ID
 		pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
