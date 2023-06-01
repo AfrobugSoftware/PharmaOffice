@@ -104,7 +104,8 @@ namespace pof
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
 		void OnSearchFlag(wxCommandEvent& evt);
-		void OnContextMenu(wxCommandEvent& evt);
+		void OnContextMenu(wxDataViewEvent& evt);
+		void OnRemoveProduct(wxCommandEvent& evt);
 	
 
 

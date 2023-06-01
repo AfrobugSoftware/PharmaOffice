@@ -150,7 +150,7 @@ void pof::Modules::CreateTree()
 	const wxSize xy = wxArtProvider::GetSizeHint(wxART_LIST);
 	wxImageList* imgList = new wxImageList(xy.x, xy.y);
 	imgList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
-	
+	imgList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
 	
 	mModuleTree->AssignImageList(imgList);
 	wxTreeItemId root = mModuleTree->AddRoot("Root", -1);
@@ -158,22 +158,25 @@ void pof::Modules::CreateTree()
 
 	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 0);
 	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 0);
-	mWarehouse   = mModuleTree->AppendItem(root, "Warehouse", 0);
+	mWarehouse     = mModuleTree->AppendItem(root, "Warehouse", 0);
+	mReports       = mModuleTree->AppendItem(root, "Reports", 0);
 
 
-	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 0);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 0);
-	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 0);
-	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 0);
+	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
+	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
+	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
 	
-	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 0);
-	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 0);
-	mRequisitions = mModuleTree->AppendItem(mTransactions, "Requisitions", 0);
-	mReports       = mModuleTree->AppendItem(mTransactions, "Reports", 0);
+	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 1);
+	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 1);
+	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 1);
 
+	mAuditTrails        = mModuleTree->AppendItem(mReports, "Audit Trails", 1);
+	mConsumptionPattern = mModuleTree->AppendItem(mReports, "Consumption Patterns", 1);
 	
 	mModuleTree->Expand(mPharmacy);
 	mModuleTree->Expand(mTransactions);
+	mModuleTree->Expand(mReports);
 }
 
 void pof::Modules::Style()
@@ -182,6 +185,7 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mWarehouse, mFonts[FONT_MAIN]);
+	mModuleTree->SetItemFont(mReports, mFonts[FONT_MAIN]);
 	
 	mModuleTree->SetItemFont(mPrescriptions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mPaitents, mFonts[FONT_CHILD]);
@@ -190,7 +194,6 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mSales, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mOrders, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
-	mModuleTree->SetItemFont(mReports, mFonts[FONT_CHILD]);
 
 }
 

@@ -145,8 +145,8 @@ namespace pof {
 		template<typename arg_type, size_t N>
 		auto do_retrive(sqlite3_stmt* statement) -> std::tuple<arg_type>
 		{
-			const size_t col = (size_t)sqlite3_column_count(statement) - (count + 1);
-			using arg_t = typename std::decay_t<Arg_type>;
+			const size_t col = (size_t)sqlite3_column_count(statement) - (N + 1);
+			using arg_t = typename std::decay_t<arg_type>;
 
 			static_assert(is_database_type<arg_t>::value, "Type in tuple is not a valid database type");
 			if constexpr (std::is_integral_v<arg_t>)
@@ -169,7 +169,7 @@ namespace pof {
 			}
 			else if constexpr (std::is_same_v<arg_t, pof::base::data::blob_t>)
 			{
-				const blob_t::value_type* val_ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_column_blob(statement, col));
+				const pof::base::data::blob_t::value_type* val_ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_column_blob(statement, col));
 				if (val_ptr)
 				{
 					const size_t size = sqlite3_column_bytes(statement, col);
@@ -184,9 +184,9 @@ namespace pof {
 				const char* txt = (const char*)(sqlite3_column_text(statement, col));
 				if (txt)
 				{
-					return std::make_tuple(std::string(txt));
+					return std::make_tuple(pof::base::data::text_t(txt));
 				}
-				return std::make_tuple(std::string{});
+				return std::make_tuple(pof::base::data::text_t{});
 			}
 			else if constexpr (std::is_same_v<arg_t, pof::base::data::datetime_t>)
 			{
@@ -229,6 +229,9 @@ namespace pof {
 		}
 
 
+
+
+
 		template<size_t N>
 		struct loop {
 			template<typename tuple_t>
@@ -248,6 +251,17 @@ namespace pof {
 				bool ret2 = do_bind_para(stmt, val, arr[N]);
 				return (ret2 && ret);
 			}
+
+			template<typename tuple_t>
+			static auto retrive(sqlite3_stmt* statement)
+			{
+				constexpr size_t col = (std::tuple_size_v<tuple_t> - (N + 1));
+				using arg_type = std::tuple_element_t<col, tuple_t>;
+				auto t1 = do_retrive<arg_type, col>(statement);
+				auto t2 = loop<N - 1>::template retrive<tuple_t>(statement);
+
+				return std::tuple_cat(std::move(t1), std::move(t2));
+			}
 		};
 
 		template<>
@@ -264,6 +278,14 @@ namespace pof {
 			{
 				const auto& val = std::get<0>(tuple);
 				return do_bind_para(stmt, val, arr[0]);
+			}
+
+			template<typename tuple_t>
+			static auto retrive(sqlite3_stmt* statement) {
+				constexpr size_t col = (std::tuple_size_v<tuple_t> -1);
+				using arg_type = std::tuple_element_t<col, tuple_t>;
+
+				return do_retrive<arg_type, col>(statement);
 			}
 
 		};
@@ -293,22 +315,59 @@ namespace pof {
 			template<typename... Args>
 			auto retrive(const std::string& name) -> std::optional<pof::base::relation<Args...>>
 			{
+				using type_list = std::tuple<Args...>;
 				auto iter = m_stmap.find(name);
 				if (iter == m_stmap.end()) return std::nullopt;
 				stmt_t stmt = iter->second;
-				int ret = SQLITE_OK;
 
-
-
-
+				return retrive(stmt);
 			}
 
 			template<typename... Args>
 			auto retrive(stmt_t stmt) -> std::optional<pof::base::relation<Args...>>
 			{
+				using rel_t = relation<Args...>;
+				using type_list = std::tuple<Args...>;
+				constexpr const size_t s = sizeof...(Args);
+
 				if (stmt == nullptr) return std::nullopt;
+				rel_t optrel;
 
+				if (sqlite3_step(begin) != SQLITE_DONE) {
+					//finalise begin?
+					sqlite3_step(rollback);
+					reset(begin);
+					reset(rollback);
+					return std::nullopt;
+				}
+				int ret = 0;
+				while((ret = sqlite3_step(stmt)) == SQLITE_ROW)
+				{
+					auto tup = loop<s - 1>::template retrive<type_list>(stmt);
+					optrel.emplace_back(std::move(tup));
+				}
+				if (ret != SQLITE_DONE) {
+					//SOME ERROR OCCURED ? HOW TO HANDLE
+					sqlite3_step(rollback);
+					reset(stmt); //or finalise
+					reset(begin);
+					reset(rollback);
+					return std::nullopt;
+				}
 
+				if (sqlite3_step(end) != SQLITE_DONE) {
+					//finalise end ? 
+					sqlite3_step(rollback);
+					
+					reset(begin);
+					reset(end);
+					reset(rollback);
+					return std::nullopt;
+				}
+
+				reset(begin);
+				reset(end);
+				return optrel;
 			}
 
 			template<typename... Args>
@@ -331,11 +390,20 @@ namespace pof {
 			template<typename... Args>
 			bool store(stmt_t stmt, pof::base::relation<Args...>&& rel)
 			{
+				using type_list = std::tuple<Args...>;
+
+
 
 			}
 		private:
 			sqlite3* m_connection;
 			stmt_map m_stmap;
+
+			stmt_t begin = nullptr;
+			stmt_t begin_immidiate = nullptr;
+			stmt_t end = nullptr;
+			stmt_t rollback = nullptr;
+
 		};
 	
 	};

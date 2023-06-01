@@ -92,6 +92,7 @@ namespace pof {
 		wxTreeItemId mPharmacy;
 		wxTreeItemId mTransactions;
 		wxTreeItemId mWarehouse;
+		wxTreeItemId mReports;
 
 		wxTreeItemId mPrescriptions;
 		wxTreeItemId mPaitents;
@@ -100,7 +101,8 @@ namespace pof {
 		wxTreeItemId mSales;
 		wxTreeItemId mOrders;
 		wxTreeItemId mRequisitions;
-		wxTreeItemId mReports;
+		wxTreeItemId mAuditTrails;
+		wxTreeItemId mConsumptionPattern;
 		wxTreeItemId mSupply;
 
 

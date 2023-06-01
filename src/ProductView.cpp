@@ -5,12 +5,15 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 EVT_SIZE(pof::ProductView::OnResize)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
 EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
+EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnContextMenu)
 
 //TOOLS
 EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 
+//CONTEXT MENU
+EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 
 END_EVENT_TABLE()
 
@@ -169,8 +172,26 @@ void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 {
 }
 
-void pof::ProductView::OnContextMenu(wxCommandEvent& evt)
+void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 {
+	wxMenu* menu = new wxMenu;
+	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove Product", nullptr);
+	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
+
+	PopupMenu(menu);
+}
+
+void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
+{
+	//check privilage
+	
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	if (wxMessageBox("Deleteing a product deletes all the data associated with the product, Do you wish to continue?", "REMOVE PRODUCT", wxICON_WARNING | wxYES_NO) == wxYES) {
+		
+
+	}
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
