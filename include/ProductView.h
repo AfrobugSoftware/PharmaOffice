@@ -41,6 +41,7 @@ namespace pof
 			ID_TOOLBAR = 1000,
 			ID_ADD_PRODUCT = wxID_HIGHEST + 2000,
 			ID_REMOVE_PRODUCT,
+			ID_ADD_ORDER_LIST,
 			ID_PRODUCTINFO,
 			ID_BACK,
 			ID_FORWARD,
@@ -106,6 +107,7 @@ namespace pof
 		void OnSearchFlag(wxCommandEvent& evt);
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
+		void OnAddProductToOrderList(wxCommandEvent& evt);
 	
 
 

@@ -14,6 +14,7 @@ EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProduct
 
 //CONTEXT MENU
 EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
+EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
 
 END_EVENT_TABLE()
 
@@ -136,11 +137,15 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 
 void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 {
+	if (wxGetApp().bUsingLocalDatabase) {
+		//
+	}
 }
 
 void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 {
 	pof::AddProdutDialog dialog(this);
+	dialog.Center();
 	if (dialog.ShowModal() == wxID_OK) {
 		auto productopt = dialog.GetAddedProduct();
 		if (productopt.has_value()) {
@@ -157,12 +162,14 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 {
 	wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
-
+	dialog.Center();
 	if (dialog.ShowModal() == wxID_OK) {
 		auto CategoryName = dialog.GetValue().ToStdString();
 		if (CategoryName.empty()) return;
 		//what else are we gonna do with category
-	
+		if (wxGetApp().bUsingLocalDatabase) {
+			//write category to database 
+		}
 		CategoryAddSignal(CategoryName);
 	}
 
@@ -175,7 +182,9 @@ void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 {
 	wxMenu* menu = new wxMenu;
+	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add Order List", nullptr);
 	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove Product", nullptr);
+	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
 
 	PopupMenu(menu);
@@ -192,6 +201,10 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 		
 
 	}
+}
+
+void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
+{
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

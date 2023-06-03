@@ -35,6 +35,8 @@ namespace pof {
 		wxTextCtrl* mLastNameValue;
 		wxStaticText* mFirstNameLabel;
 		wxTextCtrl* mFirstNameValue;
+		wxStaticText* mUserNameLabel;
+		wxTextCtrl* mUserNameValue;
 		wxStaticText* mAccountTypeLabel;
 		wxChoice* mAccountType;
 		wxStaticText* mEmailLabel;
@@ -58,7 +60,7 @@ namespace pof {
 	public:
 		//window ids
 		enum {
-			ID_SHOW_PASSWORD = wxID_HIGHEST + 45500,
+			ID_SHOW_PASSWORD = wxID_HIGHEST + 4500,
 			ID_ACCOUNT_TYPE,
 
 		};
@@ -67,13 +69,12 @@ namespace pof {
 		//account type
 		enum {
 			PHARAMCIST = 0,
-			MANAGER,
-			INTERN_PHARAMCIST,
-			STUDENT_PHARMACIST,
-			PHARAMCY_TECH,
-			SALES_ASSISTANT,
 			PHARM_TECH,
 			DISPENSER,
+			SALES_ASSISTANT,
+			INTERN_PHARAMCIST,
+			STUDENT_PHARMACIST,
+			MANAGER,
 		};
 
 		//PHARAMCY ROLE
@@ -82,7 +83,7 @@ namespace pof {
 			LOCCUM
 		};
 
-		RegistrationDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Registration"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(910, 728), long style = wxDEFAULT_DIALOG_STYLE);
+		RegistrationDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Registration"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE);
 		~RegistrationDialog();
 
 		inline const Account& GetAccount() const { return mAccount; }

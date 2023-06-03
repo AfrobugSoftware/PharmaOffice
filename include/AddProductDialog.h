@@ -114,7 +114,7 @@ namespace pof
 			ID_MORE_SIDEEFFECTS,
 			ID_MORE_HEALTHCON,
 		};
-		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1122, 762), long style = wxDEFAULT_DIALOG_STYLE);
+		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE);
 		~AddProdutDialog();
 
 		virtual bool TransferDataFromWindow() override final;

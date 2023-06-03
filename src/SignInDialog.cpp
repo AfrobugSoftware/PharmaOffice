@@ -166,9 +166,12 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 
 void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
-	wxMessageBox("No signup yet", "SIGN IN");
-
-	//EndModal(wxID_OK);
+	pof::RegistrationDialog regDialog(nullptr);
+	int ret = regDialog.ShowModal();
+	if (ret == wxID_OK) {
+		wxMessageBox("Signed up successful");
+	}
+	EndModal(ret);
 }
 
 bool pof::SignInDialog::ValidateLocal()

@@ -1,6 +1,7 @@
 #include "AccountReg.h"
 BEGIN_EVENT_TABLE(pof::RegistrationDialog, wxDialog)
 	EVT_CHECKBOX(pof::RegistrationDialog::ID_SHOW_PASSWORD, pof::RegistrationDialog::OnShowPassword)
+	EVT_CHOICE(pof::RegistrationDialog::ID_ACCOUNT_TYPE, pof::RegistrationDialog::OnAccountTypeSelect)
 END_EVENT_TABLE()
 
 
@@ -9,7 +10,7 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetExtraStyle( wxDIALOG_EX_CONTEXTHELP );
-	
+	SetBackgroundColour(*wxWHITE); //THEME
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
@@ -65,11 +66,27 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	mFirstNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY | wxFILTER_ALPHA });
 	fgSizer1->Add( mFirstNameValue, 0, wxALL|wxEXPAND, 5 );
 
+	mUserNameLabel = new wxStaticText(m_scrolledWindow1, wxID_ANY, wxT("Username:"), wxDefaultPosition, wxDefaultSize, 0);
+	mUserNameLabel->Wrap(-1);
+	fgSizer1->Add(mUserNameLabel, 0, wxALL, 5);
+
+	mUserNameValue = new wxTextCtrl(m_scrolledWindow1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mUserNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY | wxFILTER_ALPHA });
+	fgSizer1->Add(mUserNameValue, 0, wxALL | wxEXPAND, 5);
+
 	mAccountTypeLabel = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Account Type"), wxDefaultPosition, wxDefaultSize, 0 );
 	mAccountTypeLabel->Wrap( -1 );
 	fgSizer1->Add( mAccountTypeLabel, 0, wxALL, 5 );
 	
-	wxString mAccountTypeChoices[] = { wxT("PHARMACIST"), wxT("MANAGER"), wxT("INTERN PHARMACIST"), wxT("STUDENT PHARMACIST"), wxT("PHARMACY TECH"), wxT("SALES ASSISTANT"), wxT("PHARMACY TECH"), wxT("DISPENSER"), wxEmptyString, wxEmptyString };
+	//arranged according to the account priv bits
+	wxString mAccountTypeChoices[] = { wxT("PHARMACIST"), 
+			wxT("PHARMACY TECH"),
+			wxT("DISPENSER")
+			wxT("SALES ASSISTANT"), 
+			wxT("INTERN PHARMACIST"), 
+			wxT("STUDENT PHARMACIST"),
+			wxT("MANAGER"),
+		};
 	int mAccountTypeNChoices = sizeof( mAccountTypeChoices ) / sizeof( wxString );
 	mAccountType = new wxChoice( m_scrolledWindow1, ID_ACCOUNT_TYPE, wxDefaultPosition, wxDefaultSize, mAccountTypeNChoices, mAccountTypeChoices, 0 );
 	fgSizer1->Add( mAccountType, 0, wxALL|wxEXPAND, 5 );
@@ -126,7 +143,6 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	wxString m_radioBox2Choices[] = { wxT("Princepal Pharmacist"), wxT("Loccum Pharmacist") };
 	int m_radioBox2NChoices = sizeof( m_radioBox2Choices ) / sizeof( wxString );
 	m_radioBox2 = new wxRadioBox( m_scrolledWindow1, wxID_ANY, wxT("Phamacist role"), wxDefaultPosition, wxDefaultSize, m_radioBox2NChoices, m_radioBox2Choices, 1, wxRA_SPECIFY_COLS );
-	m_radioBox2->SetSelection( 2 );
 	fgSizer1->Add( m_radioBox2, 0, wxALL|wxEXPAND, 5 );
 	
 	
@@ -141,11 +157,11 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	
 	CreateAccount->SetSizer( bSizer8 );
 	CreateAccount->Layout();
-	bSizer8->Fit( CreateAccount );
+	//bSizer8->Fit( CreateAccount );
 	bSizer3->Add( CreateAccount, 1, wxEXPAND | wxALL, 5 );
 	
 	m_sdbSizer3 = new wxStdDialogButtonSizer();
-	m_sdbSizer3Save = new wxButton( MainPane, wxID_SAVE );
+	m_sdbSizer3Save = new wxButton( MainPane, wxID_OK );
 	m_sdbSizer3->AddButton( m_sdbSizer3Save );
 	m_sdbSizer3Cancel = new wxButton( MainPane, wxID_CANCEL );
 	m_sdbSizer3->AddButton( m_sdbSizer3Cancel );
@@ -177,16 +193,50 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 		wxMessageBox("Password and Confirm password mismatch", "REGISTRATION", wxICON_WARNING | wxOK);
 		return false;
 	}
-	auto pass = mPasswordValue->GetValue().ToStdString();
-	auto hash = bcrypt::generateHash(pass);
+	const auto pass = mPasswordValue->GetValue().ToStdString();
+	const auto hash = bcrypt::generateHash(pass);
+	const auto email = mEmailValue->GetValue().ToStdString();
+	if (!ValidateEmail(email)) {
+		return false;
+	}
+	int sel = mAccountType->GetSelection();
+	if (sel == wxNOT_FOUND) {
+		wxMessageBox("Please select an account type for your account", "REGISTRATION", wxICON_WARNING | wxOK);
+		return false;
+	}
+	mAccount.priv.set(sel);
+	const auto phone = mPhoneNoValue->GetValue().ToStdString();
+	if (phone.size() != 11) {
+		//cannot properly validate number just the count
+		wxMessageBox("Phone number is not complete, please enter valid phone number", "REGISTRATION", wxICON_WARNING | wxOK);
+		return false;
+	}
 
-
-	return false;
+	mAccount.name = mFirstNameValue->GetValue().ToStdString();
+	mAccount.lastname = mLastNameValue->GetValue().ToStdString();
+	mAccount.passhash = hash;
+	mAccount.username = mUserNameValue->GetValue().ToStdString();
+	mAccount.email = email;
+	mAccount.phonenumber = phone;
+	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 
+	
+	return true;
 }
 
 bool pof::RegistrationDialog::ValidateEmail(const std::string email)
 {
-	return false;
+	try {
+		const std::regex rex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)");
+		if (!std::regex_match(email, rex)) {
+			wxMessageBox("Invalid Email Address", "REGISTRATION", wxICON_WARNING | wxOK);
+			return false;
+		}
+	}
+	catch (const std::exception& exp) {
+		auto what = exp.what();
+		spdlog::error(what);
+	}
+	return true;
 }
 
 void pof::RegistrationDialog::OnShowPassword(wxCommandEvent& evt)
@@ -216,5 +266,8 @@ void pof::RegistrationDialog::OnAccountTypeSelect(wxCommandEvent& evt)
 	if (sel == wxNOT_FOUND) return;
 	if (sel == PHARAMCIST || sel == INTERN_PHARAMCIST) {
 		mRegNumValue->SetValidator(wxTextValidator{wxFILTER_EMPTY});
+	}
+	else {
+		mRegNumValue->SetValidator(wxTextValidator{});
 	}
 }

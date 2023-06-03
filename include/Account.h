@@ -24,11 +24,10 @@ namespace pof {
 				PHARMACIST = 1,
 				PHARMTECH = 1 << 1,
 				DISPENSER = 1 << 2,
-				CASHER = 1 << 3,
-				SALES_ASSISTANT = 1 << 4,
-				INTER_PHARMCIST = 1 << 5,
-				STUDENT_PHARMACIST = 1 << 6,
-				MANAGER = 1 << 7
+				SALES_ASSISTANT = 1 << 3,
+				INTEN_PHARMCIST = 1 << 4,
+				STUDENT_PHARMACIST = 1 << 5,
+				MANAGER = 1 << 6
 		};
 		
 		Account();
@@ -52,12 +51,15 @@ namespace pof {
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;
-		std::uint64_t accountID;
+		std::uint64_t accountID = 0;
 		std::string name;
+		std::string lastname;
+		std::string username;
 		std::string email;
 		std::string phonenumber;
 		std::string regnumber;
 		std::string passhash;
+		bool isLoccum = false; 
 		//account details?
 	};
 };
