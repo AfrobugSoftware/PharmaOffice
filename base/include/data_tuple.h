@@ -45,7 +45,7 @@ namespace pof
 			else if constexpr (std::is_same_v<pof::base::data::text_t, arg_t>) {
 				meta.push_back(pof::base::data::kind::text);
 			}
-			else if constexpr (std::is_same_v<pof::base::data::uuid_t, arg_t>) {
+			else if constexpr (std::is_same_v<pof::base::data::duuid_t, arg_t>) {
 				meta.push_back(pof::base::data::kind::uuid);
 			}
 			else if constexpr (std::is_same_v<pof::base::data::currency_t, arg_t>) {

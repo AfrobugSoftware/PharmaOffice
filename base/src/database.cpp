@@ -1,4 +1,3 @@
-#pragma once
 #include "database.h"
 
 pof::base::database::database(const std::filesystem::path& path)
@@ -27,13 +26,6 @@ pof::base::database::database(const std::filesystem::path& path)
 	if (opt.has_value()) {
 		rollback = opt.value();
 	}
-
-
-	stmt_t s = nullptr;
-	std::array<std::string_view, 2> a{ "ZINO", "FERIFE" };
-	bind_para(s, std::tuple<int, float>{1, 2.1}, std::forward<std::array<std::string_view, 2>>(a));
-
-	retrive<int, float>(s);
 }
 
 pof::base::database::~database()
@@ -67,7 +59,15 @@ pof::base::database& pof::base::database::operator=(database&& db) noexcept
 
 std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const query_t& query)
 {
-	return std::optional<stmt_t>();
+	if (query.empty()) return std::nullopt;
+	auto c_str = query.c_str();
+	const char* tail = nullptr;
+	stmt_t stmt;
+
+	if (!sqlite3_complete(c_str)) return std::nullopt; //make sure statement has a ; at the end
+	if (sqlite3_prepare_v2(m_connection, c_str, query.size(), &stmt, &tail) != SQLITE_OK) return std::nullopt;
+
+	return stmt;
 }
 
 void pof::base::database::reset(stmt_t stmt)
@@ -102,10 +102,14 @@ std::optional<pof::base::database::stmt_t> pof::base::database::get_map(const st
 
 bool pof::base::database::execute(const query_t& query)
 {
+	char* errmessage;
+	sqlite3_exec(m_connection, query.c_str(), [](void* prt, int a, char** v, char** data) -> int {
+		return SQLITE_OK; //find out the appropriate return
+	}, nullptr, &errmessage);
 	return false;
 }
 
 bool pof::base::database::execute(stmt_t stmt)
 {
-	return false;
+	return (sqlite3_step(stmt) == SQLITE_DONE);
 }

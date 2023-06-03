@@ -104,6 +104,8 @@ pof::Application::Application()
 	SetVendorName("D-GLOPA NIGERIA LIMITED");
 	SetVendorDisplayName("D-GLOPA NIGERIA LIMITED");
 
+
+
 }
 
 bool pof::Application::OnInit()
@@ -115,19 +117,47 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
+
+
 	SetUpPaths();
 	wxInitAllImageHandlers();
 	wxArtProvider::Push(new pof::ArtProvider);
 	SetUpColorTable();
 
-
+	//where do I lunch set up wizard?? 
+	
+	//load the settings
+	auto path = fs::current_path() / "officeConfig.ini";
 	bool ret = false;
-	ret = SignIn();
-	//test ret
-	TestAccountAndPharmacy();
-	ret = CreateMainFrame();
+	if (!fs::exists(path)) {
+		LunchWizard();
+	}
+	LoadSettings(path);
+	if (bUsingLocalDatabase) {
+		try {
+			OpenLocalDatabase();
+		}
+		catch (std::exception& exp) {
+			spdlog::critical("Cannot open databse: {}", exp.what());
+			return false;
+		}
+		if (!SignInLocal()) {
+			//failed signed in from local database
+			//return false;
+		}
+	}
+	else {
+		if (!SignIn()) {
+			//failed signed in
+			//return false;
+		}
+		//test
+		TestAccountAndPharmacy();
+		
+	}
 
-	return ret;
+
+	return CreateMainFrame();
 }
 
 int pof::Application::OnExit()
@@ -160,6 +190,18 @@ bool pof::Application::CheckForUpdate()
 	return false;
 }
 
+bool pof::Application::LunchWizard()
+{
+	return false;
+}
+
+bool pof::Application::OpenLocalDatabase()
+{
+	auto dbPath = std::filesystem::current_path() / "localdatabase.db";
+	mLocalDatabase = std::make_unique<pof::base::database>(dbPath);
+	return true;
+}
+
 bool pof::Application::SetUpPaths()
 {
 	mAsserts = std::filesystem::current_path() / "asserts";
@@ -174,6 +216,7 @@ bool pof::Application::LoadSettings(const fs::path& fp)
 	if (!inifile.is_open()) false;
 	try {
 		boost::property_tree::ini_parser::read_ini(inifile, mSettings);
+		ReadSettingsFlags();
 	}
 	catch (const boost::property_tree::ini_parser_error& error) {
 		//need to find where to log errors
@@ -204,6 +247,16 @@ bool pof::Application::RegisterPharmacy()
 }
 
 bool pof::Application::RegisterAccount()
+{
+	return false;
+}
+
+bool pof::Application::RegisterPharmacyLocal()
+{
+	return false;
+}
+
+bool pof::Application::RegisterAccountLocal()
 {
 	return false;
 }
@@ -256,10 +309,24 @@ bool pof::Application::SignIn()
 	}
 }
 
+bool pof::Application::SignInLocal()
+{
+
+	return false;
+}
+
 void pof::Application::TestAccountAndPharmacy()
 {
 	MainAccount.name = "Zino Ferife"s;
 	MainPharamcy.name = "D-GLOPA NIGERIA LIMITED"s;
+}
+
+void pof::Application::ReadSettingsFlags()
+{
+}
+
+void pof::Application::SaveSettingsFlags()
+{
 }
 
 boost::property_tree::ptree& pof::Application::operator[](const std::string& path)

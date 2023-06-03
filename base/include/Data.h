@@ -60,7 +60,7 @@ namespace pof
             using text_t = std::string;
             using blob_t = std::vector<std::uint8_t>;
             using metadata_t = std::vector<kind>;
-            using uuid_t = boost::uuids::uuid;
+            using duuid_t = boost::uuids::uuid;
             using currency_t = pof::base::currency;
 
             using data_t = v2::variant<
@@ -73,7 +73,7 @@ namespace pof
                 datetime_t,
                 text_t,
                 blob_t,
-                uuid_t,
+                duuid_t,
                 currency_t
             >;
             
@@ -241,7 +241,7 @@ namespace pof
                                 //the array might be serializing a pointer, need to test
                                 ar & i;
                                 ar & static_cast<std::underlying_type_t<kind>>(k);
-                                ar & boost::variant2::get<uuid_t>(d).data;
+                                ar & boost::variant2::get<duuid_t>(d).data;
                                 break;
                             }
                             case pof::base::data::kind::currency:
@@ -369,7 +369,7 @@ namespace pof
                         }
                         case pof::base::data::kind::uuid:
                         {
-                            uuid_t uuid = { 0 };
+                            duuid_t uuid = { 0 };
                             ar >> uuid.data;
                             r.get()[col] = (std::move(uuid));
                         }

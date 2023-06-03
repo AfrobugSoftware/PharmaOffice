@@ -113,7 +113,7 @@ void pof::PrescriptionView::InitDataView()
 	mDataView->AssociateModel(mModel.get());
 	mModel->Adapt<
 		std::uint64_t,
-		pof::base::data::UUID,
+		pof::base::data::duuid_t,
 		pof::base::data::datetime_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
@@ -158,7 +158,7 @@ pof::PrescriptionView::~PrescriptionView()
 
 void pof::PrescriptionView::GenerateFakePrescription()
 {
-	pof::base::data::UUID id;
+	pof::base::data::duuid_t id;
 
 	js::json med1 = {
 		{"medication_name", "Paracetamol"},

@@ -269,7 +269,7 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 			//cannot display a blob type
 			break;
 		case pof::base::data::kind::uuid:
-			v = boost::uuids::to_string(boost::variant2::get<pof::base::data::uuid_t>(d));
+			v = boost::uuids::to_string(boost::variant2::get<pof::base::data::duuid_t>(d));
 			break;
 		case pof::base::data::kind::currency:
 			v = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(d));

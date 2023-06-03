@@ -47,7 +47,7 @@ size_t pof::DataObject::GetDataSize(const wxDataFormat& format) const
 			count += boost::variant2::get<pof::base::data::blob_t>(datum).size();
 			break;
 		case pof::base::data::kind::uuid:
-			count += boost::variant2::get<pof::base::data::uuid_t>(datum).size();
+			count += boost::variant2::get<pof::base::data::duuid_t>(datum).size();
 			break;
 		case pof::base::data::kind::currency:
 			count += boost::variant2::get<pof::base::data::currency_t>(datum).data().size();
@@ -127,7 +127,7 @@ bool pof::DataObject::GetDataHere(const wxDataFormat& format, void* buffer) cons
 		}
 		case pof::base::data::kind::uuid:
 		{
-			auto& uuid = boost::variant2::get < pof::base::data::uuid_t>(datum);
+			auto& uuid = boost::variant2::get < pof::base::data::duuid_t>(datum);
 			stream.write(reinterpret_cast<const char*>(uuid.data), uuid.size());
 			break;
 		}
@@ -240,7 +240,7 @@ bool pof::DataObject::SetData(const wxDataFormat& format, size_t len, const void
 		}
 		case pof::base::data::kind::uuid:
 		{
-			pof::base::data::uuid_t uuid = {0};
+			pof::base::data::duuid_t uuid = {0};
 			stream.read(reinterpret_cast<char*>(uuid.data), uuid.size());
 			datum = std::move(uuid);
 			break;

@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <netmanager.h>
+#include <database.h>
 #include <chrono>
 #include <sstream>
 
@@ -43,12 +44,18 @@ namespace pof {
 
 		bool CreateMainFrame();
 		bool CheckForUpdate();
+		bool LunchWizard();
+		bool OpenLocalDatabase();
 		bool SetUpPaths();
 		bool LoadSettings(const fs::path& fp);
 		bool SaveSettings(const fs::path& fp);
+
 		bool RegisterPharmacy();
 		bool RegisterAccount();
+		bool RegisterPharmacyLocal();
+		bool RegisterAccountLocal();
 		bool SignIn();
+		bool SignInLocal(); 
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		void TestAccountAndPharmacy();
@@ -56,6 +63,15 @@ namespace pof {
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
 		pof::SaleManager mSaleManager;
+		std::unique_ptr<pof::base::database> mLocalDatabase;
+
+		//settings flags
+		void ReadSettingsFlags();
+		void SaveSettingsFlags();
+		bool bUsingLocalDatabase = false;
+		bool bHighlightLowStock = false;
+		bool bGlobalCostMarkup = false;
+		bool bKeepMeSignedIn = false;
 
 
 		pof::Pharmacy MainPharamcy;

@@ -62,10 +62,12 @@ namespace pof {
 		~SignInDialog();
 	
 		inline constexpr const std::string& GetUserData() const { return mUserData; }
-
 	protected:
 		void onLogon(wxCommandEvent& evt);
 		void onSignup(wxCommandEvent& evt);
+
+		bool ValidateLocal();
+		bool ValidateGlobal(); 
 
 		DECLARE_EVENT_TABLE()
 

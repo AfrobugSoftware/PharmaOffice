@@ -154,15 +154,83 @@ pof::SignInDialog::~SignInDialog()
 void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 {
 	if (!Validate()) return;
+	bool ret = false;
+	if (wxGetApp().bUsingLocalDatabase) {
+		ret = ValidateLocal();
+	}
+	else {
+		ret = ValidateGlobal();
+	}
+	EndModal(ret ? wxID_OK : wxID_CANCEL);
+}
 
-	std::string Username =  mUserName->GetValue().ToStdString();
+void pof::SignInDialog::onSignup(wxCommandEvent& evt)
+{
+	wxMessageBox("No signup yet", "SIGN IN");
+
+	//EndModal(wxID_OK);
+}
+
+bool pof::SignInDialog::ValidateLocal()
+{
+	auto& dbPtr = wxGetApp().mLocalDatabase;
+	if(!dbPtr) return false;
+	std::string Username = mUserName->GetValue().ToStdString();
+	std::string UserPassword = mPassword->GetValue().ToStdString();
+	wxGetApp().bKeepMeSignedIn = mKeepMeSigned->IsChecked();
+	auto& account = wxGetApp().MainAccount;
+	const std::string sql = fmt::format("SELECT id, priv, name, last_name, email, phonenumber, regnumber, username, password FROM USERS WHERE username = {}", Username);
+
+	auto stmt = dbPtr->prepare(sql);
+	if (!stmt.has_value())
+	{
+		wxMessageBox(dbPtr->err_msg().data(), "SIGN IN EXCEPTION");
+		return false;
+	}
+	auto rel = dbPtr->retrive<
+						std::uint64_t, //ID
+						std::uint32_t, //PRV
+						pof::base::data::text_t, //NAME
+						pof::base::data::text_t, //LAST NAME
+						pof::base::data::text_t, //EMAIL
+						pof::base::data::text_t, // PHONEUMBER
+						pof::base::data::text_t, // REGNUMBER
+						pof::base::data::text_t, //USERNAME
+						pof::base::data::blob_t>(*stmt); //PASSWORD IN BCRYPT
+	if (!rel.has_value()) {
+		dbPtr->finalise(*stmt);
+		return false;
+	}
+	if (rel->empty()) {
+		wxMessageBox("INVALID USERNAME OR PASSWORD", "SIGN IN", wxICON_WARNING);
+		dbPtr->finalise(*stmt);
+		return false;
+	}
+	auto& v = rel->front();
+
+
+	account.signintime = pof::Account::clock_t::now();
+	account.accountID = std::get<0>(v);
+	account.priv = pof::Account::privilage_set_t(std::get<1>(v));
+	account.name = fmt::format("{} {}", std::get<2>(v), std::get<3>(v));
+	account.email = std::get<4>(v);
+	account.phonenumber = std::get<5>(v);
+	account.regnumber = std::get<6>(v);
+
+	dbPtr->finalise(*stmt);
+	return true;
+}
+
+bool pof::SignInDialog::ValidateGlobal()
+{
+	std::string Username = mUserName->GetValue().ToStdString();
 	std::string UserPassword = mPassword->GetValue().ToStdString();
 	bool check = mKeepMeSigned->IsChecked();
 
 	try {
 		//do verification how ??
 			//send to chws?
-		wxProgressDialog dlg("SIGING IN","CONNECTING TO CHWS...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
+		wxProgressDialog dlg("SIGING IN", "CONNECTING TO FILODOXIA...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
 
 		js::json payload;
 		payload["Username"] = Username;
@@ -172,13 +240,13 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 		std::string NetAddress = wxGetApp()["network.address"s].get_value<std::string>();
 		std::string NetPort = wxGetApp()["network.port"s].get_value<std::string>();
 #endif
-		auto sess = std::make_shared<pof::base::ssl::session<http::string_body, http::string_body>>(wxGetApp().mNetManager.io(),wxGetApp().mNetManager.ssl());
+		auto sess = std::make_shared<pof::base::ssl::session<http::string_body, http::string_body>>(wxGetApp().mNetManager.io(), wxGetApp().mNetManager.ssl());
 		auto fut = sess->req<http::verb::post>("localhost", "/accounts/signin", "80", payload.dump());
 
 		dlg.Update(10, "Sending requests...");
 
 		//cache the sign in if the keep signed in was checked.
-		
+
 		std::future_status s = fut.wait_for(3ms);
 		constexpr std::array<std::string_view, 3> wait_text{ ".", "..", "..." };
 		size_t i = 0, count = 10;
@@ -186,7 +254,7 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 			//display visual feedback
 			auto end = dlg.Update(count, fmt::format("Waiting{}", wait_text[i]));
 			if (!end) {
-				if(wxMessageBox("Do you really want to cancel sign in", "SIGN IN", wxICON_WARNING | wxYES_NO) == wxYES) {
+				if (wxMessageBox("Do you really want to cancel sign in", "SIGN IN", wxICON_WARNING | wxYES_NO) == wxYES) {
 					sess->cancel();
 					break;
 				}
@@ -205,13 +273,7 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 	}
 	catch (const std::exception& exp) {
 		wxMessageBox(exp.what(), "SIGN IN");
-		return;
+		return false;
 	}
-	EndModal(wxID_OK);
-}
-
-void pof::SignInDialog::onSignup(wxCommandEvent& evt)
-{
-	wxMessageBox("No signup yet", "SIGN IN");
-	EndModal(wxID_OK);
+	return true;
 }

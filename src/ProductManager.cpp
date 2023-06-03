@@ -4,7 +4,7 @@ pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();
 	mInventoryData = std::make_unique<pof::DataModel>();
 	mProductData->Adapt<
-		pof::base::data::uuid_t, //UUID
+		pof::base::data::duuid_t, //UUID
 		std::uint64_t, //SERIAL NUM
 		pof::base::data::text_t, // NAME
 		pof::base::data::text_t, // GENERIC NAME
@@ -32,7 +32,7 @@ pof::ProductManager::ProductManager() {
 	
 	mInventoryData->Adapt<
 		std::uint64_t, //ID
-		pof::base::data::uuid_t, //UUID
+		pof::base::data::duuid_t, //UUID
 		pof::base::data::datetime_t, // EXPIRE DATE
 		pof::base::data::datetime_t, // ADDED DATE
 		std::uint64_t, // STOCK COUNT

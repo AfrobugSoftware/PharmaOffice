@@ -49,9 +49,6 @@ namespace pof {
 			return priv.test(std::underlying_type_t<Privilage>(p));
 		}
 
-	private:
-		friend class Application;
-
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;

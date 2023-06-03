@@ -34,7 +34,7 @@ namespace pof {
 		template<typename T>
 		class is_database_type
 		{
-			using special_types = std::tuple<pof::base::data::text_t, pof::base::data::blob_t, nullptr_t, pof::base::data::datetime_t, pof::base::data::uuid_t>;
+			using special_types = std::tuple<pof::base::data::text_t, pof::base::data::blob_t, nullptr_t, pof::base::data::datetime_t, pof::base::data::duuid_t>;
 		public:
 			enum { value = (std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_enum_v<T> || index_of<special_types, T>::value >= 0) };
 		};
