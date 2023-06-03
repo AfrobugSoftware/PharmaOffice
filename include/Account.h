@@ -57,6 +57,7 @@ namespace pof {
 		std::string email;
 		std::string phonenumber;
 		std::string regnumber;
+		std::string passhash;
 		//account details?
 	};
 };

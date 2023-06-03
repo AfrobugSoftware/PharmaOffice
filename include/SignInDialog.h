@@ -25,6 +25,7 @@
 
 #include <nlohmann/json.hpp>
 #include <exception>
+#include <../base/bcrypt/include/bcrypt.h>
 
 namespace pof {
 	class SignInDialog : public wxDialog

@@ -19,7 +19,6 @@
 #include <bitset>
 #include <cassert>
 
-
 #include "currency.h"
 
 namespace pof

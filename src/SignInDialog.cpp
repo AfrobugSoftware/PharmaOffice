@@ -196,18 +196,23 @@ bool pof::SignInDialog::ValidateLocal()
 						pof::base::data::text_t, // PHONEUMBER
 						pof::base::data::text_t, // REGNUMBER
 						pof::base::data::text_t, //USERNAME
-						pof::base::data::blob_t>(*stmt); //PASSWORD IN BCRYPT
+						pof::base::data::text_t>(*stmt); //PASSWORD IN BCRYPT
 	if (!rel.has_value()) {
 		dbPtr->finalise(*stmt);
 		return false;
 	}
 	if (rel->empty()) {
-		wxMessageBox("INVALID USERNAME OR PASSWORD", "SIGN IN", wxICON_WARNING);
+		wxMessageBox("INVALID USERNAME OR PASSWORD", "SIGN IN", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
 	}
 	auto& v = rel->front();
 
+	if (!bcrypt::validatePassword(UserPassword, std::get<7>(v))) {
+		wxMessageBox("INVALID PASSWORD", "SIGN IN", wxICON_WARNING | wxOK);
+		dbPtr->finalise(*stmt);
+		return false;
+	}
 
 	account.signintime = pof::Account::clock_t::now();
 	account.accountID = std::get<0>(v);
@@ -216,6 +221,7 @@ bool pof::SignInDialog::ValidateLocal()
 	account.email = std::get<4>(v);
 	account.phonenumber = std::get<5>(v);
 	account.regnumber = std::get<6>(v);
+	account.passhash = std::get<7>(v);
 
 	dbPtr->finalise(*stmt);
 	return true;
