@@ -300,6 +300,7 @@ namespace pof {
 
 
 			std::optional<stmt_t> prepare(const query_t& query);
+			std::optional<stmt_t> prepare(std::string_view query);
 			void reset(stmt_t stmt);
 			void finalise(stmt_t stmt);
 			bool add_map(const std::string& name, stmt_t stmt);

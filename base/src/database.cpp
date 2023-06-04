@@ -7,22 +7,22 @@ pof::base::database::database(const std::filesystem::path& path)
 		throw std::logic_error(fmt::format("{}: Cannot open database file", path.string()));
 	}
 
-	auto opt = prepare("BEGIN;");
+	auto opt = prepare(std::string_view{ "BEGIN;" });
 	if (opt.has_value()) {
 		begin = opt.value();
 	}
 
-	opt = prepare("BEGIN IMMIDATE;");
+	opt = prepare(std::string_view{ "BEGIN IMMIDATE;" });
 	if (opt.has_value()) {
 		begin_immidiate = opt.value();
 	}
 
-	opt = prepare("END;");
+	opt = prepare(std::string_view{ "END;" });
 	if (opt.has_value()) {
 		end = opt.value();
 	}
 
-	opt = prepare("ROLLBACK;");
+	opt = prepare(std::string_view{ "ROLLBACK;" });
 	if (opt.has_value()) {
 		rollback = opt.value();
 	}
@@ -62,10 +62,22 @@ std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const qu
 	if (query.empty()) return std::nullopt;
 	auto c_str = query.c_str();
 	const char* tail = nullptr;
-	stmt_t stmt;
+	stmt_t stmt = nullptr;
 
 	if (!sqlite3_complete(c_str)) return std::nullopt; //make sure statement has a ; at the end
 	if (sqlite3_prepare_v2(m_connection, c_str, query.size(), &stmt, &tail) != SQLITE_OK) return std::nullopt;
+
+	return stmt;
+}
+
+std::optional<pof::base::database::stmt_t> pof::base::database::prepare(std::string_view query)
+{
+	if (query.empty()) return std::nullopt;
+	const char* tail = nullptr;
+	stmt_t stmt = nullptr;
+
+	if (!sqlite3_complete(query.data())) return std::nullopt; //make sure statement has a ; at the end
+	if (sqlite3_prepare_v2(m_connection, query.data(), query.size(), &stmt, &tail) != SQLITE_OK) return std::nullopt;
 
 	return stmt;
 }

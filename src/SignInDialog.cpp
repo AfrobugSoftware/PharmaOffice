@@ -167,9 +167,11 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
 	pof::RegistrationDialog regDialog(nullptr);
+	Hide();
 	int ret = regDialog.ShowModal();
 	if (ret == wxID_OK) {
-		wxMessageBox("Signed up successful");
+		wxBusyInfo info("Registring account and Signing in...");
+		InsertUserDataIntoDatabase(regDialog.GetAccount());
 	}
 	EndModal(ret);
 }
@@ -285,4 +287,21 @@ bool pof::SignInDialog::ValidateGlobal()
 		return false;
 	}
 	return true;
+}
+
+bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
+{
+	constexpr const std::string_view sql = "INSERT INTO USERS (id, priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?,?);";
+	auto& dbPtr = wxGetApp().mLocalDatabase;
+	if (!dbPtr) return false;
+
+	auto stmt = dbPtr->prepare(sql);
+	if (!stmt.has_value()) {
+		//read last error from database
+	}
+	dbPtr->bind(*stmt, std::make_tuple(acc.accountID, acc.priv.to_ulong(), acc.name, acc.lastname,
+		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+	bool ret = dbPtr->execute(*stmt);
+	dbPtr->finalise(*stmt);
+	return ret;
 }

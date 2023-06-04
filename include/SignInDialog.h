@@ -71,6 +71,7 @@ namespace pof {
 		bool ValidateLocal();
 		bool ValidateGlobal(); 
 
+		bool InsertUserDataIntoDatabase(const pof::Account& acc);
 		DECLARE_EVENT_TABLE()
 
 	};
