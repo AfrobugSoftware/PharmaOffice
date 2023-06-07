@@ -298,6 +298,7 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 	auto stmt = dbPtr->prepare(sql);
 	if (!stmt.has_value()) {
 		//read last error from database
+		return false;
 	}
 	dbPtr->bind(*stmt, std::make_tuple(acc.accountID, acc.priv.to_ulong(), acc.name, acc.lastname,
 		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
