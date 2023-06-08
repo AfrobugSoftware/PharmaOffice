@@ -154,21 +154,31 @@ unsigned int pof::DataModel::GetColumnCount() const
 }
 
 
+void pof::DataModel::SetSpecialColumnHandler(size_t column, SpeicalColHandler_t&& handler)
+{
+	auto [iter, inserted] = mSpecialColHandlers.insert({ column, std::forward<SpeicalColHandler_t>(handler) });
+	if (!inserted) {
+		iter->second = std::forward<SpeicalColHandler_t>(handler);
+	}
+}
+
 void pof::DataModel::SetSpecialColumnHandler(size_t column, get_function_t&& function)
 {
-	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {function, nullptr} });
+	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {std::forward<get_function_t>(function), nullptr} });
 	//if insertion fails assume replacement of handlers for the column
 	if (!inserted) {
-		iter->second.first = function;
+		iter->second.first = std::forward<get_function_t>(function);
 	}
 }
 
 void pof::DataModel::SetSpecialColumnHandler(size_t column, get_function_t&& get_function, set_function_t&& set_function)
 {
-	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {get_function, set_function} });
+	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {std::forward<get_function_t>(get_function), 
+			std::forward<set_function_t>(set_function)} });
 	if (!inserted) {
 		//column already has either a get or a set operation, assumn that iter wants to change them
-		(*iter).second = { get_function, set_function };
+		(*iter).second = { std::forward<get_function_t>(get_function),
+				std::forward<set_function_t>(set_function) };
 	}
 }
 

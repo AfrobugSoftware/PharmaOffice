@@ -18,6 +18,8 @@
 #include "SaleManager.h"
 #include "DropTarget.h"
 
+#include <ranges>
+
 namespace pof
 {
 	class SaleView : public wxPanel
@@ -49,6 +51,8 @@ namespace pof
 		wxStaticText* mDiscountValue;
 		wxStaticText* mTotalQuantity;
 		wxStaticText* mTotalQuantityValue;
+		wxStaticText* mTotalAmountLabel;
+		wxStaticText* mTotalAmount;
 		wxPanel* mSalePaymentButtonsPane;
 		wxButton* mClear;
 		wxButton* mSave;
@@ -69,6 +73,8 @@ namespace pof
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();
 		void SetupDropTarget();
+
+		void CreateSpecialColumnHandlers();
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
@@ -83,6 +89,10 @@ namespace pof
 		void OnBeginDrag(wxDataViewEvent& evt);
 		void OnProductNameSearch(wxCommandEvent& evt);
 
+
+		void OnValueChanged(wxDataViewEvent& evt);
+		void OnEditingStarted(wxDataViewEvent& evt);
+		void OnEditingDone(wxDataViewEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
 	private:

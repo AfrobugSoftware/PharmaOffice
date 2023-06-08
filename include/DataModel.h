@@ -82,6 +82,7 @@ namespace pof {
 		bool AddAttr(const wxDataViewItem& item, std::shared_ptr<wxDataViewItemAttr> attr);
 		void RemoveAttr(const wxDataViewItem& item);
 
+		void SetSpecialColumnHandler(size_t column, SpeicalColHandler_t&& handler);
 		void SetSpecialColumnHandler(size_t column, get_function_t&& function);
 		void SetSpecialColumnHandler(size_t column, get_function_t&& get_function, set_function_t&& set_function);
 		void RemoveSpecialColumnHandler(size_t column);

@@ -177,7 +177,7 @@ void pof::Application::SetUpColorTable()
 bool pof::Application::CreateMainFrame()
 {
 	mMainFrame = new pof::MainFrame(nullptr,
-		wxID_ANY, wxDefaultPosition, wxSize(700, 500));
+		wxID_ANY, wxDefaultPosition, wxSize(1122, 762));
 
 	mMainFrame->Center(wxBOTH);
 	mMainFrame->Show();
