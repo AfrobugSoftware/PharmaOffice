@@ -51,7 +51,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxVERTICAL);
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(mDataPane, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, 0);
+	m_dataViewCtrl1 = new wxDataViewCtrl(mDataPane, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
 
 
