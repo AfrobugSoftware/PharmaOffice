@@ -145,9 +145,11 @@ void pof::MainFrame::CreateImageList()
 
 void pof::MainFrame::CreateViews()
 {
-	mProductView = new pof::ProductView(this, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	mSaleView = new pof::SaleView(this, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	mPrescriptionView = new pof::PrescriptionView(this, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	auto workspaceBook = std::addressof(mWorkspace->GetWorkspacebook());
+
+	mProductView = new pof::ProductView(workspaceBook, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	
 	mProductView->Hide();
 	mSaleView->Hide();

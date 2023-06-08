@@ -178,6 +178,23 @@ void pof::SaleView::SetupDropTarget()
 	SetDropTarget(DropTarget);
 }
 
+void pof::SaleView::UpdateSaleDisplay()
+{
+	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	const pof::base::data& dataStore = model->GetDatastore();
+	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
+	size_t qauntity = dataStore.size(), exactQuantity = 0;
+
+	pof::base::currency totalAmount;
+	pof::base::currency discountAmount;
+
+
+}
+
+void pof::SaleView::Checkout()
+{
+}
+
 void pof::SaleView::OnClear(wxCommandEvent& evt)
 {
 	wxMessageBox("CLEAR", "CLEARING");

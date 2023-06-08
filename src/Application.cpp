@@ -266,40 +266,7 @@ bool pof::Application::SignIn()
 	pof::SignInDialog Dialog(nullptr);
 	while (1) {
 		if (Dialog.ShowModal() == wxID_OK) {
-				//handle response from server 
-			auto& data = Dialog.GetUserData();
-			if (data.empty()) {
-				continue;
-			}
-
-			js::json jsdata = js::json::parse(data);
-				/**
-				* PUT IN DOCUMENTATION
-				*  {
-				*		"id" : 12324255453434256354,
-				*		"priv" : 345, #this number is a bitset
-				*		"name" : "Zino",
-				*		"last_name" : "ferife",
-				*		"email" : "ferife_zino@yahoo.co.uk",
-				*		"phonenumber" : "",
-				*		"regnumber" : "",
-				*		"session_uuid" : "effgrgfsfe-afefe-fge33-feefegweeg"
-				*
-				*  }
-				*/
-			MainAccount.accountID = jsdata["id"];
-			MainAccount.name = jsdata["name"] + " "s + jsdata["last_name"];
-			MainAccount.email = jsdata["email"];
-			MainAccount.phonenumber = jsdata["phonenumber"];
-			MainAccount.regnumber = jsdata["regnumber"];
-			MainAccount.priv = Account::privilage_set_t{ jsdata["priv"] };
-			MainAccount.signintime = clock_t::now();
-
-			std::stringstream ss;
-			ss << jsdata["session_uuid"];
-			ss >> MainAccount.sessionID;
-
-
+			
 			return true;
 		}
 		else {
