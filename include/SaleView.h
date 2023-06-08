@@ -19,6 +19,7 @@
 #include "DropTarget.h"
 
 #include <ranges>
+#include <numeric>
 
 namespace pof
 {

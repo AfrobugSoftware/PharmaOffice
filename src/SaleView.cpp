@@ -94,7 +94,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	const int fontSize = 12;
 	const int valueFontSize = 10;
-
+	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased());
 	mQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0);
 	mQuantity->Wrap(-1);
 	mQuantity->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
@@ -102,6 +102,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mQuantityValue = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mQuantityValue->Wrap(-1);
+	mQuantityValue->SetFont(valueFont);
 	gSizer1->Add(mQuantityValue, 0, wxALIGN_RIGHT | wxALL, 5);
 
 	mExtQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Ext. Quantity"), wxDefaultPosition, wxDefaultSize, 0);
@@ -111,6 +112,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mExtQuantityItem = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mExtQuantityItem->Wrap(-1);
+	mExtQuantityItem->SetFont(valueFont);
 	gSizer1->Add(mExtQuantityItem, 0, wxALIGN_RIGHT | wxALL, 5);
 
 	mDiscountAmount = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Discount"), wxDefaultPosition, wxDefaultSize, 0);
@@ -118,8 +120,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mDiscountAmount->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
 	gSizer1->Add(mDiscountAmount, 0, wxALIGN_RIGHT | wxALL, 5);
 
-	mDiscountValue = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mDiscountValue = new wxStaticText(mTextOutPut, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
 	mDiscountValue->Wrap(-1);
+	mDiscountValue->SetFont(valueFont);
 	gSizer1->Add(mDiscountValue, 0, wxALIGN_RIGHT | wxALL, 5);
 
 	mTotalQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Total Quantity"), wxDefaultPosition, wxDefaultSize, 0);
@@ -129,6 +132,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTotalQuantityValue = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalQuantityValue->Wrap(-1);
+	mTotalQuantityValue->SetFont(valueFont);
 	gSizer1->Add(mTotalQuantityValue, 0, wxALIGN_RIGHT | wxALL, 5);
 
 
@@ -203,6 +207,8 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	pof::DataModel::SpeicalColHandler_t extPriceCol;
 	pof::DataModel::SpeicalColHandler_t dirForUseCol;
+	pof::DataModel::SpeicalColHandler_t quantityCol;
+
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	pof::base::data& dataStore = model->GetDatastore();
 	extPriceCol.first = [&](size_t row, size_t col) -> wxVariant {
@@ -224,6 +230,27 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 		return wxVariant(std::move(choices));
 	};
 
+	quantityCol.second = [&](size_t row, size_t col, const wxVariant& value) -> bool {
+		auto& datum = dataStore[row];
+		auto& v = datum.first;
+		try {
+			auto quan = static_cast<std::uint64_t>(atoi(value.GetString().ToStdString().c_str()));
+
+			auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
+			pof::base::currency extPrice = price * static_cast<double>(quan);
+
+			v[pof::SaleManager::PRODUCT_QUANTITY] = quan;
+			v[pof::SaleManager::PRODUCT_EXT_PRICE] = extPrice;
+			UpdateSaleDisplay();
+			return true;
+		}
+		catch (const std::exception& exp) {
+			spdlog::error(exp.what());
+			return false;
+		}
+	};
+
+	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_QUANTITY, std::move(quantityCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_EXT_PRICE, std::move(extPriceCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::MAX + 1, std::move(dirForUseCol));
 }
@@ -233,11 +260,38 @@ void pof::SaleView::UpdateSaleDisplay()
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	const pof::base::data& dataStore = model->GetDatastore();
 	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
-	size_t qauntity = dataStore.size(), exactQuantity = 0;
+	size_t quantity = dataStore.size(), exactQuantity = 0;
 
 	pof::base::currency totalAmount;
 	pof::base::currency discountAmount;
+	size_t extQuantity = 0;
+	try {
+		totalAmount = std::accumulate(dataStore.begin(),
+			dataStore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
+				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
+				
+			});
 
+		extQuantity = std::accumulate(dataStore.begin(), dataStore.end(), extQuantity, [&](size_t v,
+			const pof::base::data::row_t& i) {
+				return v + boost::variant2::get<std::uint64_t>(i.first[pof::SaleManager::PRODUCT_QUANTITY]);
+		});
+	}
+	catch (const std::exception& exp) {
+		wxMessageBox(exp.what(), "FATAL ERROR", wxICON_ERROR | wxOK);
+		spdlog::error(exp.what());
+		return;
+	}
+	Freeze();
+	mQuantityValue->SetLabel(fmt::format("{:d}", quantity));
+	mExtQuantityItem->SetLabel(fmt::format("{:d}", extQuantity));
+	mDiscountValue->SetLabel(fmt::format("{:cu}", discountAmount));
+	mTotalQuantityValue->SetLabel(fmt::format("{:d}", extQuantity));
+	mTotalAmount->SetLabel(fmt::format("{:cu}", totalAmount));
+	Thaw();
+	Update();
+	mTextOutPut->Layout();
+	mSalePaymentButtonsPane->Layout();
 
 }
 
@@ -313,10 +367,11 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 		v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
 		v[pof::SaleManager::PRODUCT_CATEGORY] = "MEDICINE"s;
 		v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
-		v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(0);
+		v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
 		v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
 
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
+		UpdateSaleDisplay();
 	}
 	else {
 		spdlog::error("Drop data invalid or does not exist");
