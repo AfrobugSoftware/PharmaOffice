@@ -98,6 +98,7 @@ namespace pof {
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnAuiThemeChangeSlot();
+		void OnCategoryAdded(const std::string& name);
 
 	private:
 		wxAuiManager mAuiManager;

@@ -18,7 +18,8 @@
 #include <wx/withimages.h>
 #include <array>
 #include <unordered_map>
-
+#include <ranges>
+#include <algorithm>
 
 #include <spdlog/spdlog.h>
 #include "ArtProvider.h"
@@ -61,6 +62,8 @@ namespace pof {
 
 
 		using signal_t = boost::signals2::signal<void(const_iterator, Evt)>;
+		using childtree_signal_t = boost::signals2::signal<void(const std::string&)>;
+
 		Modules(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(248, 680), long style = wxNO_BORDER | wxTAB_TRAVERSAL);
 		virtual ~Modules();
 
@@ -75,6 +78,7 @@ namespace pof {
 		bool CheckPrivilage();
 		inline void SetImageList(wxImageList* imglist) { mModuleTree->SetImageList(imglist); }
 		boost::signals2::connection SetSlot(signal_t::slot_type&& slot);
+		boost::signals2::connection SetChildTreeSlot(childtree_signal_t::slot_type&& slot);
 	protected:
 		void OnActivated(wxTreeEvent& evt);
 		void OnSelected(wxTreeEvent& evt);
@@ -82,7 +86,8 @@ namespace pof {
 		void OnEndDrag(wxTreeEvent& evt);
 
 		void SetupFont();
-
+		void AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img = -1);
+		void RemoveChildTreeId(const std::string& name);
 	private:
 		friend class MainFrame;
 		std::array<wxFont, 2> mFonts;
@@ -112,8 +117,9 @@ namespace pof {
 		wxPanel* m_panel2;
 		wxTreeCtrl* mModuleTree;
 		signal_t mSig;
+		childtree_signal_t mChildSignal;
 		std::unordered_map<wxTreeItemId, wxWindow*> mModuleViews;
-
+		std::vector<wxTreeItemId> mChildId; //used for childs
 		DECLARE_EVENT_TABLE()
 	};
 }

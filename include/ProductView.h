@@ -112,10 +112,13 @@ namespace pof
 
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
+		void OnCategorySelected(const std::string& name);
 		void ShowCostPriceColumn();
 		void HideCostPriceColumn();
 		void SearchCategory();
 		void SearchName();
+
+		void OnCategoryActivated(const std::string& name);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

@@ -114,13 +114,13 @@ void pof::ProductView::OnProductActivated(wxDataViewEvent& evt)
 	if (!item.IsOk()) return;
 	
 	auto Model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
-	if (Model) {
-		auto& datastore = Model->GetDatastore();
-		const size_t idx = pof::DataModel::GetIdxFromItem(item);
-		const pof::base::data::row_t& row = datastore[idx];
-		mProductinfo->Load(row);
-		SwapCenterPane(true);
-	}
+	assert(Model != nullptr && "Model is not valid");
+	auto& datastore = Model->GetDatastore();
+	const size_t idx = pof::DataModel::GetIdxFromItem(item);
+	const pof::base::data::row_t& row = datastore[idx];
+	mProductinfo->Load(row);
+	SwapCenterPane(true);
+	
 }
 
 void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
@@ -171,6 +171,7 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 			//write category to database 
 		}
 		CategoryAddSignal(CategoryName);
+		//add to the database
 	}
 
 }
@@ -229,6 +230,12 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
 }
 
+//remove this one, use only activated 
+void pof::ProductView::OnCategorySelected(const std::string& name)
+{
+	wxMessageBox(fmt::format("{} is selected", name), "Category");
+}
+
 void pof::ProductView::ShowCostPriceColumn()
 {
 	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
@@ -237,7 +244,10 @@ void pof::ProductView::ShowCostPriceColumn()
 void pof::ProductView::HideCostPriceColumn()
 {
 	if (mProductCostPriceCol) {
+		m_dataViewCtrl1->Freeze();
 		m_dataViewCtrl1->DeleteColumn(mProductCostPriceCol);
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Update();
 		mProductCostPriceCol = nullptr;
 	}
 }
@@ -248,6 +258,11 @@ void pof::ProductView::SearchCategory()
 
 void pof::ProductView::SearchName()
 {
+}
+
+void pof::ProductView::OnCategoryActivated(const std::string& name)
+{
+	wxMessageBox(fmt::format("{} is selected", name), "Category");
 }
 
 void pof::ProductView::CreateDataView()

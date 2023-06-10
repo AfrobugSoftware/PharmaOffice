@@ -14,7 +14,12 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 	const auto item = evt.GetItem();
 	auto winIter = mModuleViews.find(item);
 	if (winIter == mModuleViews.end()) {
-		//what to do here 
+		//what to do here, main not pressed check children of main
+		auto found = std::ranges::find(mChildId, item);
+		if (found != mChildId.end()) {
+			auto string = mModuleTree->GetItemText(item).ToStdString();
+			mChildSignal(std::move(string));
+		}
 		return;
 	}
 	mSig(winIter, Evt::ACTIVATED);
@@ -73,13 +78,31 @@ void pof::Modules::OnEndDrag(wxTreeEvent& evt)
 
 void pof::Modules::SetupFont()
 {
-	mFonts[FONT_MAIN].SetPointSize(12);
-	mFonts[FONT_MAIN].SetFamily(wxFONTFAMILY_SWISS);
-	mFonts[FONT_MAIN].SetFaceName("Bookman");
-	mFonts[FONT_MAIN].SetWeight(wxFONTWEIGHT_BOLD);
+	mFonts[FONT_MAIN] = std::move(wxFont(
+			wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased()
+		.FaceName("Bookman").Bold()));
 
-	mFonts[FONT_CHILD].SetPointSize(9);
-	mFonts[FONT_CHILD].SetFamily(wxFONTFAMILY_SWISS);
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
+		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
+}
+void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
+{
+	if (name.empty()) return;
+	auto id = mModuleTree->AppendItem(parent, name, img);
+	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
+	mChildId.emplace_back(std::move(id));
+}
+void pof::Modules::RemoveChildTreeId(const std::string& name)
+{
+	if (name.empty()) return;
+	auto found = std::ranges::find_if(mChildId, [&](const wxTreeItemId& item) -> bool {
+		const auto str = mModuleTree->GetItemText(item).ToStdString();
+		return str == name;
+	});
+	if (found != mChildId.end()) {
+		mModuleTree->Delete(*found);
+		mChildId.erase(found);
+	}
 }
 pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
@@ -146,13 +169,6 @@ pof::Modules::~Modules()
 void pof::Modules::CreateTree()
 {
 	mModuleTree->SetIndent(20);
-
-	const wxSize xy = wxArtProvider::GetSizeHint(wxART_LIST);
-	wxImageList* imgList = new wxImageList(xy.x, xy.y);
-	imgList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
-	imgList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
-	
-	mModuleTree->AssignImageList(imgList);
 	wxTreeItemId root = mModuleTree->AddRoot("Root", -1);
 
 
@@ -219,4 +235,9 @@ pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemI
 boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)
 {
 	return mSig.connect(std::forward<signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeSlot(childtree_signal_t::slot_type&& slot)
+{
+	return mChildSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
 }

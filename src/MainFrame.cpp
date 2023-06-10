@@ -22,6 +22,7 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateLogView();
 	CreateViews();
 	CreateModules();
+	CreateImageList();
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
@@ -117,6 +118,8 @@ void pof::MainFrame::CreateModules()
 {
 	mModules = new pof::Modules(this, ID_MODULE);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
+	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
+
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
 
@@ -137,7 +140,11 @@ void pof::MainFrame::CreateWorkSpace()
 
 void pof::MainFrame::CreateImageList()
 {
-	mImageList = std::make_unique<wxImageList>(16, 16);
+	const wxSize xy = wxArtProvider::GetSizeHint(wxART_LIST);
+	mImageList = std::make_unique<wxImageList>(xy.x, xy.y);
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_GO_FORWARD, wxART_LIST));
 
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
@@ -151,10 +158,14 @@ void pof::MainFrame::CreateViews()
 	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	
+	//set up slots
+	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
+
 	mProductView->Hide();
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
 }
+
 
 void pof::MainFrame::SetupAuiTheme()
 {
@@ -326,5 +337,12 @@ void pof::MainFrame::OnAuiThemeChangeSlot()
 {
 	auto auiArtProvider = mAuiManager.GetArtProvider();
 	pof::AuiTheme::Update(auiArtProvider);
+}
+
+void pof::MainFrame::OnCategoryAdded(const std::string& name)
+{
+	if (name.empty()) return;
+	mModules->AppendChildTreeId(mModules->mProducts, name, 2);
+	mModules->mModuleTree->Expand(mModules->mProducts);
 }
 
