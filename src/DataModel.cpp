@@ -1,42 +1,87 @@
 #include "DataModel.h"
 
+pof::DataModel::DataModel()
+{
+	datastore = std::make_shared<pof::base::data>();
+	pack = std::make_shared<pof::base::packer>(*datastore);
+	unpack = std::make_shared<pof::base::unpacker>(*datastore);
+}
+
+pof::DataModel::DataModel(std::shared_ptr<pof::base::data> datastore_ptr)
+{
+	datastore = datastore_ptr;
+	pack = std::make_shared<pof::base::packer>(*datastore);
+	unpack = std::make_shared<pof::base::unpacker>(*datastore);
+}
+
+//shallow copy, use move for deep copy
 pof::DataModel::DataModel(const DataModel& model)
-	:pack{datastore},
-	unpack{datastore} {
+{
 	datastore = model.datastore;
+	pack = model.pack;
+	unpack = model.unpack;
+
 }
 
 pof::DataModel::DataModel(DataModel&& model) noexcept
-	: pack{ datastore }, unpack{datastore} {
+ {
 	datastore = std::move(model.datastore);
+	pack = std::move(model.pack);
+	unpack = std::move(model.unpack);
+	sig = std::move(model.sig);
+	attributes = std::move(model.attributes);
+	mSpecialColHandlers = std::move(model.mSpecialColHandlers);
+}
+/**
+* Cloning is making a deep copy of the underlying datastore
+* Signals cannot be cloned, new clones should net up its own signals
+* attributes and special column handlers can be as well
+*/
+pof::DataModel pof::DataModel::Clone()
+{
+	DataModel model;
+	model.attributes = attributes;
+	model.mSpecialColHandlers = mSpecialColHandlers;
+	*(model.datastore) = *datastore;
+	return model;
 }
 
+//signals cannot be copied, set up signals if needed 
 pof::DataModel& pof::DataModel::operator=(const DataModel& model)
 {
 	datastore = model.datastore;
+	pack = model.pack;
+	unpack = model.unpack;
+	attributes = model.attributes;
+	mSpecialColHandlers = model.mSpecialColHandlers;
 	return (*this);
 }
 
 pof::DataModel& pof::DataModel::operator=(DataModel&& model) noexcept
 {
 	datastore = std::move(model.datastore);
+	pack = std::move(model.pack);
+	unpack = std::move(model.unpack);
+	sig = std::move(model.sig);
+	attributes = std::move(model.attributes);
+	mSpecialColHandlers = std::move(model.mSpecialColHandlers);
 	return (*this);
 }
 
 pof::base::pack_t pof::DataModel::Pack() const {
-	return pack();
+	return (*pack)();
 }
 void pof::DataModel::Unpack(const pof::base::pack_t& package) {
-	if (!datastore.empty()) {
-		datastore.clear();
+	if (!datastore->empty()) {
+		datastore->clear();
 		attributes.clear();
 		Cleared();
 	}
 
-	unpack(package);
+	(*unpack)(package);
 
 	wxDataViewItemArray itemArray;
-	itemArray.resize(datastore.size());
+	itemArray.resize(datastore->size());
 	size_t i = 0;
 	std::generate(itemArray.begin(), itemArray.end(),
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
@@ -46,9 +91,9 @@ void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 void pof::DataModel::Emplace(pof::base::data&& d)
 {
 	Cleared();
-	datastore = std::forward<pof::base::data>(d);
+	datastore = std::make_shared<pof::base::data>(std::forward<pof::base::data>(d));
 	wxDataViewItemArray itemArray;
-	itemArray.resize(datastore.size());
+	itemArray.resize(datastore->size());
 	size_t i = 0;
 	std::generate(itemArray.begin(), itemArray.end(), 
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
@@ -57,9 +102,40 @@ void pof::DataModel::Emplace(pof::base::data&& d)
 
 void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 {
-	datastore.insert(std::forward<pof::base::data::row_t>(r));
-	const size_t count = datastore.size();
+	datastore->insert(std::forward<pof::base::data::row_t>(r));
+	const size_t count = datastore->size();
 	ItemAdded(wxDataViewItem{ 0 }, wxDataViewItem{ reinterpret_cast<void*>(count) });
+}
+
+void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
+{
+	if (items.empty()) return;
+	Cleared();
+	for (size_t i = 0; i < items.size(); i++) {
+		ItemAdded(wxDataViewItem(0), items[i]);
+	}
+}
+
+void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
+{
+	if (datastore->empty() || col > datastore->get_metadata().size() 
+			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return;
+	std::string reg;
+	reg.reserve(search_for.size() * 2);
+	for (auto& c : search_for)
+	{
+		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
+	}
+	reg += "(?:.*)?";
+	std::regex searchreg(std::move(reg));
+	Cleared();
+	for (size_t i = 0; i < datastore->size(); i++) {
+		auto& datum = (*datastore)[i].first[col];
+		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
+		if (std::regex_match(text, searchreg)) {
+			ItemAdded(wxDataViewItem(0), wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+		}
+	}
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
@@ -74,7 +150,7 @@ bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
 bool pof::DataModel::IsEnabled(const wxDataViewItem& item, unsigned int col) const
 {
 	const size_t i = GetIdxFromItem(item);
-	return (i < datastore.size());
+	return (i < datastore->size());
 }
 
 size_t pof::DataModel::GetIdxFromItem(const wxDataViewItem& item) {
@@ -107,7 +183,7 @@ bool pof::DataModel::GetAttr(const wxDataViewItem& item, unsigned int col, wxDat
 wxString pof::DataModel::GetColumnType(unsigned int col) const
 {
 	if (col >= GetColumnCount()) return wxString();
-	const pof::base::data::kind k = datastore.get_metadata()[col];
+	const pof::base::data::kind k = datastore->get_metadata()[col];
 	switch (k)
 	{
 	case pof::base::data::kind::int32:
@@ -150,36 +226,24 @@ void pof::DataModel::RemoveAttr(const wxDataViewItem& item)
 
 unsigned int pof::DataModel::GetColumnCount() const
 {
-	return datastore.get_metadata().size();
+	return datastore->get_metadata().size();
 }
 
 
 void pof::DataModel::SetSpecialColumnHandler(size_t column, SpeicalColHandler_t&& handler)
 {
 	auto [iter, inserted] = mSpecialColHandlers.insert({ column, std::forward<SpeicalColHandler_t>(handler) });
-	if (!inserted) {
-		iter->second = std::forward<SpeicalColHandler_t>(handler);
-	}
 }
 
 void pof::DataModel::SetSpecialColumnHandler(size_t column, get_function_t&& function)
 {
 	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {std::forward<get_function_t>(function), nullptr} });
-	//if insertion fails assume replacement of handlers for the column
-	if (!inserted) {
-		iter->second.first = std::forward<get_function_t>(function);
-	}
 }
 
 void pof::DataModel::SetSpecialColumnHandler(size_t column, get_function_t&& get_function, set_function_t&& set_function)
 {
 	auto [iter, inserted] = mSpecialColHandlers.insert({ column, {std::forward<get_function_t>(get_function), 
 			std::forward<set_function_t>(set_function)} });
-	if (!inserted) {
-		//column already has either a get or a set operation, assumn that iter wants to change them
-		(*iter).second = { std::forward<get_function_t>(get_function),
-				std::forward<set_function_t>(set_function) };
-	}
 }
 
 
@@ -201,8 +265,8 @@ int pof::DataModel::Compare(const wxDataViewItem& item1, const wxDataViewItem& i
 	if (column >= GetColumnCount()) return 0;
 	const size_t i = GetIdxFromItem(item1);
 	const size_t i2 = GetIdxFromItem(item2);
-	const auto& [r, s] = datastore[i];
-	const auto& [r2, s2] = datastore[i2];
+	const auto& [r, s] = (*datastore)[i];
+	const auto& [r2, s2] = (*datastore)[i2];
 	const auto& val1 = r[column];
 	const auto& val2 = r2[column];
 
@@ -222,7 +286,7 @@ int pof::DataModel::Compare(const wxDataViewItem& item1, const wxDataViewItem& i
 bool pof::DataModel::HasValue(const wxDataViewItem& item, unsigned col) const
 {
 	const size_t i = GetIdxFromItem(item);
-	return (i < datastore.size());
+	return (i < datastore->size());
 }
 
 void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned int col) const
@@ -241,8 +305,8 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 	}
 	if (col >= GetColumnCount()) return; //col not a specail col and not in range
 
-	const auto& [r, s] = datastore[i];
-	const pof::base::data::kind k = datastore.get_metadata()[col];
+	const auto& [r, s] = (*datastore)[i];
+	const pof::base::data::kind k = datastore->get_metadata()[col];
 	const auto& d = r[col];
 
 	try {
@@ -304,8 +368,8 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 			return set(i, col, variant);
 		}
 	}
-	pof::base::data::kind k = datastore.get_metadata()[col];
-	auto& [r, s] = datastore[i];
+	pof::base::data::kind k = datastore->get_metadata()[col];
+	auto& [r, s] = (*datastore)[i];
 	auto& dat = r[col];
 	switch (k)
 	{
@@ -348,17 +412,17 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 	default:
 		return false;
 	}
-	datastore.tsModified(pof::base::data::clock_t::now());
+	datastore->tsModified(pof::base::data::clock_t::now());
 	s.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::MODIFIED));
 	ValueChanged(item, col);
-	sig(std::next(datastore.begin(), i), Signals::UPDATE);
+	sig(std::next(datastore->begin(), i), Signals::UPDATE);
 	return true;
 }
 
 void pof::DataModel::Reload()
 {
 	Cleared();
-	for (size_t i = 0; i < datastore.size(); i++) {
+	for (size_t i = 0; i < datastore->size(); i++) {
 		ItemAdded(wxDataViewItem(0), wxDataViewItem(wxUIntToPtr(i + 1)));
 	}
 }
