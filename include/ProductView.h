@@ -108,7 +108,9 @@ namespace pof
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
 		void OnAddProductToOrderList(wxCommandEvent& evt);
-	
+		void OnSearchProduct(wxCommandEvent& evt);
+		void OnSearchCleared(wxCommandEvent& evt);
+
 
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
