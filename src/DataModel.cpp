@@ -124,6 +124,10 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	reg.reserve(search_for.size() * 2);
 	for (auto& c : search_for)
 	{
+		if (!std::isalnum(c)) {
+			//what to do
+			return;
+		}
 		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
 	}
 	reg += "(?:.*)?";

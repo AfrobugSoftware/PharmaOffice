@@ -18,6 +18,7 @@
 #include <memory>
 #include <algorithm>
 #include <regex>
+#include <set>
 
 namespace std {
 	template<>
