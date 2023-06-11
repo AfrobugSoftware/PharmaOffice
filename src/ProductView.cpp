@@ -12,6 +12,11 @@ EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 
+//Search
+EVT_SEARCH(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
+EVT_SEARCH_CANCEL(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchCleared)
+EVT_TEXT(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
+
 //CONTEXT MENU
 EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
@@ -206,6 +211,33 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
+}
+
+void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
+{
+	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	assert(datam != nullptr);
+	m_dataViewCtrl1->Freeze();
+	std::string search = evt.GetString().ToStdString();
+	if (search.empty()) {
+		//go back to what was there before the search?
+		datam->Reload();
+	}
+	else {
+		datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+	}
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Update();
+}
+
+void pof::ProductView::OnSearchCleared(wxCommandEvent& evt)
+{
+	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	assert(datam != nullptr);
+	m_dataViewCtrl1->Freeze();
+	datam->Reload();
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Update();
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

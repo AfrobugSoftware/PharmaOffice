@@ -15,6 +15,9 @@
 #include <functional>
 #include <algorithm>
 #include <shared_mutex>
+#include <memory>
+#include <algorithm>
+#include <regex>
 
 namespace std {
 	template<>
@@ -56,13 +59,12 @@ namespace pof {
 
 		using signal_t = boost::signals2::signal<void(iterator, Signals)>;
 
-		DataModel() : pack(datastore), unpack(datastore) {
-		}
-		
+		DataModel();
+		DataModel(std::shared_ptr<pof::base::data> datastore_ptr);
 		DataModel(const DataModel& model);
 		DataModel(DataModel&& model) noexcept;
 
-
+		DataModel Clone();
 		virtual ~DataModel() {}
 
 		DataModel& operator=(const DataModel& model);
@@ -74,7 +76,8 @@ namespace pof {
 		void Unpack(const pof::base::pack_t& package);
 		void Emplace(pof::base::data&& d);
 		void EmplaceData(pof::base::data::row_t&& r); //no checking for column to metadata match
-	
+		void Reload(const std::vector<wxDataViewItem>& items);
+		void StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);
 
@@ -106,18 +109,18 @@ namespace pof {
 
 		template<typename...args>
 		void Adapt() {
-			pof::base::adapt<args...>(datastore);
+			pof::base::adapt<args...>(*datastore);
 		}
 
 		//inline std::shared_mutex& GetDatastoreMutex() { return datastoremutex; }
-		inline pof::base::data& GetDatastore() { return datastore; }
+		inline pof::base::data& GetDatastore() { return *datastore; }
 
 		void Reload();
 	private:
 		//std::shared_mutex datastoremutex;
-		pof::base::data datastore;
-		pof::base::packer pack;
-		pof::base::unpacker unpack;
+		std::shared_ptr<pof::base::data> datastore;
+		std::shared_ptr<pof::base::packer> pack;
+		std::shared_ptr<pof::base::unpacker> unpack;
 
 
 		signal_t sig;
