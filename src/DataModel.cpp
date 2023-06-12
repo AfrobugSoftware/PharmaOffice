@@ -363,7 +363,7 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 
 bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& item, unsigned int col)
 {
-	if (!item.IsOk() || col >= GetColumnCount()) return false;
+	if (!item.IsOk()) return false;
 	const size_t i = GetIdxFromItem(item);
 	const auto iter = mSpecialColHandlers.find(col);
 	if (iter != mSpecialColHandlers.end()) {
@@ -372,6 +372,9 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 			return set(i, col, variant);
 		}
 	}
+
+	if (col >= GetColumnCount()) return false; //col not a specail col and not in col range
+
 	pof::base::data::kind k = datastore->get_metadata()[col];
 	auto& [r, s] = (*datastore)[i];
 	auto& dat = r[col];

@@ -11,6 +11,8 @@ EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductView::ID_DATA_VIEW, pof::ProductView:
 EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
+EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
+EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
 
 //Search
 EVT_SEARCH(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
@@ -47,6 +49,8 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateProductInfo();
 	SetupAuiTheme();
 	CreateAttibutes();
+	CreateSpecialCols();
+	Style();
 	m_mgr.Update();
 }
 
@@ -240,6 +244,26 @@ void pof::ProductView::OnSearchCleared(wxCommandEvent& evt)
 	m_dataViewCtrl1->Update();
 }
 
+void pof::ProductView::OnSelection(wxCommandEvent& evt)
+{
+	if (evt.IsChecked()) {
+		ShowSelectionColumn();
+	}
+	else {
+		HideSelectionColumn();
+	}
+}
+
+void pof::ProductView::OnShowCostPrice(wxCommandEvent& evt)
+{
+	if (evt.IsChecked()) {
+		ShowCostPriceColumn();
+	}
+	else {
+		HideCostPriceColumn();
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -284,13 +308,24 @@ void pof::ProductView::HideCostPriceColumn()
 	}
 }
 
-void pof::ProductView::SearchCategory()
-{
+void pof::ProductView::ShowSelectionColumn(){
+	mSelectionCol = m_dataViewCtrl1->PrependToggleColumn(wxT("SELECT"), SELECTION_MODEL_COL,
+		 wxDATAVIEW_CELL_ACTIVATABLE, 50);
 }
 
-void pof::ProductView::SearchName()
+void pof::ProductView::HideSelectionColumn()
 {
+	if (mSelectionCol != nullptr) {
+		mSelections.clear();
+
+		m_dataViewCtrl1->Freeze();
+		m_dataViewCtrl1->DeleteColumn(mSelectionCol);
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Update();
+		mSelectionCol = nullptr;
+	}
 }
+
 
 void pof::ProductView::OnCategoryActivated(const std::string& name)
 {
@@ -310,7 +345,6 @@ void pof::ProductView::CreateDataView()
 	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	m_dataViewCtrl1->AppendTextColumn(wxEmptyString, 100 , wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE); // null column
 
 	m_mgr.AddPane(m_dataViewCtrl1, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
 	
@@ -337,6 +371,9 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
+
+	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), wxT("Creates a new Category for medical products"));
 	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR), wxT("List of Products that are expired, or expired alerted"));
@@ -345,7 +382,6 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
-
 }
 
 void pof::ProductView::CreateProductInfo()
@@ -362,6 +398,35 @@ void pof::ProductView::CreateAttibutes()
 {
 	mUpdatedAttr = std::make_shared<wxDataViewItemAttr>();
 	mUpdatedAttr->SetBackgroundColour(wxTheColourDatabase->Find("Tomato"));
+}
+
+void pof::ProductView::CreateSpecialCols()
+{
+	pof::DataModel::SpeicalColHandler_t SelectionCol;
+	SelectionCol.first = [&](size_t row, size_t col) -> wxVariant {
+		auto found = mSelections.find(wxDataViewItem{ reinterpret_cast<void*>(row + 1) });
+		return wxVariant((found != mSelections.end()));
+	};
+
+	SelectionCol.second = [&](size_t row, size_t col, const wxVariant& data) -> bool {
+		if (data.GetBool()) {
+			auto [iter, inserted] = mSelections.insert(wxDataViewItem{ reinterpret_cast<void*>(row + 1) });
+			return inserted;
+		}
+		else {
+			mSelections.erase(wxDataViewItem{ reinterpret_cast<void*>(row + 1) });
+			return true;
+		}
+	};
+
+	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	assert(model != nullptr);
+	model->SetSpecialColumnHandler(SELECTION_MODEL_COL, std::move(SelectionCol));
+}
+
+void pof::ProductView::Style()
+{
+	//m_dataViewCtrl1->SetAlternateRowColour(wxTheColourDatabase->Find("Aqua"));
 }
 
 void pof::ProductView::SwapCenterPane(bool IsInventoryView)

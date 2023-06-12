@@ -36,6 +36,9 @@ namespace pof
 	private:
 
 	protected:
+		enum {
+			SELECTION_MODEL_COL = pof::ProductManager::PRODUCT_MAX + 2
+		};
 		enum
 		{
 			ID_TOOLBAR = 1000,
@@ -64,6 +67,7 @@ namespace pof
 			ID_EXPIRY_VIEW,
 			ID_SELECT_MULTIPLE,
 			ID_UNSELECT_MULTIPLE,
+			ID_SHOW_COST_PRICE,
 			ID_TO_JSON,
 			ID_FILE
 		};
@@ -77,12 +81,15 @@ namespace pof
 		wxDataViewColumn* mProductUnitPriceCol = nullptr;
 		wxDataViewColumn* mProductCostPriceCol = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
+		wxDataViewColumn* mSelectionCol = nullptr;
+
 		pof::ProductInfo* mProductinfo = nullptr;
 
 
 
 		//attibutes
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
+		std::set<wxDataViewItem> mSelections;
 
 	public:
 		boost::signals2::signal<void(const std::string&)> CategoryAddSignal;
@@ -110,6 +117,8 @@ namespace pof
 		void OnAddProductToOrderList(wxCommandEvent& evt);
 		void OnSearchProduct(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
+		void OnSelection(wxCommandEvent& evt);
+		void OnShowCostPrice(wxCommandEvent& evt);
 
 
 
@@ -117,8 +126,8 @@ namespace pof
 		void OnCategorySelected(const std::string& name);
 		void ShowCostPriceColumn();
 		void HideCostPriceColumn();
-		void SearchCategory();
-		void SearchName();
+		void ShowSelectionColumn();
+		void HideSelectionColumn();
 
 		void OnCategoryActivated(const std::string& name);
 	protected:
@@ -126,6 +135,8 @@ namespace pof
 		void CreateToolBar();
 		void CreateProductInfo();
 		void CreateAttibutes();
+		void CreateSpecialCols();
+		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 
 	private:

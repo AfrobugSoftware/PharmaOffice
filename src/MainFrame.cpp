@@ -104,7 +104,7 @@ void pof::MainFrame::CreateLogView()
 		wxDefaultSize, wxTE_READONLY | wxTE_MULTILINE | wxTE_RICH2);
 	auto sink = std::make_shared<spdlog::sinks::LogSink_mt>(mLogView);
 
-	mAuiManager.AddPane(mLogView.get(), wxAuiPaneInfo().Name("LogView").Caption("LOGS").Bottom().Show().MinSize(-1, 200));
+	mAuiManager.AddPane(mLogView.get(), wxAuiPaneInfo().Name("LogView").Caption("LOGS").Bottom().MinSize(-1, 200).Hide());
 #else
 	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log.txt");
 #endif // DEBUG
