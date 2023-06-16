@@ -136,14 +136,17 @@ bool pof::Application::OnInit()
 	if (bUsingLocalDatabase) {
 		try {
 			OpenLocalDatabase();
+			CreateTables();
 		}
 		catch (std::exception& exp) {
 			spdlog::critical("Cannot open databse: {}", exp.what());
+			OnExit();
 			return false;
 		}
-		if (!SignInLocal()) {
+		if (!SignIn()) {
 			//failed signed in from local database
-			//return false;
+			OnExit();
+			return false;
 		}
 	}
 	else {
@@ -151,18 +154,18 @@ bool pof::Application::OnInit()
 			//failed signed in
 			//return false;
 		}
-		//test
-		TestAccountAndPharmacy();
-		
+		//test	
 	}
-
-
+	//TestAccountAndPharmacy();
 	return CreateMainFrame();
 }
 
 int pof::Application::OnExit()
 {
 	mNetManager.stop();
+	if (bUsingLocalDatabase) {
+		sqlite3_shutdown();
+	}
 	return 0;
 }
 
@@ -198,6 +201,7 @@ bool pof::Application::LunchWizard()
 bool pof::Application::OpenLocalDatabase()
 {
 	auto dbPath = std::filesystem::current_path() / "localdatabase.db";
+	sqlite3_initialize();
 	mLocalDatabase = std::make_unique<pof::base::database>(dbPath);
 	return true;
 }
@@ -266,7 +270,6 @@ bool pof::Application::SignIn()
 	pof::SignInDialog Dialog(nullptr);
 	while (1) {
 		if (Dialog.ShowModal() == wxID_OK) {
-			
 			return true;
 		}
 		else {
@@ -276,16 +279,28 @@ bool pof::Application::SignIn()
 	}
 }
 
-bool pof::Application::SignInLocal()
-{
-
-	return false;
-}
-
 void pof::Application::TestAccountAndPharmacy()
 {
 	MainAccount.name = "Zino Ferife"s;
 	MainPharamcy.name = "D-GLOPA NIGERIA LIMITED"s;
+}
+
+void pof::Application::CreateTables()
+{
+	constexpr const std::string_view users_table = 
+		"CREATE TABLE IF NOT EXISTS USERS (id integer primary key autoincrement, priv integer, name text, last_name text, email text, phonenumber text, regnumber text, username text, password text);";
+	
+	auto stmt = mLocalDatabase->prepare(users_table);
+	if (!stmt.has_value()) {
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	if (!mLocalDatabase->execute(*stmt))
+	{
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+
 }
 
 void pof::Application::ReadSettingsFlags()

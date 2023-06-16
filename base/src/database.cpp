@@ -6,7 +6,7 @@ pof::base::database::database(const std::filesystem::path& path)
 	if (ret != SQLITE_OK) {
 		throw std::logic_error(fmt::format("{}: Cannot open database file", path.string()));
 	}
-
+	err_msg();
 	auto opt = prepare(std::string_view{ "BEGIN;" });
 	if (opt.has_value()) {
 		begin = opt.value();

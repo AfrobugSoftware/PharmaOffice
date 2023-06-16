@@ -161,19 +161,25 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 	else {
 		ret = ValidateGlobal();
 	}
-	EndModal(ret ? wxID_OK : wxID_CANCEL);
+	if (!ret) return;
+
+	EndModal(wxID_OK);
 }
 
 void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
 	pof::RegistrationDialog regDialog(nullptr);
-	Hide();
+	//Hide();
 	int ret = regDialog.ShowModal();
+	bool status = false;
 	if (ret == wxID_OK) {
 		wxBusyInfo info("Registring account and Signing in...");
-		InsertUserDataIntoDatabase(regDialog.GetAccount());
+		if (!InsertUserDataIntoDatabase(regDialog.GetAccount())){
+			wxMessageBox(wxGetApp().mLocalDatabase->err_msg().data(), "REGISTRATION", wxICON_ERROR | wxOK);
+			return;
+		}
 	}
-	EndModal(ret);
+	//Show();
 }
 
 bool pof::SignInDialog::ValidateLocal()
@@ -184,12 +190,12 @@ bool pof::SignInDialog::ValidateLocal()
 	std::string UserPassword = mPassword->GetValue().ToStdString();
 	wxGetApp().bKeepMeSignedIn = mKeepMeSigned->IsChecked();
 	auto& account = wxGetApp().MainAccount;
-	const std::string sql = fmt::format("SELECT id, priv, name, last_name, email, phonenumber, regnumber, username, password FROM USERS WHERE username = {}", Username);
+	const std::string sql = fmt::format("SELECT * FROM USERS WHERE username = \'{}\';", Username);
 
 	auto stmt = dbPtr->prepare(sql);
 	if (!stmt.has_value())
 	{
-		wxMessageBox(dbPtr->err_msg().data(), "SIGN IN EXCEPTION");
+		wxMessageBox(dbPtr->err_msg().data(), "SIGN IN EXCEPTION", wxICON_ERROR | wxOK);
 		return false;
 	}
 	auto rel = dbPtr->retrive<
@@ -207,13 +213,13 @@ bool pof::SignInDialog::ValidateLocal()
 		return false;
 	}
 	if (rel->empty()) {
-		wxMessageBox("INVALID USERNAME OR PASSWORD", "SIGN IN", wxICON_WARNING | wxOK);
+		wxMessageBox(fmt::format("INVALID USERNAME OR PASSWORD {}", wxGetApp().mLocalDatabase->err_msg()), "SIGN IN", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
 	}
 	auto& v = rel->front();
 
-	if (!bcrypt::validatePassword(UserPassword, std::get<7>(v))) {
+	if (!bcrypt::validatePassword(UserPassword, std::get<8>(v))) {
 		wxMessageBox("INVALID PASSWORD", "SIGN IN", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
@@ -291,7 +297,7 @@ bool pof::SignInDialog::ValidateGlobal()
 
 bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 {
-	constexpr const std::string_view sql = "INSERT INTO USERS (id, priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?,?);";
+	constexpr const std::string_view sql = "INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);";
 	auto& dbPtr = wxGetApp().mLocalDatabase;
 	if (!dbPtr) return false;
 
@@ -300,7 +306,7 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 		//read last error from database
 		return false;
 	}
-	dbPtr->bind(*stmt, std::make_tuple(acc.accountID, acc.priv.to_ulong(), acc.name, acc.lastname,
+	dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
 		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
 	bool ret = dbPtr->execute(*stmt);
 	dbPtr->finalise(*stmt);

@@ -55,10 +55,10 @@ namespace pof {
 		bool RegisterPharmacyLocal();
 		bool RegisterAccountLocal();
 		bool SignIn();
-		bool SignInLocal(); 
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		void TestAccountAndPharmacy();
+		void CreateTables();
 		
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
@@ -68,7 +68,7 @@ namespace pof {
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
-		bool bUsingLocalDatabase = false;
+		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;
 		bool bGlobalCostMarkup = false;
 		bool bKeepMeSignedIn = false;

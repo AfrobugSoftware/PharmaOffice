@@ -236,7 +236,7 @@ namespace pof {
 					bool ret = detail::loop<N - 1>::template bind(stmt, tuple);
 
 					const auto& val = std::get<N>(tuple);
-					bool ret2 = detail::do_bind(stmt, val, N);
+					bool ret2 = detail::do_bind(stmt, val, N + 1);
 					return (ret2 && ret);
 				}
 
@@ -252,9 +252,9 @@ namespace pof {
 				template<typename tuple_t>
 				static auto retrive(sqlite3_stmt* statement)
 				{
-					constexpr size_t col = (std::tuple_size_v<tuple_t> -(N + 1));
+					constexpr size_t col = (std::tuple_size_v<tuple_t> - (N + 1));
 					using arg_type = std::tuple_element_t<col, tuple_t>;
-					auto t1 = do_retrive<arg_type, col>(statement);
+					auto t1 = do_retrive<arg_type, N>(statement);
 					auto t2 = detail::loop<N - 1>::template retrive<tuple_t>(statement);
 
 					return std::tuple_cat(std::move(t1), std::move(t2));
@@ -267,7 +267,7 @@ namespace pof {
 				template<typename tuple_t>
 				static bool bind(sqlite3_stmt* stmt, const tuple_t& tuple) {
 					const auto& val = std::get<0>(tuple);
-					return  detail::do_bind(stmt, val, 0);
+					return  detail::do_bind(stmt, val, 1);
 				}
 
 				template<typename tuple_t, typename array_t>
@@ -282,7 +282,7 @@ namespace pof {
 					constexpr size_t col = (std::tuple_size_v<tuple_t> -1);
 					using arg_type = std::tuple_element_t<col, tuple_t>;
 
-					return detail::do_retrive<arg_type, col>(statement);
+					return detail::do_retrive<arg_type, 0>(statement);
 				}
 
 			};
