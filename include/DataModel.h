@@ -55,6 +55,7 @@ namespace pof {
 				REMOVED,
 				UPDATE,
 				LOADED,
+				SEARCHED,
 				MAX
 		};
 
@@ -107,7 +108,7 @@ namespace pof {
 		virtual bool SetValue(const wxVariant& variant, const wxDataViewItem& item, unsigned int col) override;
 		virtual unsigned int GetChildren(const wxDataViewItem& item, wxDataViewItemArray& children) const override;
 		virtual wxDataViewItem GetParent(const wxDataViewItem& item) const;
-
+		virtual bool IsListModel() const override;
 		template<typename...args>
 		void Adapt() {
 			pof::base::adapt<args...>(*datastore);
@@ -116,7 +117,10 @@ namespace pof {
 		//inline std::shared_mutex& GetDatastoreMutex() { return datastoremutex; }
 		inline pof::base::data& GetDatastore() { return *datastore; }
 
+		bool RemoveData(const wxDataViewItem& item);
+
 		void Reload();
+		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot);
 	private:
 		//std::shared_mutex datastoremutex;
 		std::shared_ptr<pof::base::data> datastore;
@@ -124,6 +128,7 @@ namespace pof {
 		std::shared_ptr<pof::base::unpacker> unpack;
 
 
+		wxDataViewItemArray mItems;
 		signal_t sig;
 		item_attr_map attributes;
 		special_col_map mSpecialColHandlers;

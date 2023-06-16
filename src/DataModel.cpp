@@ -31,6 +31,7 @@ pof::DataModel::DataModel(DataModel&& model) noexcept
 	sig = std::move(model.sig);
 	attributes = std::move(model.attributes);
 	mSpecialColHandlers = std::move(model.mSpecialColHandlers);
+	mItems = std::move(model.mItems);
 }
 /**
 * Cloning is making a deep copy of the underlying datastore
@@ -42,6 +43,7 @@ pof::DataModel pof::DataModel::Clone()
 	DataModel model;
 	model.attributes = attributes;
 	model.mSpecialColHandlers = mSpecialColHandlers;
+	model.mItems = mItems;
 	*(model.datastore) = *datastore;
 	return model;
 }
@@ -52,8 +54,7 @@ pof::DataModel& pof::DataModel::operator=(const DataModel& model)
 	datastore = model.datastore;
 	pack = model.pack;
 	unpack = model.unpack;
-	attributes = model.attributes;
-	mSpecialColHandlers = model.mSpecialColHandlers;
+
 	return (*this);
 }
 
@@ -65,6 +66,7 @@ pof::DataModel& pof::DataModel::operator=(DataModel&& model) noexcept
 	sig = std::move(model.sig);
 	attributes = std::move(model.attributes);
 	mSpecialColHandlers = std::move(model.mSpecialColHandlers);
+	mItems = std::move(mItems);
 	return (*this);
 }
 
@@ -75,45 +77,56 @@ void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 	if (!datastore->empty()) {
 		datastore->clear();
 		attributes.clear();
+		mItems.Clear();
 		Cleared();
 	}
 
 	(*unpack)(package);
 
-	wxDataViewItemArray itemArray;
-	itemArray.resize(datastore->size());
+	mItems.resize(datastore->size());
 	size_t i = 0;
-	std::generate(itemArray.begin(), itemArray.end(),
+	std::generate(mItems.begin(), mItems.end(),
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
-	ItemsAdded(wxDataViewItem{ 0 }, std::move(itemArray));
+	ItemsAdded(wxDataViewItem{ 0 }, mItems);
+	sig(datastore->begin(), Signals::LOADED);
+
 }
 
 void pof::DataModel::Emplace(pof::base::data&& d)
 {
 	Cleared();
+	mItems.clear();
+	attributes.clear();
 	datastore = std::make_shared<pof::base::data>(std::forward<pof::base::data>(d));
-	wxDataViewItemArray itemArray;
-	itemArray.resize(datastore->size());
+	mItems.resize(datastore->size());
 	size_t i = 0;
-	std::generate(itemArray.begin(), itemArray.end(), 
+	std::generate(mItems.begin(), mItems.end(), 
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
-	ItemsAdded(wxDataViewItem{ 0 }, std::move(itemArray));
+	ItemsAdded(wxDataViewItem{ 0 }, mItems);
+	sig(datastore->begin(), Signals::LOADED);
 }
 
 void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 {
 	datastore->insert(std::forward<pof::base::data::row_t>(r));
 	const size_t count = datastore->size();
-	ItemAdded(wxDataViewItem{ 0 }, wxDataViewItem{ reinterpret_cast<void*>(count) });
+	mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(count) });
+	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
+	sig(datastore->end() - 1, Signals::ADDED);
+
 }
 
 void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 {
 	if (items.empty()) return;
 	Cleared();
-	for (size_t i = 0; i < items.size(); i++) {
-		ItemAdded(wxDataViewItem(0), items[i]);
-	}
+	mItems.Clear();
+	attributes.clear();
+
+	mItems.resize(items.size());
+	std::ranges::copy(items, mItems.begin());
+	ItemsAdded(wxDataViewItem(0), mItems);
+	sig(datastore->begin(), Signals::LOADED);
 }
 
 void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
@@ -133,13 +146,17 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	reg += "(?:.*)?";
 	std::regex searchreg(std::move(reg));
 	Cleared();
+	mItems.clear();
+	attributes.clear(); //dont know if i should clear the attributes here?
 	for (size_t i = 0; i < datastore->size(); i++) {
 		auto& datum = (*datastore)[i].first[col];
 		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
 		if (std::regex_match(text, searchreg)) {
-			ItemAdded(wxDataViewItem(0), wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+			mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
 		}
 	}
+	ItemsAdded(wxDataViewItem(0), mItems);
+	sig(datastore->begin(), Signals::SEARCHED);
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
@@ -148,7 +165,7 @@ bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
 }
  bool pof::DataModel::HasDefaultCompare() const
 {
-	return true;
+	return false;
 }
 
 bool pof::DataModel::IsEnabled(const wxDataViewItem& item, unsigned int col) const
@@ -426,21 +443,42 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 	return true;
 }
 
+bool pof::DataModel::RemoveData(const wxDataViewItem& item)
+{
+	return false;
+}
+
 void pof::DataModel::Reload()
 {
 	Cleared();
+	mItems.Clear();
+	mItems.reserve(datastore->size());
 	for (size_t i = 0; i < datastore->size(); i++) {
-		ItemAdded(wxDataViewItem(0), wxDataViewItem(wxUIntToPtr(i + 1)));
+		mItems.push_back(wxDataViewItem(wxUIntToPtr(i + 1)));
 	}
+	ItemsAdded(wxDataViewItem(0), mItems);
+	sig(datastore->begin(), Signals::LOADED);
 }
 
+boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot)
+{
+	return sig.connect(std::forward<signal_t::slot_type>(slot));
+}
+
+//this is very stupid, very very very stupid
 unsigned int pof::DataModel::GetChildren(const wxDataViewItem& item, wxDataViewItemArray& children) const
 {
-	return -1;
+	children = mItems;
+	return  static_cast<int>(mItems.size());
 }
 
 wxDataViewItem pof::DataModel::GetParent(const wxDataViewItem& item) const
 {
 	return wxDataViewItem(0);
+}
+
+bool pof::DataModel::IsListModel() const
+{
+	return false;
 }
 
