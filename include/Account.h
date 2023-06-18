@@ -10,6 +10,7 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include <bitset>
+#include <fmt/format.h>
 
 namespace nl = nlohmann;
 namespace pof {
@@ -19,7 +20,11 @@ namespace pof {
 		using datetime_t = std::chrono::system_clock::time_point;
 		using signal_t = boost::signals2::signal<void(const Account&)>;
 		using privilage_set_t = std::bitset<8>;
-
+		constexpr static const size_t max_account_type = 7;
+		constexpr static const std::array<std::string_view, max_account_type> account_type_string = {
+			"PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
+				"MANAGER"
+		};
 		enum class Privilage: std::uint8_t {
 				PHARMACIST = 1,
 				PHARMTECH = 1 << 1,
@@ -33,6 +38,7 @@ namespace pof {
 		Account();
 		~Account();
 
+
 		nl::json Pack() const;
 		void UnPack(const nl::json& package);
 
@@ -43,6 +49,7 @@ namespace pof {
 		inline constexpr const std::string& GetRegnumber() const { return regnumber; }
 		inline constexpr const boost::uuids::uuid& GetSessionUUID() const { return sessionID; }
 
+		std::string GetAccountTypeString();
 		inline constexpr datetime_t GetSignInTime() const { return signintime; }
 		inline bool TestPriv(Privilage p) const {
 			return priv.test(std::underlying_type_t<Privilage>(p));

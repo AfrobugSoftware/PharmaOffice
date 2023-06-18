@@ -104,6 +104,7 @@ void pof::Modules::RemoveChildTreeId(const std::string& name)
 		mChildId.erase(found);
 	}
 }
+
 pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
 	SetDoubleBuffered(true);
@@ -119,14 +120,27 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
+	//add the account type
+	wxStaticText* m_staticText3;
+	std::string AccountType = wxGetApp().MainAccount.GetAccountTypeString();
+	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->Wrap(-1);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
+
+
 	wxStaticText* m_staticText1;
-	const auto& AccountName = wxGetApp().MainAccount.GetName();
+	std::string AccountName = wxGetApp().MainAccount.GetName();
+	std::transform(AccountName.begin(), AccountName.end(),
+		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
 	wxStaticText* m_staticText2;
-	const auto& PharmacyName = wxGetApp().MainPharamcy.GetName();
+	std::string PharmacyName = wxGetApp().MainPharamcy.GetName();
+	std::transform(PharmacyName.begin(), PharmacyName.end(),
+			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+
 	m_staticText2 = new wxStaticText(m_panel1, wxID_ANY, PharmacyName, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText2->Wrap(-1);
 	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));

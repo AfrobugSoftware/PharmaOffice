@@ -92,6 +92,7 @@ namespace pof {
 		friend class MainFrame;
 		std::array<wxFont, 2> mFonts;
 
+
 		//who has the windows ? the module or the workspace 
 		//std::array<wxWindow*, 6> mModuleWindows;
 		wxTreeItemId mPharmacy;
