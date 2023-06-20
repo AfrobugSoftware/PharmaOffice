@@ -88,7 +88,7 @@ void pof::DataModel::Unpack(const pof::base::pack_t& package) {
 	std::generate(mItems.begin(), mItems.end(),
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
 	ItemsAdded(wxDataViewItem{ 0 }, mItems);
-	sig(datastore->begin(), Signals::LOADED);
+	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 
 }
 
@@ -103,7 +103,7 @@ void pof::DataModel::Emplace(pof::base::data&& d)
 	std::generate(mItems.begin(), mItems.end(), 
 		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
 	ItemsAdded(wxDataViewItem{ 0 }, mItems);
-	sig(datastore->begin(), Signals::LOADED);
+	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
 void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
@@ -112,7 +112,7 @@ void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 	const size_t count = datastore->size();
 	mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(count) });
 	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
-	sig(datastore->end() - 1, Signals::ADDED);
+	mSignals[static_cast<size_t>(Signals::ADDED)](datastore->end() - 1);
 
 }
 
@@ -126,7 +126,7 @@ void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 	mItems.resize(items.size());
 	std::ranges::copy(items, mItems.begin());
 	ItemsAdded(wxDataViewItem(0), mItems);
-	sig(datastore->begin(), Signals::LOADED);
+	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
 void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
@@ -156,7 +156,7 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 		}
 	}
 	ItemsAdded(wxDataViewItem(0), mItems);
-	sig(datastore->begin(), Signals::SEARCHED);
+	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
@@ -439,7 +439,7 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 	datastore->tsModified(pof::base::data::clock_t::now());
 	s.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::MODIFIED));
 	ValueChanged(item, col);
-	sig(std::next(datastore->begin(), i), Signals::UPDATE);
+	mSignals[static_cast<size_t>(Signals::UPDATE)](std::next(datastore->begin(), i));
 	return true;
 }
 
@@ -457,12 +457,12 @@ void pof::DataModel::Reload()
 		mItems.push_back(wxDataViewItem(wxUIntToPtr(i + 1)));
 	}
 	ItemsAdded(wxDataViewItem(0), mItems);
-	sig(datastore->begin(), Signals::LOADED);
+	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
-boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot)
+boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot, Signals signal)
 {
-	return sig.connect(std::forward<signal_t::slot_type>(slot));
+	return mSignals[static_cast<size_t>(signal)].connect(std::forward<signal_t::slot_type>(slot));
 }
 
 //this is very stupid, very very very stupid

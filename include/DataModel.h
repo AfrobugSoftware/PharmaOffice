@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <regex>
 #include <set>
+#include <array>
 
 namespace std {
 	template<>
@@ -59,8 +60,8 @@ namespace pof {
 				MAX
 		};
 
-		using signal_t = boost::signals2::signal<void(iterator, Signals)>;
-
+		using signal_t = boost::signals2::signal<void(iterator)>;
+		
 		DataModel();
 		DataModel(std::shared_ptr<pof::base::data> datastore_ptr);
 		DataModel(const DataModel& model);
@@ -120,7 +121,7 @@ namespace pof {
 		bool RemoveData(const wxDataViewItem& item);
 
 		void Reload();
-		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot);
+		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot, Signals signal);
 	private:
 		//std::shared_mutex datastoremutex;
 		std::shared_ptr<pof::base::data> datastore;
@@ -130,6 +131,7 @@ namespace pof {
 
 		wxDataViewItemArray mItems;
 		signal_t sig;
+		std::array<signal_t, static_cast<size_t>(Signals::MAX)> mSignals;
 		item_attr_map attributes;
 		special_col_map mSpecialColHandlers;
 

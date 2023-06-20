@@ -81,8 +81,9 @@ void pof::Modules::SetupFont()
 	mFonts[FONT_MAIN] = std::move(wxFont(
 			wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased()
 		.FaceName("Bookman").Bold()));
-
 	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
+		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased()
 		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
 }
 void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
@@ -108,6 +109,7 @@ void pof::Modules::RemoveChildTreeId(const std::string& name)
 pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
 	SetDoubleBuffered(true);
+	SetupFont();
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
@@ -124,15 +126,16 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	wxStaticText* m_staticText3;
 	std::string AccountType = wxGetApp().MainAccount.GetAccountTypeString();
 	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText3->Wrap(-1);
 	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
-
 
 	wxStaticText* m_staticText1;
 	std::string AccountName = wxGetApp().MainAccount.GetName();
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText1->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
@@ -142,6 +145,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 
 	m_staticText2 = new wxStaticText(m_panel1, wxID_ANY, PharmacyName, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText2->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText2->Wrap(-1);
 	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
 	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 2);
@@ -211,7 +215,6 @@ void pof::Modules::CreateTree()
 
 void pof::Modules::Style()
 {
-	SetupFont();
 	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mWarehouse, mFonts[FONT_MAIN]);

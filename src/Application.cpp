@@ -137,6 +137,7 @@ bool pof::Application::OnInit()
 		try {
 			OpenLocalDatabase();
 			CreateTables();
+			mProductManager.bUsingLocalDatabase = bUsingLocalDatabase;
 		}
 		catch (std::exception& exp) {
 			spdlog::critical("Cannot open databse: {}", exp.what());
@@ -156,7 +157,7 @@ bool pof::Application::OnInit()
 		}
 		//test	
 	}
-	//TestAccountAndPharmacy();
+	TestAccountAndPharmacy();
 	return CreateMainFrame();
 }
 
@@ -202,7 +203,9 @@ bool pof::Application::OpenLocalDatabase()
 {
 	auto dbPath = std::filesystem::current_path() / "localdatabase.db";
 	sqlite3_initialize();
-	mLocalDatabase = std::make_unique<pof::base::database>(dbPath);
+	mLocalDatabase = std::make_shared<pof::base::database>(dbPath);
+	mProductManager.mLocalDatabase = mLocalDatabase;
+
 	return true;
 }
 
@@ -281,7 +284,6 @@ bool pof::Application::SignIn()
 
 void pof::Application::TestAccountAndPharmacy()
 {
-	MainAccount.name = "Zino Ferife"s;
 	MainPharamcy.name = "D-GLOPA NIGERIA LIMITED"s;
 }
 
@@ -289,6 +291,12 @@ void pof::Application::CreateTables()
 {
 	constexpr const std::string_view users_table = 
 		"CREATE TABLE IF NOT EXISTS USERS (id integer primary key autoincrement, priv integer, name text, last_name text, email text, phonenumber text, regnumber text, username text, password text);";
+	constexpr const std::string_view product_table =
+		"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer);";
+	constexpr const std::string_view product_settings_table =
+		"CREATE TABLE IF NOT EXISTS product_settings (uuid blob, min_stock_count integer, expire_period text, expire_date integer);";
+	constexpr const std::string_view inventory_table =
+		"CREATE TABLE IF NOT EXISTS inventory (id integer, uuid blob, expire_date integer, input_date integer, stock_count integer, cost blob, manufacturer_name text, manufacturer_address_id integer, lot_number text);";
 	
 	auto stmt = mLocalDatabase->prepare(users_table);
 	if (!stmt.has_value()) {
@@ -300,7 +308,40 @@ void pof::Application::CreateTables()
 		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
 		return;
 	}
-
+	mLocalDatabase->finalise(*stmt);
+	stmt = mLocalDatabase->prepare(product_table);
+	if (!stmt.has_value()) {
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	if (!mLocalDatabase->execute(*stmt))
+	{
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	mLocalDatabase->finalise(*stmt);
+	stmt = mLocalDatabase->prepare(product_settings_table);
+	if (!stmt.has_value()) {
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	if (!mLocalDatabase->execute(*stmt))
+	{
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	mLocalDatabase->finalise(*stmt);
+	stmt = mLocalDatabase->prepare(inventory_table);
+	if (!stmt.has_value()) {
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	if (!mLocalDatabase->execute(*stmt))
+	{
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	mLocalDatabase->finalise(*stmt);
 }
 
 void pof::Application::ReadSettingsFlags()

@@ -287,6 +287,33 @@ namespace pof {
 
 			};
 		}
+
+		template<typename... Args, size_t... I>
+		pof::base::data::row_t::first_type make_row_from_tuple_impl(const std::tuple<Args...>& tup,
+			std::index_sequence<I...>)
+		{
+			return { (std::move(std::get<I>(tup)))...};
+		}
+
+		template<typename tuple, typename idx = std::make_index_sequence<std::tuple_size_v<tuple>>>
+		pof::base::data::row_t::first_type make_row_from_tuple(const tuple& tup)
+		{
+			return make_row_from_tuple_impl(tup, idx{});
+		}
+
+		template<typename... Args, size_t... I>
+		auto make_tuple_from_row_impl(const pof::base::data::row_t::first_type& row,
+				const std::tuple<Args...>& tup, std::index_sequence<I...>) -> std::tuple<Args...>
+		{
+			return std::make_tuple(boost::variant2::get<Args>(row[I])...);
+		}
+
+		template<typename tuple, typename idx = std::make_index_sequence<std::tuple_size_v<tuple>>>
+		auto make_tuple_from_row(const pof::base::data::row_t::first_type& row) -> tuple {
+			return make_tuple_from_row_impl(row, tuple{}, idx{});
+		}
+
+
 		class database : public boost::noncopyable {
 		public:
 			using stmt_t = std::add_pointer_t<sqlite3_stmt>;

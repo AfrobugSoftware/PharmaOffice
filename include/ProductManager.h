@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <shared_mutex>
 #include "DataModel.h"
+#include "database.h"
 /// <summary>
 /// ADD PHARMACOLOGICAL UNITS AS A CLASS
 ///		a ratio for converting from one unit to another and illegal conversion
@@ -69,6 +70,7 @@ namespace pof {
 		bool LoadInventoryData();
 		bool LoadCategories();
 
+		bool StoreProductData(pof::base::data::const_iterator iter);
 
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
@@ -82,7 +84,8 @@ namespace pof {
 		//add a product from UI
 		void AddProductData();
 
-
+		bool bUsingLocalDatabase = false;
+		std::shared_ptr<pof::base::database> mLocalDatabase;
 	private:
 
 		std::shared_mutex mCategoryMutex;
@@ -91,7 +94,17 @@ namespace pof {
 		pof::base::unpacker mUnpacker{mCategories};
 
 
+		//localdatabase statement
+		void Finialize();
+		pof::base::database::stmt_t productLoadStmt = nullptr;
+		pof::base::database::stmt_t InventoryLoadStmt = nullptr;
+		pof::base::database::stmt_t productUpdateStmt = nullptr;
+		pof::base::database::stmt_t InventoryUpdateStmt = nullptr;
+		pof::base::database::stmt_t productStoreStmt = nullptr;
 
+
+		//product uuid generators
+		boost::uuids::random_generator mUuidGen;
 
 		//should also contain the product view
 		std::unique_ptr<pof::DataModel> mProductData;

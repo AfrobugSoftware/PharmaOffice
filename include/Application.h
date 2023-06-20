@@ -63,7 +63,7 @@ namespace pof {
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
 		pof::SaleManager mSaleManager;
-		std::unique_ptr<pof::base::database> mLocalDatabase;
+		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		//settings flags
 		void ReadSettingsFlags();

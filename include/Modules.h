@@ -57,7 +57,8 @@ namespace pof {
 
 		enum {
 			FONT_MAIN,
-			FONT_CHILD
+			FONT_CHILD,
+			FONT_ACCOUNT
 		};
 
 
@@ -90,7 +91,7 @@ namespace pof {
 		void RemoveChildTreeId(const std::string& name);
 	private:
 		friend class MainFrame;
-		std::array<wxFont, 2> mFonts;
+		std::array<wxFont, 3> mFonts;
 
 
 		//who has the windows ? the module or the workspace 
