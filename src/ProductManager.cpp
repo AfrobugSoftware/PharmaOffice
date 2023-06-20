@@ -42,8 +42,8 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
 	>();
 
-
-
+	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreProductData, this), pof::DataModel::Signals::ADDED);
+	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);
 }
 
 pof::ProductManager::~ProductManager()
@@ -104,8 +104,9 @@ bool pof::ProductManager::LoadProductData()
 			v.emplace_back(pof::base::data::datetime_t{});
 			pdata.insert(std::move(row));
 		}
+		mProductData->Emplace(std::move(pdata));
 	}
-	return false;
+	return true;
 }
 
 bool pof::ProductManager::LoadInventoryData()
@@ -172,6 +173,18 @@ bool pof::ProductManager::StoreProductData(pof::base::data::const_iterator iter)
 			return false;
 		}
 	}
+	return true;
+}
+
+bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter)
+{
+	if (iter == mProductData->GetDatastore().end()) return false;
+	auto& v = iter->first;
+	if (bUsingLocalDatabase && mLocalDatabase){
+
+	}
+
+
 	return true;
 }
 

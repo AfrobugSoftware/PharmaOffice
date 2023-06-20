@@ -71,6 +71,7 @@ namespace pof {
 		bool LoadCategories();
 
 		bool StoreProductData(pof::base::data::const_iterator iter);
+		bool UpdateProductData(pof::base::data::const_iterator iter);
 
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
