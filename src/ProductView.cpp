@@ -373,10 +373,10 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddSeparator();
 
 	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
-	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), wxT("Creates a new Category for medical products"));
-	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR), wxT("List of Products that are expired, or expired alerted"));
+	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
+	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
+	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"));
 
 
 	m_auiToolBar1->Realize();

@@ -26,6 +26,11 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
+
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	SetIcon(appIcon);
 }
 
 pof::MainFrame::~MainFrame()
