@@ -347,7 +347,7 @@ pof::AddProdutDialog::~AddProdutDialog()
 bool pof::AddProdutDialog::TransferDataFromWindow()
 {
 	datum.emplace();
-	datum->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+	datum->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 	auto& v = datum->first;
 	v.resize(pof::ProductManager::PRODUCT_MAX);
 
@@ -371,7 +371,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 
 	//only emplace when the fields are 
 	datumInven.emplace();
-	datumInven->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+	datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 	auto& i = datumInven->first;
 	i.resize(pof::ProductManager::INVENTORY_MAX);
 	i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(9999999); //test

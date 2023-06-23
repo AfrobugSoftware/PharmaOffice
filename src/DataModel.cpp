@@ -437,7 +437,7 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 		return false;
 	}
 	datastore->tsModified(pof::base::data::clock_t::now());
-	s.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::MODIFIED));
+	datastore->set_state(i, pof::base::data::state::MODIFIED);
 	ValueChanged(item, col);
 	mSignals[static_cast<size_t>(Signals::UPDATE)](std::next(datastore->begin(), i));
 	return true;
@@ -445,7 +445,25 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 
 bool pof::DataModel::RemoveData(const wxDataViewItem& item)
 {
-	return false;
+	size_t idx = GetIdxFromItem(item);
+	if (idx >= datastore->size()) return false;
+	auto iter = std::next(datastore->begin(), idx);
+	if (iter == datastore->end()) return false;
+
+	mSignals[static_cast<size_t>(Signals::REMOVED)](iter); //do what should be done
+	datastore->erase(iter);
+	ItemDeleted(wxDataViewItem(0), item);
+	return true;
+}
+
+bool pof::DataModel::RemoveData(const wxDataViewItemArray& items)
+{
+	//figure out how to do remove-erase here
+	bool ret = false;
+	for (auto& item : items){
+		ret = RemoveData(item);
+	}
+	return ret;
 }
 
 void pof::DataModel::Reload()
@@ -458,6 +476,10 @@ void pof::DataModel::Reload()
 	}
 	ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
+}
+
+void pof::DataModel::Signal(Signals sig, size_t i) const
+{
 }
 
 boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot, Signals signal)

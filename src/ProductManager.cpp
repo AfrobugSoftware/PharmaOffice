@@ -44,6 +44,7 @@ pof::ProductManager::ProductManager() {
 
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreProductData, this), pof::DataModel::Signals::ADDED);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);
+	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveProductData, this), pof::DataModel::Signals::REMOVED);
 }
 
 pof::ProductManager::~ProductManager()
@@ -180,10 +181,114 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 {
 	if (iter == mProductData->GetDatastore().end()) return false;
 	auto& v = iter->first;
+	auto up = iter->second.second;
+	std::vector<size_t> upData;
 	if (bUsingLocalDatabase && mLocalDatabase){
+		std::ostringstream os;
+		os << "UPDATE products ";
+		std::vector<std::string_view> textArray;
+		textArray.reserve(PRODUCT_MAX);
+
+		for (size_t i = 0; i < PRODUCT_MAX; i++) {
+			if (up.test(i)) {
+				upData.push_back(i);
+				switch (i)
+				{
+				case PRODUCT_NAME:
+					textArray.emplace_back("set name = ?");
+					break;
+				case PRODUCT_GENERIC_NAME:
+					textArray.emplace_back("set generic_name = ?");
+					break;
+				case PRODUCT_CLASS:
+					textArray.emplace_back("set class = ?");
+					break;
+				case PRODUCT_FORMULATION:
+					textArray.emplace_back("set formulation = ?");
+					break;
+				case PRODUCT_STRENGTH:
+					textArray.emplace_back("set strength = ?");
+					break;
+				case PRODUCT_STRENGTH_TYPE:
+					textArray.emplace_back("set strength_type = ?");
+					break;
+				case PRODUCT_USAGE_INFO:
+					textArray.emplace_back("set usuage_info = ?");
+
+					break;
+				case PRODUCT_DESCRIP:
+					textArray.emplace_back("set descrip = ?");
+
+					break;
+				case PRODUCT_HEALTH_CONDITIONS:
+					textArray.emplace_back("set health_conditions = ?");
+
+					break;
+				case PRODUCT_UNIT_PRICE:
+					textArray.emplace_back("set unit_price = ?");
+
+					break;
+				case PRODUCT_COST_PRICE:
+					textArray.emplace_back("set cost_price = ?");
+
+					break;
+				case PRODUCT_PACKAGE_SIZE:
+					textArray.emplace_back("set package_size = ?");
+
+					break;
+				case PRODUCT_STOCK_COUNT:
+					textArray.emplace_back("set stock_count = ?");
+
+					break;
+				case PRODUCT_SIDEEFFECTS:
+					textArray.emplace_back("set side_effects = ?");
+
+					break;
+				case PRODUCT_BARCODE:
+					textArray.emplace_back("set barcode = ?");
+
+					break;
+				case PRODUCT_CATEGORY:
+					textArray.emplace_back("set category = ?");
+
+					break;
+				case PRODUCT_MIN_STOCK_COUNT:
+					textArray.emplace_back("set min_stock_count = ?");
+
+					break;
+				case PRODUCT_EXPIRE_PERIOD:
+					textArray.emplace_back("set expire_period = ?");
+
+					break;
+				case PRODUCT_TO_EXPIRE_DATE:
+					textArray.emplace_back("set expire_date = ?");
+
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		os << fmt::format("{}", fmt::join(textArray, " AND "));
+		os << "WHERE uuid = ?;";
+		upData.push_back(PRODUCT_UUID);
+		for (auto& datum : upData){
+			
+		}
+	
 
 	}
 
+	return true;
+}
+
+bool pof::ProductManager::RemoveProductData(pof::base::data::const_iterator iter)
+{
+	if (iter == mProductData->GetDatastore().end()) return false;
+	auto& v = iter->first;
+	if (bUsingLocalDatabase && mLocalDatabase) {
+
+	}
 
 	return true;
 }

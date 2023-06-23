@@ -77,7 +77,8 @@ namespace pof
             >;
             
             using state_t = std::bitset<static_cast<size_t>(std::underlying_type_t<state>(state::MAX_STATE))>;
-            using row_t = std::pair<std::vector<data_t>, state_t>;
+            using update_t = std::bitset<64>; //update flags
+            using row_t = std::pair<std::vector<data_t>, std::pair<state_t, update_t>>;
             using table_t = std::vector<row_t>;
             
             using iterator = table_t::iterator;
@@ -174,7 +175,7 @@ namespace pof
                         auto& [r, s] = row;
                         const size_t size = r.size();
                         std::bitset<32> aval_row;
-                        if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
+                        if (!s.first.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.first.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
                             continue;
                         }
 
@@ -390,7 +391,7 @@ namespace pof
                 }
               
             }
-
+            iterator erase(const_iterator iter) { return value.erase(iter); }
 
             inline constexpr datetime_t tsCreated() const { return created; }
             inline constexpr datetime_t tsModified() const { return modified; }

@@ -358,10 +358,10 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 	auto& meta = dat.GetMeta();
 	auto& row = dat.GetSetData();
 	if (row.has_value()) {
-		auto val = row.value();
+		auto& val = row.value();
 		auto row = pof::base::data::row_t();
 		row.first.resize(pof::SaleManager::MAX);
-		row.second.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+		row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 		auto& v = row.first;
 		v[pof::SaleManager::PRODUCT_SERIAL_NUM] = val.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
 		v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];

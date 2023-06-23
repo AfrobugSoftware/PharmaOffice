@@ -59,7 +59,7 @@ namespace pof {
 					auto rep = value.time_since_epoch().count();
 					return (SQLITE_OK == sqlite3_bind_int64(statement, position, rep));
 				}
-				else if constexpr (std::is_same_v<arg_type, pof::base::data::uuid_t>)
+				else if constexpr (std::is_same_v<arg_type, pof::base::data::duuid_t>)
 				{
 					return (SQLITE_OK == sqlite3_bind_blob(statement, position, value.data, value.size(), SQLITE_TRANSIENT));
 				}
@@ -284,7 +284,6 @@ namespace pof {
 
 					return detail::do_retrive<arg_type, 0>(statement);
 				}
-
 			};
 		}
 
@@ -404,6 +403,12 @@ namespace pof {
 				using tuple_t = std::tuple<Args...>;
 				constexpr const size_t s = sizeof...(Args);
 				return detail::loop<s - 1>::template bind(stmt, args);
+			}
+
+			template<typename T>
+			bool bind(stmt_t stmt, const T& value, size_t pos)
+			{
+				return detail::do_bind(stmt, value, pos);
 			}
 
 			template<typename... Args>

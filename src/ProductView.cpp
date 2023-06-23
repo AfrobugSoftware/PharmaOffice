@@ -277,11 +277,11 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	for (size_t i = 0; i < pof::ProductManager::PRODUCT_MAX; i++) {
 		if (mUpdatedElem.mUpdatedElememts.test(i)) {
 			Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
+			Iter->second.second.set(i); //set the column as modified
 		}
 	}
-	Iter->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>
-			(pof::base::data::state::MODIFIED));
 	int idx = std::distance(DataStore.begin(), Iter);
+	DataStore.set_state(idx,pof::base::data::state::MODIFIED);
 	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
 	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
 }

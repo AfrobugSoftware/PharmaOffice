@@ -119,8 +119,10 @@ namespace pof {
 		inline pof::base::data& GetDatastore() { return *datastore; }
 
 		bool RemoveData(const wxDataViewItem& item);
+		bool RemoveData(const wxDataViewItemArray& items);
 
 		void Reload();
+		void Signal(Signals sig, size_t i) const;
 		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot, Signals signal);
 	private:
 		//std::shared_mutex datastoremutex;
