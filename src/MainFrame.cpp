@@ -149,7 +149,8 @@ void pof::MainFrame::CreateImageList()
 	mImageList = std::make_unique<wxImageList>(xy.x, xy.y);
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
-	mImageList->Add(wxArtProvider::GetBitmap(wxART_GO_FORWARD, wxART_LIST));
+	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
+	mImageList->Add(wxArtProvider::GetBitmap("user"));
 
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());

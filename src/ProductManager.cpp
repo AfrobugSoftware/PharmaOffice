@@ -272,11 +272,65 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 		os << fmt::format("{}", fmt::join(textArray, " AND "));
 		os << "WHERE uuid = ?;";
 		upData.push_back(PRODUCT_UUID);
-		for (auto& datum : upData){
-			
-		}
-	
 
+		auto stmt = mLocalDatabase->prepare(os.str());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto& meta = mProductData->GetDatastore().get_metadata();
+		for (auto& i: upData){
+			auto kind = meta[i];
+			switch (kind)
+			{
+			case pof::base::data::kind::int32:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::int32_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::int64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::int64_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::uint32:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::uint32_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::uint64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::uint64_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::float32:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<float>(v[i]), i);
+				break;
+			case pof::base::data::kind::float64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<double>(v[i]), i);
+				break;
+			case pof::base::data::kind::datetime:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::datetime_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::text:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::text_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::blob:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::blob_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::uuid:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::duuid_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::currency:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::currency_t>(v[i]), i);
+				break;
+			case pof::base::data::kind::null:
+			default:
+				break;
+			}
+		}
+		
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+	else {
+		//
 	}
 
 	return true;

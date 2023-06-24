@@ -84,7 +84,7 @@ void pof::Modules::SetupFont()
 	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
 		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
 	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
+		.Family(wxFONTFAMILY_SWISS).FaceName("Monospaced")));
 }
 void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
 {
@@ -197,7 +197,7 @@ void pof::Modules::CreateTree()
 
 
 	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 3);
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
 	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
 	

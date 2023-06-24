@@ -30,6 +30,16 @@ namespace pof
     namespace v2 = boost::variant2;
 
     namespace base{
+
+        template<typename... Ts>
+        class visitor : public Ts...
+        {
+            using Ts::operator()...;
+        };
+
+        template<typename... Ts>
+        visitor(Ts...) -> visitor<Ts...>;
+
         class data{
         public:
             enum class state {
@@ -399,6 +409,10 @@ namespace pof
             inline constexpr void tsCreated(const datetime_t& dt) { created = dt; }
             inline constexpr void tsModified(const datetime_t& dt) { modified = dt; }
             inline constexpr bool empty() const { return value.empty(); }
+
+
+            //variant visitor to get the the current value of the variant
+           
         private:
             friend class boost::serialization::access;
             BOOST_SERIALIZATION_SPLIT_MEMBER()
