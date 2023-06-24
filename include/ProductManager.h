@@ -67,12 +67,16 @@ namespace pof {
 	
 
 		bool LoadProductData();
-		bool LoadInventoryData();
+		bool LoadInventoryData(const pof::base::data::duuid_t& ud);
 		bool LoadCategories();
 
 		bool StoreProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductData(pof::base::data::const_iterator iter);
+
+		bool StoreInventoryData(pof::base::data::const_iterator iter);
+		bool UpdateInventoryData(pof::base::data::const_iterator iter);
+		bool RemoveInventoryData(pof::base::data::const_iterator iter);
 
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
@@ -80,6 +84,7 @@ namespace pof {
 		const pof::DataModel& GetInventoryForProduct() const { return *mInventoryData; }
 		inline std::unique_ptr<pof::DataModel>& GetInventory() { return mInventoryData; }
 		const pof::base::data& GetCategories() const { return mCategories; }
+		pof::base::data& GetCategories() { return mCategories; }
 
 		void EmplaceProductData(pof::base::data&& data);
 		
@@ -99,10 +104,12 @@ namespace pof {
 		//localdatabase statement
 		void Finialize();
 		pof::base::database::stmt_t productLoadStmt = nullptr;
-		pof::base::database::stmt_t InventoryLoadStmt = nullptr;
-		pof::base::database::stmt_t productUpdateStmt = nullptr;
-		pof::base::database::stmt_t InventoryUpdateStmt = nullptr;
 		pof::base::database::stmt_t productStoreStmt = nullptr;
+		pof::base::database::stmt_t productRemoveStmt = nullptr;
+
+		pof::base::database::stmt_t InventoryLoadStmt = nullptr;
+		pof::base::database::stmt_t InventoryStoreStmt = nullptr;
+		pof::base::database::stmt_t InventoryRemoveStmt = nullptr;
 
 
 		//product uuid generators
@@ -111,6 +118,8 @@ namespace pof {
 		//should also contain the product view
 		std::unique_ptr<pof::DataModel> mProductData;
 		std::unique_ptr<pof::DataModel> mInventoryData;
+		std::unique_ptr<pof::DataModel> mOrderList;
+
 	};
 
 };

@@ -213,7 +213,7 @@ bool pof::SignInDialog::ValidateLocal()
 		return false;
 	}
 	if (rel->empty()) {
-		wxMessageBox(fmt::format("INVALID USERNAME OR PASSWORD {}", wxGetApp().mLocalDatabase->err_msg()), "SIGN IN", wxICON_WARNING | wxOK);
+		wxMessageBox(fmt::format("USERNAME \"{}\" DOES NOT EXIST", Username), "SIGN IN", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
 	}

@@ -180,6 +180,19 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 			//write category to database 
 		}
 		CategoryAddSignal(CategoryName);
+		auto& cat = wxGetApp().mProductManager.GetCategories();
+		size_t id = 0;
+		if (!cat.empty()) {
+			auto& v = cat.back();
+			id = boost::variant2::get<std::uint64_t>(v.first[pof:: ProductManager::CATEGORY_ID]);
+			id++;
+		}
+
+		pof::base::data::row_t row;
+		row.first.push_back(id);
+		row.first.push_back(CategoryName);
+		cat.insert(std::move(row));
+
 		//add to the database
 	}
 
@@ -194,8 +207,13 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	wxMenu* menu = new wxMenu;
 	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add Order List", nullptr);
 	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove Product", nullptr);
+	wxMenu* catSub = new wxMenu;
+	CreateCategoryMenu(catSub);
+	auto cat = menu->Append(wxID_ANY, "Add to Category", catSub);
+
 	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
+	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
 
 	PopupMenu(menu);
 }
@@ -440,4 +458,44 @@ void pof::ProductView::SwapCenterPane(bool IsInventoryView)
 	ProductToolBarPane.Show(!IsInventoryView);
 	m_mgr.Update();
 
+}
+
+void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
+{
+	if (!menu) return;
+	auto& categories = wxGetApp().mProductManager.GetCategories();
+	size_t range = wxID_HIGHEST + 1;
+	for (auto& cat : categories) {
+		auto& name = boost::variant2::get<pof::base::data::text_t>(cat.first[pof::ProductManager::CATEGORY_NAME]);
+		menu->Append(range++, name, nullptr);
+	}
+	menu->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
+		if (mSelections.empty()) {
+			auto item = m_dataViewCtrl1->GetSelection();
+			if (!item.IsOk()) {
+				//no selection, return
+				return;
+			}
+			size_t i = pof::DataModel::GetIdxFromItem(item);
+			auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[i];
+			size_t idx = evt.GetId(); // wxID_HIGHEST + 1 - (wxID_HIGHEST + 1) + mCategories.size();
+			idx -= static_cast<size_t>((wxID_HIGHEST + 1));
+
+			auto& cat = categories[idx];
+			row.first[pof::ProductManager::PRODUCT_CATEGORY] = cat.first[pof::ProductManager::CATEGORY_ID];
+		}
+		else {
+			//add multiple
+			auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+			for (auto& sel : mSelections) {
+				size_t i = pof::DataModel::GetIdxFromItem(sel);
+				auto& row = datastore[i];
+				size_t idx = evt.GetId(); // wxID_HIGHEST + 1 - (wxID_HIGHEST + 1) + mCategories.size();
+				idx -= static_cast<size_t>((wxID_HIGHEST + 1));
+
+				auto& cat = categories[idx];
+				row.first[pof::ProductManager::PRODUCT_CATEGORY] = cat.first[pof::ProductManager::CATEGORY_ID];
+			}
+		}
+	}, wxID_HIGHEST+ 1, range);
 }

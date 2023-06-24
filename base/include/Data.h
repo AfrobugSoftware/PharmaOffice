@@ -147,6 +147,9 @@ namespace pof
             inline void reserve(size_t size) { value.reserve(size); }
             inline void resize(size_t size) { value.resize(size); }
 
+            inline const auto& back() const { return value.back(); }
+            inline const auto& front() const { return value.front(); }
+
             const row_t& operator[](size_t i) const;
             row_t& operator[](size_t i);
             bool operator==(const data& rhs) const = default;

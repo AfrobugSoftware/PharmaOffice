@@ -138,7 +138,7 @@ namespace pof
 		void CreateSpecialCols();
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
-
+		void CreateCategoryMenu(wxMenu* menu);
 	private:
 		DECLARE_EVENT_TABLE()
 

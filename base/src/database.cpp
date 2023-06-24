@@ -123,5 +123,13 @@ bool pof::base::database::execute(const query_t& query)
 
 bool pof::base::database::execute(stmt_t stmt)
 {
-	return (sqlite3_step(stmt) == SQLITE_DONE);
+	int ret = sqlite3_step(stmt);
+	if (ret == SQLITE_DONE) {
+		reset(stmt);
+		return true;
+	}
+	else {
+		finalise(stmt);
+		return false;
+	}
 }
