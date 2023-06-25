@@ -14,6 +14,7 @@
 #include <wx/dataview.h>
 #include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/infoBar.h>
 
 #include "AuiTheme.h"
 #include "ProductInfo.h"
@@ -67,6 +68,8 @@ namespace pof
 
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
+		wxAuiToolBarItem* mOutOfStockItem = nullptr;
+		wxAuiToolBarItem* mExpireProductItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -77,7 +80,7 @@ namespace pof
 		wxDataViewColumn* mSelectionCol = nullptr;
 
 		pof::ProductInfo* mProductinfo = nullptr;
-
+		wxInfoBar* mInfoBar = nullptr;
 
 
 		//attibutes
@@ -134,6 +137,7 @@ namespace pof
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
 		void SetExpireProducts(); //view the expired products
+		void RemoveCheckedState(wxAuiToolBarItem* item);
 	private:
 		DECLARE_EVENT_TABLE()
 

@@ -231,10 +231,21 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+	std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+
+	mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
 }
 
 void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 {
+	RemoveCheckedState(mOutOfStockItem);
+	RemoveCheckedState(mExpireProductItem);
+
 	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	assert(datam != nullptr);
 	m_dataViewCtrl1->Freeze();
@@ -299,6 +310,7 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 				items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
 			}
 		}
+		items.shrink_to_fit();
 		pd->Reload(std::move(items));
 	}
 	else {
@@ -395,8 +407,13 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 void pof::ProductView::CreateDataView()
 {
+	wxPanel* panel = new wxPanel(this, wxID_ANY);
+	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(this, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	mInfoBar = new wxInfoBar(panel, wxID_ANY);
+	
+
+	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
 	auto& pm = wxGetApp().mProductManager;
 	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
 	pm.GetProductData()->DecRef();
@@ -407,7 +424,13 @@ void pof::ProductView::CreateDataView()
 	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 
-	m_mgr.AddPane(m_dataViewCtrl1, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
+	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 2));
+	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
+
+	panel->SetSizer(sizer);
+	panel->Layout();
+	sizer->Fit(panel);
+	m_mgr.AddPane(panel, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
 	
 }
 
@@ -437,8 +460,8 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
-	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
+	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 
 
 	m_auiToolBar1->Realize();
@@ -552,4 +575,16 @@ void pof::ProductView::SetExpireProducts()
 	auto today = pof::base::data::clock_t::now();
 	
 
+}
+
+void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)
+{
+	if (!item) return;
+	m_auiToolBar1->Freeze();
+	std::bitset<32> bitset(item->GetState());
+	if (bitset.test(5)) bitset.flip(5);
+	item->SetState(bitset.to_ulong());
+	m_auiToolBar1->Thaw();
+	m_auiToolBar1->Refresh();
+	
 }

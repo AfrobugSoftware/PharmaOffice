@@ -8,6 +8,7 @@
 #include <wx/srchctrl.h>
 #include <wx/frame.h>
 #include <wx/progdlg.h>
+#include <wx/infobar.h>
 
 
 #include "AuiTheme.h"
@@ -64,11 +65,13 @@ namespace pof {
 			ID_MENU_EXPORT_CSV,
 			ID_MENU_PRODUCT_SAVE,
 			ID_MENU_PRODUCT_LOAD,
+		
 
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
 		virtual ~MainFrame();
+
 	protected:
 		void CreateMenuBar();
 		void CreateStatusBar();
@@ -87,10 +90,12 @@ namespace pof {
 		void OnExportJson(wxCommandEvent& evt);
 		void OnExportExcel(wxCommandEvent& evt);
 		void OnExportCSV(wxCommandEvent& evt);
+		void OnUpdateUI(wxUpdateUIEvent& evt);
 
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);
+
 
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);

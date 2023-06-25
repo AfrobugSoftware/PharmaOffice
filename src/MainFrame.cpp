@@ -172,7 +172,6 @@ void pof::MainFrame::CreateViews()
 	mPrescriptionView->Hide();
 }
 
-
 void pof::MainFrame::SetupAuiTheme()
 {
 	auto auiArtProvider = mAuiManager.GetArtProvider();
@@ -218,6 +217,10 @@ void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
 }
 
 void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnUpdateUI(wxUpdateUIEvent& evt)
 {
 }
 
