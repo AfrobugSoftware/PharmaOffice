@@ -13,6 +13,7 @@ EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
 EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
+EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 
 //Search
 EVT_SEARCH(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
@@ -175,10 +176,7 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_OK) {
 		auto CategoryName = dialog.GetValue().ToStdString();
 		if (CategoryName.empty()) return;
-		//what else are we gonna do with category
-		if (wxGetApp().bUsingLocalDatabase) {
-			//write category to database 
-		}
+		wxGetApp().mProductManager.AddCategory(CategoryName);
 		CategoryAddSignal(CategoryName);
 		auto& cat = wxGetApp().mProductManager.GetCategories();
 		size_t id = 0;
@@ -282,6 +280,32 @@ void pof::ProductView::OnShowCostPrice(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
+{
+	auto& pd = wxGetApp().mProductManager.GetProductData();
+	if (evt.IsChecked()){
+		auto& datastore = pd->GetDatastore();
+		std::vector<wxDataViewItem> items;
+		items.reserve(300); //hurestic,
+		for (size_t i = 0; i < datastore.size(); i++){
+			std::uint64_t stock = 
+				boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			std::uint64_t compare = 0;
+			if (wxGetApp().bUseMinStock){
+				compare = 
+					boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT]);
+			}
+			if (stock <= compare) {
+				items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+			}
+		}
+		pd->Reload(std::move(items));
+	}
+	else {
+		pd->Reload();
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -347,7 +371,26 @@ void pof::ProductView::HideSelectionColumn()
 
 void pof::ProductView::OnCategoryActivated(const std::string& name)
 {
-	wxMessageBox(fmt::format("{} is selected", name), "Category");
+	auto& cats = wxGetApp().mProductManager.GetCategories();
+	auto iter = std::ranges::find_if(cats, [&](auto& row) -> bool {return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == name);});
+	if (iter == cats.end()) {
+		spdlog::error("No such category as {}", name);
+		return;
+	}
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& found = *iter;
+	const std::uint64_t CAT_ID = boost::variant2::get<std::uint64_t>(found.first[pof::ProductManager::CATEGORY_ID]);
+	std::vector<wxDataViewItem> items;
+	items.reserve(300); //hueristic lol
+	for (size_t i = 0; i < datastore.size(); i++) {
+		const std::uint64_t productCatId = boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_CATEGORY]);
+		if (productCatId == CAT_ID) {
+			items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+		}
+	}
+	items.shrink_to_fit();
+	wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
+	//wxMessageBox(fmt::format("{} is selected", name), "Category");
 }
 
 void pof::ProductView::CreateDataView()
@@ -390,11 +433,12 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
 
-	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
-	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"));
+	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 
 
 	m_auiToolBar1->Realize();
@@ -498,4 +542,14 @@ void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
 			}
 		}
 	}, wxID_HIGHEST+ 1, range);
+}
+
+void pof::ProductView::SetExpireProducts()
+{
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (datastore.empty()) return;
+	
+	auto today = pof::base::data::clock_t::now();
+	
+
 }

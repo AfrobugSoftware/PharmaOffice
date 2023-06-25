@@ -78,6 +78,8 @@ namespace pof {
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
 		bool RemoveInventoryData(pof::base::data::const_iterator iter);
 
+		void AddCategory(const std::string& name);
+
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
 
@@ -110,7 +112,13 @@ namespace pof {
 		pof::base::database::stmt_t InventoryLoadStmt = nullptr;
 		pof::base::database::stmt_t InventoryStoreStmt = nullptr;
 		pof::base::database::stmt_t InventoryRemoveStmt = nullptr;
+		
+		
+		pof::base::database::stmt_t CategoryLoadStmt = nullptr;
+		pof::base::database::stmt_t CategoryStoreStmt = nullptr;
+		pof::base::database::stmt_t CategoryRemoveStmt = nullptr;
 
+	
 
 		//product uuid generators
 		boost::uuids::random_generator mUuidGen;

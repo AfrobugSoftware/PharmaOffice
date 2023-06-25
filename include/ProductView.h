@@ -1,10 +1,3 @@
-///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Jun 17 2015)
-// http://www.wxformbuilder.org/
-//
-// PLEASE DO "NOT" EDIT THIS FILE!
-///////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <wx/artprov.h>
@@ -119,6 +112,7 @@ namespace pof
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnSelection(wxCommandEvent& evt);
 		void OnShowCostPrice(wxCommandEvent& evt);
+		void OnOutOfStock(wxCommandEvent& evt);
 
 
 
@@ -139,6 +133,7 @@ namespace pof
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
+		void SetExpireProducts(); //view the expired products
 	private:
 		DECLARE_EVENT_TABLE()
 

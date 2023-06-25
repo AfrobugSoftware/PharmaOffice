@@ -468,6 +468,40 @@ bool pof::ProductManager::RemoveInventoryData(pof::base::data::const_iterator it
 	return false;
 }
 
+void pof::ProductManager::AddCategory(const std::string& name)
+{
+	if (name.empty()) return;
+	if (bUsingLocalDatabase && mLocalDatabase) {
+		if (!CategoryStoreStmt) {
+			static constexpr const std::string_view sql = "INSERT INTO category (id, name) VALUES (? ,?);";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			CategoryStoreStmt = *stmt;
+		}
+		auto& r = mCategories.back().first;
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
+		bool status = mLocalDatabase->bind(CategoryStoreStmt, std::tie(id, name));
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(CategoryStoreStmt);
+			CategoryLoadStmt = nullptr;
+			return;
+		}
+		status = mLocalDatabase->execute(CategoryStoreStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			CategoryStoreStmt = nullptr;
+			return;
+		}
+	}
+	else {
+		//network
+	}
+}
+
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)
 {
 	mProductData->Emplace(std::forward<pof::base::data>(data));
