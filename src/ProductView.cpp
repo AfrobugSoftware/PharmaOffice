@@ -6,7 +6,7 @@ EVT_SIZE(pof::ProductView::OnResize)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
 EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnContextMenu)
-
+EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnHeaderClicked)
 //TOOLS
 EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
@@ -145,6 +145,30 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 	evt.SetDataObject(DataObject);
 }
 
+void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
+{
+	if (mSelectionCol && mSelectionCol == evt.GetDataViewColumn()) {
+		static bool sel = true;
+		m_dataViewCtrl1->Freeze();
+		auto& items = wxGetApp().mProductManager.GetProductData()->GetDataViewItems();
+		if (sel) {
+			std::ranges::copy(items, std::inserter(mSelections, mSelections.end()));
+		}
+		else {
+			for (auto& item : items) {
+				mSelections.erase(item);
+			}
+		}
+		sel = !sel;
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Refresh();
+		evt.Veto();
+	}
+	else {
+		evt.Skip();
+	}
+}
+
 void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 {
 	if (wxGetApp().bUsingLocalDatabase) {
@@ -165,7 +189,7 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 		if (productinvenopt.has_value()) {
 			wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(productinvenopt.value()));
 		}
-		wxMessageBox("Product Added", "ADD PRODUCT");
+		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 	}
 }
 
@@ -191,7 +215,6 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 		row.first.push_back(CategoryName);
 		cat.insert(std::move(row));
 
-		//add to the database
 	}
 
 }
@@ -231,14 +254,24 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
-	auto item = m_dataViewCtrl1->GetSelection();
-	if (!item.IsOk()) return;
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& orderListDatastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = datastore[idx];
+		std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
 
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
-	std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+		mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
+	}
+	else {
+		for (auto& item : mSelections) {
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
 
-	mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
+		}
+		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
+	}
 }
 
 void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)

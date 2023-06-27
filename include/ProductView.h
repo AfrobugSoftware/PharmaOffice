@@ -104,6 +104,7 @@ namespace pof
 
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
+		void OnHeaderClicked(wxDataViewEvent& evt);
 		void OnExpiredProducts(wxCommandEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
@@ -116,6 +117,7 @@ namespace pof
 		void OnSelection(wxCommandEvent& evt);
 		void OnShowCostPrice(wxCommandEvent& evt);
 		void OnOutOfStock(wxCommandEvent& evt);
+	
 
 
 

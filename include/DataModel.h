@@ -124,6 +124,8 @@ namespace pof {
 		void Reload();
 		void Signal(Signals sig, size_t i) const;
 		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot, Signals signal);
+
+		inline constexpr const wxDataViewItemArray& GetDataViewItems() const { return mItems; }
 	private:
 		//std::shared_mutex datastoremutex;
 		std::shared_ptr<pof::base::data> datastore;

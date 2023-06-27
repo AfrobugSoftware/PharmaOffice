@@ -107,7 +107,7 @@ namespace pof
 	public:
 		//controls id
 		enum {
-			ID_PRODUCT_NAME = 23003345,
+			ID_PRODUCT_NAME = wxID_HIGHEST + 200,
 			ID_SCAN_PRODUCT,
 			ID_MORE_DESCRIP,
 			ID_MORE_DIRFORUSE,
