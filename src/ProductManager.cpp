@@ -41,8 +41,15 @@ pof::ProductManager::ProductManager() {
 		std::uint64_t,  // MANUFACTURER ADDRESS ID
 		pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
 	>();
-
 	pof::base::adapt<std::uint64_t, pof::base::data::text_t>(mCategories);
+
+	mOrderList->Adapt<
+		std::uint64_t, //id
+		pof::base::data::duuid_t, //product uuid
+		pof::base::data::text_t, //product name
+		std::uint64_t, //quantity
+		pof::base::data::currency_t
+	>();
 
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreProductData, this), pof::DataModel::Signals::ADDED);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);

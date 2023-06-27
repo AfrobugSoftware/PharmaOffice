@@ -62,6 +62,14 @@ namespace pof {
 			CATEGORY_MAX
 		};
 		
+		enum : std::uint8_t {
+			ORDER_ID,
+			ORDER_PRODUCT_UUID,
+			ORDER_PRODUCT_NAME,
+			ORDER_QUANTITY,
+			ORDER_COST
+		};
+
 		~ProductManager();
 		ProductManager();
 	
@@ -82,6 +90,7 @@ namespace pof {
 
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
+		inline std::unique_ptr<pof::DataModel>& GetOrderList() { return mOrderList; }
 
 		const pof::DataModel& GetInventoryForProduct() const { return *mInventoryData; }
 		inline std::unique_ptr<pof::DataModel>& GetInventory() { return mInventoryData; }

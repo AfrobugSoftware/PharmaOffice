@@ -268,6 +268,19 @@ void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 	else {
 		for (auto& item : mSelections) {
 			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = datastore[idx];
+			std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+			pof::base::data::duuid_t& uuid =
+				boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			pof::base::data::currency_t& cost =
+				boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+			std::uint64_t quantity = 1;
+			std::uint64_t id = 1;
+			if (!orderListDatastore.empty()) {
+				auto& orderBack = orderListDatastore.back();
+				
+			}
+
 
 		}
 		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
