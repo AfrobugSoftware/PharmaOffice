@@ -261,7 +261,21 @@ void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 		if (!item.IsOk()) return;
 		size_t idx = pof::DataModel::GetIdxFromItem(item);
 		auto& row = datastore[idx];
+		pof::base::data::row_t order;
 		std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+		pof::base::data::duuid_t& uuid =
+			boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		pof::base::data::currency_t& cost =
+			boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+		std::uint64_t quantity = 1;
+		std::uint64_t id = 1;
+		if (!orderListDatastore.empty()) {
+			auto& orderBack = orderListDatastore.back();
+			id = boost::variant2::get<pof::base::data::currency_t>(orderBack.first[pof::ProductManager::ORDER_ID]);
+			id++;
+		}
+		order.first = { id, uuid, name, quantity, cost };
+		orderListDatastore.insert(std::move(order));
 
 		mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
 	}
@@ -269,19 +283,21 @@ void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 		for (auto& item : mSelections) {
 			size_t idx = pof::DataModel::GetIdxFromItem(item);
 			auto& row = datastore[idx];
+			pof::base::data::row_t order;
 			std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
-			pof::base::data::duuid_t& uuid =
-				boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
-			pof::base::data::currency_t& cost =
-				boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+			pof::base::data::duuid_t uuid; // = pof::ProductManager::UuidGen();
+				//boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			pof::base::data::currency_t cost;
+				//boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
 			std::uint64_t quantity = 1;
 			std::uint64_t id = 1;
 			if (!orderListDatastore.empty()) {
 				auto& orderBack = orderListDatastore.back();
-				
+				id = boost::variant2::get<pof::base::data::currency_t>(orderBack.first[pof::ProductManager::ORDER_ID]);
+				id++;
 			}
-
-
+			order.first = { id, uuid, name, quantity, cost };
+			orderListDatastore.insert(std::move(order));
 		}
 		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
 	}

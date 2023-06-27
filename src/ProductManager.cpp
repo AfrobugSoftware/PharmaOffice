@@ -1,8 +1,10 @@
 #include "ProductManager.h"
+boost::uuids::random_generator pof::ProductManager::UuidGen;
 
 pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();
 	mInventoryData = std::make_unique<pof::DataModel>();
+	mOrderList = std::make_unique<pof::DataModel>();
 	mProductData->Adapt<
 		pof::base::data::duuid_t, //UUID
 		std::uint64_t, //SERIAL NUM
