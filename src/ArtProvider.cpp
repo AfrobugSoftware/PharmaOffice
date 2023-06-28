@@ -9,7 +9,7 @@ pof::ArtProvider::ArtProvider() {
 
 void pof::ArtProvider::CreateArtStore()
 {
-	auto AssertPath = wxGetApp().GetAssertsPath() / "Icons";
+	auto AssertPath = wxGetApp().GetAssertsPath() / "icons";
 	try {
 		for (auto& DirEntry : fs::directory_iterator(AssertPath))
 		{

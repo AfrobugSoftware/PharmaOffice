@@ -72,7 +72,7 @@ namespace pof {
 		bool bHighlightLowStock = false;
 		bool bGlobalCostMarkup = false;
 		bool bKeepMeSignedIn = false;
-
+		bool bUseMinStock = false;
 
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;

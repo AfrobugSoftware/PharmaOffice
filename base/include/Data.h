@@ -30,6 +30,16 @@ namespace pof
     namespace v2 = boost::variant2;
 
     namespace base{
+
+        template<typename... Ts>
+        class visitor : public Ts...
+        {
+            using Ts::operator()...;
+        };
+
+        template<typename... Ts>
+        visitor(Ts...) -> visitor<Ts...>;
+
         class data{
         public:
             enum class state {
@@ -77,7 +87,8 @@ namespace pof
             >;
             
             using state_t = std::bitset<static_cast<size_t>(std::underlying_type_t<state>(state::MAX_STATE))>;
-            using row_t = std::pair<std::vector<data_t>, state_t>;
+            using update_t = std::bitset<64>; //update flags
+            using row_t = std::pair<std::vector<data_t>, std::pair<state_t, update_t>>;
             using table_t = std::vector<row_t>;
             
             using iterator = table_t::iterator;
@@ -136,6 +147,9 @@ namespace pof
             inline void reserve(size_t size) { value.reserve(size); }
             inline void resize(size_t size) { value.resize(size); }
 
+            inline const auto& back() const { return value.back(); }
+            inline const auto& front() const { return value.front(); }
+
             const row_t& operator[](size_t i) const;
             row_t& operator[](size_t i);
             bool operator==(const data& rhs) const = default;
@@ -174,7 +188,7 @@ namespace pof
                         auto& [r, s] = row;
                         const size_t size = r.size();
                         std::bitset<32> aval_row;
-                        if (!s.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
+                        if (!s.first.test(static_cast<std::underlying_type_t<state>>(state::CREATED)) && !s.first.test(static_cast<std::underlying_type_t<state>>(state::MODIFIED))) {
                             continue;
                         }
 
@@ -390,7 +404,7 @@ namespace pof
                 }
               
             }
-
+            iterator erase(const_iterator iter) { return value.erase(iter); }
 
             inline constexpr datetime_t tsCreated() const { return created; }
             inline constexpr datetime_t tsModified() const { return modified; }
@@ -398,6 +412,10 @@ namespace pof
             inline constexpr void tsCreated(const datetime_t& dt) { created = dt; }
             inline constexpr void tsModified(const datetime_t& dt) { modified = dt; }
             inline constexpr bool empty() const { return value.empty(); }
+
+
+            //variant visitor to get the the current value of the variant
+           
         private:
             friend class boost::serialization::access;
             BOOST_SERIALIZATION_SPLIT_MEMBER()

@@ -6,13 +6,14 @@ EVT_SIZE(pof::ProductView::OnResize)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
 EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnContextMenu)
-
+EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnHeaderClicked)
 //TOOLS
 EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
 EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
+EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 
 //Search
 EVT_SEARCH(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
@@ -144,6 +145,36 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 	evt.SetDataObject(DataObject);
 }
 
+void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
+{
+	if (mSelectionCol && mSelectionCol == evt.GetDataViewColumn()) {
+		static bool sel = true; //
+		m_dataViewCtrl1->Freeze();
+		auto& items = wxGetApp().mProductManager.GetProductData()->GetDataViewItems();
+		if (sel) {
+			if (!mSelections.empty()) {
+				mSelections.clear();
+				sel = false;
+			}
+			else {
+				std::ranges::copy(items, std::inserter(mSelections, mSelections.end()));
+			}
+		}
+		else {
+			for (auto& item : items) {
+				mSelections.erase(item);
+			}
+		}
+		sel = !sel;
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Refresh();
+		evt.Veto();
+	}
+	else {
+		evt.Skip();
+	}
+}
+
 void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 {
 	if (wxGetApp().bUsingLocalDatabase) {
@@ -164,23 +195,43 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 		if (productinvenopt.has_value()) {
 			wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(productinvenopt.value()));
 		}
-		wxMessageBox("Product Added", "ADD PRODUCT");
+		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 	}
 }
 
 void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
-	dialog.Center();
-	if (dialog.ShowModal() == wxID_OK) {
-		auto CategoryName = dialog.GetValue().ToStdString();
-		if (CategoryName.empty()) return;
-		//what else are we gonna do with category
-		if (wxGetApp().bUsingLocalDatabase) {
-			//write category to database 
+	while (1) {
+		wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
+		dialog.Center();
+		if (dialog.ShowModal() == wxID_OK) {
+			auto CategoryName = dialog.GetValue().ToStdString();
+			if (CategoryName.empty()) return;
+			auto& cat = wxGetApp().mProductManager.GetCategories();
+
+			//check if conflighting
+			if (std::ranges::any_of(cat, [&](const pof::base::data::row_t& row) -> bool {
+				return CategoryName == boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]);
+			})) {
+				wxMessageBox("Category Name Already Exist, Please Try Again", "ADD CATEGORY", wxICON_WARNING | wxOK);
+				continue;
+			}
+
+			wxGetApp().mProductManager.AddCategory(CategoryName);
+			CategoryAddSignal(CategoryName);
+			size_t id = 0;
+			if (!cat.empty()) {
+				auto& v = cat.back();
+				id = boost::variant2::get<std::uint64_t>(v.first[pof::ProductManager::CATEGORY_ID]);
+				id++;
+			}
+
+			pof::base::data::row_t row;
+			row.first.push_back(id);
+			row.first.push_back(CategoryName);
+			cat.insert(std::move(row));
+			break;
 		}
-		CategoryAddSignal(CategoryName);
-		//add to the database
 	}
 
 }
@@ -194,8 +245,13 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	wxMenu* menu = new wxMenu;
 	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add Order List", nullptr);
 	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove Product", nullptr);
+	wxMenu* catSub = new wxMenu;
+	CreateCategoryMenu(catSub);
+	auto cat = menu->Append(wxID_ANY, "Add to Category", catSub);
+
 	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
+	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
 
 	PopupMenu(menu);
 }
@@ -215,10 +271,87 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& orderListDatastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = datastore[idx];
+		pof::base::data::row_t order;
+		std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+		pof::base::data::duuid_t uuid = wxGetApp().mProductManager.UuidGen();
+			//boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		pof::base::data::currency_t cost;
+		//	boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+		std::uint64_t quantity = 1;
+		std::uint64_t id = 1;
+		if (!orderListDatastore.empty()) {
+			auto& orderBack = orderListDatastore.back();
+			id = boost::variant2::get<std::uint64_t>(orderBack.first[pof::ProductManager::ORDER_ID]);
+			id++;
+		}
+		order.first = { id, uuid, name, quantity, cost };
+		orderListDatastore.insert(std::move(order));
+
+		mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
+	}
+	else {
+		for (auto& item : mSelections) {
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = datastore[idx];
+			pof::base::data::row_t order;
+			std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+			pof::base::data::duuid_t uuid; // = pof::ProductManager::UuidGen();
+				//boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			pof::base::data::currency_t cost;
+				//boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+			std::uint64_t quantity = 1;
+			std::uint64_t id = 1;
+			if (!orderListDatastore.empty()) {
+				auto& orderBack = orderListDatastore.back();
+				id = boost::variant2::get<std::uint64_t>(orderBack.first[pof::ProductManager::ORDER_ID]);
+				id++;
+			}
+			order.first = { id, uuid, name, quantity, cost };
+			orderListDatastore.insert(std::move(order));
+		}
+		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
+	}
+}
+
+void pof::ProductView::OnAddItemsToCategory(wxCommandEvent& evt)
+{
+	std::uint64_t catIdx = static_cast<std::uint64_t>(evt.GetId()) - (wxID_HIGHEST + 1);
+	auto& catDatastore = wxGetApp().mProductManager.GetCategories();
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto iter = std::ranges::find_if(catDatastore, [&](const pof::base::data::row_t& data) -> bool {
+		return catIdx == boost::variant2::get<std::uint64_t>(data.first[pof::ProductManager::CATEGORY_ID]);
+	});
+	auto& name = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::CATEGORY_NAME]);
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
+
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		datastore[idx].first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+		auto& itemName = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
+		mInfoBar->ShowMessage(fmt::format("Added {} to \'{}\'", itemName, name), wxICON_INFORMATION);
+	}
+	else {
+		for (auto& item : mSelections) {
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			datastore[idx].first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+		}
+		mInfoBar->ShowMessage(fmt::format("Added {:d} items to \'{}\'", mSelections.size(), name), wxICON_INFORMATION);
+	}
 }
 
 void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 {
+	RemoveCheckedState(mOutOfStockItem);
+	RemoveCheckedState(mExpireProductItem);
+
 	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	assert(datam != nullptr);
 	m_dataViewCtrl1->Freeze();
@@ -264,6 +397,33 @@ void pof::ProductView::OnShowCostPrice(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
+{
+	auto& pd = wxGetApp().mProductManager.GetProductData();
+	if (evt.IsChecked()){
+		auto& datastore = pd->GetDatastore();
+		std::vector<wxDataViewItem> items;
+		items.reserve(300); //hurestic,
+		for (size_t i = 0; i < datastore.size(); i++){
+			std::uint64_t stock = 
+				boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			std::uint64_t compare = 0;
+			if (wxGetApp().bUseMinStock){
+				compare = 
+					boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT]);
+			}
+			if (stock <= compare) {
+				items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+			}
+		}
+		items.shrink_to_fit();
+		pd->Reload(std::move(items));
+	}
+	else {
+		pd->Reload();
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -277,11 +437,11 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	for (size_t i = 0; i < pof::ProductManager::PRODUCT_MAX; i++) {
 		if (mUpdatedElem.mUpdatedElememts.test(i)) {
 			Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
+			Iter->second.second.set(i); //set the column as modified
 		}
 	}
-	Iter->second.set(static_cast<std::underlying_type_t<pof::base::data::state>>
-			(pof::base::data::state::MODIFIED));
 	int idx = std::distance(DataStore.begin(), Iter);
+	DataStore.set_state(idx,pof::base::data::state::MODIFIED);
 	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
 	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
 }
@@ -329,13 +489,56 @@ void pof::ProductView::HideSelectionColumn()
 
 void pof::ProductView::OnCategoryActivated(const std::string& name)
 {
-	wxMessageBox(fmt::format("{} is selected", name), "Category");
+	auto& cats = wxGetApp().mProductManager.GetCategories();
+	auto iter = std::ranges::find_if(cats, [&](auto& row) -> bool {return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == name);});
+	if (iter == cats.end()) {
+		spdlog::error("No such category as {}", name);
+		return;
+	}
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& found = *iter;
+	const std::uint64_t CAT_ID = boost::variant2::get<std::uint64_t>(found.first[pof::ProductManager::CATEGORY_ID]);
+	std::vector<wxDataViewItem> items;
+	items.reserve(300); //hueristic lol
+	for (size_t i = 0; i < datastore.size(); i++) {
+		const std::uint64_t productCatId = boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_CATEGORY]);
+		if (productCatId == CAT_ID) {
+			items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+		}
+	}
+	items.shrink_to_fit();
+	wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
+	//wxMessageBox(fmt::format("{} is selected", name), "Category");
+}
+
+void pof::ProductView::OnCategoryRemoved(const std::string& name)
+{
+}
+
+void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::string& newName)
+{
+	auto& catDatastore = wxGetApp().mProductManager.GetCategories();
+	auto iter = std::ranges::find_if(catDatastore, [&](pof::base::data::row_t& row) -> bool {
+		auto& v = row.first;
+		auto& catName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::CATEGORY_NAME]);
+		return (oldName == catName);
+	});
+	if (iter == catDatastore.end()) return;
+	auto& v = iter->first;
+	spdlog::info("Changed name to in product {}", newName);
+	v[pof::ProductManager::CATEGORY_NAME] = newName;
+	iter->second.second.set(pof::ProductManager::CATEGORY_NAME); //set update to update database
 }
 
 void pof::ProductView::CreateDataView()
 {
+	wxPanel* panel = new wxPanel(this, wxID_ANY);
+	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(this, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	mInfoBar = new wxInfoBar(panel, wxID_ANY);
+	
+
+	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
 	auto& pm = wxGetApp().mProductManager;
 	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
 	pm.GetProductData()->DecRef();
@@ -346,7 +549,13 @@ void pof::ProductView::CreateDataView()
 	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 
-	m_mgr.AddPane(m_dataViewCtrl1, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
+	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 2));
+	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
+
+	panel->SetSizer(sizer);
+	panel->Layout();
+	sizer->Fit(panel);
+	m_mgr.AddPane(panel, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
 	
 }
 
@@ -372,11 +581,12 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
 
-	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add a new Product");
-	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), wxT("Creates a new Category for medical products"));
-	m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR), wxT("List of Products that are expired, or expired alerted"));
+	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
+	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
+	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 
 
 	m_auiToolBar1->Realize();
@@ -440,4 +650,38 @@ void pof::ProductView::SwapCenterPane(bool IsInventoryView)
 	ProductToolBarPane.Show(!IsInventoryView);
 	m_mgr.Update();
 
+}
+
+void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
+{
+	if (!menu) return;
+	auto& categories = wxGetApp().mProductManager.GetCategories();
+	size_t range = wxID_HIGHEST + 1;
+	for (auto& cat : categories) {
+		auto& name = boost::variant2::get<pof::base::data::text_t>(cat.first[pof::ProductManager::CATEGORY_NAME]);
+		menu->Append(range++, name, nullptr);
+	}
+	menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this), wxID_HIGHEST + 1, range);
+}
+
+void pof::ProductView::SetExpireProducts()
+{
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (datastore.empty()) return;
+	
+	auto today = pof::base::data::clock_t::now();
+	
+
+}
+
+void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)
+{
+	if (!item) return;
+	m_auiToolBar1->Freeze();
+	std::bitset<32> bitset(item->GetState());
+	if (bitset.test(5)) bitset.flip(5);
+	item->SetState(bitset.to_ulong());
+	m_auiToolBar1->Thaw();
+	m_auiToolBar1->Refresh();
+	
 }

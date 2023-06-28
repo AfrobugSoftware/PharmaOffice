@@ -46,7 +46,7 @@ void pof::base::data::insert(row_t&& row)
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
 
 	value.emplace_back(std::forward<row_t>(row));
-	value.back().second.set(pos);
+	value.back().second.first.set(pos);
 }
 
 void pof::base::data::insert(const typename row_t::first_type& vals)
@@ -55,8 +55,8 @@ void pof::base::data::insert(const typename row_t::first_type& vals)
 	modified = clock_t::now();
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
 
-	value.push_back({ vals, state_t{}});
-	value.back().second.set(pos);
+	value.push_back({ vals, {state_t{}, update_t{}} });
+	value.back().second.first.set(pos);
 }
 
 void pof::base::data::insert(const typename row_t::first_type& vals, const typename row_t::second_type& st)
@@ -64,8 +64,8 @@ void pof::base::data::insert(const typename row_t::first_type& vals, const typen
 	assert(vals.size() == metadata.size()); //not less than or greater than the row count
 	modified = clock_t::now();
 	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
-	value.push_back({ std::forward<const row_t::first_type&>(vals), st });
-	value.back().second.set(pos);
+	value.push_back({ std::forward<const row_t::first_type&>(vals),  st});
+	value.back().second.first.set(pos);
 }
 
 void pof::base::data::update(const typename row_t::first_type::value_type& d, size_t idx, size_t idy)
@@ -75,7 +75,7 @@ void pof::base::data::update(const typename row_t::first_type::value_type& d, si
 	if (idy > row.first.size()) throw std::out_of_range("idy is out of range");
 
 	row.first[idy] = d;
-	row.second.set((std::underlying_type_t<state>)state::MODIFIED);
+	row.second.first.set((std::underlying_type_t<state>)state::MODIFIED);
 	bModified = true;
 	modified = clock_t::now();
 }
@@ -92,33 +92,33 @@ const pof::base::data::row_t & pof::base::data::at(size_t i) const
 void pof::base::data::clear_state(state s)
 {
 	for (auto& row : value) {
-		row.second.set(static_cast<std::underlying_type_t<state>>(s), false);
+		row.second.first.set(static_cast<std::underlying_type_t<state>>(s), false);
 	}
 }
 
 void pof::base::data::clear_state(size_t x, state s)
 {
 	if (x > value.size()) throw std::runtime_error("Row does not exist");;
-	value[x].second.set(static_cast<std::underlying_type_t<state>>(s), false);
+	value[x].second.first.set(static_cast<std::underlying_type_t<state>>(s), false);
 }
 
 void pof::base::data::set_state(state s)
 {
 	for (auto& row : value) {
-		row.second.set(static_cast<std::underlying_type_t<state>>(s));
+		row.second.first.set(static_cast<std::underlying_type_t<state>>(s));
 	}
 }
 
 void pof::base::data::set_state(size_t x, state s)
 {
 	if (x > value.size()) throw std::runtime_error("Row does not exist");;
-	value[x].second.set(static_cast<std::underlying_type_t<state>>(s), false);
+	value[x].second.first.set(static_cast<std::underlying_type_t<state>>(s), false);
 }
 
 bool pof::base::data::test_state(size_t x, state s)
 {
 	if (x > value.size()) throw std::runtime_error("Row does not exist");
-	return value[x].second.test(static_cast<std::underlying_type_t<state>>(s));
+	return value[x].second.first.test(static_cast<std::underlying_type_t<state>>(s));
 }
 
 const pof::base::data::row_t& pof::base::data::operator[](size_t i) const

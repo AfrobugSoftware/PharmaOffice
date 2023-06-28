@@ -26,6 +26,11 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
+
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	SetIcon(appIcon);
 }
 
 pof::MainFrame::~MainFrame()
@@ -119,6 +124,7 @@ void pof::MainFrame::CreateModules()
 	mModules = new pof::Modules(this, ID_MODULE);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
+	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
@@ -144,7 +150,8 @@ void pof::MainFrame::CreateImageList()
 	mImageList = std::make_unique<wxImageList>(xy.x, xy.y);
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
-	mImageList->Add(wxArtProvider::GetBitmap(wxART_GO_FORWARD, wxART_LIST));
+	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
+	mImageList->Add(wxArtProvider::GetBitmap("user"));
 
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
@@ -165,7 +172,6 @@ void pof::MainFrame::CreateViews()
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
 }
-
 
 void pof::MainFrame::SetupAuiTheme()
 {
@@ -212,6 +218,10 @@ void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
 }
 
 void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnUpdateUI(wxUpdateUIEvent& evt)
 {
 }
 

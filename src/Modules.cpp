@@ -6,6 +6,13 @@ BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_SEL_CHANGED(pof::Modules::ID_TREE, pof::Modules::OnSelected)
 	EVT_TREE_BEGIN_DRAG(pof::Modules::ID_TREE, pof::Modules::OnBeginDrag)
 	EVT_TREE_END_DRAG(pof::Modules::ID_TREE, pof::Modules::OnEndDrag)
+	EVT_TREE_ITEM_MENU(pof::Modules::ID_TREE, pof::Modules::OnContextMenu)
+	EVT_TREE_BEGIN_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnBeginEditLabel)
+	EVT_TREE_END_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnEndEditLabel)
+
+	//context menus
+	EVT_MENU(pof::Modules::CONTEXT_MENU_EDIT, pof::Modules::OnContextEdit)
+	EVT_MENU(pof::Modules::CONTEXT_MENU_REMOVE, pof::Modules::OnContextRemove)
 END_EVENT_TABLE()
 
 
@@ -76,6 +83,82 @@ void pof::Modules::OnEndDrag(wxTreeEvent& evt)
 	spdlog::info("Ending drag");
 }
 
+void pof::Modules::OnContextMenu(wxTreeEvent& evt)
+{
+	auto itemID = evt.GetItem();
+	auto iter = std::ranges::find(mChildId, itemID);
+	if (iter == std::end(mChildId)) return; //only for child ids
+
+	wxMenu* menu = new wxMenu;
+	auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
+	edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
+	auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
+	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_delete"));
+
+	PopupMenu(menu);
+}
+
+void pof::Modules::OnBeginEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Starting edit label");
+	auto item = evt.GetItem();
+	if (!item.IsOk()) {
+		spdlog::info("Cannot edit");
+		evt.Veto();
+		return;
+	}
+
+	auto iter = std::ranges::find(mChildId, item);
+	if (iter == std::end(mChildId)) {
+		spdlog::info("Edit label is not for parent items");
+		evt.Veto();
+		return;
+	}
+
+	evt.Skip();
+}
+
+void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Ending edit label");
+	if (evt.IsEditCancelled()) {
+		spdlog::info("Edit is cancelled");
+		evt.Veto();
+		return;
+	}
+	auto item = evt.GetItem();
+	auto oldName = mModuleTree->GetItemText(item).ToStdString();
+	auto name = evt.GetLabel().ToStdString();
+	if (name.empty() || oldName == name) {
+		evt.Veto();
+	}
+	spdlog::info("Changing {} to {}", oldName, name);
+	mChildEditedSignal(oldName, name); //signal a name change
+	evt.Skip();
+}
+
+void pof::Modules::OnContextEdit(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+
+	mModuleTree->EditLabel(item);
+}
+
+void pof::Modules::OnContextRemove(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+	auto name = mModuleTree->GetItemText(item).ToStdString();
+	if (wxMessageBox(fmt::format("Are you sure you want to remove {}", name), "REMOVE CATEGORY", wxICON_WARNING | wxYES_NO) == wxYES) {
+		//send a remove signal so the rest of the application knows you have removed
+		mChildRemoveSignal(name);
+		auto iter = std::ranges::find(mChildId, item);
+		if (iter != std::end(mChildId)) mChildId.erase(iter);
+		mModuleTree->Delete(item);
+	}
+}
+
 void pof::Modules::SetupFont()
 {
 	mFonts[FONT_MAIN] = std::move(wxFont(
@@ -84,7 +167,7 @@ void pof::Modules::SetupFont()
 	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
 		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
 	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
+		.Family(wxFONTFAMILY_SWISS).FaceName("Monospaced")));
 }
 void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
 {
@@ -164,7 +247,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer3 = new wxBoxSizer(wxVERTICAL);
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
-		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
+		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
 	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 5 );
 	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();
@@ -197,7 +280,7 @@ void pof::Modules::CreateTree()
 
 
 	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 3);
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
 	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
 	
@@ -257,4 +340,14 @@ boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)
 boost::signals2::connection pof::Modules::SetChildTreeSlot(childtree_signal_t::slot_type&& slot)
 {
 	return mChildSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot)
+{
+	return mChildRemoveSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot)
+{
+	return mChildEditedSignal.connect(std::forward<childEditTree_signal_t::slot_type>(slot));
 }

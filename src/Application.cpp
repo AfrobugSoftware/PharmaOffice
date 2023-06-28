@@ -19,80 +19,8 @@
 
 IMPLEMENT_APP(pof::Application)
 
-//test
-boost::asio::io_context io;
-boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23_client};
-using namespace std::literals::string_literals;
-
-namespace ar = boost::archive;
-
-static auto const flags = boost::archive::no_header | boost::archive::no_tracking;
-
-
-void test_data()
-{
-	using namespace pof::base;
-	pof::base::data data;
-	pof::base::data data2;
-	pof::base::adapt<int, float, pof::base::data::datetime_t>(data);
-
-	pof::base::packer p(data);
-	pof::base::unpacker up(data2);
-
-	std::random_device d{};
-	std::uniform_int_distribution<int > int_distro;
-	std::uniform_real_distribution<float> float_distro;
-
-	std::mt19937 gen(d());
-
-	auto rd = std::bind(int_distro, gen);
-	auto rd2 = std::bind(float_distro, gen);
-	data.reserve(1000);
-	for (int i = 0; i < 100000; i++) {
-		data.insert({ rd(), rd2(), pof::base::data::clock_t::now() });
-	}
-	
-	
-	pof::DataModel rl;
-	rl.Adapt<int, std::string, std::string>();
-
-
-	auto& [r, s] = data[0];
-	std::cout << boost::variant2::get<0>(r[0]) << std::endl;
-	
-	auto vec = p();
-	
-	std::cout << "PACK SIZE: " << vec.size() << std::endl;
-
-	up(vec);
-	//package classes
-	//packager(const pof::base::data& data)
-	//unpackager(pof::base::data& data)
-
-
-	auto& [ro, so] = data2[0];
-	std::cout << boost::variant2::get<0>(ro[0]) << std::endl;
-
-}	
-
-void test_tree()
-{
-	using string_node = pof::base::node<std::string>;
-	using string_leaf = pof::base::leaf<std::string>;
-
-	auto np = std::make_shared<string_node>("zino"s);
-	auto lp = std::make_shared<string_leaf>("ferife"s);
-
-	np->add_child(lp);
-
-	auto v = np->get_value("zino", 0);
-
-}
-
-
 int test_main(int argc, char** const argv)
 {
-	test_data();
 	return 0;
 }
 
@@ -292,9 +220,7 @@ void pof::Application::CreateTables()
 	constexpr const std::string_view users_table = 
 		"CREATE TABLE IF NOT EXISTS USERS (id integer primary key autoincrement, priv integer, name text, last_name text, email text, phonenumber text, regnumber text, username text, password text);";
 	constexpr const std::string_view product_table =
-		"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer);";
-	constexpr const std::string_view product_settings_table =
-		"CREATE TABLE IF NOT EXISTS product_settings (uuid blob, min_stock_count integer, expire_period text, expire_date integer);";
+		"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer, min_stock_count integer, expire_period text, expire_date integer);";
 	constexpr const std::string_view inventory_table =
 		"CREATE TABLE IF NOT EXISTS inventory (id integer, uuid blob, expire_date integer, input_date integer, stock_count integer, cost blob, manufacturer_name text, manufacturer_address_id integer, lot_number text);";
 	
@@ -310,17 +236,6 @@ void pof::Application::CreateTables()
 	}
 	mLocalDatabase->finalise(*stmt);
 	stmt = mLocalDatabase->prepare(product_table);
-	if (!stmt.has_value()) {
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	if (!mLocalDatabase->execute(*stmt))
-	{
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	mLocalDatabase->finalise(*stmt);
-	stmt = mLocalDatabase->prepare(product_settings_table);
 	if (!stmt.has_value()) {
 		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
 		return;

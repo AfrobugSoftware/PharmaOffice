@@ -1,10 +1,3 @@
-///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Jun 17 2015)
-// http://www.wxformbuilder.org/
-//
-// PLEASE DO "NOT" EDIT THIS FILE!
-///////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <wx/artprov.h>
@@ -21,6 +14,7 @@
 #include <wx/dataview.h>
 #include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/infoBar.h>
 
 #include "AuiTheme.h"
 #include "ProductInfo.h"
@@ -74,6 +68,8 @@ namespace pof
 
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
+		wxAuiToolBarItem* mOutOfStockItem = nullptr;
+		wxAuiToolBarItem* mExpireProductItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -84,7 +80,7 @@ namespace pof
 		wxDataViewColumn* mSelectionCol = nullptr;
 
 		pof::ProductInfo* mProductinfo = nullptr;
-
+		wxInfoBar* mInfoBar = nullptr;
 
 
 		//attibutes
@@ -108,6 +104,7 @@ namespace pof
 
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
+		void OnHeaderClicked(wxDataViewEvent& evt);
 		void OnExpiredProducts(wxCommandEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
@@ -115,10 +112,13 @@ namespace pof
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
 		void OnAddProductToOrderList(wxCommandEvent& evt);
+		void OnAddItemsToCategory(wxCommandEvent& evt);
 		void OnSearchProduct(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnSelection(wxCommandEvent& evt);
 		void OnShowCostPrice(wxCommandEvent& evt);
+		void OnOutOfStock(wxCommandEvent& evt);
+	
 
 
 
@@ -130,6 +130,8 @@ namespace pof
 		void HideSelectionColumn();
 
 		void OnCategoryActivated(const std::string& name);
+		void OnCategoryRemoved(const std::string& name);
+		void OnCategoryEdited(const std::string& oldName, const std::string& newName);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();
@@ -138,7 +140,9 @@ namespace pof
 		void CreateSpecialCols();
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
-
+		void CreateCategoryMenu(wxMenu* menu);
+		void SetExpireProducts(); //view the expired products
+		void RemoveCheckedState(wxAuiToolBarItem* item);
 	private:
 		DECLARE_EVENT_TABLE()
 
