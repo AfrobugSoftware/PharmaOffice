@@ -232,6 +232,9 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 			cat.insert(std::move(row));
 			break;
 		}
+		else {
+			break;
+		}
 	}
 
 }
