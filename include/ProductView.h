@@ -112,6 +112,7 @@ namespace pof
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
 		void OnAddProductToOrderList(wxCommandEvent& evt);
+		void OnAddItemsToCategory(wxCommandEvent& evt);
 		void OnSearchProduct(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnSelection(wxCommandEvent& evt);
@@ -129,6 +130,7 @@ namespace pof
 		void HideSelectionColumn();
 
 		void OnCategoryActivated(const std::string& name);
+		void OnCategoryRemoved(const std::string& name);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

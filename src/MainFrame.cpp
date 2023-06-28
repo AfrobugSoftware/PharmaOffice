@@ -124,6 +124,7 @@ void pof::MainFrame::CreateModules()
 	mModules = new pof::Modules(this, ID_MODULE);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
+	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());

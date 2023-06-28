@@ -1,5 +1,4 @@
 #include "ProductManager.h"
-//boost::uuids::random_generator pof::ProductManager::UuidGen;
 
 pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();

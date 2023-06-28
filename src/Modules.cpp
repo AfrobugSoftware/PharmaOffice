@@ -6,6 +6,11 @@ BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_SEL_CHANGED(pof::Modules::ID_TREE, pof::Modules::OnSelected)
 	EVT_TREE_BEGIN_DRAG(pof::Modules::ID_TREE, pof::Modules::OnBeginDrag)
 	EVT_TREE_END_DRAG(pof::Modules::ID_TREE, pof::Modules::OnEndDrag)
+	EVT_TREE_ITEM_MENU(pof::Modules::ID_TREE, pof::Modules::OnContextMenu)
+
+	//context menus
+	EVT_MENU(pof::Modules::CONTEXT_MENU_EDIT, pof::Modules::OnContextEdit)
+	EVT_MENU(pof::Modules::CONTEXT_MENU_REMOVE, pof::Modules::OnContextRemove)
 END_EVENT_TABLE()
 
 
@@ -74,6 +79,43 @@ void pof::Modules::OnEndDrag(wxTreeEvent& evt)
 {
 	evt.Veto();
 	spdlog::info("Ending drag");
+}
+
+void pof::Modules::OnContextMenu(wxTreeEvent& evt)
+{
+	auto itemID = evt.GetItem();
+	auto iter = std::ranges::find(mChildId, itemID);
+	if (iter == std::end(mChildId)) return; //only for child ids
+
+	wxMenu* menu = new wxMenu;
+	auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
+	edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
+	auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
+	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_delete"));
+
+	PopupMenu(menu);
+}
+
+void pof::Modules::OnContextEdit(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+
+	mModuleTree->EditLabel(item);
+}
+
+void pof::Modules::OnContextRemove(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+	auto name = mModuleTree->GetItemText(item).ToStdString();
+	if (wxMessageBox(fmt::format("Are you sure you want to remove {}", name), "REMOVE CATEGORY", wxICON_WARNING | wxYES_NO) == wxYES) {
+		//send a remove signal so the rest of the application knows you have removed
+		mChildRemoveSignal(name);
+		auto iter = std::ranges::find(mChildId, item);
+		if (iter != std::end(mChildId)) mChildId.erase(iter);
+		mModuleTree->Delete(item);
+	}
 }
 
 void pof::Modules::SetupFont()
@@ -257,4 +299,9 @@ boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)
 boost::signals2::connection pof::Modules::SetChildTreeSlot(childtree_signal_t::slot_type&& slot)
 {
 	return mChildSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot)
+{
+	return mChildRemoveSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
 }

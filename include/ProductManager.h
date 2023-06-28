@@ -102,11 +102,11 @@ namespace pof {
 		//add a product from UI
 		void AddProductData();
 
-		static int test;
 		//product uuid generators
-		boost::uuids::random_generator UuidGen;
 		bool bUsingLocalDatabase = false;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
+
+		boost::uuids::random_generator_mt19937 UuidGen;
 	private:
 
 		std::shared_mutex mCategoryMutex;
