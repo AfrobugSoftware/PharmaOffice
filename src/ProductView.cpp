@@ -201,26 +201,37 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
-	dialog.Center();
-	if (dialog.ShowModal() == wxID_OK) {
-		auto CategoryName = dialog.GetValue().ToStdString();
-		if (CategoryName.empty()) return;
-		wxGetApp().mProductManager.AddCategory(CategoryName);
-		CategoryAddSignal(CategoryName);
-		auto& cat = wxGetApp().mProductManager.GetCategories();
-		size_t id = 0;
-		if (!cat.empty()) {
-			auto& v = cat.back();
-			id = boost::variant2::get<std::uint64_t>(v.first[pof:: ProductManager::CATEGORY_ID]);
-			id++;
+	while (1) {
+		wxTextEntryDialog dialog(this, "Please enter a name for a category", "ADD CATEGORY");
+		dialog.Center();
+		if (dialog.ShowModal() == wxID_OK) {
+			auto CategoryName = dialog.GetValue().ToStdString();
+			if (CategoryName.empty()) return;
+			auto& cat = wxGetApp().mProductManager.GetCategories();
+
+			//check if conflighting
+			if (std::ranges::any_of(cat, [&](const pof::base::data::row_t& row) -> bool {
+				return CategoryName == boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]);
+			})) {
+				wxMessageBox("Category Name Already Exist, Please Try Again", "ADD CATEGORY", wxICON_WARNING | wxOK);
+				continue;
+			}
+
+			wxGetApp().mProductManager.AddCategory(CategoryName);
+			CategoryAddSignal(CategoryName);
+			size_t id = 0;
+			if (!cat.empty()) {
+				auto& v = cat.back();
+				id = boost::variant2::get<std::uint64_t>(v.first[pof::ProductManager::CATEGORY_ID]);
+				id++;
+			}
+
+			pof::base::data::row_t row;
+			row.first.push_back(id);
+			row.first.push_back(CategoryName);
+			cat.insert(std::move(row));
+			break;
 		}
-
-		pof::base::data::row_t row;
-		row.first.push_back(id);
-		row.first.push_back(CategoryName);
-		cat.insert(std::move(row));
-
 	}
 
 }
@@ -502,6 +513,21 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 void pof::ProductView::OnCategoryRemoved(const std::string& name)
 {
+}
+
+void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::string& newName)
+{
+	auto& catDatastore = wxGetApp().mProductManager.GetCategories();
+	auto iter = std::ranges::find_if(catDatastore, [&](pof::base::data::row_t& row) -> bool {
+		auto& v = row.first;
+		auto& catName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::CATEGORY_NAME]);
+		return (oldName == catName);
+	});
+	if (iter == catDatastore.end()) return;
+	auto& v = iter->first;
+	spdlog::info("Changed name to in product {}", newName);
+	v[pof::ProductManager::CATEGORY_NAME] = newName;
+	iter->second.second.set(pof::ProductManager::CATEGORY_NAME); //set update to update database
 }
 
 void pof::ProductView::CreateDataView()

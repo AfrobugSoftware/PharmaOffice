@@ -7,6 +7,8 @@ BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_BEGIN_DRAG(pof::Modules::ID_TREE, pof::Modules::OnBeginDrag)
 	EVT_TREE_END_DRAG(pof::Modules::ID_TREE, pof::Modules::OnEndDrag)
 	EVT_TREE_ITEM_MENU(pof::Modules::ID_TREE, pof::Modules::OnContextMenu)
+	EVT_TREE_BEGIN_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnBeginEditLabel)
+	EVT_TREE_END_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnEndEditLabel)
 
 	//context menus
 	EVT_MENU(pof::Modules::CONTEXT_MENU_EDIT, pof::Modules::OnContextEdit)
@@ -94,6 +96,45 @@ void pof::Modules::OnContextMenu(wxTreeEvent& evt)
 	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_delete"));
 
 	PopupMenu(menu);
+}
+
+void pof::Modules::OnBeginEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Starting edit label");
+	auto item = evt.GetItem();
+	if (!item.IsOk()) {
+		spdlog::info("Cannot edit");
+		evt.Veto();
+		return;
+	}
+
+	auto iter = std::ranges::find(mChildId, item);
+	if (iter == std::end(mChildId)) {
+		spdlog::info("Edit label is not for parent items");
+		evt.Veto();
+		return;
+	}
+
+	evt.Skip();
+}
+
+void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Ending edit label");
+	if (evt.IsEditCancelled()) {
+		spdlog::info("Edit is cancelled");
+		evt.Veto();
+		return;
+	}
+	auto item = evt.GetItem();
+	auto oldName = mModuleTree->GetItemText(item).ToStdString();
+	auto name = evt.GetLabel().ToStdString();
+	if (name.empty() || oldName == name) {
+		evt.Veto();
+	}
+	spdlog::info("Changing {} to {}", oldName, name);
+	mChildEditedSignal(oldName, name); //signal a name change
+	evt.Skip();
 }
 
 void pof::Modules::OnContextEdit(wxCommandEvent& evt)
@@ -206,7 +247,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer3 = new wxBoxSizer(wxVERTICAL);
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
-		| wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
+		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
 	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 5 );
 	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();
@@ -304,4 +345,9 @@ boost::signals2::connection pof::Modules::SetChildTreeSlot(childtree_signal_t::s
 boost::signals2::connection pof::Modules::SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot)
 {
 	return mChildRemoveSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot)
+{
+	return mChildEditedSignal.connect(std::forward<childEditTree_signal_t::slot_type>(slot));
 }

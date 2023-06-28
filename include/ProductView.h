@@ -131,6 +131,7 @@ namespace pof
 
 		void OnCategoryActivated(const std::string& name);
 		void OnCategoryRemoved(const std::string& name);
+		void OnCategoryEdited(const std::string& oldName, const std::string& newName);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();
