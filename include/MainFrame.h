@@ -91,6 +91,7 @@ namespace pof {
 		void OnExportExcel(wxCommandEvent& evt);
 		void OnExportCSV(wxCommandEvent& evt);
 		void OnUpdateUI(wxUpdateUIEvent& evt);
+		void OnShowModules(wxCommandEvent& evt);
 
 		//test 
 		void OnTestSave(wxCommandEvent& evt);

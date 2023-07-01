@@ -11,6 +11,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_CSV, pof::MainFrame::OnExportCSV)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SAVE, pof::MainFrame::OnTestSave)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
+	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES, pof::MainFrame::OnShowModules)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -81,6 +82,9 @@ void pof::MainFrame::CreateMenuBar()
 
 	//view
 	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
+	auto item =Menus[5]->AppendCheckItem(ID_MENU_VIEW_SHOW_MODULES, "Modules\tCtrl-M");
+	item->Check();
+
 
 	//about
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
@@ -225,6 +229,21 @@ void pof::MainFrame::OnUpdateUI(wxUpdateUIEvent& evt)
 {
 }
 
+void pof::MainFrame::OnShowModules(wxCommandEvent& evt)
+{
+	if (!mModules) return;
+	auto& pane = mAuiManager.GetPane("Modules");
+	if (!pane.IsOk()) return;
+
+	if (evt.IsChecked()) {
+		pane.Show();
+	}
+	else {
+		pane.Hide();
+	}
+	mAuiManager.Update();
+}
+
 void pof::MainFrame::OnTestSave(wxCommandEvent& evt)
 {
 	wxBusyCursor cursor;
@@ -354,5 +373,9 @@ void pof::MainFrame::OnCategoryAdded(const std::string& name)
 	if (name.empty()) return;
 	mModules->AppendChildTreeId(mModules->mProducts, name, 2);
 	mModules->mModuleTree->Expand(mModules->mProducts);
+}
+
+void pof::MainFrame::OnProductModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif)
+{
 }
 

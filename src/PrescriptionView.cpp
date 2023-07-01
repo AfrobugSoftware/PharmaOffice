@@ -119,6 +119,7 @@ void pof::PrescriptionView::InitDataView()
 		pof::base::data::text_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
+		pof::base::data::text_t,
 
 		pof::base::data::text_t,
 		pof::base::data::text_t,

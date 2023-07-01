@@ -179,6 +179,11 @@ size_t pof::DataModel::GetIdxFromItem(const wxDataViewItem& item) {
 	return (--i);
 }
 
+wxDataViewItem pof::DataModel::GetItemFromIdx(size_t idx)
+{
+	return wxDataViewItem{reinterpret_cast<void*>(idx + 1)};
+}
+
 bool pof::DataModel::IsContainer(const wxDataViewItem& item) const
 {
 	return false;

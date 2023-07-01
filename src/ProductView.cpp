@@ -404,6 +404,7 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 {
 	auto& pd = wxGetApp().mProductManager.GetProductData();
 	if (evt.IsChecked()){
+		//disable expire product Item
 		auto& datastore = pd->GetDatastore();
 		std::vector<wxDataViewItem> items;
 		items.reserve(300); //hurestic,

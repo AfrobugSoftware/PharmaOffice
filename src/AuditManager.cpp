@@ -1,1 +1,175 @@
 #include "AuditManager.h"
+#include "Application.h"
+
+/*
+		wxColour(253,245,230), // old lace
+		wxColour(255,239,213), // papaya whip
+		wxColour(255,245,238), // sea shell
+		wxColour(245,255,250), // mint cream
+*/
+
+std::array<std::shared_ptr<wxDataViewItemAttr>, static_cast<size_t>(pof::AuditManager::auditType::MAX)> pof::AuditManager::auditAttr = {};
+
+pof::AuditManager::AuditManager()
+{
+	mAuditData = std::make_unique<pof::DataModel>();
+	mAuditData->Adapt<
+		std::uint64_t,
+		std::uint64_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::datetime_t
+	>();
+	CreateAuditTable();
+	CreateSpeicalCols();
+	CreateTypeAttributes();
+}
+
+void pof::AuditManager::Refresh()
+{
+	if (mCacheRange.first != 0 && mCacheRange.second != 0) return;
+
+	LoadCache(mCacheRange.first, mCacheRange.second);
+}
+
+void pof::AuditManager::LoadCache(size_t from, size_t to)
+{
+	assert(to > from);
+	mCacheRange = { from, to };
+	if (mLocalDatabase) {
+		//select where id is less than or equal to from and limit (to  -  from)
+		if (!mLoadCacheStatement) {
+			constexpr const std::string_view sql = "SELECT * FROM audit WHERE id > ? OR id = ? LIMIT ? ORDER BY date ASC;";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			mLoadCacheStatement = *stmt;
+		}
+		size_t limit = to - from;
+		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(from, from, limit));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::datetime_t
+		>(mLoadCacheStatement);
+
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		auto& relation = rel.value();
+		using tuple_t = std::decay_t<decltype(relation)>;
+		pof::base::data data;
+
+		data.reserve(relation.size());
+		for (size_t i = 0; i < relation.size(); i++) {
+			pof::base::data::row_t row;
+			row.first.resize(std::tuple_size_v<typename tuple_t::tuple_t>);
+			auto& v = row.first;
+
+			v[AUDIT_ID] = std::get<AUDIT_ID>(relation[i]);
+			v[AUDIT_TYPE] = std::get<AUDIT_TYPE>(relation[i]);
+			v[AUDIT_MESSAGE] = std::get<AUDIT_MESSAGE>(relation[i]);
+			v[AUDIT_USER_ID] = std::get<AUDIT_USER_ID>(relation[i]);
+			v[AUDIT_DATE] = std::get<AUDIT_DATE>(relation[i]);
+
+			if (bColourAuditTypes) {
+				std::uint64_t type = std::get<AUDIT_TYPE>(relation[i]);
+				mAuditData->AddAttr(wxDataViewItem{ reinterpret_cast<void*>(i + 1) }, auditAttr[type]);
+			}
+			
+			data.insert(std::move(row));
+		}
+		mAuditData->Emplace(std::move(data));
+	}
+}
+
+void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to)
+{
+}
+
+void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
+{
+}
+void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
+{
+	std::uint64_t at = static_cast<std::uint64_t>(type);
+	if (mLocalDatabase) {
+		if (!mWriteStatement) {
+			constexpr const std::string_view sql = "INSERT INTO audit (type, message, user_id, date) VALUES (?,?,?,?);";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			mWriteStatement = *stmt;
+		}
+
+		bool status = mLocalDatabase->bind(mWriteStatement, std::make_tuple(at, message, mCurrentAccount->accountID, pof::base::data::clock_t::now()));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return; 
+		}
+		status = mLocalDatabase->execute(mWriteStatement);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+	}
+}
+
+void pof::AuditManager::CreateTypeAttributes()
+{
+	auditAttr[static_cast<size_t>(auditType::INFORMATION)] = std::make_shared<wxDataViewItemAttr>();
+	auditAttr[static_cast<size_t>(auditType::INFORMATION)]->SetBackgroundColour(wxColour(253, 245, 230));
+
+	auditAttr[static_cast<size_t>(auditType::SALE)] = std::make_shared<wxDataViewItemAttr>();
+	auditAttr[static_cast<size_t>(auditType::SALE)]->SetBackgroundColour(wxColour(255, 239, 213));
+
+	auditAttr[static_cast<size_t>(auditType::PRODUCT)] = std::make_shared<wxDataViewItemAttr>();
+	auditAttr[static_cast<size_t>(auditType::PRODUCT)]->SetBackgroundColour(wxColour(255, 245, 238));
+
+	auditAttr[static_cast<size_t>(auditType::CATEGORY)] = std::make_shared<wxDataViewItemAttr>();
+	auditAttr[static_cast<size_t>(auditType::CATEGORY)]->SetBackgroundColour(wxColour(245, 255, 250));
+}
+
+void pof::AuditManager::CreateAuditTable()
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = 
+			"CREATE TABLE IF NOT EXIST audit (id integer unqiue primary key autoincrement, type integer, message text, user_id integer, date integer);";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return; //cannot create audit table
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+	}
+}
+
+void pof::AuditManager::CreateSpeicalCols()
+{
+	pof::DataModel::SpeicalColHandler_t handler;
+	handler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& datastore = mAuditData->GetDatastore();
+		std::uint64_t type = boost::variant2::get<std::uint64_t>(datastore[row].first[col]);
+
+		return wxVariant(types[type]);
+	};
+
+
+
+	mAuditData->SetSpecialColumnHandler(AUDIT_TYPE, std::move(handler));
+}

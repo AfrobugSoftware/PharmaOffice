@@ -83,6 +83,7 @@ namespace pof {
 		void StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);
+		static wxDataViewItem GetItemFromIdx(size_t idx);
 
 
 		bool AddAttr(const wxDataViewItem& item, std::shared_ptr<wxDataViewItemAttr> attr);
