@@ -7,7 +7,7 @@ EVT_PG_CHANGED(pof::DispensaryView::PROPERTY_MANAGER, DispensaryView::OnProperty
 END_EVENT_TABLE()
 
 pof::DispensaryView::DispensaryView(wxWindow* parent, wxWindowID id)
-	: wxPanel(parent, id, wxDefaultPosition, wxDefaultSize) {
+	: wxPanel(parent, id, wxDefaultPosition, wxDefaultSize), mPanelManager(this) {
 	mDataModel = std::make_unique<pof::DataModel>();
 	mDataModel->Adapt<
 		std::uint64_t,
