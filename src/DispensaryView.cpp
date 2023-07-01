@@ -130,11 +130,11 @@ void pof::DispensaryView::SetSpecialCol()
 
 void pof::DispensaryView::CreatePropertyGrid()
 {
-	Freeze();
 	mPropertyManager = std::make_unique<wxPropertyGridManager>(this, PROPERTY_MANAGER,
 		wxDefaultPosition, wxSize(500, -1), wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER | wxPG_TOOLBAR | wxPGMAN_DEFAULT_STYLE);
 	CreatePropertyGridToolBar();
 	auto page = mPropertyManager->AddPage("Prescription detail", wxArtProvider::GetBitmap("user"));
+	Freeze();
 	page->Append(new wxPropertyCategory("Patient details"));
 	page->Append(new wxStringProperty("Patients name", wxPG_LABEL));
 	page->Append(new wxIntProperty("Patients age", wxPG_LABEL));
@@ -146,9 +146,9 @@ void pof::DispensaryView::CreatePropertyGrid()
 	page->Append(new wxStringProperty("Prescribers health center", wxPG_LABEL));
 	CreatePropertyGridArt();
 	CreateEditProperty();
+	Thaw();
 	mPanelManager.AddPane(mPropertyManager.get(), wxAuiPaneInfo().Name("PrescriptionDetail").Caption("Prescription detail").Bottom().MinSize(500, -1).Layer(1).Position(1).PinButton().MinimizeButton());
 	mPanelManager.Update();
-	Thaw();
 }
 
 void pof::DispensaryView::LoadPropertyGrid(const pof::base::data::row_t& prescription)

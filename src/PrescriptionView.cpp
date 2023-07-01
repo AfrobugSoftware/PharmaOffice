@@ -76,9 +76,9 @@ void pof::PrescriptionView::LoadPrescriptions()
 
 void pof::PrescriptionView::CreateDispensaryView()
 {
-	/*mDispensaryView = new DispensaryView(this, ID_DISPENSARY);
+	mDispensaryView = new pof::DispensaryView(this, ID_DISPENSARY);
 	mPanelManager->AddPane(mDispensaryView, wxAuiPaneInfo().Name("DispensaryView").Caption("Dispensary").CenterPane().Hide());
-	mPanelManager->Update();*/
+	mPanelManager->Update();
 }
 
 void pof::PrescriptionView::CreateDispensaryToolBar()
@@ -89,7 +89,7 @@ void pof::PrescriptionView::CreateDispensaryToolBar()
 	bar->AddStretchSpacer();
 	bar->AddTool(ID_ADD_DRUG_TO_PRESCRIPTION, "Add Drug To Prescription", wxArtProvider::GetBitmap("action_add"));
 	bar->AddTool(ID_SHOW_PATIENT_FILE, "Show Patient File", wxArtProvider::GetBitmap("folder"));
-	bar->AddTool(ID_MAKE_INTERVENTION, "Add Drug Intervention", wxArtProvider::GetBitmap("reply"));
+	bar->AddTool(ID_MAKE_INTERVENTION, "Add Drug Intervention", wxArtProvider::GetBitmap("pen"));
 	bar->AddTool(ID_REPORT_INTERACTION, "Report Drug Interaction", wxArtProvider::GetBitmap("comments"));
 	bar->AddTool(ID_PREVIEW, "Preiew Label", wxArtProvider::GetBitmap("file"));
 	bar->AddTool(ID_DISPENSE, "Dispense", wxArtProvider::GetBitmap("download"));
@@ -267,12 +267,12 @@ void pof::PrescriptionView::OnPrescriptionActivated(wxDataViewEvent& evt)
 	auto item = evt.GetItem();
 	if (item.IsOk()) {
 		int index = pof::DataModel::GetIdxFromItem(item);
-		if (index == -1) return;
 		auto& disPane = mPanelManager->GetPane("DispensaryView");
 		if (disPane.IsOk()) {
+			auto& prescrip = mModel->GetDatastore()[index];
 			mPanelManager->GetPane("DataView").Hide();
 			mPanelManager->GetPane("Tool").Hide();
-			//mDispensaryView->Load(PrescriptionInstance::instance().get_iterator(index));
+			mDispensaryView->Load(prescrip);
 			disPane.Show();
 			mPanelManager->GetPane("DispensaryToolBar").Show();
 			mPanelManager->Update();
@@ -283,7 +283,7 @@ void pof::PrescriptionView::OnPrescriptionActivated(wxDataViewEvent& evt)
 void pof::PrescriptionView::OnBack(wxCommandEvent& evt)
 {
 	if (!mPanelManager->GetPane("DataView").IsShown()) {
-		//mDispensaryView->ResetViewData();
+		mDispensaryView->ResetViewData();
 		mPanelManager->GetPane("DispensaryView").Hide();
 		mPanelManager->GetPane("DispensaryToolBar").Hide();
 		mPanelManager->GetPane("DataView").Show();

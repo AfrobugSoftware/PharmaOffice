@@ -14,6 +14,7 @@
 #include "DataModel.h"
 #include "net.h"
 #include "AuiTheme.h"
+#include "DispensaryView.h"
 
 
 namespace js = nlohmann;
@@ -111,7 +112,7 @@ namespace pof {
 
 
 		wxDataViewCtrl* mDataView;
-		//pof::DispensaryView* mDispensaryView;
+		pof::DispensaryView* mDispensaryView;
 		std::unique_ptr<pof::DataModel> mModel;
 
 
@@ -119,6 +120,8 @@ namespace pof {
 
 		//holds the source target name for the prescriptions 
 		std::string mPrescriptionSource;
+
+
 
 		//
 		DECLARE_EVENT_TABLE()
