@@ -46,6 +46,7 @@ namespace pof {
 			DISPENSE_DIR_FOR_USE,
 			DISPENSE_QUANTITY,
 			DISPENSE_STATUS,
+			DISPENSE_MAX
 		};
 
 

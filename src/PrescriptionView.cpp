@@ -115,11 +115,11 @@ void pof::PrescriptionView::InitDataView()
 		std::uint64_t,
 		pof::base::data::duuid_t,
 		pof::base::data::datetime_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
+		pof::base::data::text_t, //medication
+		pof::base::data::text_t, //patient_name
+		pof::base::data::text_t, //patient address
+		pof::base::data::text_t, //patient age
+		pof::base::data::text_t, // patient weight
 
 		pof::base::data::text_t,
 		pof::base::data::text_t,
@@ -164,7 +164,8 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	js::json med1 = {
 		{"medication_name", "Paracetamol"},
 		{"dosage_form", "Tablet"},
-		{"strength", "500mg"},
+		{"strength", "500"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -173,7 +174,8 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	js::json med2 = {
 		{"medication_name", "Vitamin C"},
 		{"dosage_form", "Tablet"},
-		{"strength", "500mg"},
+		{"strength", "500"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -182,7 +184,8 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	js::json med3 = {
 		{"medication_name", "Aspirin"},
 		{"dosage_form", "Tablet"},
-		{"strength", "75mg"},
+		{"strength", "75"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -201,6 +204,7 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	v[PRESCRIPTION_PATIENT_NAME] = "Zino Ferife";
 	v[PRESCRIPTION_PATIENT_ADDRESS] = "433 DBS ROAD, ASABA, DELTA STATE";
 	v[PRESCRIPTION_PATIENT_AGE] = "26";
+	v[PRESCRIPTION_PATIENT_WEIGHT] = "63KG";
 	v[PRESCRIPTION_PRESCRIBER_NAME] = "Enife";
 	v[PRESCRIPTION_PRESCRIBER_ADDRESS] = "Federal Medical Center, Asaba, Delta state";
 	v[PRESCRIPTION_STATE] = static_cast<std::uint32_t>(PrescriptionState::PENDING);
@@ -308,4 +312,8 @@ void pof::PrescriptionView::OnPrscriptionSource()
 void pof::PrescriptionView::OnError(const std::string& what)
 {
 
+}
+
+void pof::PrescriptionView::TestPrescription()
+{
 }

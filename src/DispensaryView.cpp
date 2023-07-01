@@ -31,6 +31,7 @@ pof::DispensaryView::DispensaryView(wxWindow* parent, wxWindowID id)
 
 pof::DispensaryView::~DispensaryView()
 {
+	mDataModel.release();
 	mDataView.release();
 	mPropertyManager.release();
 	mPanelManager.UnInit();
@@ -51,6 +52,34 @@ void pof::DispensaryView::SetupAuiTheme()
 
 void pof::DispensaryView::Load(const pof::base::data::row_t& prescription)
 {
+	auto& jsonString = boost::variant2::get<pof::base::data::text_t>(prescription.first[pof::PrescriptionView::PRESCRIPTION_MEDICATIONS]);
+	auto json = nlohmann::json::parse(jsonString);
+	pof::base::data& data = mDataModel->GetDatastore();
+	data.reserve(json.size());
+	size_t id = 0;
+	for (auto& obj : json) {
+		try {
+			pof::base::data::row_t row;
+			row.first.resize(DISPENSE_MAX);
+			auto& v = row.first;
+			v[DISPENSE_ID] = id++;
+			v[DISPENSE_MEDIACTION] = static_cast<std::string>(obj["medication_name"]);
+			v[DISPENSE_DOSAGE_FORM] = static_cast<std::string>(obj["dosage_form"]);
+			v[DISPENSE_STRENGTH] = static_cast<std::string>(obj["strength"]);
+			v[DISPENSE_STRENGTH_TYPE] = static_cast<std::string>(obj["strength_type"]);
+			v[DISPENSE_DIR_FOR_USE] = static_cast<std::string>(obj["dir_for_use"]);
+			v[DISPENSE_QUANTITY] = static_cast<std::int32_t>(obj["quantity"]);
+			v[DISPENSE_STATUS] = STATUS_PEND;
+
+			mDataModel->EmplaceData(std::move(row)); 
+		}
+		catch (const nlohmann::json::parse_error& exp) {
+			spdlog::error(exp.what());
+		}
+		catch (const boost::variant2::bad_variant_access& error){
+			spdlog::error(error.what());
+		}
+	}
 	LoadPropertyGrid(prescription);
 }
 
@@ -67,20 +96,20 @@ void pof::DispensaryView::CreateToolBar()
 
 void pof::DispensaryView::CreateDataView()
 {
-	mDataModel = std::make_unique<pof::DataModel>();
 	mDataView = std::make_unique<wxDataViewCtrl>(this, DATA_VIEW, wxDefaultPosition, wxDefaultSize,
 		wxDV_ROW_LINES | wxNO_BORDER);
 	mDataView->AssociateModel(mDataModel.get());
 	mDataModel->DecRef();
 	//columns
 	mDataView->AppendToggleColumn("Approve", 10, wxDATAVIEW_CELL_ACTIVATABLE, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Id", 0, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Medication", 1, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Dosage form", 2, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Strength", 3, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Direction for use", 4, wxDATAVIEW_CELL_INERT, 400, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Quantity", 5, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendBitmapColumn("Status", 11, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Id", DISPENSE_ID, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Medication", DISPENSE_MEDIACTION, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Dosage Form", DISPENSE_DOSAGE_FORM, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Strength", DISPENSE_STRENGTH, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Strength Type", DISPENSE_STRENGTH_TYPE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Direction For Use", DISPENSE_DIR_FOR_USE, wxDATAVIEW_CELL_INERT, 400, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Quantity", DISPENSE_QUANTITY, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendBitmapColumn("Status", DISPENSE_STATUS, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 	SetSpecialCol();
 
 	mPanelManager.AddPane(mDataView.get(), wxAuiPaneInfo().Name("DataView").Caption("Medications").CenterPane().PinButton());
@@ -91,12 +120,13 @@ void pof::DispensaryView::SetSpecialCol()
 	pof::DataModel::SpeicalColHandler_t handler;
 	pof::DataModel::SpeicalColHandler_t statusHandler;
 
-	handler.first = [self = this](size_t col, size_t row) -> wxVariant {
+	handler.first = [self = this](size_t row, size_t col) -> wxVariant {
 		return (self->mSelections.find(pof::DataModel::GetItemFromIdx(row)) != self->mSelections.end());
 	};
 
 	handler.second = [&](size_t col, size_t row, const wxVariant& var) ->bool {
 		auto item = pof::DataModel::GetItemFromIdx(row);
+		if (!item.IsOk()) return false;
 		if (var.GetBool()) {
 			mSelections.insert(item);
 		}
@@ -106,7 +136,7 @@ void pof::DispensaryView::SetSpecialCol()
 		return true;
 	};
 
-	statusHandler.first = [&](size_t col, size_t row) -> wxVariant {
+	statusHandler.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datastore = mDataModel->GetDatastore();
 		std::uint64_t status = boost::variant2::get<std::uint64_t>(datastore[row].first[col]);
 		switch (status)
@@ -124,8 +154,8 @@ void pof::DispensaryView::SetSpecialCol()
 	};
 
 
-	mDataModel->SetSpecialColumnHandler(DISPENSE_STATUS, std::move(handler));
-	mDataModel->SetSpecialColumnHandler(11, std::move(statusHandler));
+	mDataModel->SetSpecialColumnHandler(10, std::move(handler));
+	mDataModel->SetSpecialColumnHandler(DISPENSE_STATUS, std::move(statusHandler));
 }
 
 void pof::DispensaryView::CreatePropertyGrid()

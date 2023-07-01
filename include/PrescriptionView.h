@@ -107,6 +107,9 @@ namespace pof {
 		void OnError(const std::string& what);
 
 	private:
+		//test
+		void TestPrescription();
+
 		std::unique_ptr<wxAuiManager> mPanelManager;
 		wxDatePickerCtrl* mPrescriptionDate;
 
