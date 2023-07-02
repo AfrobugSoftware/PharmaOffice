@@ -188,6 +188,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	SetupDropTarget();
 	CreateSpecialColumnHandlers();
+	CreateSearchPopup();
 }
 
 pof::SaleView::~SaleView()
@@ -253,6 +254,13 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_QUANTITY, std::move(quantityCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_EXT_PRICE, std::move(extPriceCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::MAX + 1, std::move(dirForUseCol));
+}
+
+void pof::SaleView::CreateSearchPopup()
+{
+	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
+	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE}});
+	mSearchPopup->sSelectedSignal.connect(std::bind_front(&pof::SaleView::OnSearchPopup, this));
 }
 
 void pof::SaleView::UpdateSaleDisplay()
@@ -330,6 +338,22 @@ void pof::SaleView::OnBeginDrag(wxDataViewEvent& evt)
 
 void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 {
+	auto searchString = evt.GetString().ToStdString();
+	if (searchString.empty()) {
+		mSearchPopup->Dismiss();
+		return;
+	}
+	
+	wxPoint pos = mProductNameValue->ClientToScreen(wxPoint(0, 0));
+	wxSize sz = mProductNameValue->GetClientSize();
+
+	mSearchPopup->SetPosition(wxPoint{ pos.x, pos.y + sz.y  + 5});
+	mSearchPopup->SetSize(wxSize(sz.x + 100, 600));
+
+	//mSearchPopup->Show();
+	mSearchPopup->Popup();
+	mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
+
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
@@ -375,5 +399,17 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 	}
 	else {
 		spdlog::error("Drop data invalid or does not exist");
+	}
+}
+
+void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
+{
+	try {
+		
+
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
 	}
 }

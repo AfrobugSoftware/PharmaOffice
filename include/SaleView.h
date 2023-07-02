@@ -17,6 +17,7 @@
 
 #include "SaleManager.h"
 #include "DropTarget.h"
+#include "SearchPopup.h"
 
 #include <ranges>
 #include <numeric>
@@ -57,8 +58,8 @@ namespace pof
 		wxPanel* mSalePaymentButtonsPane;
 		wxButton* mClear;
 		wxButton* mSave;
-		wxButton* mCheckout;
-
+		wxButton* mCheckout = nullptr;
+		pof::SearchPopup* mSearchPopup = nullptr;
 	public:
 
 		enum {
@@ -76,6 +77,7 @@ namespace pof
 		void SetupDropTarget();
 
 		void CreateSpecialColumnHandlers();
+		void CreateSearchPopup();
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
@@ -96,6 +98,7 @@ namespace pof
 		void OnEditingDone(wxDataViewEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
+		void OnSearchPopup(const pof::base::data::row_t& row);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 

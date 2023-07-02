@@ -118,6 +118,7 @@ namespace pof {
 
 		//inline std::shared_mutex& GetDatastoreMutex() { return datastoremutex; }
 		inline pof::base::data& GetDatastore() { return *datastore; }
+		inline std::shared_ptr<pof::base::data> ShareDatastore() const { return datastore; }
 
 		bool RemoveData(const wxDataViewItem& item);
 		bool RemoveData(const wxDataViewItemArray& items);
