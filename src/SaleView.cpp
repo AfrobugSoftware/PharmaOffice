@@ -428,3 +428,38 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		return;
 	}
 }
+
+bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)
+{
+	auto& v = product.first;
+	try {
+		std::uint64_t stock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		std::uint64_t compare = 0;
+		if (wxGetApp().bUseMinStock) {
+			compare = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT]);
+		}
+		return (stock > compare);
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return false;
+	}
+}
+
+bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
+{
+	auto& v = product.first;
+	try {
+		
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return false;
+	}
+	return false;
+}
+
+bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
+{
+	return false;
+}

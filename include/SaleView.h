@@ -99,6 +99,10 @@ namespace pof
 
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);
+	
+		bool CheckInStock(const pof::base::data::row_t& product);
+		bool CheckProductClass(const pof::base::data::row_t& product);
+		bool CheckExpired(const pof::base::data::row_t& product);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 
