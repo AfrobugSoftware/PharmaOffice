@@ -405,8 +405,23 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 {
 	try {
+		auto& v = row.first;
+		pof::base::data::row_t rowSale;
 		
+		auto& vS = rowSale.first;
+		vS.resize(pof::SaleManager::MAX);
 
+		vS[pof::SaleManager::PRODUCT_SERIAL_NUM] = v[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
+		vS[pof::SaleManager::PRODUCT_CATEGORY] = "MEDICINE"s;
+		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
+		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+
+		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+		UpdateSaleDisplay();
+
+		mProductNameValue->Clear(); 
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
