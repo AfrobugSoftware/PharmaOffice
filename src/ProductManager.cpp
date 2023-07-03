@@ -55,6 +55,10 @@ pof::ProductManager::ProductManager() {
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreProductData, this), pof::DataModel::Signals::ADDED);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveProductData, this), pof::DataModel::Signals::REMOVED);
+
+	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreInventoryData, this), pof::DataModel::Signals::ADDED);
+	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateInventoryData, this), pof::DataModel::Signals::UPDATE);
+	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveInventoryData, this), pof::DataModel::Signals::REMOVED);
 }
 
 pof::ProductManager::~ProductManager()
@@ -422,6 +426,87 @@ bool pof::ProductManager::RemoveProductData(pof::base::data::const_iterator iter
 	return true;
 }
 
+
+bool pof::ProductManager::OnLoadProductData(pof::base::data::const_iterator iter)
+{
+	if (productOnStoreStmt) {
+		static constexpr const std::string_view sql =
+			"INSERT INTO products (uuid, serial_num, name, generic_name, class, formulation, strength, strength_type, usage_info, descrip, health_condition, unit_price, cost_price, package_size, stock_count, side_effect, barcode, category, min_stock_count, expire_period, expire_date )"
+			" VALUES(? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ?, ? , ? , ? ); ";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		productOnStoreStmt = *stmt;
+	}
+	//iter is the start of where the data is loaded from
+	using rel_t = pof::base::relation<
+		pof::base::data::duuid_t, //UUID
+		std::uint64_t, //SERIAL NUM
+		pof::base::data::text_t, // NAME
+		pof::base::data::text_t, // GENERIC NAME
+		pof::base::data::text_t, //CLASS
+		pof::base::data::text_t, //FORMULATION
+		pof::base::data::text_t, // STRENGTH
+		pof::base::data::text_t, // STRENGTH TYPE
+		pof::base::data::text_t, // USAGE INFO
+		pof::base::data::text_t, // PRODUCT DESCRIPTION
+		pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
+		pof::base::data::currency_t, // UNIT PRICE
+		pof::base::data::currency_t, // COST PRICE
+		std::uint64_t, //PACAKGE SIZE
+		std::uint64_t, //STOCK COUNT
+		pof::base::data::text_t, //SIDE EFFECTS
+		pof::base::data::text_t, //BARCODE
+		std::uint64_t, //CATEGORY ID
+		//PRODUCT SETTINGS
+		std::uint32_t, //MIN_STOCJ_COUNT
+		pof::base::data::text_t, //EXPIRE PERIOD
+		pof::base::data::datetime_t //EXPIRE DATE
+	>;
+	rel_t rel;
+	rel.reserve(std::distance(iter, std::cend(mProductData->GetDatastore())));
+	while (iter != mProductData->GetDatastore().end()) {
+		rel_t::tuple_t tup;
+		auto& v = iter->first;
+
+		std::get<PRODUCT_UUID>(tup) =              boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]);
+		std::get<PRODUCT_SERIAL_NUM>(tup) =        boost::variant2::get<std::uint64_t>(v[PRODUCT_SERIAL_NUM]);
+		std::get<PRODUCT_NAME>(tup) =              boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_NAME]);
+		std::get<PRODUCT_GENERIC_NAME>(tup) =      boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_GENERIC_NAME]);
+		std::get<PRODUCT_CLASS>(tup) =             boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_CLASS]);
+		std::get<PRODUCT_FORMULATION>(tup) =       boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_FORMULATION]);
+		std::get<PRODUCT_STRENGTH>(tup) =          boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_STRENGTH]);
+		std::get<PRODUCT_STRENGTH_TYPE>(tup) =     boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_STRENGTH_TYPE]);
+		std::get<PRODUCT_USAGE_INFO>(tup) =        boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_USAGE_INFO]);
+		std::get<PRODUCT_DESCRIP>(tup) =           boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_DESCRIP]);
+		std::get<PRODUCT_HEALTH_CONDITIONS>(tup) = boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_NAME]);
+		std::get<PRODUCT_UNIT_PRICE>(tup) =        boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_UNIT_PRICE]);
+		std::get<PRODUCT_COST_PRICE>(tup) =        boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_COST_PRICE]);
+		std::get<PRODUCT_PACKAGE_SIZE>(tup) =      boost::variant2::get<std::uint64_t>(v[PRODUCT_PACKAGE_SIZE]);
+		std::get<PRODUCT_STOCK_COUNT>(tup) =       boost::variant2::get<std::uint64_t>(v[PRODUCT_STOCK_COUNT]);
+		std::get<PRODUCT_SIDEEFFECTS>(tup) =       boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_SIDEEFFECTS]);
+		std::get<PRODUCT_BARCODE>(tup) =           boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_BARCODE]);
+		std::get<PRODUCT_CATEGORY>(tup) =          boost::variant2::get<std::uint64_t>(v[PRODUCT_CATEGORY]);
+		std::get<PRODUCT_MIN_STOCK_COUNT>(tup) =   boost::variant2::get<std::uint64_t>(v[PRODUCT_MIN_STOCK_COUNT]);
+		std::get<PRODUCT_EXPIRE_PERIOD>(tup) =     boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_NAME]);
+		std::get<PRODUCT_TO_EXPIRE_DATE>(tup) =    boost::variant2::get<pof::base::data::datetime_t>(v[PRODUCT_TO_EXPIRE_DATE]);
+
+
+		rel.emplace_back(std::move(tup));
+		iter++;
+	}
+	bool status = mLocalDatabase->store(productOnStoreStmt, std::move(rel));
+	if (!status) {
+		spdlog::error(mLocalDatabase->err_msg());
+		mLocalDatabase->finalise(productOnStoreStmt);
+		productOnStoreStmt = nullptr;
+		return false;
+	}
+	return true;
+}
+
 bool pof::ProductManager::StoreInventoryData(pof::base::data::const_iterator iter)
 {
 	if (iter == mInventoryData->GetDatastore().end()) return false;
@@ -527,6 +612,7 @@ void pof::ProductManager::Finialize()
 		mLocalDatabase->finalise(productRemoveStmt);
 		mLocalDatabase->finalise(productStoreStmt);
 		mLocalDatabase->finalise(InventoryLoadStmt);
+		mLocalDatabase->finalise(productOnStoreStmt);
 	}
 }
 

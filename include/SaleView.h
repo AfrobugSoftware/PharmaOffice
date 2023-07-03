@@ -19,6 +19,8 @@
 #include "DropTarget.h"
 #include "SearchPopup.h"
 
+//#include "database.h"
+
 #include <ranges>
 #include <numeric>
 
@@ -100,6 +102,7 @@ namespace pof
 
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);
+		void OnScanBarCode(wxCommandEvent& evt);
 	
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductClass(const pof::base::data::row_t& product);

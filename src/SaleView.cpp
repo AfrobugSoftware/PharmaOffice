@@ -11,6 +11,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_EDITING_DONE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnEditingDone)
 	EVT_DATAVIEW_ITEM_START_EDITING(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnValueChanged)
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
+	EVT_TEXT(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
 END_EVENT_TABLE()
 
 
@@ -32,6 +33,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer7->Add(mProductNameText, 0, wxALIGN_CENTER | wxALL, 5);
 
 	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
+	mProductNameValue->SetValidator(wxTextValidator{wxFILTER_ALPHANUMERIC});
+	mProductNameValue->SetHint("Search product by name");
 	bSizer7->Add(mProductNameValue, 0, wxALL, 5);
 
 	mScanProduct = new wxStaticText(mTopTools, wxID_ANY, wxT("Scan Product: "), wxDefaultPosition, wxDefaultSize, 0);
@@ -39,6 +42,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer7->Add(mScanProduct, 0, wxALIGN_CENTER | wxALL, 5);
 
 	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(300, -1), 0);
+	mScanProductValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
+	mScanProductValue->SetHint("Scan products");
 	bSizer7->Add(mScanProductValue, 0, wxALL, 5);
 
 
@@ -384,6 +389,20 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 	auto& row = dat.GetSetData();
 	if (row.has_value()) {
 		auto& val = row.value();
+		bool status = CheckInStock(val);
+		if (!status) {
+			wxMessageBox(fmt::format("{} is out of stock",
+				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+		CheckExpired(val);
+		status = CheckProductClass(val);
+		if (status) {
+			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
+				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+
 		auto row = pof::base::data::row_t();
 		row.first.resize(pof::SaleManager::MAX);
 		row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
@@ -442,6 +461,13 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		spdlog::error(exp.what());
 		return;
 	}
+}
+
+void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
+{
+	auto value = evt.GetString().ToStdString();
+	if (value.empty()) return;
+
 }
 
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)

@@ -81,6 +81,9 @@ namespace pof {
 		bool StoreProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductData(pof::base::data::const_iterator iter);
+		
+		//load from a different source directly to the database
+		bool OnLoadProductData(pof::base::data::const_iterator iter);
 
 		bool StoreInventoryData(pof::base::data::const_iterator iter);
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
@@ -120,6 +123,7 @@ namespace pof {
 		pof::base::database::stmt_t productLoadStmt = nullptr;
 		pof::base::database::stmt_t productStoreStmt = nullptr;
 		pof::base::database::stmt_t productRemoveStmt = nullptr;
+		pof::base::database::stmt_t productOnStoreStmt = nullptr;
 
 		pof::base::database::stmt_t InventoryLoadStmt = nullptr;
 		pof::base::database::stmt_t InventoryStoreStmt = nullptr;
