@@ -68,11 +68,17 @@ namespace pof {
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
+
 		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;
 		bool bGlobalCostMarkup = false;
 		bool bKeepMeSignedIn = false;
 		bool bUseMinStock = false;
+		bool bPharamcistWarings = false;
+		bool bCheckExpired = true;
+		bool bCheckOutOfStock = true;
+		bool bCheckPOM = true;
+
 
 		pof::Pharmacy MainPharamcy;
 		pof::Account MainAccount;

@@ -189,6 +189,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	SetupDropTarget();
 	CreateSpecialColumnHandlers();
 	CreateSearchPopup();
+	ProductNameKeyEvent(); //experiment
 }
 
 pof::SaleView::~SaleView()
@@ -407,7 +408,20 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 	try {
 		auto& v = row.first;
 		pof::base::data::row_t rowSale;
-		
+		bool status = CheckInStock(row);
+		if (!status) {
+			wxMessageBox(fmt::format("{} is out of stock",
+				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+		CheckExpired(row);
+		status = CheckProductClass(row);
+		if (status) {
+			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
+				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+
 		auto& vS = rowSale.first;
 		vS.resize(pof::SaleManager::MAX);
 
@@ -417,6 +431,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
 		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+
 
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		UpdateSaleDisplay();
@@ -432,6 +447,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)
 {
 	auto& v = product.first;
+	if (!wxGetApp().bCheckOutOfStock) return true;
 	try {
 		std::uint64_t stock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 		std::uint64_t compare = 0;
@@ -449,17 +465,77 @@ bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)
 bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
 {
 	auto& v = product.first;
+	if (!wxGetApp().bCheckPOM) return false;
 	try {
-		
+		auto& cass = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_CLASS]);
+		return (cass == "POM");
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
 		return false;
 	}
-	return false;
+	return true;
 }
 
 bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 {
-	return false;
+	auto& v = product.first;
+	if (!wxGetApp().bCheckExpired) return false;
+	try {
+		auto& uu = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+		auto tt = pof::base::data::clock_t::now().time_since_epoch().count();
+		if (wxGetApp().mLocalDatabase) {
+			if (!mExpiredStatement) {
+				constexpr const std::string_view sql = "SELECT lot_number FROM inventory WHERE uuid = ? AND expire_date < ?;";
+				auto stmt = wxGetApp().mLocalDatabase->prepare(sql);
+				if (!stmt.has_value()) {
+					spdlog::error(wxGetApp().mLocalDatabase->err_msg());
+					return false;
+				}
+				mExpiredStatement = *stmt;
+			}
+			bool status = wxGetApp().mLocalDatabase->bind(mExpiredStatement, std::make_tuple(uu, tt));
+			if (!status) {
+				spdlog::error(wxGetApp().mLocalDatabase->err_msg());
+				return false;
+			}
+
+			auto ret = wxGetApp().mLocalDatabase->retrive<pof::base::data::text_t>(mExpiredStatement);
+			if (!ret.has_value()) {
+				spdlog::error(wxGetApp().mLocalDatabase->err_msg());
+				return false;
+			}
+			if (ret.value().empty()) {
+				return false;
+			}
+			else {
+				std::vector<std::string> batches;
+				batches.reserve(ret->size());
+				for (auto& t : *ret) {
+					batches.emplace_back(std::move(std::get<0>(t)));
+				}
+				wxMessageBox(fmt::format("Product May be expired if it belongs to the following batches \n {} \n Please check batch No before continuing"), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				return true;
+			}
+
+		}
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return false;
+	}
+	return true;
+}
+
+void pof::SaleView::ProductNameKeyEvent()
+{
+	mProductNameValue->Bind(wxEVT_CHAR, [&](wxKeyEvent& evt) {
+		spdlog::info("{:d} Key code", evt.GetKeyCode());
+		if (evt.GetKeyCode() == WXK_DOWN) {
+			mSearchPopup->SetFocus();
+		}
+		else {
+			evt.Skip();
+		}
+	});
 }

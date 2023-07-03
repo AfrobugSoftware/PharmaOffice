@@ -60,6 +60,7 @@ namespace pof
 		wxButton* mSave;
 		wxButton* mCheckout = nullptr;
 		pof::SearchPopup* mSearchPopup = nullptr;
+		pof::base::database::stmt_t mExpiredStatement = nullptr;
 	public:
 
 		enum {
@@ -103,6 +104,8 @@ namespace pof
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductClass(const pof::base::data::row_t& product);
 		bool CheckExpired(const pof::base::data::row_t& product);
+
+		void ProductNameKeyEvent(); //test
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 
