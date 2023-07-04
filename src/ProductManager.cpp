@@ -269,7 +269,7 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 	std::vector<size_t> upData;
 	if (bUsingLocalDatabase && mLocalDatabase){
 		std::ostringstream os;
-		os << "UPDATE products ";
+		os << "UPDATE products set ";
 		std::vector<std::string_view> textArray;
 		textArray.reserve(PRODUCT_MAX);
 
@@ -279,73 +279,73 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 				switch (i)
 				{
 				case PRODUCT_NAME:
-					textArray.emplace_back("set name = ?");
+					textArray.emplace_back("name = ?");
 					break;
 				case PRODUCT_GENERIC_NAME:
-					textArray.emplace_back("set generic_name = ?");
+					textArray.emplace_back("generic_name = ?");
 					break;
 				case PRODUCT_CLASS:
-					textArray.emplace_back("set class = ?");
+					textArray.emplace_back("class = ?");
 					break;
 				case PRODUCT_FORMULATION:
-					textArray.emplace_back("set formulation = ?");
+					textArray.emplace_back("formulation = ?");
 					break;
 				case PRODUCT_STRENGTH:
-					textArray.emplace_back("set strength = ?");
+					textArray.emplace_back("strength = ?");
 					break;
 				case PRODUCT_STRENGTH_TYPE:
-					textArray.emplace_back("set strength_type = ?");
+					textArray.emplace_back("strength_type = ?");
 					break;
 				case PRODUCT_USAGE_INFO:
-					textArray.emplace_back("set usuage_info = ?");
+					textArray.emplace_back("usuage_info = ?");
 
 					break;
 				case PRODUCT_DESCRIP:
-					textArray.emplace_back("set descrip = ?");
+					textArray.emplace_back("descrip = ?");
 
 					break;
 				case PRODUCT_HEALTH_CONDITIONS:
-					textArray.emplace_back("set health_conditions = ?");
+					textArray.emplace_back("health_conditions = ?");
 
 					break;
 				case PRODUCT_UNIT_PRICE:
-					textArray.emplace_back("set unit_price = ?");
+					textArray.emplace_back("unit_price = ?");
 
 					break;
 				case PRODUCT_COST_PRICE:
-					textArray.emplace_back("set cost_price = ?");
+					textArray.emplace_back("cost_price = ?");
 
 					break;
 				case PRODUCT_PACKAGE_SIZE:
-					textArray.emplace_back("set package_size = ?");
+					textArray.emplace_back("package_size = ?");
 
 					break;
 				case PRODUCT_STOCK_COUNT:
-					textArray.emplace_back("set stock_count = ?");
+					textArray.emplace_back("stock_count = ?");
 
 					break;
 				case PRODUCT_SIDEEFFECTS:
-					textArray.emplace_back("set side_effects = ?");
+					textArray.emplace_back("side_effects = ?");
 
 					break;
 				case PRODUCT_BARCODE:
-					textArray.emplace_back("set barcode = ?");
+					textArray.emplace_back("barcode = ?");
 
 					break;
 				case PRODUCT_CATEGORY:
-					textArray.emplace_back("set category = ?");
+					textArray.emplace_back("category = ?");
 
 					break;
 				case PRODUCT_MIN_STOCK_COUNT:
-					textArray.emplace_back("set min_stock_count = ?");
+					textArray.emplace_back("min_stock_count = ?");
 
 					break;
 				case PRODUCT_EXPIRE_PERIOD:
-					textArray.emplace_back("set expire_period = ?");
+					textArray.emplace_back("expire_period = ?");
 
 					break;
 				case PRODUCT_TO_EXPIRE_DATE:
-					textArray.emplace_back("set expire_date = ?");
+					textArray.emplace_back("expire_date = ?");
 
 					break;
 				default:
@@ -353,7 +353,7 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 				}
 			}
 		}
-		os << fmt::format("{}", fmt::join(textArray, " AND "));
+		os << fmt::format("{}", fmt::join(textArray, ","));
 		os << "WHERE uuid = ?;";
 		upData.push_back(PRODUCT_UUID);
 
