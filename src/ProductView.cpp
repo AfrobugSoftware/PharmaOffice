@@ -52,6 +52,12 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateAttibutes();
 	CreateSpecialCols();
 	Style();
+
+	//load base data
+	wxGetApp().mProductManager.LoadProductsFromDatabase();
+	wxGetApp().mProductManager.LoadCategories();
+
+
 	m_mgr.Update();
 }
 
@@ -433,8 +439,8 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
 	auto& DataStore = DatModelptr->GetDatastore();
 	auto Iter = std::find_if(DataStore.begin(), DataStore.end(), [&](const pof::base::data::row_t& elem) -> bool {
-		return  (boost::variant2::get<std::uint64_t>(elem.first[pof::ProductManager::PRODUCT_SERIAL_NUM]) ==
-			boost::variant2::get<uint64_t>(mUpdatedElem.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM]));
+		return  (boost::variant2::get<pof::base::data::duuid_t>(elem.first[pof::ProductManager::PRODUCT_UUID]) ==
+			boost::variant2::get<pof::base::data::duuid_t>(mUpdatedElem.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID]));
 	});
 	if (Iter == DataStore.end()) return; //nothing to update
 
@@ -444,7 +450,12 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 			Iter->second.second.set(i); //set the column as modified
 		}
 	}
+
+
+
 	int idx = std::distance(DataStore.begin(), Iter);
+	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+
 	DataStore.set_state(idx,pof::base::data::state::MODIFIED);
 	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
 	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute

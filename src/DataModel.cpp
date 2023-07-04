@@ -510,6 +510,10 @@ void pof::DataModel::Reload()
 
 void pof::DataModel::Signal(Signals sig, size_t i) const
 {
+	auto iter = std::next(datastore->begin(), i);
+	if (iter == std::end(*datastore)) return;
+
+	mSignals[static_cast<size_t>(sig)](iter);
 }
 
 boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot, Signals signal)

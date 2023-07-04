@@ -85,6 +85,7 @@ bool pof::Application::OnInit()
 		}
 		//test	
 	}
+
 	TestAccountAndPharmacy();
 	return CreateMainFrame();
 }

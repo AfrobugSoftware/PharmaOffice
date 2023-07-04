@@ -52,6 +52,8 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::currency_t
 	>();
 
+	
+
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StrProductData, this), pof::DataModel::Signals::STORE);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveProductData, this), pof::DataModel::Signals::REMOVED);
@@ -114,7 +116,7 @@ bool pof::ProductManager::LoadInventoryData(const pof::base::data::duuid_t& ud)
 		}
 		mInventoryData->Emplace(std::move(inven));
 	}
-	return false;
+	return true;
 }
 
 bool pof::ProductManager::LoadCategories()
@@ -127,7 +129,8 @@ bool pof::ProductManager::LoadCategories()
 			return false;
 		}
 		auto relation = mLocalDatabase->retrive<
-		
+			std::uint64_t, 
+			pof::base::data::text_t
 		>(*stmt);
 		if (!relation.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());

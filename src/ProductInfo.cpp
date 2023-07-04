@@ -77,6 +77,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
 	
@@ -108,6 +109,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 	StrengthChoices.Add("mol");
 	StrengthChoices.Add("mmol");
+	StrengthChoices.Add("NOT SPECIFIED");
 
 	mStrengthTypeItem = m_propertyGridPage1->Append(new wxEnumProperty(wxT("STRENGTH TYPE"), wxPG_LABEL, StrengthChoices));
 	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings"))); 
@@ -213,7 +215,6 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 		spdlog::error("Cannot build tuple from row");
 		return;
 	}
-
 	mNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_NAME>(tup));
 	mGenericNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_GENERIC_NAME>(tup));
 	mProductClass->SetValue(std::get<pof::ProductManager::PRODUCT_CLASS>(tup));
@@ -224,163 +225,35 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 	mDirForUse->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_USAGE_INFO>(tup)));
 	mHealthCond->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_HEALTH_CONDITIONS>(tup))));
 	mProductDescription->SetValue(std::get<pof::ProductManager::PRODUCT_DESCRIP>(tup));
+	mSideEffects->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_SIDEEFFECTS>(tup))));
+
+	wxArrayString Ar = std::move(FormulationChoices.GetLabels());
+	auto FormIter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_FORMULATION>(tup));
+	if ((FormIter != Ar.end())) {
+		auto idx = std::distance(Ar.begin(), FormIter);
+		mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
+	}
+	else {
+		mFormulationItem->SetValue(static_cast<int>(Ar.size() - 1));
+	}
+
+	mStrengthValueItem->SetValue(wxVariant(std::get<pof::ProductManager::PRODUCT_STRENGTH>(tup)));
+
+	Ar = std::move(StrengthChoices.GetLabels());
+	auto Iter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_STRENGTH_TYPE>(tup));
+	if ((Iter != Ar.end())) {
+		auto idx = std::distance(Ar.begin(), Iter);
+		mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
+	}
+	else {
+		mStrengthTypeItem->SetValue(static_cast<int>(Ar.size() - 1));
+	}
+	//load the inventory data
+	wxGetApp().mProductManager.LoadInventoryData(std::get<pof::ProductManager::PRODUCT_UUID>(tup));
+
 
 	//expire peroid 
 	//expire date
-
-	
-	auto& d = row.first;
-	for (int i = 0; i < d.size(); i++) {
-		auto& datum = d[i];
-
-
-
-		switch (i)
-		{
-		case pof::ProductManager::PRODUCT_NAME:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mNameItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mNameItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_GENERIC_NAME:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mGenericNameItem->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mGenericNameItem->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_CLASS:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				const auto Ar = std::move(ProductClassChoices.GetLabels());
-				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((Iter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), Iter);
-					mProductClass->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mProductClass->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_PACKAGE_SIZE:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::uint64))
-			{
-				mPackageSizeItem->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(datum))));
-			}
-			else {
-				mPackageSizeItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_UNIT_PRICE:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
-				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
-				mUnitPrice->SetValue(wxVariant(d));
-			}
-			else {
-				mUnitPrice->SetValue(wxVariant{0.00});
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_COST_PRICE:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
-				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
-				mCostPrice->SetValue(wxVariant(d));
-			}
-			else {
-				mCostPrice->SetValue(wxVariant{ 0.00 });
-			}
-			break;
-		case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
-			break;
-		case pof::ProductManager::PRODUCT_USAGE_INFO:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mDirForUse->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mDirForUse->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		case pof::ProductManager::PRODUCT_HEALTH_CONDITIONS:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mHealthCond->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mHealthCond->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		case pof::ProductManager::PRODUCT_DESCRIP:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mProductDescription->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mProductDescription->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
-		case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
-			break;
-		case pof::ProductManager::PRODUCT_SIDEEFFECTS:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mSideEffects->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mSideEffects->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_FORMULATION:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				auto Ar = std::move(FormulationChoices.GetLabels());
-				auto FormIter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((FormIter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), FormIter);
-					mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mFormulationItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_STRENGTH:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mStrengthValueItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mStrengthValueItem->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_STRENGTH_TYPE:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				auto Ar = std::move(StrengthChoices.GetLabels());
-				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((Iter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), Iter);
-					mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mStrengthTypeItem->SetValue(wxVariant());
-			}
-			break;
-		default:
-			break;
-		}
-	}
-	//
 }
 
 boost::signals2::connection pof::ProductInfo::AttachBackSlot(back_signal_t::slot_type&& slot)
@@ -430,12 +303,13 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
+		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
 
 		if (!mPropertyUpdate.has_value()) {
 			mPropertyUpdate.emplace();
 			mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
-			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
-				mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+				mProductData.first[pof::ProductManager::PRODUCT_UUID];
 		}
 
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
@@ -443,7 +317,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]) 
 				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 
-		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
+		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 	}
 	else {
 		//rejected
@@ -470,8 +344,8 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	if (!mPropertyUpdate.has_value()) {
 		mPropertyUpdate.emplace();
 		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
-		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
-			mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+			mProductData.first[pof::ProductManager::PRODUCT_UUID];
 	}
 	int ProductElemIdx = PropIter->second;
 	mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx);
