@@ -259,6 +259,30 @@ namespace pof {
 
 					return std::tuple_cat(std::move(t1), std::move(t2));
 				}
+
+				template<typename tuple_t>
+				static bool build(tuple_t& tup, const pof::base::data::row_t& row)
+				{
+					auto& v = row.first;
+					if (v.empty()) return false;
+					using arg_type = std::tuple_element_t<N, tuple_t>;
+
+					if (boost::variant2::holds_alternative<arg_type>(v[N])) {
+						std::get<N>(tup) = boost::variant2::get<arg_type>(v[N]);
+					}
+					else {
+						if constexpr (std::is_integral_v<arg_type>) {
+							std::get<N>(tup) = static_cast<arg_type>(0);
+						}
+						else if constexpr (std::is_floating_point_v<arg_type>) {
+							std::get<N>(tup) = static_cast<arg_type>(0.0f);
+						}
+						else {
+							std::get<N>(tup) = arg_type{};
+						}
+					}
+					return detail::loop<N - 1>::build(tup, row);
+				}
 			};
 
 			template<>
@@ -284,8 +308,34 @@ namespace pof {
 
 					return detail::do_retrive<arg_type, 0>(statement);
 				}
+
+				template<typename tuple_t>
+				static bool build(tuple_t& tup, const pof::base::data::row_t& row)
+				{
+					auto& v = row.first;
+					if (v.empty()) return false;
+					using arg_type = std::tuple_element_t<0, tuple_t>;
+
+					if (boost::variant2::holds_alternative<arg_type>(v[0])) {
+						std::get<0>(tup) = boost::variant2::get<arg_type>(v[0]);
+					}
+					else {
+						if constexpr (std::is_integral_v<arg_type>) {
+							std::get<0>(tup) = static_cast<arg_type>(0);
+						}
+						else if constexpr (std::is_floating_point_v<arg_type>) {
+							std::get<0>(tup) = static_cast<arg_type>(0.0f);
+						}
+						else {
+							std::get<0>(tup) = arg_type{};
+						}
+					}
+					return true;
+				}
 			};
 		}
+		
+
 
 		template<typename... Args, size_t... I>
 		pof::base::data::row_t::first_type make_row_from_tuple_impl(const std::tuple<Args...>& tup,
@@ -312,6 +362,14 @@ namespace pof {
 			return make_tuple_from_row_impl(row, tuple{}, idx{});
 		}
 
+		template<typename... Args>
+		bool build(std::tuple<Args...>& tup, const pof::base::data::row_t& row) {
+			constexpr size_t count = sizeof...(Args);
+			assert(count == row.first.size());
+
+			return detail::loop<count - 1>::build(tup, row);
+
+		}
 
 		class database : public boost::noncopyable {
 		public:
@@ -432,7 +490,7 @@ namespace pof {
 					return false;
 				}
 				for (auto& row : rel) {
-					if (!bind(stmt, std::forward<pof::base::relation<Args...>>(row))) {
+					if (!bind(stmt, std::forward<typename pof::base::relation<Args...>::tuple_t>(row))) {
 						sqlite3_step(rollback);
 						reset(stmt);
 						reset(begin_immidiate);
@@ -447,6 +505,8 @@ namespace pof {
 						reset(rollback);
 						return false;
 					}
+					reset(stmt);
+					sqlite3_clear_bindings(stmt);
 				}
 
 				if (sqlite3_step(end) != SQLITE_DONE) {

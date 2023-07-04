@@ -19,7 +19,7 @@
 #include "DropTarget.h"
 #include "SearchPopup.h"
 
-//#include "database.h"
+#include "database.h"
 
 #include <ranges>
 #include <numeric>
@@ -63,6 +63,7 @@ namespace pof
 		wxButton* mCheckout = nullptr;
 		pof::SearchPopup* mSearchPopup = nullptr;
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
+		//pof::base::database::stmt_t mExpiredStatemet; 
 	public:
 
 		enum {

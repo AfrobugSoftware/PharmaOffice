@@ -70,20 +70,46 @@ namespace pof {
 			ORDER_COST
 		};
 
+		using relation_t = pof::base::relation <
+			pof::base::data::duuid_t, //UUID
+			std::uint64_t, //SERIAL NUM
+			pof::base::data::text_t, // NAME
+			pof::base::data::text_t, // GENERIC NAME
+			pof::base::data::text_t, //CLASS
+			pof::base::data::text_t, //FORMULATION
+			pof::base::data::text_t, // STRENGTH
+			pof::base::data::text_t, // STRENGTH TYPE
+			pof::base::data::text_t, // USAGE INFO
+			pof::base::data::text_t, // PRODUCT DESCRIPTION
+			pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
+			pof::base::data::currency_t, // UNIT PRICE
+			pof::base::data::currency_t, // COST PRICE
+			std::uint64_t, //PACAKGE SIZE
+			std::uint64_t, //STOCK COUNT
+			pof::base::data::text_t, //SIDE EFFECTS
+			pof::base::data::text_t, //BARCODE
+			std::uint64_t, //CATEGORY ID
+			//PRODUCT SETTINGS
+			std::uint32_t, //MIN_STOCJ_COUNT
+			pof::base::data::text_t, //EXPIRE PERIOD
+			pof::base::data::datetime_t //EXPIRE DATE
+		> ;
+
 		~ProductManager();
 		ProductManager();
 	
 
-		bool LoadProductData();
 		bool LoadInventoryData(const pof::base::data::duuid_t& ud);
 		bool LoadCategories();
+		bool LoadProductsFromDatabase();
 
-		bool StoreProductData(pof::base::data::const_iterator iter);
+
+		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductData(pof::base::data::const_iterator iter);
 		
 		//load from a different source directly to the database
-		bool OnLoadProductData(pof::base::data::const_iterator iter);
+		bool OnStoreProductData(pof::base::data::const_iterator iter);
 
 		bool StoreInventoryData(pof::base::data::const_iterator iter);
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
@@ -101,6 +127,7 @@ namespace pof {
 		pof::base::data& GetCategories() { return mCategories; }
 
 		void EmplaceProductData(pof::base::data&& data);
+		void StoreProductData(pof::base::data&& data);
 		
 		//add a product from UI
 		void AddProductData();

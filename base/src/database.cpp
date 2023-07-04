@@ -12,7 +12,7 @@ pof::base::database::database(const std::filesystem::path& path)
 		begin = opt.value();
 	}
 
-	opt = prepare(std::string_view{ "BEGIN IMMIDATE;" });
+	opt = prepare(std::string_view{ "BEGIN IMMEDIATE;" });
 	if (opt.has_value()) {
 		begin_immidiate = opt.value();
 	}

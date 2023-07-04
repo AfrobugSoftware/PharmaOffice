@@ -207,9 +207,34 @@ wxArrayString SplitIntoArrayString(const std::string& string)
 
 void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 {
+	pof::ProductManager::relation_t::tuple_t tup;
+	bool status = pof::base::build(tup, row);
+	if (!status) {
+		spdlog::error("Cannot build tuple from row");
+		return;
+	}
+
+	mNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_NAME>(tup));
+	mGenericNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_GENERIC_NAME>(tup));
+	mProductClass->SetValue(std::get<pof::ProductManager::PRODUCT_CLASS>(tup));
+	mPackageSizeItem->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_PACKAGE_SIZE>(tup)));
+	mUnitPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_UNIT_PRICE>(tup)));
+	mCostPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_COST_PRICE>(tup)));
+	mMinStockCount->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_MIN_STOCK_COUNT>(tup)));
+	mDirForUse->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_USAGE_INFO>(tup)));
+	mHealthCond->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_HEALTH_CONDITIONS>(tup))));
+	mProductDescription->SetValue(std::get<pof::ProductManager::PRODUCT_DESCRIP>(tup));
+
+	//expire peroid 
+	//expire date
+
+	
 	auto& d = row.first;
 	for (int i = 0; i < d.size(); i++) {
 		auto& datum = d[i];
+
+
+
 		switch (i)
 		{
 		case pof::ProductManager::PRODUCT_NAME:

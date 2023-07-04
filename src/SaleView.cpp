@@ -540,7 +540,8 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 				for (auto& t : *ret) {
 					batches.emplace_back(std::move(std::get<0>(t)));
 				}
-				wxMessageBox(fmt::format("Product May be expired if it belongs to the following batches \n {} \n Please check batch No before continuing"), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				wxMessageBox(fmt::format("Product May be expired if it belongs to the following batches \n {} \n Please check batch No before continuing", 
+						fmt::join(std::move(batches), ",")), "SALE PRODUCT", wxICON_WARNING | wxOK);
 				return true;
 			}
 

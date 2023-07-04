@@ -97,7 +97,8 @@ void pof::DataModel::Emplace(pof::base::data&& d)
 	Cleared();
 	mItems.clear();
 	attributes.clear();
-	datastore = std::make_shared<pof::base::data>(std::forward<pof::base::data>(d));
+	//problem with this emplace
+	*datastore = (std::forward<pof::base::data>(d));
 	mItems.resize(datastore->size());
 	size_t i = 0;
 	std::generate(mItems.begin(), mItems.end(), 
@@ -114,6 +115,30 @@ void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
 	mSignals[static_cast<size_t>(Signals::ADDED)](datastore->end() - 1);
 
+}
+
+void pof::DataModel::Store(pof::base::data&& d)
+{
+	Cleared();
+	mItems.clear();
+	attributes.clear();
+	//problem with this emplace
+	*datastore = (std::forward<pof::base::data>(d));
+	mItems.resize(datastore->size());
+	size_t i = 0;
+	std::generate(mItems.begin(), mItems.end(),
+		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
+	ItemsAdded(wxDataViewItem{ 0 }, mItems);
+	mSignals[static_cast<size_t>(Signals::STORE_LOAD)](datastore->begin());
+}
+
+void pof::DataModel::StoreData(pof::base::data::row_t&& r)
+{
+	datastore->insert(std::forward<pof::base::data::row_t>(r));
+	const size_t count = datastore->size();
+	mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(count) });
+	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
+	mSignals[static_cast<size_t>(Signals::STORE)](datastore->end() - 1);
 }
 
 void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)

@@ -314,8 +314,8 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
 				row.first.resize(pof::ProductManager::PRODUCT_MAX);
-				/*row.first[pof::ProductManager::PRODUCT_UUID] = boost::uuids::uuid();
-				row.first[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::string();
+				row.first[pof::ProductManager::PRODUCT_UUID] = wxGetApp().mProductManager.UuidGen();
+				/*row.first[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::string();
 				row.first[pof::ProductManager::PRODUCT_CLASS] = std::string();
 				row.first[pof::ProductManager::PRODUCT_BARCODE] = std::string();*/
 
@@ -337,7 +337,9 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 			}
 			//write the data to the product manager 
 			wxMessageBox(fmt::format("Complete! Loaded {:d} products.", datastore.size()), "JSON IMPORT", wxICON_INFORMATION | wxOK);
-			wxGetApp().mProductManager.EmplaceProductData(std::move(datastore));
+			auto& meta = wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata();
+			datastore.set_metadata(meta);
+			wxGetApp().mProductManager.StoreProductData(std::move(datastore));
 		}
 		catch (const std::exception& exp) {
 			wxMessageBox(exp.what(), "JSON IMPORT", wxICON_ERROR | wxOK);

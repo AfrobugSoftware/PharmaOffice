@@ -689,3 +689,4 @@ void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)
 	m_auiToolBar1->Refresh();
 	
 }
+

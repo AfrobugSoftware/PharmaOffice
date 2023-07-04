@@ -26,7 +26,7 @@ namespace pof {
 
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
-		inline std::unique_ptr<pof::DataModel>& GEtProductHistory() { return ProductSaleHistory; }
+		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
 	private:
 		std::unique_ptr<pof::DataModel> SaleData;
 		std::unique_ptr<pof::DataModel> ProductSaleHistory; //loaded in per product
