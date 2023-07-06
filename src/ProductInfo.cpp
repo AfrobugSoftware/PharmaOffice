@@ -249,6 +249,7 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 		mStrengthTypeItem->SetValue(static_cast<int>(Ar.size() - 1));
 	}
 	//load the inventory data
+	wxGetApp().mProductManager.GetInventory()->Clear();
 	wxGetApp().mProductManager.LoadInventoryData(std::get<pof::ProductManager::PRODUCT_UUID>(tup));
 
 
@@ -266,12 +267,17 @@ boost::signals2::connection pof::ProductInfo::AttachPropertyUpdateSlot(update_si
 	return mUpdatePropertySignal.connect(std::forward<pof::ProductInfo::update_signal_t::slot_type>(slot));
 }
 
+void pof::ProductInfo::SignalUpdate(const PropertyUpdate& update)
+{
+	mUpdatePropertySignal(update);
+}
+
 void pof::ProductInfo::CreateNameToProductElemTable()
 {
 	mNameToProductElem.insert({ "CLASS", pof::ProductManager::PRODUCT_CLASS });
 	mNameToProductElem.insert({ "NAME", pof::ProductManager::PRODUCT_NAME });
 	mNameToProductElem.insert({ "GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME });
-	mNameToProductElem.insert({ "PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
+	mNameToProductElem.insert({ "PACKAGE SIZE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
 	mNameToProductElem.insert({ "UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE });
 	mNameToProductElem.insert({ "COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE });
 	mNameToProductElem.insert({ "MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT });

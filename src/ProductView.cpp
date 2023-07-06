@@ -23,6 +23,7 @@ EVT_TEXT(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
 //CONTEXT MENU
 EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
+EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 
 END_EVENT_TABLE()
 
@@ -195,11 +196,11 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_OK) {
 		auto productopt = dialog.GetAddedProduct();
 		if (productopt.has_value()) {
-			wxGetApp().mProductManager.GetProductData()->EmplaceData(std::move(productopt.value()));
+			wxGetApp().mProductManager.GetProductData()->StoreData(std::move(productopt.value()));
 		}
 		auto productinvenopt = dialog.GetAddedInventory();
 		if (productinvenopt.has_value()) {
-			wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(productinvenopt.value()));
+			wxGetApp().mProductManager.GetInventory()->StoreData(std::move(productinvenopt.value()));
 		}
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 	}
@@ -222,10 +223,8 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 				wxMessageBox("Category Name Already Exist, Please Try Again", "ADD CATEGORY", wxICON_WARNING | wxOK);
 				continue;
 			}
-
-			wxGetApp().mProductManager.AddCategory(CategoryName);
 			CategoryAddSignal(CategoryName);
-			size_t id = 0;
+			size_t id = 1; //0 is the default category
 			if (!cat.empty()) {
 				auto& v = cat.back();
 				id = boost::variant2::get<std::uint64_t>(v.first[pof::ProductManager::CATEGORY_ID]);
@@ -236,6 +235,7 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 			row.first.push_back(id);
 			row.first.push_back(CategoryName);
 			cat.insert(std::move(row));
+			wxGetApp().mProductManager.AddCategory(CategoryName);
 			break;
 		}
 		else {
@@ -257,10 +257,12 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
 	auto cat = menu->Append(wxID_ANY, "Add to Category", catSub);
+	auto inven = menu->Append(ID_ADD_INVENTORY, "Add Inventory", nullptr);
 
 	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
 	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
+	inven->SetBitmap(wxArtProvider::GetBitmap("file"));
 
 	PopupMenu(menu);
 }
@@ -434,6 +436,38 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& pd = wxGetApp().mProductManager.GetProductData();
+
+	pof::InventoryDialog dialog(nullptr);
+	if (dialog.ShowModal() == wxID_OK) {
+		auto& Inven = dialog.GetData();
+		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
+		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID];
+
+		pof::ProductInfo::PropertyUpdate mPropertyUpdate;
+		mPropertyUpdate.mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+			mPropertyUpdate.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] = pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID];
+
+		
+		mPropertyUpdate.mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+		mPropertyUpdate.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT])
+			+ boost::variant2::get<std::uint64_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+
+		mProductinfo->SignalUpdate(mPropertyUpdate);
+		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
+
+		auto name = boost::variant2::get<pof::base::data::text_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_NAME]);
+		mInfoBar->ShowMessage(fmt::format("{} Inventory was updated successfully!", name), wxICON_INFORMATION);
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -523,11 +557,20 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 	}
 	items.shrink_to_fit();
 	wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
+	mActiveCategory = name;
 	//wxMessageBox(fmt::format("{} is selected", name), "Category");
 }
 
 void pof::ProductView::OnCategoryRemoved(const std::string& name)
 {
+	wxBusyCursor cursor;
+	if (mActiveCategory == name) {
+		wxGetApp().mProductManager.GetProductData()->Reload();
+		mActiveCategory.clear();
+	}
+
+	wxGetApp().mProductManager.RemoveCategory(name);
+	mInfoBar->ShowMessage(fmt::format("Removed {} successfully", name));
 }
 
 void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::string& newName)

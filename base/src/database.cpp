@@ -125,6 +125,7 @@ bool pof::base::database::execute(stmt_t stmt)
 {
 	int ret = sqlite3_step(stmt);
 	if (ret == SQLITE_DONE) {
+		clear_bindings(stmt);
 		reset(stmt);
 		return true;
 	}
@@ -132,4 +133,9 @@ bool pof::base::database::execute(stmt_t stmt)
 		finalise(stmt);
 		return false;
 	}
+}
+
+void pof::base::database::clear_bindings(stmt_t stmt)
+{
+	int ret = sqlite3_clear_bindings(stmt);
 }

@@ -105,6 +105,7 @@ namespace pof
 			void LoadProductProperty(const pof::base::data::row_t& row);
 			boost::signals2::connection AttachBackSlot(back_signal_t::slot_type&& slot);
 			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
+			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
 
 

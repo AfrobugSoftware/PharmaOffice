@@ -131,13 +131,19 @@ void pof::MainFrame::CreateModules()
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
-		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
+		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());
 
 	//set the module to view pipeline
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
 	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
 	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
-		
+
+	//load cat to modules
+	auto& cat = wxGetApp().mProductManager.GetCategories();
+	std::ranges::for_each(cat, [&](const pof::base::data::row_t& row) {
+		auto& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]);
+		mProductView->CategoryAddSignal(name);
+	});
 }
 
 void pof::MainFrame::CreateWorkSpace()

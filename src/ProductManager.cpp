@@ -105,16 +105,19 @@ bool pof::ProductManager::LoadInventoryData(const pof::base::data::duuid_t& ud)
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(InventoryLoadStmt);
 			InventoryLoadStmt = nullptr;
+			return false;
 		}
-		pof::base::data inven;
-		inven.reserve(rel->size());
+		if (rel->empty()) {
+			spdlog::info("Inventory is empty");
+			return false;
+		}
+
 		for (auto& v : *rel) {
 			pof::base::data::row_t row;
 			auto& f = row.first;
 			f = std::move(pof::base::make_row_from_tuple(std::move(v)));
-			inven.insert(std::move(row));
+			mInventoryData->EmplaceData(std::move(row));
 		}
-		mInventoryData->Emplace(std::move(inven));
 	}
 	return true;
 }
@@ -122,7 +125,7 @@ bool pof::ProductManager::LoadInventoryData(const pof::base::data::duuid_t& ud)
 bool pof::ProductManager::LoadCategories()
 {
 	if (bUsingLocalDatabase && mLocalDatabase){
-		constexpr const std::string_view sql = "SELECT * FROM categories;";
+		constexpr const std::string_view sql = "SELECT * FROM category;";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -515,8 +518,9 @@ bool pof::ProductManager::StoreInventoryData(pof::base::data::const_iterator ite
 			std::uint64_t,  // MANUFACTURER ADDRESS ID
 			pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
 		>;
-		auto tup = pof::base::make_tuple_from_row<tuple_t>(v);
-		bool status = mLocalDatabase->bind(InventoryStoreStmt, std::move(tup));
+		tuple_t tup;
+		bool status = pof::base::build(tup, *iter);
+		status = mLocalDatabase->bind(InventoryStoreStmt, std::move(tup));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(InventoryStoreStmt);
@@ -556,6 +560,7 @@ void pof::ProductManager::AddCategory(const std::string& name)
 			}
 			CategoryStoreStmt = *stmt;
 		}
+
 		auto& r = mCategories.back().first;
 		std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
 		bool status = mLocalDatabase->bind(CategoryStoreStmt, std::tie(id, name));
@@ -574,6 +579,68 @@ void pof::ProductManager::AddCategory(const std::string& name)
 	}
 	else {
 		//network
+	}
+}
+
+void pof::ProductManager::RemoveCategory(const std::string& name)
+{
+	auto iter = std::ranges::find(mCategories, name, [&](const pof::base::data::row_t& row) -> pof::base::data::text_t {
+		return boost::variant2::get<pof::base::data::text_t>(row.first[CATEGORY_NAME]);
+	});
+	if (iter == std::end(mCategories)) return; //does not exists
+
+
+	std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[CATEGORY_ID]);
+	pof::base::database::stmt_t updateStmt = nullptr;
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = "UPDATE products set category = ? WHERE uuid = ?;";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		updateStmt = *stmt;
+	}
+
+	std::ranges::for_each(mProductData->GetDatastore(), [&](pof::base::data::row_t& row) {
+		if (mLocalDatabase) {
+			bool status = mLocalDatabase->bind(updateStmt,
+				std::make_tuple(id, boost::variant2::get<pof::base::data::duuid_t>(row.first[PRODUCT_UUID])));
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			status = mLocalDatabase->execute(updateStmt);
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+		}
+		if (boost::variant2::holds_alternative<std::uint64_t>(row.first[PRODUCT_CATEGORY])
+		  && boost::variant2::get<std::uint64_t>(row.first[PRODUCT_CATEGORY]) == id) {
+			row.first[PRODUCT_CATEGORY] = pof::base::data::data_t{};
+		}
+	});
+	if (mLocalDatabase) {
+		if (!CategoryRemoveStmt) {
+			constexpr const std::string_view sql = "DELETE FROM category WHERE id = ?;";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			CategoryRemoveStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(CategoryRemoveStmt, std::make_tuple(id));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return; 
+		}
+		status = mLocalDatabase->execute(CategoryRemoveStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
 	}
 }
 

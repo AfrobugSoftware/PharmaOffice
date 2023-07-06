@@ -81,7 +81,8 @@ namespace pof {
 		void Unpack(const pof::base::pack_t& package);
 		void Emplace(pof::base::data&& d);
 		void EmplaceData(pof::base::data::row_t&& r); //no checking for column to metadata match
-		
+		void Clear();
+
 		//emplace but also writes to the database
 		void Store(pof::base::data&& d); 
 		void StoreData(pof::base::data::row_t&& r);

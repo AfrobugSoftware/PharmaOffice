@@ -117,6 +117,15 @@ void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 
 }
 
+void pof::DataModel::Clear()
+{
+	Cleared();
+	mItems.clear();
+	attributes.clear();
+	datastore->clear();
+
+}
+
 void pof::DataModel::Store(pof::base::data&& d)
 {
 	Cleared();
@@ -138,7 +147,7 @@ void pof::DataModel::StoreData(pof::base::data::row_t&& r)
 	const size_t count = datastore->size();
 	mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(count) });
 	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
-	mSignals[static_cast<size_t>(Signals::STORE)](datastore->end() - 1);
+	mSignals[static_cast<size_t>(Signals::STORE)](std::next(datastore->begin(), count - 1));
 }
 
 void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)

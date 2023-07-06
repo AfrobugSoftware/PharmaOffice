@@ -224,7 +224,8 @@ void pof::Application::CreateTables()
 		"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer, min_stock_count integer, expire_period text, expire_date integer);";
 	constexpr const std::string_view inventory_table =
 		"CREATE TABLE IF NOT EXISTS inventory (id integer, uuid blob, expire_date integer, input_date integer, stock_count integer, cost blob, manufacturer_name text, manufacturer_address_id integer, lot_number text);";
-	
+	constexpr const std::string_view category_table =
+		"CREATE TABLE IF NOT EXISTS category (id integer primary key unique, name text unqiue);";
 	auto stmt = mLocalDatabase->prepare(users_table);
 	if (!stmt.has_value()) {
 		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
@@ -248,6 +249,17 @@ void pof::Application::CreateTables()
 	}
 	mLocalDatabase->finalise(*stmt);
 	stmt = mLocalDatabase->prepare(inventory_table);
+	if (!stmt.has_value()) {
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	if (!mLocalDatabase->execute(*stmt))
+	{
+		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+		return;
+	}
+	mLocalDatabase->finalise(*stmt);
+	stmt = mLocalDatabase->prepare(category_table);
 	if (!stmt.has_value()) {
 		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
 		return;

@@ -20,6 +20,7 @@
 #include "ProductInfo.h"
 #include "DataObject.h"
 #include "AddProductDialog.h"
+#include "InventoryDialog.h"
 
 #include <boost/signals2/signal.hpp>
 
@@ -49,6 +50,7 @@ namespace pof
 			ID_OUT_OF_STOCK,
 			ID_OPTIMISE_BY_FORMULARY,
 			ID_ADD_CATEGORY,
+			ID_ADD_INVENTORY,
 			ID_REMOVE_GROUP_BY,
 			ID_QUICK_SORT_TEST,
 			ID_INVENTORY_VIEW,
@@ -81,7 +83,7 @@ namespace pof
 
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
-
+		std::string mActiveCategory;
 
 		//attibutes
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
@@ -118,6 +120,7 @@ namespace pof
 		void OnSelection(wxCommandEvent& evt);
 		void OnShowCostPrice(wxCommandEvent& evt);
 		void OnOutOfStock(wxCommandEvent& evt);
+		void OnAddInventory(wxCommandEvent& evt);
 	
 
 
