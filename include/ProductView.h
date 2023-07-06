@@ -99,6 +99,7 @@ namespace pof
 		void SaveColumnWidths();
 		void SetupAuiTheme();
 
+		void ReloadProductView();
 
 		//events
 		void OnResize(wxSizeEvent& evt);

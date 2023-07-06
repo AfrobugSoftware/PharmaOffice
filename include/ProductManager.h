@@ -119,6 +119,7 @@ namespace pof {
 		void RemoveCategory(const std::string& name);
 		void UpdateCategory(pof::base::data::const_iterator iter);
 
+
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetOrderList() { return mOrderList; }
@@ -162,6 +163,7 @@ namespace pof {
 		pof::base::database::stmt_t CategoryLoadStmt = nullptr;
 		pof::base::database::stmt_t CategoryStoreStmt = nullptr;
 		pof::base::database::stmt_t CategoryRemoveStmt = nullptr;
+		pof::base::database::stmt_t CategoryUpdateStmt = nullptr;
 
 	
 

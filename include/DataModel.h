@@ -89,6 +89,7 @@ namespace pof {
 
 		void Reload(const std::vector<wxDataViewItem>& items);
 		void StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
+		void StringSearchAndReloadSet(size_t col, const std::string& searchFor); //only searches the current items in mItems;
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);
 		static wxDataViewItem GetItemFromIdx(size_t idx);
@@ -132,6 +133,7 @@ namespace pof {
 		bool RemoveData(const wxDataViewItemArray& items);
 
 		void Reload();
+		void ReloadSet(); //reloads but only from mItems
 		void Signal(Signals sig, size_t i) const;
 		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot, Signals signal);
 

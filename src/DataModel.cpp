@@ -193,6 +193,40 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
 }
 
+void pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
+{
+	if (mItems.empty() || col > datastore->get_metadata().size()
+		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return;
+
+	std::string reg;
+	reg.reserve(searchFor.size() * 2);
+	for (auto& c : searchFor)
+	{
+		if (!std::isalnum(c)) {
+			//what to do
+			return;
+		}
+		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
+	}
+	reg += "(?:.*)?";
+	std::regex searchreg(std::move(reg));
+
+	Cleared();
+	attributes.clear();
+	wxDataViewItemArray ars;
+	ars.reserve(mItems.size());
+	for (auto& item : mItems) {
+		size_t idx = GetIdxFromItem(item);
+
+		auto& datum = (*datastore)[idx].first[col];
+		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
+		if (std::regex_match(text, searchreg)) {
+			ars.push_back(item);
+		}
+	}
+	ItemsAdded(wxDataViewItem(0), ars);
+}
+
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
 {
 	return false;
@@ -508,6 +542,7 @@ bool pof::DataModel::RemoveData(const wxDataViewItemArray& items)
 void pof::DataModel::Reload()
 {
 	Cleared();
+	attributes.clear();
 	mItems.Clear();
 	mItems.reserve(datastore->size());
 	for (size_t i = 0; i < datastore->size(); i++) {
@@ -515,6 +550,12 @@ void pof::DataModel::Reload()
 	}
 	ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
+}
+
+void pof::DataModel::ReloadSet()
+{
+	Cleared();
+	ItemsAdded(wxDataViewItem(0), mItems);
 }
 
 void pof::DataModel::Signal(Signals sig, size_t i) const

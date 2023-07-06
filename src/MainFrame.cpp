@@ -130,6 +130,7 @@ void pof::MainFrame::CreateModules()
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlotReload, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
+	mModules->SetChildTreeEditSlot(std::bind_front(&pof::ProductView::OnCategoryEdited, mProductView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());
@@ -375,7 +376,7 @@ void pof::MainFrame::OnModuleSlotReload(pof::Modules::const_iterator win, Module
 {
 	if (notif == Modules::Evt::ACTIVATED) {
 		if (win->first == mModules->mProducts && mProductView->IsActiveCategory()) {
-			wxGetApp().mProductManager.GetProductData()->Reload();
+			mProductView->ReloadProductView();
 		}
 	}
 }

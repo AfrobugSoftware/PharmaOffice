@@ -648,6 +648,30 @@ void pof::ProductManager::RemoveCategory(const std::string& name)
 
 void pof::ProductManager::UpdateCategory(pof::base::data::const_iterator iter)
 {
+	if (mLocalDatabase) {
+		//can only name can change
+		if (!CategoryUpdateStmt) {
+			constexpr const std::string_view sql = "UPDATE category set name = ? WHERE id = ?;";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			CategoryUpdateStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(CategoryUpdateStmt, 
+			std::make_tuple(boost::variant2::get<pof::base::data::text_t>(iter->first[CATEGORY_NAME]),
+				boost::variant2::get<std::uint64_t>(iter->first[CATEGORY_ID])));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		status = mLocalDatabase->execute(CategoryUpdateStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+	}
 }
 
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)

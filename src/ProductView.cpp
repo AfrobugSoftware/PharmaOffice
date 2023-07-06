@@ -113,6 +113,12 @@ void pof::ProductView::SetupAuiTheme()
 	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::ProductView::OnAuiThemeChange, this));
 }
 
+void pof::ProductView::ReloadProductView()
+{
+	mActiveCategory.clear();
+	wxGetApp().mProductManager.GetProductData()->Reload();
+}
+
 void pof::ProductView::OnResize(wxSizeEvent& evt)
 {
 	ReSizeColumns();
@@ -393,10 +399,20 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 	std::string search = evt.GetString().ToStdString();
 	if (search.empty()) {
 		//go back to what was there before the search?
-		datam->Reload();
+		if (!mActiveCategory.empty()) {
+			datam->ReloadSet();
+		}
+		else {
+			datam->Reload();
+		}
 	}
 	else {
-		datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		if (!mActiveCategory.empty()) {
+			datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+		else {
+			datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
 	}
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Update();
@@ -406,8 +422,15 @@ void pof::ProductView::OnSearchCleared(wxCommandEvent& evt)
 {
 	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	assert(datam != nullptr);
+	
 	m_dataViewCtrl1->Freeze();
-	datam->Reload();
+
+	if (!mActiveCategory.empty()) {
+		datam->ReloadSet();
+	}
+	else {
+		datam->Reload();
+	}
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Update();
 }
@@ -613,6 +636,7 @@ void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::s
 	spdlog::info("Changed name to in product {}", newName);
 	v[pof::ProductManager::CATEGORY_NAME] = newName;
 	iter->second.second.set(pof::ProductManager::CATEGORY_NAME); //set update to update database
+	wxGetApp().mProductManager.UpdateCategory(iter);
 
 }
 
