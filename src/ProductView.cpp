@@ -333,12 +333,16 @@ void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddItemsToCategory(wxCommandEvent& evt)
 {
-	std::uint64_t catIdx = static_cast<std::uint64_t>(evt.GetId()) - (wxID_HIGHEST + 1);
+	wxBusyCursor cursor;
+	std::uint64_t catIdx = static_cast<std::uint64_t>(evt.GetId());
 	auto& catDatastore = wxGetApp().mProductManager.GetCategories();
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	auto iter = std::ranges::find_if(catDatastore, [&](const pof::base::data::row_t& data) -> bool {
+		spdlog::info("ID {:d} Name {}", boost::variant2::get<std::uint64_t>(data.first[pof::ProductManager::CATEGORY_ID]),
+		boost::variant2::get<pof::base::data::text_t>(data.first[pof::ProductManager::CATEGORY_NAME]));
 		return catIdx == boost::variant2::get<std::uint64_t>(data.first[pof::ProductManager::CATEGORY_ID]);
 	});
+	if (iter == catDatastore.end()) return;
 	auto& name = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::CATEGORY_NAME]);
 	if (mSelections.empty()) {
 		auto item = m_dataViewCtrl1->GetSelection();
@@ -346,13 +350,33 @@ void pof::ProductView::OnAddItemsToCategory(wxCommandEvent& evt)
 
 		size_t idx = pof::DataModel::GetIdxFromItem(item);
 		datastore[idx].first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+
+		pof::ProductInfo::PropertyUpdate updatePropery;
+		updatePropery.mUpdatedElememts.set(static_cast<size_t>(pof::ProductManager::PRODUCT_CATEGORY));
+		updatePropery.mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+		updatePropery.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+		updatePropery.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+			datastore[idx].first[pof::ProductManager::PRODUCT_UUID];
+
+		mProductinfo->SignalUpdate(updatePropery);
+
 		auto& itemName = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
 		mInfoBar->ShowMessage(fmt::format("Added {} to \'{}\'", itemName, name), wxICON_INFORMATION);
 	}
 	else {
+		pof::ProductInfo::PropertyUpdate updatePropery;
+		updatePropery.mUpdatedElememts.set(static_cast<size_t>(pof::ProductManager::PRODUCT_CATEGORY));
+		updatePropery.mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+		
 		for (auto& item : mSelections) {
 			size_t idx = pof::DataModel::GetIdxFromItem(item);
 			datastore[idx].first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+
+			updatePropery.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_CATEGORY] = catIdx;
+			updatePropery.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+				datastore[idx].first[pof::ProductManager::PRODUCT_UUID];
+
+			mProductinfo->SignalUpdate(updatePropery);
 		}
 		mInfoBar->ShowMessage(fmt::format("Added {:d} items to \'{}\'", mSelections.size(), name), wxICON_INFORMATION);
 	}
@@ -550,9 +574,12 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 	std::vector<wxDataViewItem> items;
 	items.reserve(300); //hueristic lol
 	for (size_t i = 0; i < datastore.size(); i++) {
-		const std::uint64_t productCatId = boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_CATEGORY]);
-		if (productCatId == CAT_ID) {
-			items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+		auto& datum = datastore[i].first[pof::ProductManager::PRODUCT_CATEGORY];
+		if (datum.index() == static_cast<size_t>(datastore.get_metadata()[pof::ProductManager::PRODUCT_CATEGORY])) {
+			const std::uint64_t productCatId = boost::variant2::get<std::uint64_t>(datastore[i].first[pof::ProductManager::PRODUCT_CATEGORY]);
+			if (productCatId == CAT_ID) {
+				items.emplace_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+			}
 		}
 	}
 	items.shrink_to_fit();
@@ -586,6 +613,7 @@ void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::s
 	spdlog::info("Changed name to in product {}", newName);
 	v[pof::ProductManager::CATEGORY_NAME] = newName;
 	iter->second.second.set(pof::ProductManager::CATEGORY_NAME); //set update to update database
+
 }
 
 void pof::ProductView::CreateDataView()
@@ -714,12 +742,12 @@ void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
 {
 	if (!menu) return;
 	auto& categories = wxGetApp().mProductManager.GetCategories();
-	size_t range = wxID_HIGHEST + 1;
 	for (auto& cat : categories) {
 		auto& name = boost::variant2::get<pof::base::data::text_t>(cat.first[pof::ProductManager::CATEGORY_NAME]);
-		menu->Append(range++, name, nullptr);
+		size_t range = boost::variant2::get<std::uint64_t>(cat.first[pof::ProductManager::CATEGORY_ID]);
+		menu->Append(range, name, nullptr);
+		menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this),range);
 	}
-	menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this), wxID_HIGHEST + 1, range);
 }
 
 void pof::ProductView::SetExpireProducts()

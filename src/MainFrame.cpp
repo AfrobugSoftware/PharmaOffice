@@ -127,6 +127,7 @@ void pof::MainFrame::CreateModules()
 {
 	mModules = new pof::Modules(this, ID_MODULE);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
+	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlotReload, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 
@@ -367,6 +368,15 @@ void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt
 		break;
 	default:
 		break;
+	}
+}
+
+void pof::MainFrame::OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif)
+{
+	if (notif == Modules::Evt::ACTIVATED) {
+		if (win->first == mModules->mProducts && mProductView->IsActiveCategory()) {
+			wxGetApp().mProductManager.GetProductData()->Reload();
+		}
 	}
 }
 

@@ -603,25 +603,26 @@ void pof::ProductManager::RemoveCategory(const std::string& name)
 	}
 
 	std::ranges::for_each(mProductData->GetDatastore(), [&](pof::base::data::row_t& row) {
-		if (mLocalDatabase) {
-			bool status = mLocalDatabase->bind(updateStmt,
-				std::make_tuple(id, boost::variant2::get<pof::base::data::duuid_t>(row.first[PRODUCT_UUID])));
-			if (!status) {
-				spdlog::error(mLocalDatabase->err_msg());
-				return;
-			}
-			status = mLocalDatabase->execute(updateStmt);
-			if (!status) {
-				spdlog::error(mLocalDatabase->err_msg());
-				return;
-			}
-		}
-		if (boost::variant2::holds_alternative<std::uint64_t>(row.first[PRODUCT_CATEGORY])
+		if (row.first[PRODUCT_CATEGORY].index() == static_cast<size_t>(pof::base::data::kind::uint64)
 		  && boost::variant2::get<std::uint64_t>(row.first[PRODUCT_CATEGORY]) == id) {
-			row.first[PRODUCT_CATEGORY] = pof::base::data::data_t{};
+			row.first[PRODUCT_CATEGORY] = 0;
+			if (mLocalDatabase) {
+				bool status = mLocalDatabase->bind(updateStmt,
+					std::make_tuple(id, boost::variant2::get<pof::base::data::duuid_t>(row.first[PRODUCT_UUID])));
+				if (!status) {
+					spdlog::error(mLocalDatabase->err_msg());
+					return;
+				}
+				status = mLocalDatabase->execute(updateStmt);
+				if (!status) {
+					spdlog::error(mLocalDatabase->err_msg());
+					return;
+				}
+			}
 		}
 	});
 	if (mLocalDatabase) {
+		mLocalDatabase->finalise(updateStmt);
 		if (!CategoryRemoveStmt) {
 			constexpr const std::string_view sql = "DELETE FROM category WHERE id = ?;";
 			auto stmt = mLocalDatabase->prepare(sql);
@@ -642,6 +643,11 @@ void pof::ProductManager::RemoveCategory(const std::string& name)
 			return;
 		}
 	}
+	mCategories.erase(iter);
+}
+
+void pof::ProductManager::UpdateCategory(pof::base::data::const_iterator iter)
+{
 }
 
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)

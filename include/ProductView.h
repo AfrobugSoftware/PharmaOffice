@@ -122,7 +122,7 @@ namespace pof
 		void OnOutOfStock(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 	
-
+		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
