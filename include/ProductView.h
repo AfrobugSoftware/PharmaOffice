@@ -15,6 +15,7 @@
 #include <wx/sizer.h>
 #include <wx/panel.h>
 #include <wx/infoBar.h>
+#include <wx/itemattr.h>
 
 #include "AuiTheme.h"
 #include "ProductInfo.h"
@@ -68,6 +69,11 @@ namespace pof
 			ID_FILE
 		};
 
+		size_t mRowHeights;
+		wxItemAttr mHeaderAttr;
+		wxFont mDataViewFont;
+
+
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
 		wxAuiToolBarItem* mOutOfStockItem = nullptr;
@@ -98,6 +104,11 @@ namespace pof
 		void ReSizeColumns();
 		void SaveColumnWidths();
 		void SetupAuiTheme();
+		void SetupDataViewStyle();
+
+		inline void SetHeaderAttr(const wxItemAttr& attr) { mHeaderAttr = attr; }
+		inline void SetDataViewRowHeight(size_t rowHeight) { mRowHeights = rowHeight; }
+		inline void SetDataViewFont(const wxFont& font) { mDataViewFont = font; }
 
 		void ReloadProductView();
 

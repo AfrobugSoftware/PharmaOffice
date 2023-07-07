@@ -18,6 +18,7 @@
 #include "Workspace.h"
 #include "ProductView.h"
 #include "SaleView.h"
+#include "AuditView.h"
 #include "PrescriptionView.h"
 
 #include <Data.h>
@@ -52,7 +53,7 @@ namespace pof {
 			ID_PRODUCT_VIEW,
 			ID_SALE_VIEW,
 			ID_PRESCRIPTION_VIEW,
-
+			ID_AUDIT_VIEW,
 			//MENUS
 			ID_MENU_VIEW_SHOW_MODULES,
 			ID_MENU_VIEW_LOG,
@@ -119,6 +120,7 @@ namespace pof {
 		pof::ProductView* mProductView = nullptr;
 		pof::SaleView* mSaleView = nullptr;
 		pof::PrescriptionView* mPrescriptionView = nullptr;
+		pof::AuditView* mAuditView = nullptr;
 
 		DECLARE_EVENT_TABLE()
 	};

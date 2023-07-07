@@ -15,10 +15,10 @@ pof::AuditManager::AuditManager()
 	mAuditData = std::make_unique<pof::DataModel>();
 	mAuditData->Adapt<
 		std::uint64_t,
+		pof::base::data::datetime_t,
 		std::uint64_t,
 		pof::base::data::text_t,
-		std::uint64_t,
-		pof::base::data::datetime_t
+		pof::base::data::text_t
 	>();
 	CreateAuditTable();
 	CreateSpeicalCols();
@@ -55,10 +55,10 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 		}
 		auto rel = mLocalDatabase->retrive<
 			std::uint64_t,
+			pof::base::data::datetime_t,
 			std::uint64_t,
 			pof::base::data::text_t,
-			std::uint64_t,
-			pof::base::data::datetime_t
+			pof::base::data::text_t
 		>(mLoadCacheStatement);
 
 		if (!rel.has_value()) {
@@ -78,7 +78,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 			v[AUDIT_ID] = std::get<AUDIT_ID>(relation[i]);
 			v[AUDIT_TYPE] = std::get<AUDIT_TYPE>(relation[i]);
 			v[AUDIT_MESSAGE] = std::get<AUDIT_MESSAGE>(relation[i]);
-			v[AUDIT_USER_ID] = std::get<AUDIT_USER_ID>(relation[i]);
+			v[AUDIT_USER_NAME] = std::get<AUDIT_USER_NAME>(relation[i]);
 			v[AUDIT_DATE] = std::get<AUDIT_DATE>(relation[i]);
 
 			if (bColourAuditTypes) {

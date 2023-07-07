@@ -113,9 +113,28 @@ void pof::ProductView::SetupAuiTheme()
 	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::ProductView::OnAuiThemeChange, this));
 }
 
+void pof::ProductView::SetupDataViewStyle()
+{
+	//move to theme
+	//for now 
+	mRowHeights = 20;
+	mHeaderAttr.SetBackgroundColour(*wxWHITE);
+	auto Info = wxFontInfo(10).Weight(24).FaceName("Helvetica").Bold();
+	mHeaderAttr.SetFont(wxFont(std::move(Info)));
+
+	auto Info2 = wxFontInfo(11).FaceName("Helvetica");
+	mDataViewFont = wxFont(std::move(Info2));
+
+	
+	m_dataViewCtrl1->SetFont(mDataViewFont);
+	m_dataViewCtrl1->SetHeaderAttr(mHeaderAttr);
+	m_dataViewCtrl1->SetRowHeight(mRowHeights);
+}
+
 void pof::ProductView::ReloadProductView()
 {
 	mActiveCategory.clear();
+	m_searchCtrl1->SetDescriptiveText("Search for products");
 	wxGetApp().mProductManager.GetProductData()->Reload();
 }
 
@@ -605,10 +624,16 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 			}
 		}
 	}
+
 	items.shrink_to_fit();
-	wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
-	mActiveCategory = name;
-	//wxMessageBox(fmt::format("{} is selected", name), "Category");
+	if (!items.empty()) {
+		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
+		mActiveCategory = name;
+		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
+	}
+	else {
+		mInfoBar->ShowMessage(fmt::format("{} is empty", name), wxICON_INFORMATION);
+	}
 }
 
 void pof::ProductView::OnCategoryRemoved(const std::string& name)
@@ -665,6 +690,7 @@ void pof::ProductView::CreateDataView()
 	panel->SetSizer(sizer);
 	panel->Layout();
 	sizer->Fit(panel);
+	//SetupDataViewStyle();
 	m_mgr.AddPane(panel, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
 	
 }
@@ -679,7 +705,7 @@ void pof::ProductView::CreateToolBar()
 	m_searchCtrl1->ShowSearchButton(true);
 #endif
 	m_searchCtrl1->ShowCancelButton(true);
-	m_searchCtrl1->SetDescriptiveText("Search products by name");
+	m_searchCtrl1->SetDescriptiveText("Search for products");
 	wxMenu* menu = new wxMenu;
 	menu->AppendRadioItem(ID_SEARCH_BY_NAME, "Search by name");
 	menu->AppendRadioItem(ID_SEARCH_BY_CATEGORY, "Search by category");

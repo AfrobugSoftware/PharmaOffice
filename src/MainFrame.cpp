@@ -139,6 +139,7 @@ void pof::MainFrame::CreateModules()
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
 	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
 	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
+	mModules->mModuleViews.insert({ mModules->mAuditTrails, mAuditView });
 
 	//load cat to modules
 	auto& cat = wxGetApp().mProductManager.GetCategories();
@@ -176,13 +177,15 @@ void pof::MainFrame::CreateViews()
 	mProductView = new pof::ProductView(workspaceBook, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	
+	mAuditView = new pof::AuditView(workspaceBook, ID_AUDIT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
 
 	mProductView->Hide();
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
+	mAuditView->Hide();
 }
 
 void pof::MainFrame::SetupAuiTheme()
