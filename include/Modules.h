@@ -115,8 +115,6 @@ namespace pof {
 		//std::array<wxWindow*, 6> mModuleWindows;
 		wxTreeItemId mPharmacy;
 		wxTreeItemId mTransactions;
-		wxTreeItemId mWarehouse;
-		wxTreeItemId mReports;
 
 		wxTreeItemId mPrescriptions;
 		wxTreeItemId mPaitents;
@@ -126,8 +124,6 @@ namespace pof {
 		wxTreeItemId mOrders;
 		wxTreeItemId mRequisitions;
 		wxTreeItemId mAuditTrails;
-		wxTreeItemId mConsumptionPattern;
-		wxTreeItemId mSupply;
 
 
 

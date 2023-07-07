@@ -24,32 +24,37 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);
 
-	mTopTools = new wxPanel(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	wxBoxSizer* bSizer7;
-	bSizer7 = new wxBoxSizer(wxHORIZONTAL);
+	mTopTools = new wxAuiToolBar(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mTopTools->SetMinSize(wxSize(-1, 40));
 
 	mProductNameText = new wxStaticText(mTopTools, wxID_ANY, wxT("Product Name: "), wxDefaultPosition, wxDefaultSize, 0);
+	mProductNameText->SetBackgroundColour(*wxWHITE);
 	mProductNameText->Wrap(-1);
-	bSizer7->Add(mProductNameText, 0, wxALIGN_CENTER | wxALL, 5);
+	mTopTools->AddControl(mProductNameText);
+
+	mTopTools->AddSpacer(10);
 
 	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
 	mProductNameValue->SetValidator(wxTextValidator{wxFILTER_ALPHANUMERIC});
 	mProductNameValue->SetHint("Search product by name");
-	bSizer7->Add(mProductNameValue, 0, wxALL, 5);
+	mTopTools->AddControl(mProductNameValue);
+
+	mTopTools->AddSpacer(10);
 
 	mScanProduct = new wxStaticText(mTopTools, wxID_ANY, wxT("Scan Product: "), wxDefaultPosition, wxDefaultSize, 0);
+	mScanProduct->SetBackgroundColour(*wxWHITE);
 	mScanProduct->Wrap(-1);
-	bSizer7->Add(mScanProduct, 0, wxALIGN_CENTER | wxALL, 5);
+	mTopTools->AddControl(mScanProduct);
+
+	mTopTools->AddSpacer(10);
 
 	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(300, -1), 0);
 	mScanProductValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	mScanProductValue->SetHint("Scan products");
-	bSizer7->Add(mScanProductValue, 0, wxALL, 5);
+	mTopTools->AddControl(mScanProductValue);
 
 
-	mTopTools->SetSizer(bSizer7);
-	mTopTools->Layout();
-	bSizer7->Fit(mTopTools);
+	mTopTools->Realize();
 	bSizer5->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
 
 	mDataPane = new wxPanel(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);

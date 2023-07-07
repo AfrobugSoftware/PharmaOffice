@@ -45,6 +45,8 @@ namespace pof
 			ID_BACK,
 			ID_FORWARD,
 			ID_DATA_VIEW,
+			ID_REPORTS,
+			ID_REPORTS_CONSUMPTION_PATTERN,
 			ID_SEARCH,
 			ID_SEARCH_BY_CATEGORY,
 			ID_SEARCH_BY_NAME,
@@ -78,6 +80,7 @@ namespace pof
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
 		wxAuiToolBarItem* mOutOfStockItem = nullptr;
 		wxAuiToolBarItem* mExpireProductItem = nullptr;
+		wxAuiToolBarItem* mReportItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -133,7 +136,9 @@ namespace pof
 		void OnShowCostPrice(wxCommandEvent& evt);
 		void OnOutOfStock(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
-	
+		void OnReportDropdown(wxAuiToolBarEvent& evt);
+		void OnConsumptionPattern(wxCommandEvent& evt);
+
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
 

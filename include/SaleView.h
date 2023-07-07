@@ -14,6 +14,7 @@
 #include <wx/dataview.h>
 #include <wx/button.h>
 #include <wx/srchctrl.h>
+#include <wx/aui/auibar.h>
 
 #include "SaleManager.h"
 #include "DropTarget.h"
@@ -32,7 +33,7 @@ namespace pof
 
 	protected:
 		wxPanel* mMainPane;
-		wxPanel* mTopTools;
+		wxAuiToolBar* mTopTools;
 		wxStaticText* mProductNameText;
 		wxSearchCtrl* mProductNameValue;
 		wxStaticText* mScanProduct;

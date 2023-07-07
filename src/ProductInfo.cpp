@@ -24,18 +24,17 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
+	m_auiToolBar1 = new wxAuiToolBar( this , wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
 	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
 	
 	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Back", wxITEM_NORMAL);
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add Inventory", wxITEM_NORMAL);
-	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Remove all expired batches", wxITEM_NORMAL);
-	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Show Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information grid", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
+	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information grid", wxITEM_CHECK);
 	m_auiToolBar1->Realize(); 
 	
-	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
 	
 	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
 	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
@@ -142,11 +141,14 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
 	
-	
+	m_panel2->SetSize(wxSize(400, -1));
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
 	m_splitter1->SplitVertically( m_panel1, m_panel2, 0); //splitter posistion
+	m_splitter1->SetSashGravity(1.0);
+	
+	bSizer1->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
 	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
 	
 	
@@ -434,7 +436,11 @@ void pof::ProductInfo::OnUnspilt(wxSplitterEvent& evt)
 void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 {
 	if(evt.IsChecked() && !m_splitter1->IsSplit()){
+		m_panel2->SetSize(wxSize(400, -1));
+		m_panel2->Layout();
 		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
+		m_splitter1->SetSashGravity(1.0);
+		m_splitter1->Update();
 		//m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
 	}
 	else {

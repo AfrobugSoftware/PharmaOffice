@@ -74,11 +74,10 @@ void pof::AuditView::CreateDataView()
 	mDataView->AssociateModel(ad.get());
 	mDataView->SetDoubleBuffered(true);
 	//columns
-	mDataView->AppendTextColumn("Serial No", pof::AuditManager::AUDIT_ID, wxDATAVIEW_CELL_INERT, 50);
-	mDataView->AppendTextColumn("Date", pof::AuditManager::AUDIT_DATE, wxDATAVIEW_CELL_INERT, 100);
 	mDataView->AppendTextColumn("Type", pof::AuditManager::AUDIT_TYPE, wxDATAVIEW_CELL_INERT, 100);
-	mDataView->AppendTextColumn("Account Username", pof::AuditManager::AUDIT_USER_NAME, wxDATAVIEW_CELL_INERT, 100);
-	mDataView->AppendTextColumn("Message", pof::AuditManager::AUDIT_MESSAGE, wxDATAVIEW_CELL_INERT);
+	mDataView->AppendTextColumn("Date", pof::AuditManager::AUDIT_DATE, wxDATAVIEW_CELL_INERT, 100);
+	mDataView->AppendTextColumn("Username", pof::AuditManager::AUDIT_USER_NAME, wxDATAVIEW_CELL_INERT, 100);
+	mDataView->AppendTextColumn("Audit Log", pof::AuditManager::AUDIT_MESSAGE, wxDATAVIEW_CELL_INERT);
 
 	size->Add(mInfoBar, wxSizerFlags().Expand().Proportion(0).Border(wxALL, 2));
 	size->Add(mDataView, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
