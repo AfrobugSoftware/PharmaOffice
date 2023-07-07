@@ -35,10 +35,10 @@ namespace pof
 
 		enum : std::uint8_t {
 			AUDIT_ID,
+			AUDIT_DATE,
 			AUDIT_TYPE,
+			AUDIT_USER_NAME,
 			AUDIT_MESSAGE,
-			AUDIT_USER_ID,
-			AUDIT_DATE
 		};
 
 		AuditManager();
@@ -52,6 +52,8 @@ namespace pof
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurrentAccount;
+
+		std::unique_ptr<pof::DataModel>& GetAuditData() { return mAuditData; }
 
 		//settings
 		bool bUseAudit = true; //setting parameters to allow auditting
