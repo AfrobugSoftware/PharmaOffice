@@ -6,6 +6,9 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
+	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
+	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
+	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
 END_EVENT_TABLE()
 
 
@@ -14,7 +17,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
-	m_splitter1 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
+	m_splitter1 = new wxSplitterWindow( this, ID_SPLIT_WINDOW, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
 	m_splitter1->Connect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 	
 	m_panel1 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -24,12 +27,12 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
 	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
 	
-	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap(wxART_GO_BACK, wxART_TOOLBAR), "Back", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Back", wxITEM_NORMAL);
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add Inventory", wxITEM_NORMAL);
 	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Remove all expired batches", wxITEM_NORMAL);
-
+	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Show Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information grid", wxITEM_CHECK);
 	m_auiToolBar1->Realize(); 
 	
 	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
@@ -143,7 +146,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
-	m_splitter1->SplitVertically( m_panel1, m_panel2, 400); //splitter posistion
+	m_splitter1->SplitVertically( m_panel1, m_panel2, 0); //splitter posistion
 	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
 	
 	
@@ -413,6 +416,30 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	
 	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	evt.Veto(); //might not be necessary
+}
+
+void pof::ProductInfo::OnSashDoubleClick(wxSplitterEvent& evt)
+{
+	std::bitset<32> set(mShowAddInfo->GetState());
+	set.set(5, false);
+	mShowAddInfo->SetState(set.to_ulong());
+	evt.Skip();
+}
+
+void pof::ProductInfo::OnUnspilt(wxSplitterEvent& evt)
+{
+	m_panel1->Layout();
+}
+
+void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
+{
+	if(evt.IsChecked() && !m_splitter1->IsSplit()){
+		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
+		//m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+	}
+	else {
+		m_splitter1->Unsplit();
+	}
 }
 
 void pof::ProductInfo::RemovePropertyModification()

@@ -41,6 +41,7 @@ namespace pof
 			wxAuiToolBar* m_auiToolBar1;
 			wxAuiToolBarItem* m_tool1;
 			wxAuiToolBarItem* mProductNameText;
+			wxAuiToolBarItem* mShowAddInfo;
 			wxDataViewCtrl* InventoryView;
 			wxDataViewColumn* mInputDate;
 			wxDataViewColumn* mBactchNo;
@@ -94,7 +95,9 @@ namespace pof
 				ID_TOOL_GO_BACK = wxID_HIGHEST + 2000,
 				ID_TOOL_ADD_INVENTORY,
 				ID_TOOL_REMV_EXPIRE_BATCH,
+				ID_TOOL_SHOW_PRODUCT_INFO,
 				ID_PROPERTY_GRID,
+				ID_SPLIT_WINDOW,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -118,6 +121,10 @@ namespace pof
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
+
+		void OnSashDoubleClick(wxSplitterEvent& evt);
+		void OnUnspilt(wxSplitterEvent& evt);
+		void OnShowProductInfo(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
 
