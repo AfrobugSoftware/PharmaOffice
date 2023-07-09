@@ -57,7 +57,7 @@ pof::base::database& pof::base::database::operator=(database&& db) noexcept
 	return (*this);
 }
 
-std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const query_t& query)
+std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const query_t& query) const
 {
 	if (query.empty()) return std::nullopt;
 	auto c_str = query.c_str();
@@ -70,7 +70,7 @@ std::optional<pof::base::database::stmt_t> pof::base::database::prepare(const qu
 	return stmt;
 }
 
-std::optional<pof::base::database::stmt_t> pof::base::database::prepare(std::string_view query)
+std::optional<pof::base::database::stmt_t> pof::base::database::prepare(std::string_view query) const
 {
 	if (query.empty()) return std::nullopt;
 	const char* tail = nullptr;
@@ -82,12 +82,12 @@ std::optional<pof::base::database::stmt_t> pof::base::database::prepare(std::str
 	return stmt;
 }
 
-void pof::base::database::reset(stmt_t stmt)
+void pof::base::database::reset(stmt_t stmt) const
 {
 	sqlite3_reset(stmt);
 }
 
-void pof::base::database::finalise(stmt_t stmt)
+void pof::base::database::finalise(stmt_t stmt) const
 {
 	sqlite3_finalize(stmt);
 }
@@ -112,7 +112,7 @@ std::optional<pof::base::database::stmt_t> pof::base::database::get_map(const st
 	return iter->second;
 }
 
-bool pof::base::database::execute(const query_t& query)
+bool pof::base::database::execute(const query_t& query) const
 {
 	char* errmessage;
 	sqlite3_exec(m_connection, query.c_str(), [](void* prt, int a, char** v, char** data) -> int {
@@ -121,7 +121,7 @@ bool pof::base::database::execute(const query_t& query)
 	return false;
 }
 
-bool pof::base::database::execute(stmt_t stmt)
+bool pof::base::database::execute(stmt_t stmt) const
 {
 	int ret = sqlite3_step(stmt);
 	if (ret == SQLITE_DONE) {
@@ -135,7 +135,24 @@ bool pof::base::database::execute(stmt_t stmt)
 	}
 }
 
-void pof::base::database::clear_bindings(stmt_t stmt)
+void pof::base::database::clear_bindings(stmt_t stmt) const
 {
 	int ret = sqlite3_clear_bindings(stmt);
+}
+
+bool pof::base::database::begin_trans() const 
+{
+	const int ret = sqlite3_step(begin_immidiate);
+	if (ret != SQLITE_DONE) {
+		reset(begin_immidiate);
+		return false;
+	}
+}
+
+bool pof::base::database::end_trans() const
+{
+	const bool ret = sqlite3_step(end) == SQLITE_DONE;
+	reset(begin_immidiate);
+	reset(end);
+	return ret;
 }

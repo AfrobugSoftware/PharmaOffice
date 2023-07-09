@@ -3,6 +3,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
 #include <memory>
+#include "database.h"
 
 
 //still need to thing
@@ -24,6 +25,7 @@ namespace pof {
 		~SaleManager();
 		void DoSale();
 
+		std::shared_ptr<pof::base::database> mLocalDatabase;
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }

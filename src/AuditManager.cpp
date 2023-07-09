@@ -20,9 +20,16 @@ pof::AuditManager::AuditManager()
 		pof::base::data::text_t,
 		pof::base::data::text_t
 	>();
-	CreateAuditTable();
 	CreateSpeicalCols();
 	CreateTypeAttributes();
+}
+
+pof::AuditManager::~AuditManager() {
+	if (mLocalDatabase) {
+		mLocalDatabase->finalise(mWriteStatement);
+		mLocalDatabase->finalise(mLoadCacheStatement);
+		mLocalDatabase->finalise(mDataSizeStatement);
+	}
 }
 
 void pof::AuditManager::Refresh()
@@ -39,12 +46,12 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 	if (mLocalDatabase) {
 		//select where id is less than or equal to from and limit (to  -  from)
 		if (!mLoadCacheStatement) {
-			constexpr const std::string_view sql = "SELECT * FROM audit WHERE id > ? OR id = ? LIMIT ? ORDER BY date ASC;";
+			constexpr const std::string_view sql = "SELECT * FROM audit WHERE id > ? OR id = ? LIMIT ? ORDER BY date DESC;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
 				return;
-			}
+			}		
 			mLoadCacheStatement = *stmt;
 		}
 		size_t limit = to - from;
@@ -99,12 +106,37 @@ void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t
 void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 {
 }
+
+std::optional<size_t> pof::AuditManager::GetDataSize() const
+{
+	size_t size = 0;
+	if (mLocalDatabase) {
+		if (!mDataSizeStatement) {
+			constexpr const std::string_view sql = "SELECT COUNT(id) FROM audit;";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+			mDataSizeStatement = *stmt;
+		}
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(mDataSizeStatement);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		if (!rel->empty()) {
+			size = std::get<0>((*rel)[0]);
+		}
+	}
+	return size;
+}
 void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
 {
 	std::uint64_t at = static_cast<std::uint64_t>(type);
 	if (mLocalDatabase) {
 		if (!mWriteStatement) {
-			constexpr const std::string_view sql = "INSERT INTO audit (type, message, user_id, date) VALUES (?,?,?,?);";
+			constexpr const std::string_view sql = "INSERT INTO audit (date, type, user_name, message) VALUES (?,?,?,?);";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -113,7 +145,7 @@ void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
 			mWriteStatement = *stmt;
 		}
 
-		bool status = mLocalDatabase->bind(mWriteStatement, std::make_tuple(at, message, mCurrentAccount->accountID, pof::base::data::clock_t::now()));
+		bool status = mLocalDatabase->bind(mWriteStatement, std::make_tuple(pof::base::data::clock_t::now(), at, mCurrentAccount->name, message));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return; 
@@ -145,9 +177,10 @@ void pof::AuditManager::CreateAuditTable()
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = 
-			"CREATE TABLE IF NOT EXIST audit (id integer unqiue primary key autoincrement, type integer, message text, user_id integer, date integer);";
+			"CREATE TABLE IF NOT EXISTS audit (id integer unqiue auto increment, type integer, date integer, user_name text, message text);";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
+			wxMessageBox(mLocalDatabase->err_msg().data(), "AUDIT");
 			spdlog::error(mLocalDatabase->err_msg());
 			return; //cannot create audit table
 		}

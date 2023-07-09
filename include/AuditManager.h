@@ -42,13 +42,15 @@ namespace pof
 		};
 
 		AuditManager();
-		~AuditManager() {}
+		~AuditManager();
 
 		void LoadCache(size_t from, size_t to);
 		void LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to);
 		void LoadType(auditType type, size_t from, size_t to);
 		void WriteAudit(auditType type, const std::string& message);
 		void Refresh();
+		void CreateAuditTable();
+		std::optional<size_t> GetDataSize() const; 
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurrentAccount;
@@ -61,12 +63,12 @@ namespace pof
 		bool bHighlightOne = false;
 		int sHighlightType = -1;
 	private:
-		void CreateAuditTable();
 		void CreateSpeicalCols();
 		void CreateTypeAttributes();
 
 		pof::base::database::stmt_t mWriteStatement = nullptr;
 		pof::base::database::stmt_t mLoadCacheStatement = nullptr;
+		mutable pof::base::database::stmt_t mDataSizeStatement = nullptr;
 
 		std::pair<size_t, size_t> mCacheRange = {0,0};
 		std::unique_ptr<pof::DataModel> mAuditData;

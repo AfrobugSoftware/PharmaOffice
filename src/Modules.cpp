@@ -207,14 +207,14 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 
 	//add the account type
 	wxStaticText* m_staticText3;
-	std::string AccountType = wxGetApp().MainAccount.GetAccountTypeString();
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
 	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText3->Wrap(-1);
 	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
 
 	wxStaticText* m_staticText1;
-	std::string AccountName = wxGetApp().MainAccount.GetName();
+	std::string AccountName = wxGetApp().MainAccount->GetName();
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
@@ -223,7 +223,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
 	wxStaticText* m_staticText2;
-	std::string PharmacyName = wxGetApp().MainPharamcy.GetName();
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
 			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 

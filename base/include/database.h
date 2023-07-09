@@ -7,6 +7,7 @@
 #include <optional>
 #include <filesystem>
 #include <exception>
+#include <utility>
 
 namespace pof {
 	namespace base {
@@ -383,20 +384,43 @@ namespace pof {
 			database& operator=(database&& db) noexcept;
 
 
-			std::optional<stmt_t> prepare(const query_t& query);
-			std::optional<stmt_t> prepare(std::string_view query);
-			void reset(stmt_t stmt);
-			void finalise(stmt_t stmt);
-			void clear_bindings(stmt_t stmt);
+			std::optional<stmt_t> prepare(const query_t& query) const;
+			std::optional<stmt_t> prepare(std::string_view query) const;
+			void reset(stmt_t stmt) const;
+			void finalise(stmt_t stmt) const;
+			void clear_bindings(stmt_t stmt) const;
 			bool add_map(const std::string& name, stmt_t stmt);
 			bool remove_map(const std::string& name);
 			std::optional<stmt_t> get_map(const std::string& value);
 
-			bool execute(const query_t& query);
-			bool execute(stmt_t stmt);
+			bool execute(const query_t& query) const;
+			bool execute(stmt_t stmt) const;
+
+			bool begin_trans() const;
+			bool end_trans() const;
 
 			inline std::string_view err_msg() const { return std::string_view(sqlite3_errmsg(m_connection)); }
 			inline int err_code() const { return sqlite3_errcode(m_connection); }
+
+			template<size_t N, std::enable_if_t<std::cmp_greater(N, 1), int> = 0>
+			auto prepare_multiple(std::string_view sql) const -> std::optional<std::array<stmt_t, N>>
+			{
+				std::array<stmt_t, N> stmts;
+				if (sql.empty()) return std::nullopt;
+				std::string_view subquery = sql;
+				const char* tail = nullptr;
+				stmt_t stmt = nullptr;
+				size_t count = N;
+				while(count--) {
+					if (sqlite3_prepare_v2(m_connection, subquery.data(), subquery.size(), &stmt, &tail) != SQLITE_OK) return std::nullopt;
+					if (tail == nullptr) break;
+
+					stmts[count] = stmt;
+					subquery = std::string_view{ tail, strlen(tail) };
+				};
+				return stmts;
+			}
+
 
 			template<typename... Args>
 			auto retrive(const std::string& name) -> std::optional<pof::base::relation<Args...>>

@@ -32,6 +32,8 @@ pof::Application::Application()
 	SetVendorName("D-GLOPA NIGERIA LIMITED");
 	SetVendorDisplayName("D-GLOPA NIGERIA LIMITED");
 
+	MainPharmacy = std::make_shared<pof::Pharmacy>();
+	MainAccount = std::make_shared<pof::Account>();
 
 
 }
@@ -66,6 +68,7 @@ bool pof::Application::OnInit()
 			OpenLocalDatabase();
 			CreateTables();
 			mProductManager.bUsingLocalDatabase = bUsingLocalDatabase;
+			
 		}
 		catch (std::exception& exp) {
 			spdlog::critical("Cannot open databse: {}", exp.what());
@@ -87,6 +90,7 @@ bool pof::Application::OnInit()
 	}
 
 	TestAccountAndPharmacy();
+	mAuditManager.mCurrentAccount = MainAccount;
 	return CreateMainFrame();
 }
 
@@ -134,6 +138,8 @@ bool pof::Application::OpenLocalDatabase()
 	sqlite3_initialize();
 	mLocalDatabase = std::make_shared<pof::base::database>(dbPath);
 	mProductManager.mLocalDatabase = mLocalDatabase;
+	mAuditManager.mLocalDatabase = mLocalDatabase;
+	mSaleManager.mLocalDatabase = mLocalDatabase;
 
 	return true;
 }
@@ -213,7 +219,7 @@ bool pof::Application::SignIn()
 
 void pof::Application::TestAccountAndPharmacy()
 {
-	MainPharamcy.name = "D-GLOPA NIGERIA LIMITED"s;
+	MainPharmacy->name = "D-GLOPA NIGERIA LIMITED"s;
 }
 
 void pof::Application::CreateTables()
@@ -270,6 +276,7 @@ void pof::Application::CreateTables()
 		return;
 	}
 	mLocalDatabase->finalise(*stmt);
+	mAuditManager.CreateAuditTable();
 }
 
 void pof::Application::ReadSettingsFlags()

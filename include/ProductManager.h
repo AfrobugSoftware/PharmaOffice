@@ -2,6 +2,7 @@
 #include <boost/noncopyable.hpp>
 #include <ranges>
 #include <algorithm>
+#include <set>
 #include <shared_mutex>
 #include "DataModel.h"
 #include "database.h"
@@ -140,6 +141,10 @@ namespace pof {
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		boost::uuids::random_generator_mt19937 UuidGen;
+
+		//data functions
+		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
+
 	private:
 
 		std::shared_mutex mCategoryMutex;
@@ -165,7 +170,9 @@ namespace pof {
 		pof::base::database::stmt_t CategoryRemoveStmt = nullptr;
 		pof::base::database::stmt_t CategoryUpdateStmt = nullptr;
 
-	
+
+		//data statements
+		pof::base::database::stmt_t ExpireProductStmt = nullptr;
 
 		
 

@@ -225,14 +225,14 @@ bool pof::SignInDialog::ValidateLocal()
 		return false;
 	}
 
-	account.signintime = pof::Account::clock_t::now();
-	account.accountID = std::get<0>(v);
-	account.priv = pof::Account::privilage_set_t(std::get<1>(v));
-	account.name = fmt::format("{} {}", std::get<2>(v), std::get<3>(v));
-	account.email = std::get<4>(v);
-	account.phonenumber = std::get<5>(v);
-	account.regnumber = std::get<6>(v);
-	account.passhash = std::get<7>(v);
+	account->signintime = pof::Account::clock_t::now();
+	account->accountID = std::get<0>(v);
+	account->priv = pof::Account::privilage_set_t(std::get<1>(v));
+	account->name = fmt::format("{} {}", std::get<2>(v), std::get<3>(v));
+	account->email = std::get<4>(v);
+	account->phonenumber = std::get<5>(v);
+	account->regnumber = std::get<6>(v);
+	account->passhash = std::get<7>(v);
 
 	dbPtr->finalise(*stmt);
 	return true;
