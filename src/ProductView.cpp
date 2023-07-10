@@ -213,7 +213,12 @@ void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
 void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 {
 	if (evt.IsChecked()) {
+		
 		RemoveCheckedState(mOutOfStockItem);
+		mActiveCategory.clear();
+		m_searchCtrl1->SetDescriptiveText("Search for product");
+
+
 		auto items = wxGetApp().mProductManager.DoExpiredProducts();
 		if (!items.has_value()) {
 			return;
@@ -490,7 +495,11 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 	auto& pd = wxGetApp().mProductManager.GetProductData();
 	if (evt.IsChecked()){
 		//disable expire product Item
+		//clear all the states
 		RemoveCheckedState(mExpireProductItem);
+		mActiveCategory.clear();
+		m_searchCtrl1->SetDescriptiveText("Search for product");
+
 		auto& datastore = pd->GetDatastore();
 		std::vector<wxDataViewItem> items;
 		items.reserve(300); //hurestic,

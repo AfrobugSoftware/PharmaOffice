@@ -117,14 +117,14 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings"))); 
 	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("MINIMUM STOCK COUNT"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mMinStockCount, wxT("The amount of stock that should indicate stock level is low. ") );
-	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("EXPIRE ALERT"), wxPG_LABEL ) );
+	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("EXPIRE PERIOD COUNT"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDateCount, wxT("Number of (Days, Weeks, Months) before expiry date that an alert should be sent") );
 	
 	ExpChoices.Add("DAY");
 	ExpChoices.Add("WEEK");
 	ExpChoices.Add("MONTH");
 
-	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE ALERT PERIOD"), wxPG_LABEL, ExpChoices) );
+	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE PERIOD"), wxPG_LABEL, ExpChoices) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
 	
 	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("SALE"), wxT("Sale") )); 
@@ -156,6 +156,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	this->Layout();
 	CreateNameToProductElemTable();
 	StyleProductPropertyManager();
+	StyleSheet();
 }
 
 pof::ProductInfo::~ProductInfo()
@@ -221,7 +222,7 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 		return;
 	}
 	mNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_NAME>(tup));
-	mGenericNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_GENERIC_NAME>(tup));
+	mGenericNameItem->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_GENERIC_NAME>(tup)));
 	mProductClass->SetValue(std::get<pof::ProductManager::PRODUCT_CLASS>(tup));
 	mPackageSizeItem->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_PACKAGE_SIZE>(tup)));
 	mUnitPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_UNIT_PRICE>(tup)));
@@ -260,6 +261,7 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 
 	//expire peroid 
 	//expire date
+	SplitPeriodString(tup);
 }
 
 boost::signals2::connection pof::ProductInfo::AttachBackSlot(back_signal_t::slot_type&& slot)
@@ -292,8 +294,8 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "STRENGTH/CONC. ", pof::ProductManager::PRODUCT_STRENGTH });
 	mNameToProductElem.insert({ "STRENGTH TYPE", pof::ProductManager::PRODUCT_STRENGTH_TYPE });
 	mNameToProductElem.insert({ "SIDE EFFECTS", pof::ProductManager::PRODUCT_SIDEEFFECTS});
-	mNameToProductElem.insert({ "EXPIRE ALERT PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
-	mNameToProductElem.insert({ "EXPIRE ALERT", pof::ProductManager::PRODUCT_TO_EXPIRE_DATE });
+	mNameToProductElem.insert({ "EXPIRE PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
+	mNameToProductElem.insert({ "EXPIRE PERIOD COUNT", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
 }
 
@@ -345,8 +347,71 @@ static std::string JoinArrayList(const wxVariant& Value) {
 	return fmt::format("{}", fmt::join(arrayString, ","));
 }
 
+pof::base::data::datetime_t pof::ProductInfo::PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const
+{
+	int idx = mExpDatePeriod->GetChoiceSelection();
+	if (idx == wxNOT_FOUND) {
+		return {};
+	}
+	pof::base::data::datetime_t period;
+	switch (idx) {
+	case 0: //day
+	{
+		date::days point(periodCount);
+		period = expire - point;
+	}
+		break;
+	case 1: //week
+	{
+		date::weeks point(periodCount * 7);
+		period = expire - point;
+	}
+		break;
+	case 2: //month
+	{
+		date::months point(periodCount);
+		period = expire - point;
+	}
+		break;
+	}
+	return period;
+}
+
+pof::base::data::text_t pof::ProductInfo::CreatePeriodString()
+{
+	auto val = mExpDatePeriod->GetValueAsString().ToStdString();
+	//do also for count 
+	int count = mExpDateCount->GetValue().GetInteger();
+	if (val.empty()) {
+		wxMessageBox("Expired Period Count specified, but duration is not specified", "PRODUCT INFO", wxICON_WARNING | wxOK);
+		return {};
+	}
+	return fmt::format("{:d},{}", count, val);
+}
+
+void pof::ProductInfo::SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup)
+{
+	mExpDateCount->SetValue(wxVariant());
+	mExpDatePeriod->SetValue(wxVariant());
+
+	auto string = std::get<pof::ProductManager::PRODUCT_EXPIRE_PERIOD>(tup);
+	if (string.empty()) return;
+
+	size_t n = string.find_first_of(",");
+	if (n == std::string::npos) return;
+
+	mExpDateCount->SetValue(wxVariant(atoi(string.substr(0, n).c_str())));
+	auto stringArray = ExpChoices.GetLabels();
+	auto iter = std::ranges::find(stringArray, string.substr(n + 1, string.size()));
+	if (iter == stringArray.end()) return;
+
+	mExpDatePeriod->SetValue(wxVariant((int)std::distance(stringArray.begin(), iter)));
+}
+
+
 void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 {
+	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
 	spdlog::info("{}", evt.GetPropertyName().ToStdString());
@@ -397,7 +462,25 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		break;
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
 	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
-		//v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = std::move("");
+	{
+		size_t count = mExpDateCount->GetValue().GetInteger();
+		auto& duid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+		auto periodString = CreatePeriodString();
+		if (periodString.empty()) {
+			mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx, false);
+			break;
+		}
+		v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = periodString;
+		auto exp = wxGetApp().mProductManager.GetCurrentExpireDate(duid);
+		if (!exp.has_value()) {
+			spdlog::info("No exp date");
+			break;
+		}
+		else {
+			v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = PeriodTime(count, exp.value());
+			mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_EXPIRE_PERIOD);
+		}
+	}
 		break;
 	case pof::ProductManager::PRODUCT_SIDEEFFECTS:
 		v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(JoinArrayList(PropertyValue));
@@ -418,6 +501,14 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	
 	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	evt.Veto(); //might not be necessary
+}
+
+void pof::ProductInfo::StyleSheet()
+{
+	auto grid = m_propertyGridPage1->GetGrid();
+	grid->SetBackgroundColour(*wxWHITE);
+	grid->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->SetCaptionTextColour(*wxBLACK);
 }
 
 void pof::ProductInfo::OnSashDoubleClick(wxSplitterEvent& evt)

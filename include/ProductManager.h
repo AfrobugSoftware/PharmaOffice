@@ -144,6 +144,7 @@ namespace pof {
 
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
+		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 
 	private:
 
@@ -173,7 +174,7 @@ namespace pof {
 
 		//data statements
 		pof::base::database::stmt_t ExpireProductStmt = nullptr;
-
+		pof::base::database::stmt_t CurExpireDateStmt = nullptr;
 		
 
 		//should also contain the product view

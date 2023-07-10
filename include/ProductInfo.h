@@ -24,6 +24,8 @@
 #include <unordered_map>
 #include <optional>
 
+#include <date/date.h>
+
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
 #include "InventoryDialog.h"
@@ -121,12 +123,16 @@ namespace pof
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
+		void StyleSheet();
 
 		void OnSashDoubleClick(wxSplitterEvent& evt);
 		void OnUnspilt(wxSplitterEvent& evt);
 		void OnShowProductInfo(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
+		pof::base::data::datetime_t PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const;
+		pof::base::data::text_t CreatePeriodString();
+		void SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup);
 
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;

@@ -741,6 +741,44 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 	}
 }
 
+std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpireDate(const pof::base::data::duuid_t& prod)
+{
+	if (mLocalDatabase) {
+		if (!CurExpireDateStmt) {
+			constexpr const std::string_view sql = R"(
+					SELECT i.expire_date
+					FROM inventory i
+					WHERE i.input_date = 
+						(
+							SELECT MAX(i.input_date)
+							FROM inventory i
+							WHERE i.uuid = ? 
+						);
+			)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+			CurExpireDateStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(CurExpireDateStmt, std::make_tuple(prod));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(CurExpireDateStmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		if (rel->empty()) return std::nullopt; //or return what ?? 
+		return std::get<0>(*rel->begin());
+	}
+	return std::nullopt;
+}
+
 void pof::ProductManager::Finialize()
 {
 	if (bUsingLocalDatabase) {
@@ -749,6 +787,13 @@ void pof::ProductManager::Finialize()
 		mLocalDatabase->finalise(productStoreStmt);
 		mLocalDatabase->finalise(InventoryLoadStmt);
 		mLocalDatabase->finalise(productOnStoreStmt);
+		mLocalDatabase->finalise(CategoryLoadStmt);
+		mLocalDatabase->finalise(CategoryStoreStmt);
+		mLocalDatabase->finalise(CategoryRemoveStmt);
+		mLocalDatabase->finalise(CategoryUpdateStmt);
+		mLocalDatabase->finalise(ExpireProductStmt);
+		mLocalDatabase->finalise(CurExpireDateStmt);
+
 	}
 }
 
