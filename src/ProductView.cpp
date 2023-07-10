@@ -27,6 +27,7 @@ EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
 EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
+EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
 
 END_EVENT_TABLE()
 
@@ -559,12 +560,20 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 {
 	if (evt.IsDropDownClicked()) {
 		wxMenu* menu = new wxMenu;
+		menu->Append(ID_REPORTS_ENDOFDAY, "End Of Day", nullptr);
 		menu->Append(ID_REPORTS_CONSUMPTION_PATTERN, "Consumption pattern", nullptr);
+
+
 		m_auiToolBar1->PopupMenu(menu);
 	}
 }
 
+
 void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
+{
+}
+
+void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
 }
 
@@ -833,16 +842,6 @@ void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
 		menu->Append(range, name, nullptr);
 		menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this),range);
 	}
-}
-
-void pof::ProductView::SetExpireProducts()
-{
-	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	if (datastore.empty()) return;
-	
-	auto today = pof::base::data::clock_t::now();
-	
-
 }
 
 void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)

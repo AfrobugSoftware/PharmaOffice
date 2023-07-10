@@ -47,6 +47,7 @@ namespace pof
 			ID_DATA_VIEW,
 			ID_REPORTS,
 			ID_REPORTS_CONSUMPTION_PATTERN,
+			ID_REPORTS_ENDOFDAY,
 			ID_SEARCH,
 			ID_SEARCH_BY_CATEGORY,
 			ID_SEARCH_BY_NAME,
@@ -138,6 +139,7 @@ namespace pof
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnReportDropdown(wxAuiToolBarEvent& evt);
 		void OnConsumptionPattern(wxCommandEvent& evt);
+		void OnEndOfDayReport(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
@@ -161,7 +163,6 @@ namespace pof
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
-		void SetExpireProducts(); //view the expired products
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 	private:
 		DECLARE_EVENT_TABLE()

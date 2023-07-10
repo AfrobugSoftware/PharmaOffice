@@ -35,3 +35,8 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 {
 
 }
+
+bool pof::SaleManager::CreateSaleTable()
+{
+	return false;
+}
