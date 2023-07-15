@@ -13,14 +13,22 @@ namespace pof {
 
 	public:
 		enum {
+			SALE_UUID,
 			PRODUCT_UUID,
-			PRODUCT_SERIAL_NUM,
 			PRODUCT_NAME,
-			PRODUCT_CATEGORY,
 			PRODUCT_PRICE,
 			PRODUCT_QUANTITY,
 			PRODUCT_EXT_PRICE,
+			SALE_DATE,
 			MAX
+		};
+
+		enum {
+			HIST_DATE,
+			HIST_PROD_NAME,
+			HIST_QUANTITY,
+			HIST_EXTPRICE,
+			HIST_MAX
 		};
 
 		SaleManager();

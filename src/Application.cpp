@@ -47,6 +47,7 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
+	if (!wxApp::OnInit()) return false;
 
 
 	SetUpPaths();

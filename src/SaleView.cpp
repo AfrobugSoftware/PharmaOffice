@@ -4,15 +4,38 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
 	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)
 	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
+	EVT_TOOL(pof::SaleView::ID_REMOVE_PRODUCT, pof::SaleView::OnRemoveProduct)
+	EVT_TOOL(pof::SaleView::ID_HIDE_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnHideProductViewProperty)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
 	EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnEditingStarted)
 	EVT_DATAVIEW_ITEM_EDITING_DONE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnEditingDone)
 	EVT_DATAVIEW_ITEM_START_EDITING(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnValueChanged)
+	EVT_DATAVIEW_SELECTION_CHANGED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
-	EVT_TEXT(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
+	EVT_SEARCH(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
 END_EVENT_TABLE()
+
+static wxArrayString SplitIntoArrayString(const std::string& string)
+{
+	wxArrayString Split;
+	auto pos = string.find_first_of(",");
+	size_t pos2 = 0;
+	if (pos == std::string::npos) {
+		if (!string.empty()) Split.push_back(string);
+		return Split;
+	}
+
+	Split.push_back(std::move(string.substr(0, pos)));
+	while ((pos2 = string.find_first_of(",", pos + 1)) != std::string::npos) {
+		Split.push_back(std::move(string.substr(pos + 1, pos2 - (pos + 1))));
+		pos = pos2;
+	}
+	Split.push_back(std::move(string.substr(pos + 1, string.size() - (pos + 1))));
+	return Split;
+}
 
 
 pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
@@ -53,28 +76,35 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mScanProductValue->SetHint("Scan products");
 	mTopTools->AddControl(mScanProductValue);
 
-
+	mTopTools->AddStretchSpacer();
+	
+	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
+	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
 	mTopTools->Realize();
 	bSizer5->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
 
+	
 	mDataPane = new wxPanel(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bSizer6;
-	bSizer6 = new wxBoxSizer(wxVERTICAL);
+	bSizer6 = new wxBoxSizer(wxHORIZONTAL);
 
+	
 	m_dataViewCtrl1 = new wxDataViewCtrl(mDataPane, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
 
 
-	mSerialNumber = m_dataViewCtrl1->AppendTextColumn(wxT("SERIAL NUMBER"), pof::SaleManager::PRODUCT_SERIAL_NUM, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 600, wxALIGN_CENTER);
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRODUCT CATEGORY"), pof::SaleManager::PRODUCT_CATEGORY, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("QUANTITY"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
 	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRICE"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("EXT PRICE"), pof::SaleManager::PRODUCT_EXT_PRICE);
-	auto choiceRender = new wxDataViewChoiceRenderer(wxArrayString(), wxDATAVIEW_CELL_INERT);
-	m_dataViewCtrl1->AppendColumn(new wxDataViewColumn(wxT("DIRECTION FOR USE"), choiceRender, pof::SaleManager::MAX + 1, 200));
-	bSizer6->Add(m_dataViewCtrl1, 1, wxALL | wxEXPAND, 0);
+	
+	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, wxSize(400, -1),
+		wxPG_SPLITTER_AUTO_CENTER | wxPG_STATIC_SPLITTER);
+	mPropertyManager->Hide();
+	CreateProductDetails();
 
+	bSizer6->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
+	bSizer6->Add(mPropertyManager, wxSizerFlags().Expand().Border(wxALL, 2));
 
 	mDataPane->SetSizer(bSizer6);
 	mDataPane->Layout();
@@ -223,6 +253,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	pof::base::data& dataStore = model->GetDatastore();
+
 	extPriceCol.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datum = dataStore[row];
 		auto& v = datum.first;
@@ -272,6 +303,24 @@ void pof::SaleView::CreateSearchPopup()
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
 	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE}});
 	mSearchPopup->sSelectedSignal.connect(std::bind_front(&pof::SaleView::OnSearchPopup, this));
+}
+
+void pof::SaleView::CreateProductDetails()
+{
+	//create the property grid
+	auto genArray = mPropertyManager->Append(new wxArrayStringProperty("PRODUCT GENERIC NAME"));
+	auto dirArray = mPropertyManager->Append(new wxEditEnumProperty("DIRECTION FOR USE"));
+
+
+
+	mProperties.insert({ genArray, [&](const wxVariant& value) {
+				
+	} });
+
+	mProperties.insert({ dirArray, [&](const wxVariant& value) {
+			
+	}  });
+
 }
 
 void pof::SaleView::UpdateSaleDisplay()
@@ -367,8 +416,52 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 
 }
 
+void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
+{
+}
+
+void pof::SaleView::OnSelected(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+
+
+	if (!mPropertyManager->IsShown()) {
+		((wxWindowBase*)mPropertyManager)->Show();
+		
+	//	mDataPane->Layout();
+		auto parent = mPropertyManager->GetParent();
+		parent->Layout();
+
+		((wxWindowBase*)mPropertyManager)->Show(false);
+		mPropertyManager->ShowWithEffect(wxSHOW_EFFECT_SLIDE_TO_RIGHT, 30000);
+
+		parent->Refresh();
+	}
+	auto& saleData = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[idx];
+	auto& saleProductUuid = boost::variant2::get<pof::base::data::duuid_t>(saleData.first[pof::SaleManager::PRODUCT_UUID]);
+	auto iter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+		[&](const pof::base::data::row_t& row) -> bool {
+			return (boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) == saleProductUuid);
+	});
+
+	if (iter == std::end(wxGetApp().mProductManager.GetProductData()->GetDatastore())) return;
+	LoadProductDetails(*iter);
+}
+
+void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
+{
+	if (!mPropertyManager->IsShown()) return;
+	mPropertyManager->HideWithEffect(wxSHOW_EFFECT_SLIDE_TO_LEFT, 7000);
+	mDataPane->Layout();
+	mDataPane->Refresh();
+}
+
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
 {
+
 }
 
 void pof::SaleView::OnEditingStarted(wxDataViewEvent& evt)
@@ -392,6 +485,12 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 {
 	auto& meta = dat.GetMeta();
 	auto& row = dat.GetSetData();
+
+	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+		mCurSaleuuid = uuidGen();
+	}
+
+
 	if (row.has_value()) {
 		auto& val = row.value();
 		bool status = CheckInStock(val);
@@ -412,9 +511,10 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 		row.first.resize(pof::SaleManager::MAX);
 		row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 		auto& v = row.first;
-		v[pof::SaleManager::PRODUCT_SERIAL_NUM] = val.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		
+		v[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+		v[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
 		v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
-		v[pof::SaleManager::PRODUCT_CATEGORY] = "MEDICINE"s;
 		v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
 		v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
 		v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
@@ -430,6 +530,10 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 {
 	try {
+		if (mCurSaleuuid == boost::uuids::nil_uuid()){
+			mCurSaleuuid = uuidGen();
+		}
+
 		auto& v = row.first;
 		pof::base::data::row_t rowSale;
 		bool status = CheckInStock(row);
@@ -449,9 +553,9 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		auto& vS = rowSale.first;
 		vS.resize(pof::SaleManager::MAX);
 
-		vS[pof::SaleManager::PRODUCT_SERIAL_NUM] = v[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+		vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
 		vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
-		vS[pof::SaleManager::PRODUCT_CATEGORY] = "MEDICINE"s;
 		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
 		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
@@ -472,6 +576,59 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 {
 	auto value = evt.GetString().ToStdString();
 	if (value.empty()) return;
+	bool isNum = std::ranges::all_of(value, [&](char c) -> bool { return std::isdigit(c); });
+	if (!isNum) {
+		wxMessageBox("Unrecongised character in barcode", "SALE", wxICON_WARNING | wxOK);
+		return;
+	}
+	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+		mCurSaleuuid = uuidGen();
+	}
+
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	try {
+		auto iter = std::ranges::find_if(datastore, [&](const pof::base::data::row_t& row) -> bool {
+			auto& barcode = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_BARCODE]);
+			return (value == barcode);
+		});
+		if (iter == datastore.end()) {
+
+			wxMessageBox("NO SUCH PRODUCT IN STORE", "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+		CheckExpired(*iter);
+		bool status = CheckProductClass(*iter);
+		if (status) {
+			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
+				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			return;
+		}
+
+
+		auto& v = iter->first;
+		pof::base::data::row_t rowSale;
+
+		auto& vS = rowSale.first;
+		vS.resize(pof::SaleManager::MAX);
+
+		vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+		vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+		vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
+		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
+		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+
+
+		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+		UpdateSaleDisplay();
+
+		mScanProductValue->Clear();
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
+	}
+
 
 }
 
@@ -513,44 +670,7 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 	auto& v = product.first;
 	if (!wxGetApp().bCheckExpired) return false;
 	try {
-		auto& uu = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
-		auto tt = pof::base::data::clock_t::now().time_since_epoch().count();
-		if (wxGetApp().mLocalDatabase) {
-			if (!mExpiredStatement) {
-				constexpr const std::string_view sql = "SELECT lot_number FROM inventory WHERE uuid = ? AND expire_date < ?;";
-				auto stmt = wxGetApp().mLocalDatabase->prepare(sql);
-				if (!stmt.has_value()) {
-					spdlog::error(wxGetApp().mLocalDatabase->err_msg());
-					return false;
-				}
-				mExpiredStatement = *stmt;
-			}
-			bool status = wxGetApp().mLocalDatabase->bind(mExpiredStatement, std::make_tuple(uu, tt));
-			if (!status) {
-				spdlog::error(wxGetApp().mLocalDatabase->err_msg());
-				return false;
-			}
-
-			auto ret = wxGetApp().mLocalDatabase->retrive<pof::base::data::text_t>(mExpiredStatement);
-			if (!ret.has_value()) {
-				spdlog::error(wxGetApp().mLocalDatabase->err_msg());
-				return false;
-			}
-			if (ret.value().empty()) {
-				return false;
-			}
-			else {
-				std::vector<std::string> batches;
-				batches.reserve(ret->size());
-				for (auto& t : *ret) {
-					batches.emplace_back(std::move(std::get<0>(t)));
-				}
-				wxMessageBox(fmt::format("Product May be expired if it belongs to the following batches \n {} \n Please check batch No before continuing", 
-						fmt::join(std::move(batches), ",")), "SALE PRODUCT", wxICON_WARNING | wxOK);
-				return true;
-			}
-
-		}
+	
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
@@ -571,3 +691,10 @@ void pof::SaleView::ProductNameKeyEvent()
 		}
 	});
 }
+
+void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
+{
+
+}
+
+

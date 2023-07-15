@@ -16,6 +16,10 @@
 #include <wx/srchctrl.h>
 #include <wx/aui/auibar.h>
 
+#include <wx/propgrid/propgrid.h>
+#include <wx/propgrid/manager.h>
+#include <wx/propgrid/advprops.h>
+
 #include "SaleManager.h"
 #include "DropTarget.h"
 #include "SearchPopup.h"
@@ -23,6 +27,7 @@
 #include "database.h"
 
 #include <ranges>
+#include <unordered_map>
 #include <numeric>
 
 namespace pof
@@ -38,7 +43,9 @@ namespace pof
 		wxSearchCtrl* mProductNameValue;
 		wxStaticText* mScanProduct;
 		wxSearchCtrl* mScanProductValue;
+		wxPanel* mProductViewPane = nullptr;
 		wxPanel* mDataPane;
+		wxPropertyGrid* mPropertyManager;
 		wxDataViewCtrl* m_dataViewCtrl1;
 		wxDataViewColumn* mSerialNumber;
 		wxDataViewColumn* mProductNameCol;
@@ -64,6 +71,13 @@ namespace pof
 		wxButton* mCheckout = nullptr;
 		pof::SearchPopup* mSearchPopup = nullptr;
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
+
+
+		pof::base::data::duuid_t mCurSaleuuid;
+		std::string mCurDirForUse;
+		std::string mSideEffectWarnings; 
+
+		boost::uuids::random_generator_mt19937 uuidGen;
 		//pof::base::database::stmt_t mExpiredStatemet; 
 	public:
 
@@ -72,8 +86,11 @@ namespace pof
 			ID_PRODUCT_SCAN,
 			ID_SALE_DATA_VIEW,
 			ID_CHECKOUT,
+			ID_REMOVE_PRODUCT,
+			ID_HIDE_PRODUCT_VIEW_PROPERTY,
 			ID_SAVE,
 			ID_CLEAR,
+			ID_PRODUCT_VIEW_PROPERTY,
 		};
 
 
@@ -83,6 +100,7 @@ namespace pof
 
 		void CreateSpecialColumnHandlers();
 		void CreateSearchPopup();
+		void CreateProductDetails();
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
@@ -96,7 +114,9 @@ namespace pof
 
 		void OnBeginDrag(wxDataViewEvent& evt);
 		void OnProductNameSearch(wxCommandEvent& evt);
-
+		void OnRemoveProduct(wxCommandEvent& evt);
+		void OnSelected(wxDataViewEvent& evt);
+		void OnHideProductViewProperty(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
@@ -111,8 +131,10 @@ namespace pof
 		bool CheckExpired(const pof::base::data::row_t& product);
 
 		void ProductNameKeyEvent(); //test
+		void LoadProductDetails(const pof::base::data::row_t& product);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
+		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
 
 		DECLARE_EVENT_TABLE();
 	};

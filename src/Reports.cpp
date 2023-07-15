@@ -1,5 +1,10 @@
 #include "Reports.h"
-
+BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
+EVT_DATE_CHANGED(pof::ReportsDialog::ID_DATE_FROM, pof::ReportsDialog::OnDateFromChanged)
+EVT_DATE_CHANGED(pof::ReportsDialog::ID_DATE_TO, pof::ReportsDialog::OnDateToChanged)
+EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
+EVT_CHOICE(pof::ReportsDialog::ID_PEIOD_CHOICE, pof::ReportsDialog::OnChoiceChanged)
+END_EVENT_TABLE()
 
 pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::ReportParams& params, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
 	: wxDialog(parent, id, title, pos, size, style)
@@ -35,6 +40,18 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::Re
 	mTools->AddControl(text2);
 	mTools->AddSpacer(5);
 	mTools->AddControl(mDateTo);
+
+	mTools->AddSpacer(10);
+	auto text3 = new wxStaticText(mTools, wxID_ANY, "Period: ");
+	wxArrayString pChoices;
+
+	pChoices.push_back("QUARTER");
+	pChoices.push_back("MONTH");
+	pChoices.push_back("YEAR");
+
+
+	mPeriodChoice = new wxChoice(mTools, ID_PEIOD_CHOICE, wxDefaultPosition, wxDefaultSize, pChoices);
+	mTools->AddControl(mPeriodChoice);
 
     mTools->AddStretchSpacer();
 	mPrint = mTools->AddTool(ID_PRINT, wxT("Print"), wxArtProvider::GetBitmap(wxART_PRINT), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
@@ -85,5 +102,21 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::Re
 }
 
 pof::ReportsDialog::~ReportsDialog()
+{
+}
+
+void pof::ReportsDialog::OnDateFromChanged(wxDateEvent& evt)
+{
+}
+
+void pof::ReportsDialog::OnDateToChanged(wxDateEvent& evt)
+{
+}
+
+void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
+{
+}
+
+void pof::ReportsDialog::OnChoiceChanged(wxCommandEvent& evt)
 {
 }

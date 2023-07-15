@@ -16,6 +16,7 @@
 #include <wx/panel.h>
 #include <wx/dialog.h>
 #include <wx/datectrl.h>
+#include <wx/dateevt.h>
 #include <wx/stattext.h>
 #include <wx/choice.h>
 
@@ -39,7 +40,13 @@ namespace pof
 			ID_PRINT = 4567,
 			ID_DATE_FROM,
 			ID_DATE_TO,
+			ID_PEIOD_CHOICE,
+		};
 
+		//report type
+		enum class reportType : std::uint8_t {
+			EOD,
+			CONSUMP,
 		};
 
 		struct ReportParams
@@ -59,9 +66,16 @@ namespace pof
 		ReportsDialog(wxWindow* parent, const ReportParams& params = {},  wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(799, 611), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL);
 		~ReportsDialog();
 
-		wxGrid& GetGrid() {}
+		constexpr inline wxGrid& GetGrid() { return *mGrid; }
 
+
+
+	protected:
 		//EVENTS
+		void OnDateFromChanged(wxDateEvent& evt);
+		void OnDateToChanged(wxDateEvent& evt);
+		void OnPrint(wxCommandEvent& evt);
+		void OnChoiceChanged(wxCommandEvent& evt);
 
 
 		DECLARE_EVENT_TABLE()

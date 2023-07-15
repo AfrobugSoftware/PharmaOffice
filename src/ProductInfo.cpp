@@ -193,7 +193,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 
 }
 
-wxArrayString SplitIntoArrayString(const std::string& string)
+static wxArrayString SplitIntoArrayString(const std::string& string)
 {
 	wxArrayString Split;
 	auto pos = string.find_first_of(",");
