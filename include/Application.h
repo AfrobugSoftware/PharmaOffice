@@ -22,6 +22,7 @@
 #include "ProductManager.h"
 #include "SaleManager.h"
 #include "AuditManager.h"
+#include "PrintManager.h"
 
 
 namespace js = nlohmann;
@@ -65,6 +66,7 @@ namespace pof {
 		pof::ProductManager mProductManager;
 		pof::SaleManager mSaleManager;
 		pof::AuditManager mAuditManager;
+		std::shared_ptr<pof::PrintManager> mPrintManager;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		//settings flags

@@ -72,6 +72,10 @@ namespace pof
 		pof::SearchPopup* mSearchPopup = nullptr;
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
 
+		//product properties
+		wxStringProperty* genArray = nullptr;
+		wxEditEnumProperty* dirArray = nullptr;
+
 
 		pof::base::data::duuid_t mCurSaleuuid;
 		std::string mCurDirForUse;

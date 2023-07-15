@@ -688,7 +688,7 @@ void pof::ProductView::OnCategoryRemoved(const std::string& name)
 	}
 
 	wxGetApp().mProductManager.RemoveCategory(name);
-	mInfoBar->ShowMessage(fmt::format("Removed {} successfully", name));
+	mInfoBar->ShowMessage(fmt::format("Removed \'{}\' successfully", name));
 }
 
 void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::string& newName)

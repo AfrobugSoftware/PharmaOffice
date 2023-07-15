@@ -43,11 +43,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
-	mMainPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	wxBoxSizer* bSizer5;
-	bSizer5 = new wxBoxSizer(wxVERTICAL);
-
-	mTopTools = new wxAuiToolBar(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mTopTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mTopTools->SetMinSize(wxSize(-1, 40));
 
 	mProductNameText = new wxStaticText(mTopTools, wxID_ANY, wxT("Product Name: "), wxDefaultPosition, wxDefaultSize, 0);
@@ -81,10 +77,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
 	mTopTools->Realize();
-	bSizer5->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
 
 	
-	mDataPane = new wxPanel(mMainPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mDataPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxHORIZONTAL);
 
@@ -109,14 +104,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mDataPane->SetSizer(bSizer6);
 	mDataPane->Layout();
 	bSizer6->Fit(mDataPane);
-	bSizer5->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
-
-
-	mMainPane->SetSizer(bSizer5);
-	mMainPane->Layout();
-	bSizer5->Fit(mMainPane);
-	bSizer1->Add(mMainPane, 1, wxEXPAND | wxALL, 0);
-
+	
 	mSaleOutputPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
@@ -220,11 +208,13 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mSaleOutputPane->SetSizer( bSizer2 );
 	mSaleOutputPane->Layout();
 	bSizer2->Fit( mSaleOutputPane );
+
+	bSizer1->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
+	bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
 	bSizer1->Add( mSaleOutputPane, 0, wxEXPAND | wxALL, 0 );
-	
-	
 	this->SetSizer( bSizer1 );
 	this->Layout();
+	bSizer1->Fit(this);
 
 	SetupDropTarget();
 	CreateSpecialColumnHandlers();
@@ -308,10 +298,12 @@ void pof::SaleView::CreateSearchPopup()
 void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
-	auto genArray = mPropertyManager->Append(new wxArrayStringProperty("PRODUCT GENERIC NAME"));
-	auto dirArray = mPropertyManager->Append(new wxEditEnumProperty("DIRECTION FOR USE"));
-
-
+	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
+	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
+		
+		
+	mPropertyManager->Append(genArray);
+	mPropertyManager->Append(dirArray);
 
 	mProperties.insert({ genArray, [&](const wxVariant& value) {
 				
@@ -320,7 +312,11 @@ void pof::SaleView::CreateProductDetails()
 	mProperties.insert({ dirArray, [&](const wxVariant& value) {
 			
 	}  });
-
+	
+	//auto grid = mPropertyManager->GetGrid();
+	mPropertyManager->SetBackgroundColour(*wxWHITE);
+	mPropertyManager->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	mPropertyManager->SetCaptionTextColour(*wxBLACK);
 }
 
 void pof::SaleView::UpdateSaleDisplay()
@@ -418,6 +414,11 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 
 void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 {
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	wxGetApp().mSaleManager.GetSaleData()->RemoveData(item);
+	UpdateSaleDisplay();
 }
 
 void pof::SaleView::OnSelected(wxDataViewEvent& evt)
@@ -430,14 +431,9 @@ void pof::SaleView::OnSelected(wxDataViewEvent& evt)
 
 	if (!mPropertyManager->IsShown()) {
 		((wxWindowBase*)mPropertyManager)->Show();
-		
 	//	mDataPane->Layout();
 		auto parent = mPropertyManager->GetParent();
 		parent->Layout();
-
-		((wxWindowBase*)mPropertyManager)->Show(false);
-		mPropertyManager->ShowWithEffect(wxSHOW_EFFECT_SLIDE_TO_RIGHT, 30000);
-
 		parent->Refresh();
 	}
 	auto& saleData = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[idx];
@@ -454,7 +450,7 @@ void pof::SaleView::OnSelected(wxDataViewEvent& evt)
 void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
 {
 	if (!mPropertyManager->IsShown()) return;
-	mPropertyManager->HideWithEffect(wxSHOW_EFFECT_SLIDE_TO_LEFT, 7000);
+	mPropertyManager->Hide();
 	mDataPane->Layout();
 	mDataPane->Refresh();
 }
@@ -694,7 +690,21 @@ void pof::SaleView::ProductNameKeyEvent()
 
 void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 {
+	try {
+		auto& v = product.first;
+		auto& dirForUse = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
+		wxArrayString arrString = SplitIntoArrayString(dirForUse);
+		wxPGChoices choices;
+		choices.Set(arrString);
+		dirArray->SetChoices(choices);
 
+		auto& genericName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
+		genArray->SetValue(wxVariant(genericName));
+
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 }
 
 

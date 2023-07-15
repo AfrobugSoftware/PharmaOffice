@@ -5,8 +5,13 @@
 #include <memory>
 #include "database.h"
 #include "Account.h"
+#include "Pharmacy.h"
 
 
+#include <wx/html/htmprint.h>
+#include <dep/HTML/HTML.h>
+
+namespace html = HTML;
 //still need to thing
 namespace pof {
 	class SaleManager : public boost::noncopyable {
@@ -31,18 +36,29 @@ namespace pof {
 			HIST_MAX
 		};
 
+		//sale payment type
+		enum {
+			BANK_TRANSFER,
+			BANK_CARD,
+			CASH,
+		};
+		constexpr static const std::array<std::string_view, 3> sPaymentType = { "BANK TRANSFER", "BANK CARD", "CASH" };
+
 		SaleManager();
 		~SaleManager();
 		void DoSale();
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurAccount;
+		std::shared_ptr<pof::Pharmacy> mCurPharmacy;
 
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
 
 		bool CreateSaleTable();
+		bool DoPrintReceipt();
+
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 	private:

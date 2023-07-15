@@ -92,6 +92,10 @@ bool pof::Application::OnInit()
 
 	TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
+	mSaleManager.mCurAccount = MainAccount;
+	mSaleManager.mCurPharmacy = MainPharmacy;
+
+
 	return CreateMainFrame();
 }
 

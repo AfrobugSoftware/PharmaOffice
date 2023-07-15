@@ -300,7 +300,7 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 					textArray.emplace_back("strength_type = ?");
 					break;
 				case PRODUCT_USAGE_INFO:
-					textArray.emplace_back("usuage_info = ?");
+					textArray.emplace_back("usage_info = ?");
 
 					break;
 				case PRODUCT_DESCRIP:
