@@ -123,7 +123,7 @@ bool pof::SaleManager::CreateSaleTable()
 	return false;
 }
 
-bool pof::SaleManager::DoPrintReceipt()
+bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAmount)
 {
 	/*
 	* 
@@ -217,10 +217,110 @@ bool pof::SaleManager::DoPrintReceipt()
 
 	html::Div invoiceDiv("invoice");
 	html::Div top("top");
-
 	top << html::Div("logo");
+	html::Div info1("info");
+	info1 << html::Header2("PAYMENT RECIEPT");
+	top << std::move(info1);
+	
+	html::Div mid("mid");
+	html::Div info2("info");
+	info2 << html::Header2("Contact Info");
 
+	std::ostringstream os;
+	os << mCurPharmacy->name << "<br>\n";
+	os << fmt::format("{} {} {} {} {} <br>\n", mCurPharmacy->addy.number,
+			mCurPharmacy->addy.street, 
+			mCurPharmacy->addy.city,
+			mCurPharmacy->addy.state,
+			mCurPharmacy->addy.country);
+	os << fmt::format("{} {} <br>\n", mCurPharmacy->contact.phoneNumber, 
+			mCurPharmacy->contact.email);
+	
+	info2 << html::Paragraph(os.str());
+	mid << std::move(info2);
+
+	html::Div bot("bot");
+	html::Div tabDiv("table");
+	html::Table tab;
+
+	html::Row rTitle;
+	rTitle.cls("tableTitle");
+	html::Col colHeaders[3];
+	colHeaders[0].cls("item");
+	colHeaders[0].cls("Hours");
+	colHeaders[0].cls("Rate");
+
+	rTitle << (colHeaders[0] << html::Header2("Item"));
+	rTitle << (colHeaders[1] << html::Header2("Qty"));
+	rTitle << (colHeaders[2] << html::Header2("Price"));
+
+	tab << std::move(rTitle);
+	
+	auto& datastore = SaleData->GetDatastore();
+	for (const auto& row : datastore) {
+		auto& v = row.first;
+		html::Row r2;
+		r2.cls("service");
+		html::Col colBody[3];
+
+		colBody[0].cls("tableitem");
+		colBody[1].cls("tableitem");
+		colBody[2].cls("tableitem");
+
+		const pof::base::data::text_t& productName = boost::variant2::get<pof::base::data::text_t>(v[PRODUCT_NAME]);
+		const std::uint64_t quantity = boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]);
+		const pof::base::data::currency_t& productCurreny = boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]);
+
+		colBody[0] << html::Paragraph(productName).cls("itemtext");
+		colBody[1] << html::Paragraph(fmt::format("{:d}", quantity)).cls("itemtext");
+		colBody[2] << html::Paragraph(fmt::format("{:cu}", productCurreny));
+
+		for (int i = 0; i < 3; i++)
+			r2 << std::move(colBody[i]);
+		tab << std::move(r2);
+	}
+
+	html::Row r3;
+	r3.cls("tabletitle");
+	r3 << html::Col();
+
+	html::Col vatC("VAT");
+	vatC.cls("Rate");
+	r3 << std::move(vatC);
+
+	html::Col vatPayment(fmt::format("{:.1f}", vat));
+	vatPayment.cls("payment");
+	r3 << std::move(vatPayment);
+
+	tab << std::move(r3);
+
+	html::Row r4;
+	r4.cls("tabletitle");
+	r4 << html::Col();
+
+	html::Col totl("TOTAL ");
+	totl.cls("Rate");
+	r4 << std::move(totl);
+
+	html::Col totlAmt(fmt::format("{:cu}", totalAmount));
+	totlAmt.cls("payment");
+	r4 << std::move(totlAmt);
+
+	tab << std::move(r4);
+	tabDiv << std::move(tab);
+	bot << std::move(tabDiv);
+
+	invoiceDiv << std::move(top);
+	invoiceDiv << std::move(mid);
+	invoiceDiv << std::move(bot);
 
 	doc << std::move(invoiceDiv);
-	return false;
+
+	std::fstream fs("test.html", std::ios::out);
+	if (!fs.is_open()) {
+		spdlog::error("cannot open html file for test");
+		return false;
+	}
+	fs << doc;
+	return true;
 }

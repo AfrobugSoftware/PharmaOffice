@@ -3,6 +3,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
 #include <memory>
+#include <fstream>
+#include <sstream>
+
 #include "database.h"
 #include "Account.h"
 #include "Pharmacy.h"
@@ -57,12 +60,12 @@ namespace pof {
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
 
 		bool CreateSaleTable();
-		bool DoPrintReceipt();
+		bool DoPrintReceipt(const pof::base::data::currency_t& totalAmount);
 
 
 		boost::uuids::random_generator_mt19937 sUidGen;
+		double vat = 0.0;
 	private:
-		
 		
 		std::unique_ptr<pof::DataModel> SaleData;
 		std::unique_ptr<pof::DataModel> ProductSaleHistory; //loaded in per product

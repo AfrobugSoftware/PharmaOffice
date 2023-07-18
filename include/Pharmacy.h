@@ -41,6 +41,12 @@ namespace pof{
 			geolocation location;
 		};
 
+		struct contactInfo
+		{
+			std::string phoneNumber;
+			std::string email;
+			std::string website;
+		};
 
 		Pharmacy();
 		virtual ~Pharmacy();
@@ -61,6 +67,7 @@ namespace pof{
 		std::bitset<8> pharmacyType;
 		std::string name;
 		address addy;
+		contactInfo contact;
 		
 
 		//datamodels

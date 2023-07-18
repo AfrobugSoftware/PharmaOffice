@@ -370,7 +370,25 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 {
-	wxMessageBox("CHECKOUT", "CHECKOUT");
+	//wxMessageBox("CHECKOUT", "CHECKOUT");
+	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	const pof::base::data& dataStore = model->GetDatastore();
+	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
+
+	pof::base::currency totalAmount;
+	try {
+		totalAmount = std::accumulate(dataStore.begin(),
+			dataStore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
+				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
+
+		});
+	}
+	catch (const std::exception& exp) {
+		wxMessageBox(exp.what(), "FATAL ERROR", wxICON_ERROR | wxOK);
+		spdlog::error(exp.what());
+		return;
+	}
+	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
 }
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
