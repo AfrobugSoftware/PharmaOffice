@@ -6,6 +6,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
 	EVT_TOOL(pof::SaleView::ID_REMOVE_PRODUCT, pof::SaleView::OnRemoveProduct)
 	EVT_TOOL(pof::SaleView::ID_HIDE_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnHideProductViewProperty)
+	EVT_TOOL(pof::SaleView::ID_PRINT_LABELS, pof::SaleView::OnPrintAsLabels)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -74,6 +75,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddStretchSpacer();
 	
+	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"));
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
 	mTopTools->Realize();
@@ -238,7 +240,6 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 {
 
 	pof::DataModel::SpeicalColHandler_t extPriceCol;
-	pof::DataModel::SpeicalColHandler_t dirForUseCol;
 	pof::DataModel::SpeicalColHandler_t quantityCol;
 
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
@@ -253,21 +254,24 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 		return wxVariant(fmt::format("{:cu}", extPrice));
 	};
 
-	dirForUseCol.first = [&](size_t row, size_t col) -> wxVariant {
-		wxArrayString choices;
-		choices.push_back("Zino");
-		choices.push_back("is");
-		choices.push_back("the");
-		choices.push_back("c++");
-		choices.push_back("goat");
-		return wxVariant(std::move(choices));
-	};
-
 	quantityCol.second = [&](size_t row, size_t col, const wxVariant& value) -> bool {
 		auto& datum = dataStore[row];
 		auto& v = datum.first;
 		try {
 			auto quan = static_cast<std::uint64_t>(atoi(value.GetString().ToStdString().c_str()));
+
+			//check if the new quantity is more than the available stock?
+			auto productIter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+				[&](const pof::base::data::row_t& prod) -> bool {
+					return v[pof::SaleManager::PRODUCT_UUID] == prod.first[pof::ProductManager::PRODUCT_UUID];
+			});
+			//do not use minimum stock count here, as sale, should sell it is more than the current stock
+			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(productIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			if (quan > curStock) {
+				wxMessageBox("Cannot set a quanity that is more than the current stock", "SALE", wxICON_WARNING | wxOK);
+				return false;
+			}
+			stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
 
 			auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
 			pof::base::currency extPrice = price * static_cast<double>(quan);
@@ -285,7 +289,6 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_QUANTITY, std::move(quantityCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_EXT_PRICE, std::move(extPriceCol));
-	model->SetSpecialColumnHandler(pof::SaleManager::MAX + 1, std::move(dirForUseCol));
 }
 
 void pof::SaleView::CreateSearchPopup()
@@ -298,12 +301,20 @@ void pof::SaleView::CreateSearchPopup()
 void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
+	productName = new wxStringProperty("PRODUCT NAME");
 	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
 	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
+	stock = new wxIntProperty("CURRENT STOCK");
+	warning = new wxStringProperty("WARNING");
+
+	stock->Enable(false);
+	warning->Enable(false);
 		
-		
+	mPropertyManager->Append(productName);
 	mPropertyManager->Append(genArray);
 	mPropertyManager->Append(dirArray);
+	mPropertyManager->Append(stock);
+	mPropertyManager->Append(warning);
 
 	mProperties.insert({ genArray, [&](const wxVariant& value) {
 				
@@ -434,6 +445,35 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 {
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
+	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	if (idx == datastore.size() - 1){
+		if (mPropertyManager->IsShown()) {
+			mPropertyManager->Hide();
+			mDataPane->Layout();
+			mDataPane->Refresh();
+		}
+	}
+	else {
+		if (mPropertyManager->IsShown()) {
+			//load next
+			idx++;
+			auto& saleData = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[idx];
+			auto& saleProductUuid = boost::variant2::get<pof::base::data::duuid_t>(saleData.first[pof::SaleManager::PRODUCT_UUID]);
+			auto iter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+				[&](const pof::base::data::row_t& row) -> bool {
+					return (boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) == saleProductUuid);
+				});
+			if (iter == std::end(wxGetApp().mProductManager.GetProductData()->GetDatastore())) return;
+			//load the stock count here, just because
+			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			curStock -= boost::variant2::get<std::uint64_t>(saleData.first[pof::SaleManager::PRODUCT_QUANTITY]);
+
+
+			stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock)));
+			LoadProductDetails(*iter);
+		}
+	}
 
 	wxGetApp().mSaleManager.GetSaleData()->RemoveData(item);
 	UpdateSaleDisplay();
@@ -462,7 +502,14 @@ void pof::SaleView::OnSelected(wxDataViewEvent& evt)
 	});
 
 	if (iter == std::end(wxGetApp().mProductManager.GetProductData()->GetDatastore())) return;
+	//load the stock count here, just because
+	std::uint64_t curStock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	curStock -= boost::variant2::get<std::uint64_t>(saleData.first[pof::SaleManager::PRODUCT_QUANTITY]);
+
+
+	stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock)));
 	LoadProductDetails(*iter);
+	evt.Skip();
 }
 
 void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
@@ -471,6 +518,11 @@ void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
 	mPropertyManager->Hide();
 	mDataPane->Layout();
 	mDataPane->Refresh();
+}
+
+void pof::SaleView::OnPrintAsLabels(wxCommandEvent& evt)
+{
+
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
@@ -520,20 +572,41 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
+		std::optional<pof::base::data::iterator> iterOpt;
+		auto& v = val.first;
+		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
+		{
+			auto& iterS = iterOpt.value();
+			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
+			if (quan > curStock) {
+				wxMessageBox(fmt::format("Cannot add \'{}\', out of stock",
+					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE", wxICON_WARNING | wxOK);
+				quan--;
+				return;
+			}
+			if (mPropertyManager->IsShown()) {
+				//update product details
+				stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
+				LoadProductDetails(val);
+			}
+		}
+		else {
 
-		auto row = pof::base::data::row_t();
-		row.first.resize(pof::SaleManager::MAX);
-		row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
-		auto& v = row.first;
-		
-		v[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
-		v[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
-		v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
-		v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
-		v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
-		v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			auto row = pof::base::data::row_t();
+			row.first.resize(pof::SaleManager::MAX);
+			row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+			auto& v = row.first;
 
-		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
+			v[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+			v[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+			v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
+			v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
+			v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+
+			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
+		}
 		UpdateSaleDisplay();
 	}
 	else {
@@ -549,7 +622,6 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		}
 
 		auto& v = row.first;
-		pof::base::data::row_t rowSale;
 		bool status = CheckInStock(row);
 		if (!status) {
 			wxMessageBox(fmt::format("{} is out of stock",
@@ -559,23 +631,43 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		CheckExpired(row);
 		status = CheckProductClass(row);
 		if (status) {
-			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
-				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			return;
+			if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue?",
+				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) {
+				return;
+			}
 		}
+		std::optional<pof::base::data::iterator> iterOpt;
+		if (( iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
+		{
+			auto& iterS = iterOpt.value();
+			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
+			if (quan > curStock) {
+				wxMessageBox(fmt::format("Cannot add \'{}\', out of stock",
+						boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE", wxICON_WARNING | wxOK);
+				quan--;
+				return;
+			}
+			if (mPropertyManager->IsShown()) {
+				//update product details
+				stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
+				LoadProductDetails(row);
+			}
+		}
+		else {
 
-		auto& vS = rowSale.first;
-		vS.resize(pof::SaleManager::MAX);
+			pof::base::data::row_t rowSale;
+			auto& vS = rowSale.first;
+			vS.resize(pof::SaleManager::MAX);
 
-		vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
-		vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
-		vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
-		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
-		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
-		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
-
-
-		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+			vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+			vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
+			vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
+			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+		}
 		UpdateSaleDisplay();
 
 		mProductNameValue->Clear(); 
@@ -617,23 +709,41 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
-
-
 		auto& v = iter->first;
-		pof::base::data::row_t rowSale;
+		std::optional<pof::base::data::iterator> iterOpt;
+		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
+		{
+			auto& iterS = iterOpt.value();
+			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
+			if (quan > curStock) {
+				wxMessageBox(fmt::format("Cannot add \'{}\', out of stock",
+					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE", wxICON_WARNING | wxOK);
+				quan--;
+				return;
+			}
+			if (mPropertyManager->IsShown()) {
+				//update product details
+				stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
+				LoadProductDetails(*iter);
+			}
+		}
+		else {
+			auto& v = iter->first;
+			pof::base::data::row_t rowSale;
 
-		auto& vS = rowSale.first;
-		vS.resize(pof::SaleManager::MAX);
+			auto& vS = rowSale.first;
+			vS.resize(pof::SaleManager::MAX);
 
-		vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
-		vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
-		vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
-		vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
-		vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
-		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+			vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+			vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
+			vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
+			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 
-
-		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+		}
 		UpdateSaleDisplay();
 
 		mScanProductValue->Clear();
@@ -693,6 +803,20 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 	return true;
 }
 
+std::optional<pof::base::data::iterator> pof::SaleView::CheckAlreadyAdded(const pof::base::data::text_t& productName)
+{
+	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+	auto iter = std::ranges::find_if(datastore, [&](const pof::base::data::row_t& row) -> bool {
+		return productName == (boost::variant2::get<pof::base::data::text_t>(row.first[pof::SaleManager::PRODUCT_NAME]));
+	});
+	if (iter == datastore.end()) return std::nullopt;
+
+	//update the quantity;
+	auto& quan = boost::variant2::get<std::uint64_t>(iter->first[pof::SaleManager::PRODUCT_QUANTITY]);
+	quan++;
+	return iter;
+}
+
 void pof::SaleView::ProductNameKeyEvent()
 {
 	mProductNameValue->Bind(wxEVT_CHAR, [&](wxKeyEvent& evt) {
@@ -710,6 +834,9 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 {
 	try {
 		auto& v = product.first;
+		auto& pName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
+		productName->SetValue(pName);
+		
 		auto& dirForUse = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
 		wxArrayString arrString = SplitIntoArrayString(dirForUse);
 		wxPGChoices choices;
@@ -718,6 +845,8 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 
 		auto& genericName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
 		genArray->SetValue(wxVariant(genericName));
+
+
 
 	}
 	catch (std::exception& exp) {

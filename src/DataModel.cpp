@@ -520,12 +520,14 @@ bool pof::DataModel::RemoveData(const wxDataViewItem& item)
 {
 	size_t idx = GetIdxFromItem(item);
 	if (idx >= datastore->size()) return false;
-	auto iter = std::next(datastore->begin(), idx);
-	if (iter == datastore->end()) return false;
 
+	auto iter = std::next(datastore->begin(), idx);
 	mSignals[static_cast<size_t>(Signals::REMOVED)](iter); //do what should be done
 	datastore->erase(iter);
-	ItemDeleted(wxDataViewItem(0), item);
+
+	//remove last element item
+	ItemDeleted(wxDataViewItem(0), mItems.back());
+	mItems.pop_back();
 	return true;
 }
 

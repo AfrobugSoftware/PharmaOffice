@@ -73,13 +73,17 @@ namespace pof
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
 
 		//product properties
+		wxStringProperty* productName = nullptr;
 		wxStringProperty* genArray = nullptr;
 		wxEditEnumProperty* dirArray = nullptr;
+		wxIntProperty* stock = nullptr;
+		wxStringProperty* warning = nullptr;
+
 
 
 		pof::base::data::duuid_t mCurSaleuuid;
-		std::string mCurDirForUse;
-		std::string mSideEffectWarnings; 
+		std::map<size_t, std::string> mCurDirForUse;
+		std::map<size_t, std::string> mSideEffectWarnings; 
 
 		boost::uuids::random_generator_mt19937 uuidGen;
 		//pof::base::database::stmt_t mExpiredStatemet; 
@@ -95,6 +99,7 @@ namespace pof
 			ID_SAVE,
 			ID_CLEAR,
 			ID_PRODUCT_VIEW_PROPERTY,
+			ID_PRINT_LABELS,
 		};
 
 
@@ -121,6 +126,7 @@ namespace pof
 		void OnRemoveProduct(wxCommandEvent& evt);
 		void OnSelected(wxDataViewEvent& evt);
 		void OnHideProductViewProperty(wxCommandEvent& evt);
+		void OnPrintAsLabels(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
@@ -133,7 +139,7 @@ namespace pof
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductClass(const pof::base::data::row_t& product);
 		bool CheckExpired(const pof::base::data::row_t& product);
-
+		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);
 	private:
