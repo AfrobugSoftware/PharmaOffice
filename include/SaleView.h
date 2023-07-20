@@ -71,12 +71,16 @@ namespace pof
 		wxButton* mCheckout = nullptr;
 		pof::SearchPopup* mSearchPopup = nullptr;
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
+		std::string mCurPack;
+		pof::base::data::duuid_t mCurPackID;
 
 		//product properties
 		wxStringProperty* productName = nullptr;
 		wxStringProperty* genArray = nullptr;
 		wxEditEnumProperty* dirArray = nullptr;
 		wxIntProperty* stock = nullptr;
+		wxStringProperty* strength = nullptr;
+		wxStringProperty* strength_type = nullptr;
 		wxStringProperty* warning = nullptr;
 
 
@@ -100,6 +104,7 @@ namespace pof
 			ID_CLEAR,
 			ID_PRODUCT_VIEW_PROPERTY,
 			ID_PRINT_LABELS,
+			ID_PACKS,
 		};
 
 
@@ -127,6 +132,7 @@ namespace pof
 		void OnSelected(wxDataViewEvent& evt);
 		void OnHideProductViewProperty(wxCommandEvent& evt);
 		void OnPrintAsLabels(wxCommandEvent& evt);
+		void OnShowPacks(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);

@@ -71,6 +71,20 @@ namespace pof {
 			ORDER_COST
 		};
 
+		enum : std::uint8_t {
+			PACK_UUID,
+			PACK_PROD_UUID,
+			PACK_PROD_QUANTITY,
+			PACK_PROD_EXT_COST,
+			PACK_PROD_MAX
+		};
+
+		enum : std::uint8_t {
+			PACK_UUID_DECS,
+			PACK_NAME,
+			PACK_DESCRIPTION
+		};
+
 		using relation_t = pof::base::relation <
 			pof::base::data::duuid_t, //UUID
 			std::uint64_t, //SERIAL NUM
@@ -130,6 +144,8 @@ namespace pof {
 		const pof::base::data& GetCategories() const { return mCategories; }
 		pof::base::data& GetCategories() { return mCategories; }
 
+		
+
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
 		
@@ -146,6 +162,23 @@ namespace pof {
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 
+		using packDescType = std::tuple<pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t>;
+		using packType = std::tuple<pof::base::data::duuid_t,
+					pof::base::data::duuid_t,
+					pof::base::data::text_t,
+					std::uint64_t,
+					pof::base::data::currency_t>; //recalculaed
+		void CreatePackTable();
+		const std::vector<packDescType>& GetPackDesc() const { return mPackDescs; }
+		std::optional<std::vector<packType>> GetProductPack(const pof::base::data::duuid_t& packId);
+
+		bool CreatePack(const packDescType& packDesc);
+		bool AddProductPack(const packType& packProduct);
+		bool RemovePack(const pof::base::data::duuid_t& packId);
+		bool RemoveProductPack(const pof::base::data::duuid_t& packId,
+			const pof::base::data::duuid_t& productId);
 	private:
 
 		std::shared_mutex mCategoryMutex;
@@ -175,12 +208,22 @@ namespace pof {
 		//data statements
 		pof::base::database::stmt_t ExpireProductStmt = nullptr;
 		pof::base::database::stmt_t CurExpireDateStmt = nullptr;
-		
+		pof::base::database::stmt_t ProductPackStmt = nullptr;
+		pof::base::database::stmt_t CreatePackStmt = nullptr;
+		pof::base::database::stmt_t AddProductPackStmt = nullptr;
+		pof::base::database::stmt_t RemovePackStmt = nullptr;
+		pof::base::database::stmt_t RemoveProductPackStmt = nullptr;
+		pof::base::database::stmt_t RemoveProductInPackStmt = nullptr;
+
+
 
 		//should also contain the product view
 		std::unique_ptr<pof::DataModel> mProductData;
 		std::unique_ptr<pof::DataModel> mInventoryData;
 		std::unique_ptr<pof::DataModel> mOrderList;
+
+		std::vector<packDescType> mPackDescs;
+		
 
 	};
 

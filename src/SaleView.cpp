@@ -7,6 +7,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_REMOVE_PRODUCT, pof::SaleView::OnRemoveProduct)
 	EVT_TOOL(pof::SaleView::ID_HIDE_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnHideProductViewProperty)
 	EVT_TOOL(pof::SaleView::ID_PRINT_LABELS, pof::SaleView::OnPrintAsLabels)
+	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -75,6 +76,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddStretchSpacer();
 	
+	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
 	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"));
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
@@ -302,6 +304,8 @@ void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
 	productName = new wxStringProperty("PRODUCT NAME");
+	strength = new wxStringProperty("STRENGTH");
+	strength_type = new wxStringProperty("STRENGTH UNIT");
 	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
 	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
 	stock = new wxIntProperty("CURRENT STOCK");
@@ -311,6 +315,8 @@ void pof::SaleView::CreateProductDetails()
 	warning->Enable(false);
 		
 	mPropertyManager->Append(productName);
+	mPropertyManager->Append(strength);
+	mPropertyManager->Append(strength_type);
 	mPropertyManager->Append(genArray);
 	mPropertyManager->Append(dirArray);
 	mPropertyManager->Append(stock);
@@ -322,7 +328,7 @@ void pof::SaleView::CreateProductDetails()
 
 	mProperties.insert({ dirArray, [&](const wxVariant& value) {
 			
-	}  });
+	}});
 	
 	//auto grid = mPropertyManager->GetGrid();
 	mPropertyManager->SetBackgroundColour(*wxWHITE);
@@ -523,6 +529,10 @@ void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
 void pof::SaleView::OnPrintAsLabels(wxCommandEvent& evt)
 {
 
+}
+
+void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
+{
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
@@ -846,7 +856,11 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 		auto& genericName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
 		genArray->SetValue(wxVariant(genericName));
 
+		auto& stren = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH]);
+		strength->SetValue(stren);
 
+		auto& stren_type = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+		strength->SetValue(stren_type);
 
 	}
 	catch (std::exception& exp) {
