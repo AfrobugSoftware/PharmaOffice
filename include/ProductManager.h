@@ -169,6 +169,7 @@ namespace pof {
 					pof::base::data::duuid_t,
 					pof::base::data::text_t,
 					std::uint64_t,
+					pof::base::data::currency_t,
 					pof::base::data::currency_t>; //recalculaed
 		void CreatePackTable();
 		const std::vector<packDescType>& GetPackDesc() const { return mPackDescs; }
@@ -179,8 +180,9 @@ namespace pof {
 		bool RemovePack(const pof::base::data::duuid_t& packId);
 		bool RemoveProductPack(const pof::base::data::duuid_t& packId,
 			const pof::base::data::duuid_t& productId);
+		bool UpdateProductPack(const pof::base::data::duuid_t& packID, const packType& product);
+		bool UpdatePackDesc(const packDescType& packDesc);
 	private:
-
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 
 		pof::base::packer mPacker{mCategories};
@@ -214,6 +216,9 @@ namespace pof {
 		pof::base::database::stmt_t RemovePackStmt = nullptr;
 		pof::base::database::stmt_t RemoveProductPackStmt = nullptr;
 		pof::base::database::stmt_t RemoveProductInPackStmt = nullptr;
+		pof::base::database::stmt_t UpdateProductPackStmt = nullptr;
+		pof::base::database::stmt_t UpdatePackDescStmt = nullptr;
+
 
 
 

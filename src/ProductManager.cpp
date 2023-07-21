@@ -819,8 +819,8 @@ std::optional<std::vector<pof::ProductManager::packType>> pof::ProductManager::G
 	if (mLocalDatabase) {
 		if (!ProductPackStmt){
 			constexpr const std::string_view sql = R"( SELECT p.id, prod.uuid, prod.name,
-				p.quantity, p.ext_price   
-				FROM pack_product p, product prod
+				p.quantity, prod.unit_price, p.ext_price   
+				FROM pack_product p, products prod
 				WHERE p.id = ? AND p.product_id = prod.uuid;
 			)";
 			auto stmt = mLocalDatabase->prepare(sql);
@@ -840,6 +840,7 @@ std::optional<std::vector<pof::ProductManager::packType>> pof::ProductManager::G
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			std::uint64_t,
+			pof::base::data::currency_t,
 			pof::base::data::currency_t
 		>(ProductPackStmt);
 
@@ -894,7 +895,7 @@ bool pof::ProductManager::AddProductPack(const packType& packProduct)
 			std::get<0>(packProduct),
 			std::get<1>(packProduct),
 			std::get<3>(packProduct),
-			std::get<4>(packProduct)
+			std::get<5>(packProduct)
 		));
 		status = mLocalDatabase->execute(AddProductPackStmt);
 		if (!status){
@@ -958,8 +959,86 @@ bool pof::ProductManager::RemoveProductPack(const pof::base::data::duuid_t& pack
 {
 	if (mLocalDatabase) {
 		if (!RemoveProductInPackStmt) {
-			
+			constexpr const std::string_view sql = R"(DELETE FROM pack_product WHERE id = ? AND product_id = ?;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			RemoveProductInPackStmt = *stmt;
 		}
+		bool status = mLocalDatabase->bind(RemoveProductInPackStmt, std::make_tuple(packId, productId));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		status = mLocalDatabase->execute(RemoveProductInPackStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::UpdateProductPack(const pof::base::data::duuid_t& packID, const packType& product)
+{
+	if (mLocalDatabase)
+	{
+		if (!UpdateProductPackStmt){
+			constexpr const std::string_view sql = R"(UPDATE pack_product set quantity = ?, ext_price = ? WHERE id = ? AND product_id = ?;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			UpdateProductPackStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(UpdateProductPackStmt, std::make_tuple(
+			std::get<3>(product),
+			std::get<5>(product),
+			std::get<0>(product),
+			std::get<1>(product)
+		));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		status = mLocalDatabase->execute(UpdateProductPackStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::UpdatePackDesc(const packDescType& packDesc)
+{
+	if (mLocalDatabase) {
+		if (!UpdatePackDescStmt) {
+			constexpr const std::string_view sql = R"(UPDATE packs SET name = ?, desc = ? WHERE id = ?;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			UpdatePackDescStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(UpdatePackDescStmt, std::make_tuple(
+			std::get<1>(packDesc),
+			std::get<2>(packDesc),
+			std::get<0>(packDesc)
+		));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		status = mLocalDatabase->execute(UpdatePackDescStmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
 	}
 	return false;
 }
