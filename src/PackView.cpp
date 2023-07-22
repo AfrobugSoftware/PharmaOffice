@@ -41,10 +41,15 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
 	m_dataViewCtrl3 = new wxDataViewCtrl( mPackData, ID_PACK_DATA, wxDefaultPosition, wxDefaultSize, 0 );
-	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 0 );
-	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 0 );
-	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 0 );
-	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 1 );
+	mPackModel = new pof::DataModel();
+
+	m_dataViewCtrl3->AssociateModel(mPackModel);
+	mPackModel->DecRef();
+	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 2);
+	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 3);
+	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"), 4 );
+	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 5 );
+	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 6 );
 	bSizer3->Add( m_dataViewCtrl3, 1, wxALL|wxEXPAND, 2 );
 	
 	m_panel4 = new wxPanel( mPackData, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -82,7 +87,10 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	mPackData->SetSizer( bSizer3 );
 	mPackData->Layout();
 	bSizer3->Fit( mPackData );
-	mBook->AddPage( mPackData, wxT("a page"), false );
+
+	mBook->AddPage(mPackView, wxT("pack view"), true);
+	mBook->AddPage( mPackData, wxT("pack data"), false );
+	mBook->AddPage(mEmptyPack, wxT("empty pack"), false);
 	
 	bSizer1->Add( mBook, 1, wxEXPAND | wxALL, 5 );
 	
@@ -91,6 +99,8 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	LoadPackDescSelect();
 }
 
 pof::PackView::~PackView()
@@ -102,20 +112,143 @@ bool pof::PackView::TransferDataFromWindow()
 	return false;
 }
 
+void pof::PackView::CreateEmptyPackPanel()
+{
+	mEmptyPack = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m4 = new wxPanel(mEmptyPack, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer7;
+	bSizer7 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmptyPack, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No Terminals Connected"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer7->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	m4->SetSizer(bSizer7);
+	m4->Layout();
+	bSizer7->Fit(m4);
+	bSizer6->Add(m4, 1, wxEXPAND | wxALL, 0);
+
+
+	mEmptyPack->SetSizer(bSizer6);
+	mEmptyPack->Layout();
+}
+
 void pof::PackView::ShowPack()
 {
 }
 
 void pof::PackView::OnPackActivate(wxListEvent& evt)
 {
+	const wxListItem& item = evt.GetItem();
+	const std::string value = item.GetText().ToStdString();
+	boost::uuids::uuid* id = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
+	if (id == nullptr) return;
+
+	auto packRelation = wxGetApp().mProductManager.GetProductPack(*id);
+	if (!packRelation.has_value()) {
+		wxMessageBox("Error trying to get pack", "PACK", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	if (packRelation.value().empty()) {
+		CreatePackTools();
+		mBook->SetSelection(3); //show empty pack
+		return; 
+	}
+	
+	for (auto& pk : *packRelation) {
+		pof::base::data::row_t row;
+		auto& v = row.first;
+		v.resize(5);
+
+		v[0] = std::get<2>(pk);
+		v[1] = std::get<3>(pk);
+		v[2] = std::get<4>(pk);
+		v[3] = std::get<5>(pk);
+		v[4] = std::get<6>(pk);
+		
+
+		mPackModel->EmplaceData(std::move(row));
+	}
+	mBook->SetSelection(2); //show the pack view
 }
 
 void pof::PackView::OnPackSelected(wxListEvent& evt)
 {
+
 }
 
 void pof::PackView::OnAddPack(wxCommandEvent& evt)
 {
+	wxTextEntryDialog dialog;
+	if (dialog.ShowModal() == wxID_OK) {
+		std::string value = dialog.GetValue().ToStdString();
+		if (value.empty()) return;
+
+
+		pof::ProductManager::packDescType pdesc;
+		std::get<0>(pdesc) = wxGetApp().mProductManager.UuidGen();
+		std::get<1>(pdesc) = value;
+
+
+		mPackSelect->Freeze();
+		size_t i = mPackSelect->GetItemCount();
+		wxListItem item;
+		item.SetId(i);
+		item.SetData(new boost::uuids::uuid(std::get<0>(pdesc)));
+		item.SetText(value);
+		item.SetImage(0);
+		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
+
+		mPackSelect->InsertItem(std::move(item));
+
+		mPackSelect->Thaw();
+		mPackSelect->Refresh();
+		mPackSelect->Update();
+
+		if (!wxGetApp().mProductManager.CreatePack(std::move(pdesc))) {
+			wxMessageBox("Error creating pack", "PACK", wxICON_ERROR | wxOK);
+		}
+	}
 }
 
 void pof::PackView::OnCreatePack(wxCommandEvent& evt)
@@ -123,5 +256,18 @@ void pof::PackView::OnCreatePack(wxCommandEvent& evt)
 }
 
 void pof::PackView::OnRemovePack(wxCommandEvent& evt)
+{
+}
+
+void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
+{
+
+}
+
+void pof::PackView::LoadPackDescSelect()
+{
+}
+
+void pof::PackView::LoadPackModel()
 {
 }

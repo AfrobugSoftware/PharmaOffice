@@ -692,7 +692,8 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 {
 	auto value = evt.GetString().ToStdString();
 	if (value.empty()) return;
-	bool isNum = std::ranges::all_of(value, [&](char c) -> bool { return std::isdigit(c); });
+	constexpr auto inrange = [](int c) ->bool {return (c >= -1 && c <= 255); };
+	bool isNum = std::ranges::all_of(value, [&](char c) -> bool { return (inrange(c) && std::isdigit(c)); });
 	if (!isNum) {
 		wxMessageBox("Unrecongised character in barcode", "SALE", wxICON_WARNING | wxOK);
 		return;

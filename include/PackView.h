@@ -31,11 +31,13 @@ namespace pof
 		wxAuiToolBar* mTopTools;
 		wxSimplebook* mBook;
 		wxPanel* mPackView;
+		wxPanel* mEmptyPack;
 		wxListCtrl* mPackSelect;
 		wxPanel* mPackData;
 		wxDataViewCtrl* m_dataViewCtrl3;
 		wxDataViewColumn* mProductName;
 		wxDataViewColumn* mProductQuantity;
+		wxDataViewColumn* mPackageSize;
 		wxDataViewColumn* mPrice;
 		wxDataViewColumn* mExtPrice;
 		wxPanel* m_panel4;
@@ -57,12 +59,15 @@ namespace pof
 			ID_TOOL_CREATE_PACK,
 			ID_TOOL_ADD_PACK,
 			ID_TOOL_REMOVE_PACK,
+			ID_TOOL_ADD_PRODUCT_PACK,
 
 		};
 
 		virtual bool TransferDataFromWindow() override; 
 
 	protected:
+		void CreateEmptyPackPanel();
+		void CreatePackTools();
 		void ShowPack();
 
 		void OnPackActivate(wxListEvent& evt);
@@ -70,8 +75,11 @@ namespace pof
 		void OnAddPack(wxCommandEvent& evt);
 		void OnCreatePack(wxCommandEvent& evt);
 		void OnRemovePack(wxCommandEvent& evt);
+		void OnAddProductPack(wxCommandEvent& evt);
 
-		pof::ProductManager::packType mCurPack;
+		void LoadPackDescSelect();
+		void LoadPackModel();
+		pof::DataModel* mPackModel = nullptr;
 		DECLARE_EVENT_TABLE()
 	};
 

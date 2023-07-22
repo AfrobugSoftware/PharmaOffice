@@ -169,6 +169,7 @@ namespace pof {
 					pof::base::data::duuid_t,
 					pof::base::data::text_t,
 					std::uint64_t,
+					std::uint64_t, //package size
 					pof::base::data::currency_t,
 					pof::base::data::currency_t>; //recalculaed
 		void CreatePackTable();

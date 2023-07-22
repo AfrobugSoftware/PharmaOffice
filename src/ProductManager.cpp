@@ -819,7 +819,7 @@ std::optional<std::vector<pof::ProductManager::packType>> pof::ProductManager::G
 	if (mLocalDatabase) {
 		if (!ProductPackStmt){
 			constexpr const std::string_view sql = R"( SELECT p.id, prod.uuid, prod.name,
-				p.quantity, prod.unit_price, p.ext_price   
+				p.quantity, prod.package_size, prod.unit_price, p.ext_price   
 				FROM pack_product p, products prod
 				WHERE p.id = ? AND p.product_id = prod.uuid;
 			)";
@@ -839,6 +839,7 @@ std::optional<std::vector<pof::ProductManager::packType>> pof::ProductManager::G
 			pof::base::data::duuid_t,
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
+			std::uint64_t,
 			std::uint64_t,
 			pof::base::data::currency_t,
 			pof::base::data::currency_t
@@ -895,7 +896,7 @@ bool pof::ProductManager::AddProductPack(const packType& packProduct)
 			std::get<0>(packProduct),
 			std::get<1>(packProduct),
 			std::get<3>(packProduct),
-			std::get<5>(packProduct)
+			std::get<6>(packProduct)
 		));
 		status = mLocalDatabase->execute(AddProductPackStmt);
 		if (!status){
@@ -996,7 +997,7 @@ bool pof::ProductManager::UpdateProductPack(const pof::base::data::duuid_t& pack
 		}
 		bool status = mLocalDatabase->bind(UpdateProductPackStmt, std::make_tuple(
 			std::get<3>(product),
-			std::get<5>(product),
+			std::get<6>(product),
 			std::get<0>(product),
 			std::get<1>(product)
 		));
