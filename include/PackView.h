@@ -61,6 +61,7 @@ namespace pof
 			ID_TOOL_REMOVE_PACK,
 			ID_TOOL_ADD_PRODUCT_PACK,
 
+
 		};
 
 		virtual bool TransferDataFromWindow() override; 
@@ -76,6 +77,7 @@ namespace pof
 		void OnCreatePack(wxCommandEvent& evt);
 		void OnRemovePack(wxCommandEvent& evt);
 		void OnAddProductPack(wxCommandEvent& evt);
+		void OnBack(wxCommandEvent& evt);
 
 		void LoadPackDescSelect();
 		void LoadPackModel();

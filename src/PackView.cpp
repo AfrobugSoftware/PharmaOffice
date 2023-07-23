@@ -5,6 +5,8 @@ BEGIN_EVENT_TABLE(pof::PackView, wxDialog)
 EVT_TOOL(pof::PackView::ID_TOOL_CREATE_PACK, pof::PackView::OnCreatePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
 EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
+EVT_TOOL(wxID_BACK, pof::PackView::OnBack)
+EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
 END_EVENT_TABLE()
 
 
@@ -172,6 +174,20 @@ void pof::PackView::CreateEmptyPackPanel()
 	mEmptyPack->Layout();
 }
 
+void pof::PackView::CreatePackTools()
+{
+	mTopTools->Freeze();
+	mTopTools->Clear();
+
+
+
+
+
+	mTopTools->Realize();
+	mTopTools->Thaw();
+	mTopTools->Refresh();
+}
+
 void pof::PackView::ShowPack()
 {
 }
@@ -257,11 +273,16 @@ void pof::PackView::OnCreatePack(wxCommandEvent& evt)
 
 void pof::PackView::OnRemovePack(wxCommandEvent& evt)
 {
+
 }
 
 void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 {
 
+}
+
+void pof::PackView::OnBack(wxCommandEvent& evt)
+{
 }
 
 void pof::PackView::LoadPackDescSelect()
