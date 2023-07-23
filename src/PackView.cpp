@@ -8,6 +8,10 @@ EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 EVT_TOOL(wxID_BACKWARD, pof::PackView::OnBack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::OnColEdited)
+EVT_LIST_ITEM_SELECTED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackSelected)
+EVT_LIST_ITEM_ACTIVATED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackActivate)
+EVT_LIST_BEGIN_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
+EVT_LIST_END_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
 END_EVENT_TABLE()
 
 
@@ -33,9 +37,11 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE|wxLC_ICON|wxLC_NO_HEADER );
+	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER);
 	bSizer2->Add(mPackSelect, 1, wxALL|wxEXPAND, 2 );
-	
+	wxImageList* imagelist = new wxImageList(60, 60);
+	imagelist->Add(wxArtProvider::GetBitmap("cart"));
+	mPackSelect->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
 	
 	mPackView->SetSizer( bSizer2 );
 	mPackView->Layout();
