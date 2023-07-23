@@ -782,13 +782,13 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpire
 void pof::ProductManager::CreatePackTable()
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXSITS packs (id blob,
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS packs (id blob,
 			name text, desc text);)";
-		constexpr const std::string_view sql2 = R"( CREATE TABLE IF NOT EXSISTS pack_product (id blob, 
+		constexpr const std::string_view sql2 = R"(CREATE TABLE IF NOT EXISTS pack_product (id blob, 
 		product_id blob, quantity integer, ext_price blob);)";
 
 		auto table1 = mLocalDatabase->prepare(sql);
-		auto table2 = mLocalDatabase->prepare(sql);
+		auto table2 = mLocalDatabase->prepare(sql2);
 
 		if (!table1.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -811,6 +811,31 @@ void pof::ProductManager::CreatePackTable()
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
 		}
+	}
+}
+
+std::optional<std::vector<pof::ProductManager::packDescType>> pof::ProductManager::GetPackDesc()
+{
+	if (mLocalDatabase) {
+		if (!GetPackStmt) {
+			constexpr const std::string_view sql = R"(SELECT * FROM packs;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+			GetPackStmt = *stmt;
+		}
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t
+		>(GetPackStmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		return rel;
 	}
 }
 
@@ -1058,8 +1083,9 @@ void pof::ProductManager::Finialize()
 		mLocalDatabase->finalise(CategoryUpdateStmt);
 		mLocalDatabase->finalise(ExpireProductStmt);
 		mLocalDatabase->finalise(CurExpireDateStmt);
-		mLocalDatabase->finalise(ProductPackStmt);
 		mLocalDatabase->finalise(CreatePackStmt);
+		mLocalDatabase->finalise(ProductPackStmt);
+		mLocalDatabase->finalise(GetPackStmt);
 	}
 }
 

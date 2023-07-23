@@ -283,6 +283,7 @@ void pof::Application::CreateTables()
 	}
 	mLocalDatabase->finalise(*stmt);
 	mAuditManager.CreateAuditTable();
+	mProductManager.CreatePackTable();
 }
 
 void pof::Application::ReadSettingsFlags()

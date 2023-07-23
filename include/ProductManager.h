@@ -173,7 +173,7 @@ namespace pof {
 					pof::base::data::currency_t, //current price
 					pof::base::data::currency_t>; //recalculaed, ext price
 		void CreatePackTable();
-		const std::vector<packDescType>& GetPackDesc() const { return mPackDescs; }
+		std::optional<std::vector<packDescType>> GetPackDesc();
 		std::optional<std::vector<packType>> GetProductPack(const pof::base::data::duuid_t& packId);
 
 		bool CreatePack(const packDescType& packDesc);
@@ -213,6 +213,7 @@ namespace pof {
 		pof::base::database::stmt_t CurExpireDateStmt = nullptr;
 		pof::base::database::stmt_t ProductPackStmt = nullptr;
 		pof::base::database::stmt_t CreatePackStmt = nullptr;
+		pof::base::database::stmt_t GetPackStmt = nullptr;
 		pof::base::database::stmt_t AddProductPackStmt = nullptr;
 		pof::base::database::stmt_t RemovePackStmt = nullptr;
 		pof::base::database::stmt_t RemoveProductPackStmt = nullptr;
@@ -228,8 +229,6 @@ namespace pof {
 		std::unique_ptr<pof::DataModel> mInventoryData;
 		std::unique_ptr<pof::DataModel> mOrderList;
 
-		std::vector<packDescType> mPackDescs;
-		
 
 	};
 

@@ -38,7 +38,7 @@ pof::SearchProduct::~SearchProduct()
 
 void pof::SearchProduct::CreateToolBar()
 {
-	SearchProductBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_OVERFLOW);
+	SearchProductBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW);
 	SearchProductBar->SetToolBitmapSize(wxSize(16, 16));
 	SearchCtrl = new wxSearchCtrl(SearchProductBar, ID_SEARCH_CTRL, wxEmptyString, wxDefaultPosition, wxSize(300, -1), wxWANTS_CHARS);
 #ifndef __WXMAC__
@@ -70,15 +70,16 @@ void pof::SearchProduct::CreateSearchView()
 
 	SearchData = new wxDataViewCtrl(m_panel1, ID_SEARCH_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_ROW_LINES);
 	SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, 50);
-	SearchData->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 120, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Stock"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Stock"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	SearchData->AppendTextColumn(wxT("Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 120, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	bSizer1->Add(SearchData, 1, wxALL | wxEXPAND, 0);
 
 	SearchData->AssociateModel(mModel);
 	mModel->DecRef();
+	mModel->Reload();
 
 	pof::DataModel::SpeicalColHandler_t selectCol;
 	selectCol.first = [&](size_t row, size_t col) -> wxVariant {
@@ -154,6 +155,8 @@ void pof::SearchProduct::OnSearchCancelled(wxCommandEvent& evt)
 
 void pof::SearchProduct::OnClose(wxCloseEvent& evt)
 {
+	SearchCtrl->Destroy();
+	SetReturnCode(wxID_CANCEL);
 	evt.Skip();
 }
 

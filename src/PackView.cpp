@@ -157,7 +157,7 @@ void pof::PackView::CreateEmptyPackPanel()
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No Terminals Connected"), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("Pack is empty"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
@@ -196,7 +196,8 @@ void pof::PackView::CreatePackTools()
 	mTopTools->Clear();
 
 	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
-
+	mTopTools->AddStretchSpacer();
+	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();
@@ -204,6 +205,15 @@ void pof::PackView::CreatePackTools()
 
 void pof::PackView::CreateTopTools()
 {
+	mTopTools->Freeze();
+	mTopTools->Clear();
+
+	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
+
+
+	mTopTools->Realize();
+	mTopTools->Thaw();
+	mTopTools->Refresh();
 }
 
 void pof::PackView::ShowPack()
@@ -358,7 +368,12 @@ void pof::PackView::OnColEdited(wxDataViewEvent& evt)
 
 void pof::PackView::LoadPackDescSelect()
 {
-	auto packs = wxGetApp().mProductManager.GetPackDesc();
+	auto rel = wxGetApp().mProductManager.GetPackDesc();
+	if (!rel.has_value()) {
+		wxMessageBox("Error in loading Packs", "PACK", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto& packs = rel.value();
 	if (packs.empty()) return;
 
 	mPackSelect->Freeze();

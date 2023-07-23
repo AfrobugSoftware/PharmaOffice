@@ -245,7 +245,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 	pof::DataModel::SpeicalColHandler_t quantityCol;
 
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
-	pof::base::data& dataStore = model->GetDatastore();
+	pof::base::data& dataStore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
 
 	extPriceCol.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datum = dataStore[row];
