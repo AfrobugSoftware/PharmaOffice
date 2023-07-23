@@ -63,16 +63,15 @@ namespace pof {
 		void CreateViewManagerDefaultArt();
 
 		void SetUpView();
-		void SetUpView(std::vector<size_t> idx);
 
 
 
 		inline bool HasMultipleSelections() const { return !mSelectedProducts.empty(); }
-		const pof::base::data::row_t& GetSelectedProduct() const;
 
+		const pof::base::data::row_t& GetSelectedProduct() const;
 		const std::vector<std::reference_wrapper<pof::base::data::row_t>> GetSelectedProducts() const;
 	protected:
-		
+
 
 		void OnItemSelected(wxDataViewEvent& evt);
 		void OnActivated(wxDataViewEvent& evt);
@@ -86,5 +85,5 @@ namespace pof {
 		DECLARE_EVENT_TABLE()
 	};
 
-}
+};
 

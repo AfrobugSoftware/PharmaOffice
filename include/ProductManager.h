@@ -168,10 +168,10 @@ namespace pof {
 		using packType = std::tuple<pof::base::data::duuid_t,
 					pof::base::data::duuid_t,
 					pof::base::data::text_t,
-					std::uint64_t,
+					std::uint64_t, //quantity
 					std::uint64_t, //package size
-					pof::base::data::currency_t,
-					pof::base::data::currency_t>; //recalculaed
+					pof::base::data::currency_t, //current price
+					pof::base::data::currency_t>; //recalculaed, ext price
 		void CreatePackTable();
 		const std::vector<packDescType>& GetPackDesc() const { return mPackDescs; }
 		std::optional<std::vector<packType>> GetProductPack(const pof::base::data::duuid_t& packId);

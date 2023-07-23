@@ -17,11 +17,13 @@
 #include <wx/infoBar.h>
 #include <wx/itemattr.h>
 
+#include "PackView.h"
 #include "AuiTheme.h"
 #include "ProductInfo.h"
 #include "DataObject.h"
 #include "AddProductDialog.h"
 #include "InventoryDialog.h"
+
 
 #include <boost/signals2/signal.hpp>
 
@@ -69,7 +71,8 @@ namespace pof
 			ID_UNSELECT_MULTIPLE,
 			ID_SHOW_COST_PRICE,
 			ID_TO_JSON,
-			ID_FILE
+			ID_FILE,
+			ID_PACKS,
 		};
 
 		size_t mRowHeights;
@@ -140,6 +143,7 @@ namespace pof
 		void OnReportDropdown(wxAuiToolBarEvent& evt);
 		void OnConsumptionPattern(wxCommandEvent& evt);
 		void OnEndOfDayReport(wxCommandEvent& evt);
+		void OnPacks(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

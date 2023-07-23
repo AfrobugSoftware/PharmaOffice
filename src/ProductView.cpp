@@ -14,6 +14,7 @@ EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProduct
 EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
 EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
 EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
+EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 
 
@@ -577,6 +578,14 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
 }
 
+void pof::ProductView::OnPacks(wxCommandEvent& evt)
+{
+	pof::PackView pks(nullptr);
+	if (pks.ShowModal() == wxID_OK) {
+		
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -767,8 +776,8 @@ void pof::ProductView::CreateToolBar()
 	mReportItem->SetHasDropDown(true);
 	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_PACKS, wxT("Pharm Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
 	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
-
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));

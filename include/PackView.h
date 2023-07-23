@@ -20,6 +20,7 @@
 #include <wx/dialog.h>
 
 #include "ProductManager.h"
+#include "SearchProduct.h"
 
 namespace pof
 {
@@ -60,28 +61,36 @@ namespace pof
 			ID_TOOL_ADD_PACK,
 			ID_TOOL_REMOVE_PACK,
 			ID_TOOL_ADD_PRODUCT_PACK,
-
+			ID_SALE_PACK,
 
 		};
 
 		virtual bool TransferDataFromWindow() override; 
 
+		std::vector<pof::ProductManager::packType> GetPackProducts() const;
+
 	protected:
 		void CreateEmptyPackPanel();
 		void CreatePackTools();
+		void CreateTopTools(); //naming is hard
 		void ShowPack();
 
 		void OnPackActivate(wxListEvent& evt);
+		void OnEditPackName(wxListEvent& evt);
 		void OnPackSelected(wxListEvent& evt);
 		void OnAddPack(wxCommandEvent& evt);
 		void OnCreatePack(wxCommandEvent& evt);
 		void OnRemovePack(wxCommandEvent& evt);
 		void OnAddProductPack(wxCommandEvent& evt);
 		void OnBack(wxCommandEvent& evt);
+		void OnSalePack(wxCommandEvent& evt);
+		void OnColEdited(wxDataViewEvent& evt);
+
 
 		void LoadPackDescSelect();
 		void LoadPackModel();
 		pof::DataModel* mPackModel = nullptr;
+		boost::uuids::uuid* mCurPackId = nullptr;
 		DECLARE_EVENT_TABLE()
 	};
 

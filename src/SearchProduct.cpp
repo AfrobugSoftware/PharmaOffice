@@ -157,6 +157,12 @@ void pof::SearchProduct::OnClose(wxCloseEvent& evt)
 	evt.Skip();
 }
 
+const pof::base::data::row_t& pof::SearchProduct::GetSelectedProduct() const
+{
+	//mSelectedProduct should always point to a valid product
+	return mModel->GetDatastore()[mSelectedProduct];
+}
+
 const std::vector<std::reference_wrapper<pof::base::data::row_t>> 
 	pof::SearchProduct::GetSelectedProducts() const
 {
@@ -174,7 +180,7 @@ const std::vector<std::reference_wrapper<pof::base::data::row_t>>
 void pof::SearchProduct::OnAddProduct(wxCommandEvent& evt)
 {
 	EndModal(wxID_OK);
-}
+}	
 
 void pof::SearchProduct::DoSearch(const std::string& search_for)
 {

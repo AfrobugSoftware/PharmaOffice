@@ -5,8 +5,9 @@ BEGIN_EVENT_TABLE(pof::PackView, wxDialog)
 EVT_TOOL(pof::PackView::ID_TOOL_CREATE_PACK, pof::PackView::OnCreatePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
 EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
-EVT_TOOL(wxID_BACK, pof::PackView::OnBack)
+EVT_TOOL(wxID_BACKWARD, pof::PackView::OnBack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
+EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::OnColEdited)
 END_EVENT_TABLE()
 
 
@@ -21,6 +22,8 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	mTopTools->SetToolBitmapSize( wxSize( 16,16 ) );
 	mTopTools->SetMinSize( wxSize( -1, 40 ) );
 	
+	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
+
 	mTopTools->Realize(); 
 	
 	bSizer1->Add( mTopTools, 0, wxALL|wxEXPAND, 5 );
@@ -48,7 +51,7 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	m_dataViewCtrl3->AssociateModel(mPackModel);
 	mPackModel->DecRef();
 	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 2);
-	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 3);
+	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 3, wxDATAVIEW_CELL_EDITABLE, 100);
 	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"), 4 );
 	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 5 );
 	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 6 );
@@ -90,6 +93,8 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	mPackData->Layout();
 	bSizer3->Fit( mPackData );
 
+	CreateEmptyPackPanel();
+
 	mBook->AddPage(mPackView, wxT("pack view"), true);
 	mBook->AddPage( mPackData, wxT("pack data"), false );
 	mBook->AddPage(mEmptyPack, wxT("empty pack"), false);
@@ -111,7 +116,12 @@ pof::PackView::~PackView()
 
 bool pof::PackView::TransferDataFromWindow()
 {
-	return false;
+	return true;
+}
+
+std::vector<pof::ProductManager::packType> pof::PackView::GetPackProducts() const
+{
+	return std::vector<pof::ProductManager::packType>();
 }
 
 void pof::PackView::CreateEmptyPackPanel()
@@ -179,13 +189,15 @@ void pof::PackView::CreatePackTools()
 	mTopTools->Freeze();
 	mTopTools->Clear();
 
-
-
-
+	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
 
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();
+}
+
+void pof::PackView::CreateTopTools()
+{
 }
 
 void pof::PackView::ShowPack()
@@ -225,12 +237,19 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 
 		mPackModel->EmplaceData(std::move(row));
 	}
+	mCurPackId = id;
 	mBook->SetSelection(2); //show the pack view
+}
+
+void pof::PackView::OnEditPackName(wxListEvent& evt)
+{
+
 }
 
 void pof::PackView::OnPackSelected(wxListEvent& evt)
 {
-
+	auto& item = evt.GetItem();
+	mCurPackId = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
 }
 
 void pof::PackView::OnAddPack(wxCommandEvent& evt)
@@ -278,15 +297,80 @@ void pof::PackView::OnRemovePack(wxCommandEvent& evt)
 
 void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 {
+	pof::SearchProduct dialog(this);
+	if (dialog.ShowModal() == wxID_OK) {
+		if (dialog.HasMultipleSelections()) {
+			auto vec = dialog.GetSelectedProducts();
+			for (auto& prod : vec){
+				auto& row = prod.get();
+				pof::ProductManager::packType pk;
+				std::get<0>(pk) = *mCurPackId;
+				std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+				std::get<3>(pk) = static_cast<std::uint64_t>(1);
+				std::get<6>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+
+				wxGetApp().mProductManager.AddProductPack(std::move(pk));
+			}
+		}
+		else {
+			auto& row = dialog.GetSelectedProduct();
+			pof::ProductManager::packType pk;
+			std::get<0>(pk) = *mCurPackId;
+			std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			std::get<3>(pk) = static_cast<std::uint64_t>(1);
+			std::get<6>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+
+			wxGetApp().mProductManager.AddProductPack(std::move(pk));
+		}
+	}
 
 }
 
 void pof::PackView::OnBack(wxCommandEvent& evt)
 {
+	CreateTopTools();
+	mBook->SetSelection(0);
+}
+
+void pof::PackView::OnSalePack(wxCommandEvent& evt)
+{
+	if (mCurPackId == nullptr) EndModal(wxID_CANCEL);
+	else {
+		EndModal(wxID_OK);
+	}
+}
+
+void pof::PackView::OnColEdited(wxDataViewEvent& evt)
+{
+	auto col = evt.GetDataViewColumn();
+	auto Ctrl = col->GetRenderer()->GetEditorCtrl();
+	wxIntegerValidator<size_t> val{ NULL };
+	val.SetMin(0);
+	val.SetMax(10000);
+	Ctrl->SetValidator(val);
 }
 
 void pof::PackView::LoadPackDescSelect()
 {
+	auto packs = wxGetApp().mProductManager.GetPackDesc();
+	if (packs.empty()) return;
+
+	mPackSelect->Freeze();
+	for (auto& pk : packs) {
+		size_t i = mPackSelect->GetItemCount();
+		wxListItem item;
+		item.SetId(i);
+		item.SetData(new boost::uuids::uuid(std::get<0>(pk)));
+		item.SetText(std::get<1>(pk));
+		item.SetImage(0);
+		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
+
+		mPackSelect->InsertItem(std::move(item));
+
+	}
+	mPackSelect->Thaw();
+	mPackSelect->Refresh();
+	mPackSelect->Update();
 }
 
 void pof::PackView::LoadPackModel()
