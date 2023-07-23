@@ -11,14 +11,14 @@ EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::On
 END_EVENT_TABLE()
 
 
-pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, wxT("Pharmacy Packs"), pos, size, style)
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
-	
+	this->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
-	mTopTools = new wxAuiToolBar( this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT );
+	mTopTools = new wxAuiToolBar( this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW);
 	mTopTools->SetToolBitmapSize( wxSize( 16,16 ) );
 	mTopTools->SetMinSize( wxSize( -1, 40 ) );
 	
@@ -254,7 +254,7 @@ void pof::PackView::OnPackSelected(wxListEvent& evt)
 
 void pof::PackView::OnAddPack(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog;
+	wxTextEntryDialog dialog(this, "Please enter the name of the pack", "Pack Entry");
 	if (dialog.ShowModal() == wxID_OK) {
 		std::string value = dialog.GetValue().ToStdString();
 		if (value.empty()) return;
