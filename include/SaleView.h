@@ -20,6 +20,7 @@
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
 
+#include "PackView.h"
 #include "SaleManager.h"
 #include "DropTarget.h"
 #include "SearchPopup.h"

@@ -6,6 +6,7 @@ EVT_TOOL(pof::PackView::ID_TOOL_CREATE_PACK, pof::PackView::OnCreatePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
 EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 EVT_TOOL(wxID_BACKWARD, pof::PackView::OnBack)
+EVT_TOOL(pof::PackView::ID_SALE_PACK, pof::PackView::OnSalePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::OnColEdited)
 EVT_LIST_ITEM_SELECTED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackSelected)
@@ -15,7 +16,9 @@ EVT_LIST_END_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPack
 END_EVENT_TABLE()
 
 
-pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, wxT("Pharmacy Packs"), pos, size, style)
+pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : 
+	wxDialog( parent, id, wxT("Pharmacy Packs"), pos, size, style),
+	mShowSale(showSale)
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour(*wxWHITE);
@@ -27,6 +30,10 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	mTopTools->SetMinSize( wxSize( -1, 40 ) );
 	
 	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
+	mTopTools->AddStretchSpacer();
+	if (mShowSale) {
+		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("action_remove"), "Sell pack");
+	}
 
 	mTopTools->Realize(); 
 	
@@ -51,16 +58,25 @@ pof::PackView::PackView( wxWindow* parent, wxWindowID id, const wxString& title,
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_dataViewCtrl3 = new wxDataViewCtrl( mPackData, ID_PACK_DATA, wxDefaultPosition, wxDefaultSize, 0 );
+	m_dataViewCtrl3 = new wxDataViewCtrl( mPackData, ID_PACK_DATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	mPackModel = new pof::DataModel();
 
 	m_dataViewCtrl3->AssociateModel(mPackModel);
 	mPackModel->DecRef();
-	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 2);
-	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 3, wxDATAVIEW_CELL_EDITABLE, 100);
-	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"), 4 );
-	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 5 );
-	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 6 );
+
+	mPackModel->Adapt<
+		pof::base::data::text_t,
+		std::uint64_t, //quantity
+		std::uint64_t, //package size
+		pof::base::data::currency_t, //current price
+		pof::base::data::currency_t
+	>();
+
+	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 0);
+	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 1, wxDATAVIEW_CELL_EDITABLE, 100);
+	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"),  2);
+	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 3);
+	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 4);
 	bSizer3->Add( m_dataViewCtrl3, 1, wxALL|wxEXPAND, 2 );
 	
 	m_panel4 = new wxPanel( mPackData, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -127,7 +143,15 @@ bool pof::PackView::TransferDataFromWindow()
 
 std::vector<pof::ProductManager::packType> pof::PackView::GetPackProducts() const
 {
-	return std::vector<pof::ProductManager::packType>();
+	if (mCurPackId == nullptr) return {};
+	auto opt = wxGetApp().mProductManager.GetProductPack(*mCurPackId);
+	if (!opt.has_value()) {
+		spdlog::error("error in getting pack product");
+		return {};
+	}
+	else {
+		return opt.value();
+	}
 }
 
 void pof::PackView::CreateEmptyPackPanel()
@@ -209,8 +233,10 @@ void pof::PackView::CreateTopTools()
 	mTopTools->Clear();
 
 	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
-
-
+	mTopTools->AddStretchSpacer();
+	if (mShowSale) {
+		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("action_remove"), "Sell pack");
+	}
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();
@@ -233,12 +259,12 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 		return;
 	}
 
+	CreatePackTools();
 	if (packRelation.value().empty()) {
-		CreatePackTools();
 		mBook->SetSelection(3); //show empty pack
 		return; 
 	}
-	
+	mPackModel->Clear();
 	for (auto& pk : *packRelation) {
 		pof::base::data::row_t row;
 		auto& v = row.first;
@@ -253,6 +279,7 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 
 		mPackModel->EmplaceData(std::move(row));
 	}
+	UpdateTotals();
 	mCurPackId = id;
 	mBook->SetSelection(2); //show the pack view
 }
@@ -322,10 +349,25 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 				pof::ProductManager::packType pk;
 				std::get<0>(pk) = *mCurPackId;
 				std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+				std::get<2>(pk) = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
 				std::get<3>(pk) = static_cast<std::uint64_t>(1);
+				std::get<5>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
 				std::get<6>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
 
 				wxGetApp().mProductManager.AddProductPack(std::move(pk));
+
+				pof::base::data::row_t r;
+				auto& v = r.first;
+				v.resize(5);
+
+				v[0] = std::get<2>(pk);
+				v[1] = std::get<3>(pk);
+				v[2] = std::get<4>(pk);
+				v[3] = std::get<5>(pk);
+				v[4] = std::get<6>(pk);
+
+
+				mPackModel->EmplaceData(std::move(r));
 			}
 		}
 		else {
@@ -333,11 +375,27 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 			pof::ProductManager::packType pk;
 			std::get<0>(pk) = *mCurPackId;
 			std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			std::get<2>(pk) = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
 			std::get<3>(pk) = static_cast<std::uint64_t>(1);
+			std::get<5>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
 			std::get<6>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
 
 			wxGetApp().mProductManager.AddProductPack(std::move(pk));
+
+			pof::base::data::row_t r;
+			auto& v = r.first;
+			v.resize(5);
+
+			v[0] = std::get<2>(pk);
+			v[1] = std::get<3>(pk);
+			v[2] = std::get<4>(pk);
+			v[3] = std::get<5>(pk);
+			v[4] = std::get<6>(pk);
+
+
+			mPackModel->EmplaceData(std::move(r));
 		}
+		UpdateTotals();
 	}
 
 }
@@ -364,6 +422,31 @@ void pof::PackView::OnColEdited(wxDataViewEvent& evt)
 	val.SetMin(0);
 	val.SetMax(10000);
 	Ctrl->SetValidator(val);
+}
+
+void pof::PackView::UpdateTotals()
+{
+	auto& datastore = mPackModel->GetDatastore();
+	pof::base::currency totalAmount;
+	size_t extQuantity = 0;
+
+	totalAmount = std::accumulate(datastore.begin(),
+		datastore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
+				return v + boost::variant2::get<pof::base::currency>(i.first[4]);
+		});
+
+	extQuantity = std::accumulate(datastore.begin(), datastore.end(), extQuantity, [&](size_t v,
+		const pof::base::data::row_t& i) {
+			return v + boost::variant2::get<std::uint64_t>(i.first[1]);
+		});
+
+	m_panel4->Freeze();
+	mTotalQuantity->SetLabel(fmt::format("{:d}", extQuantity));
+	mTotalAmount->SetLabel(fmt::format("{:cu}", totalAmount));
+
+	m_panel4->Layout();
+	m_panel4->Thaw();
+	m_panel4->Refresh();
 }
 
 void pof::PackView::LoadPackDescSelect()

@@ -533,6 +533,31 @@ void pof::SaleView::OnPrintAsLabels(wxCommandEvent& evt)
 
 void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 {
+	pof::PackView dialog(this, true);
+	if (dialog.ShowModal() == wxID_OK) {
+		auto prods = dialog.GetPackProducts();
+		if (prods.empty()) return;
+
+		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+			mCurSaleuuid = uuidGen();
+		}
+
+		for (auto& prod : prods) {
+			pof::base::data::row_t rowSale;
+			auto& vS = rowSale.first;
+			vS.resize(pof::SaleManager::MAX);
+
+			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+			vS[pof::SaleManager::PRODUCT_UUID] = std::get<1>(prod);
+			vS[pof::SaleManager::PRODUCT_NAME] = std::move(std::get<2>(prod));
+			vS[pof::SaleManager::PRODUCT_QUANTITY] = std::get<3>(prod);
+			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
+			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<6>(prod);
+
+			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+		}
+		UpdateSaleDisplay();
+	}
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
@@ -605,7 +630,6 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 
 			auto row = pof::base::data::row_t();
 			row.first.resize(pof::SaleManager::MAX);
-			row.second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 			auto& v = row.first;
 
 			v[pof::SaleManager::SALE_UUID] = mCurSaleuuid;

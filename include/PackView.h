@@ -22,6 +22,10 @@
 #include "ProductManager.h"
 #include "SearchProduct.h"
 
+#include <ranges>
+#include <algorithm>
+#include <numeric>
+
 namespace pof
 {
 	class PackView : public wxDialog
@@ -49,7 +53,7 @@ namespace pof
 
 	public:
 
-		PackView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(713, 523), long style = wxDEFAULT_DIALOG_STYLE);
+		PackView(wxWindow* parent, bool showSale = false, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1057, 642), long style = wxDEFAULT_DIALOG_STYLE);
 		~PackView();
 
 		enum {
@@ -68,6 +72,7 @@ namespace pof
 		virtual bool TransferDataFromWindow() override; 
 
 		std::vector<pof::ProductManager::packType> GetPackProducts() const;
+		inline bool& sale() { return mShowSale; }
 
 	protected:
 		void CreateEmptyPackPanel();
@@ -86,7 +91,8 @@ namespace pof
 		void OnSalePack(wxCommandEvent& evt);
 		void OnColEdited(wxDataViewEvent& evt);
 
-
+		bool mShowSale = false;
+		void UpdateTotals();
 		void LoadPackDescSelect();
 		void LoadPackModel();
 		pof::DataModel* mPackModel = nullptr;
