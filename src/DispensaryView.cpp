@@ -56,6 +56,7 @@ void pof::DispensaryView::Load(const pof::base::data::row_t& prescription)
 	auto json = nlohmann::json::parse(jsonString);
 	pof::base::data& data = mDataModel->GetDatastore();
 	data.reserve(json.size());
+	mDataModel->Clear();
 	size_t id = 0;
 	for (auto& obj : json) {
 		try {
@@ -120,20 +121,22 @@ void pof::DispensaryView::SetSpecialCol()
 	pof::DataModel::SpeicalColHandler_t handler;
 	pof::DataModel::SpeicalColHandler_t statusHandler;
 
-	handler.first = [self = this](size_t row, size_t col) -> wxVariant {
-		return (self->mSelections.find(pof::DataModel::GetItemFromIdx(row)) != self->mSelections.end());
+	handler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto found = mSelections.find(pof::DataModel::GetItemFromIdx(row));
+		return (found != mSelections.end());
 	};
 
 	handler.second = [&](size_t col, size_t row, const wxVariant& var) ->bool {
 		auto item = pof::DataModel::GetItemFromIdx(row);
 		if (!item.IsOk()) return false;
 		if (var.GetBool()) {
-			mSelections.insert(item);
+			auto[iter, inserted] = mSelections.insert(item);
+			return inserted;
 		}
 		else {
 			mSelections.erase(item);
+			return true;
 		}
-		return true;
 	};
 
 	statusHandler.first = [&](size_t row, size_t col) -> wxVariant {

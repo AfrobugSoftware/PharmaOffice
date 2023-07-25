@@ -117,9 +117,9 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 
 	CreateEmptyPackPanel();
 
-	mBook->AddPage(mPackView, wxT("pack view"), true);
-	mBook->AddPage( mPackData, wxT("pack data"), false );
-	mBook->AddPage(mEmptyPack, wxT("empty pack"), false);
+	mBook->AddPage(mPackView, wxT("pack view"), true); //1
+	mBook->AddPage( mPackData, wxT("pack data"), false ); //2
+	mBook->AddPage(mEmptyPack, wxT("empty pack"), false); //3
 	
 	bSizer1->Add( mBook, 1, wxEXPAND | wxALL, 5 );
 	
@@ -220,6 +220,8 @@ void pof::PackView::CreatePackTools()
 	mTopTools->Clear();
 
 	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
+	mTopTools->AddSpacer(20);
+	mTopTools->AddControl(new wxStaticText(mTopTools, wxID_ANY, mPackName));
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");
 	mTopTools->Realize();
@@ -251,6 +253,8 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 	const wxListItem& item = evt.GetItem();
 	const std::string value = item.GetText().ToStdString();
 	boost::uuids::uuid* id = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
+	mPackName = std::move(item.GetText().ToStdString());
+
 	if (id == nullptr) return;
 
 	auto packRelation = wxGetApp().mProductManager.GetProductPack(*id);
@@ -260,11 +264,12 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 	}
 
 	CreatePackTools();
+	mPackModel->Clear();
+
 	if (packRelation.value().empty()) {
 		mBook->SetSelection(3); //show empty pack
 		return; 
 	}
-	mPackModel->Clear();
 	for (auto& pk : *packRelation) {
 		pof::base::data::row_t row;
 		auto& v = row.first;
@@ -293,6 +298,7 @@ void pof::PackView::OnPackSelected(wxListEvent& evt)
 {
 	auto& item = evt.GetItem();
 	mCurPackId = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
+	mPackName = std::move(item.GetText().ToStdString());
 }
 
 void pof::PackView::OnAddPack(wxCommandEvent& evt)
@@ -346,9 +352,16 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 			auto vec = dialog.GetSelectedProducts();
 			for (auto& prod : vec){
 				auto& row = prod.get();
+				auto& rowId = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+				if (wxGetApp().mProductManager.ExistsInPack(*mCurPackId, rowId)) {
+					wxMessageBox(fmt::format("\'{}\' already exisit in pack",
+						boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME])), "PACK", wxICON_WARNING | wxOK);
+					continue;
+				}
+
 				pof::ProductManager::packType pk;
 				std::get<0>(pk) = *mCurPackId;
-				std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+				std::get<1>(pk) = rowId;
 				std::get<2>(pk) = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
 				std::get<3>(pk) = static_cast<std::uint64_t>(1);
 				std::get<5>(pk) = boost::variant2::get<pof::base::data::currency_t>(row.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
@@ -372,6 +385,14 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 		}
 		else {
 			auto& row = dialog.GetSelectedProduct();
+
+			auto& rowId = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			if (wxGetApp().mProductManager.ExistsInPack(*mCurPackId, rowId)) {
+				wxMessageBox(fmt::format("\'{}\' already exisit in pack",
+					boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME])), "PACK", wxICON_WARNING | wxOK);
+				return;
+			}
+
 			pof::ProductManager::packType pk;
 			std::get<0>(pk) = *mCurPackId;
 			std::get<1>(pk) = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
@@ -396,6 +417,10 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 			mPackModel->EmplaceData(std::move(r));
 		}
 		UpdateTotals();
+		if (mBook->GetSelection() != 2) {
+
+			mBook->SetSelection(2);
+		}
 	}
 
 }
@@ -403,7 +428,7 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 void pof::PackView::OnBack(wxCommandEvent& evt)
 {
 	CreateTopTools();
-	mBook->SetSelection(0);
+	mBook->SetSelection(1);
 }
 
 void pof::PackView::OnSalePack(wxCommandEvent& evt)
@@ -435,8 +460,8 @@ void pof::PackView::UpdateTotals()
 				return v + boost::variant2::get<pof::base::currency>(i.first[4]);
 		});
 
-	extQuantity = std::accumulate(datastore.begin(), datastore.end(), extQuantity, [&](size_t v,
-		const pof::base::data::row_t& i) {
+	extQuantity = std::accumulate(datastore.begin(), datastore.end(), extQuantity,
+		[&](size_t v, const pof::base::data::row_t& i) {
 			return v + boost::variant2::get<std::uint64_t>(i.first[1]);
 		});
 

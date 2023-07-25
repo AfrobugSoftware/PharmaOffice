@@ -1069,6 +1069,35 @@ bool pof::ProductManager::UpdatePackDesc(const packDescType& packDesc)
 	return false;
 }
 
+bool pof::ProductManager::ExistsInPack(const pof::base::data::duuid_t& packID,const pof::base::data::duuid_t& productID)
+{
+	if (mLocalDatabase) {
+		if (!ExistsInPackStmt) {
+			constexpr const std::string_view sql = R"(SELECT COUNT(product_id) FROM pack_product WHERE pack_id = ? AND product_id = ?; )";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			ExistsInPackStmt = *stmt;
+		}
+		bool status = mLocalDatabase->bind(ExistsInPackStmt, std::make_tuple(packID, productID));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto rel = mLocalDatabase->retrive<std::int32_t>(ExistsInPackStmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto& v = rel.value();
+		if (v.empty()) return false;
+		return (std::get<0>(v[0]) >= 1);
+	}
+	return false;
+}
+
 void pof::ProductManager::Finialize()
 {
 	if (bUsingLocalDatabase) {
@@ -1086,6 +1115,7 @@ void pof::ProductManager::Finialize()
 		mLocalDatabase->finalise(CreatePackStmt);
 		mLocalDatabase->finalise(ProductPackStmt);
 		mLocalDatabase->finalise(GetPackStmt);
+		mLocalDatabase->finalise(ExistsInPackStmt);
 	}
 }
 

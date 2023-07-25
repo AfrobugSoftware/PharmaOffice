@@ -97,6 +97,7 @@ namespace pof
 		void LoadPackModel();
 		pof::DataModel* mPackModel = nullptr;
 		boost::uuids::uuid* mCurPackId = nullptr;
+		std::string mPackName;
 		DECLARE_EVENT_TABLE()
 	};
 

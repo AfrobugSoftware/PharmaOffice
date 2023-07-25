@@ -4,6 +4,7 @@
 
 BEGIN_EVENT_TABLE(pof::SearchProduct, wxDialog)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnActivated)
+EVT_DATAVIEW_SELECTION_CHANGED(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnItemSelected)
 EVT_SEARCH(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearch)
 EVT_CLOSE(pof::SearchProduct::OnClose)
 EVT_SEARCH_CANCEL(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearchCancelled)
@@ -135,10 +136,10 @@ void pof::SearchProduct::OnItemSelected(wxDataViewEvent& evt)
 void pof::SearchProduct::OnActivated(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
-	if (!item.IsOk()) return;
+	if (!item.IsOk() || !mSelectedProducts.empty()) return;
 
 	mSelectedProduct = pof::DataModel::GetIdxFromItem(item);
-	mSelectedProducts.clear(); 
+ 
 
 	EndModal(wxID_OK);
 }

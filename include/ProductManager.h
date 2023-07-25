@@ -183,6 +183,7 @@ namespace pof {
 			const pof::base::data::duuid_t& productId);
 		bool UpdateProductPack(const pof::base::data::duuid_t& packID, const packType& product);
 		bool UpdatePackDesc(const packDescType& packDesc);
+		bool ExistsInPack(const pof::base::data::duuid_t& packID, const pof::base::data::duuid_t& productID);
 	private:
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 
@@ -220,6 +221,7 @@ namespace pof {
 		pof::base::database::stmt_t RemoveProductInPackStmt = nullptr;
 		pof::base::database::stmt_t UpdateProductPackStmt = nullptr;
 		pof::base::database::stmt_t UpdatePackDescStmt = nullptr;
+		pof::base::database::stmt_t ExistsInPackStmt = nullptr;
 
 
 

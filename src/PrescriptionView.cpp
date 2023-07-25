@@ -159,7 +159,7 @@ pof::PrescriptionView::~PrescriptionView()
 
 void pof::PrescriptionView::GenerateFakePrescription()
 {
-	pof::base::data::duuid_t id;
+	pof::base::data::duuid_t id = boost::uuids::random_generator_mt19937{}();
 
 	js::json med1 = {
 		{"medication_name", "Paracetamol"},
