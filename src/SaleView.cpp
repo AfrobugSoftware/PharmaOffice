@@ -535,6 +535,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 {
 	pof::PackView dialog(this, true);
 	if (dialog.ShowModal() == wxID_OK) {
+		wxBusyCursor cursor;
 		auto prods = dialog.GetPackProducts();
 		if (prods.empty()) return;
 
@@ -546,13 +547,47 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			pof::base::data::row_t rowSale;
 			auto& vS = rowSale.first;
 			vS.resize(pof::SaleManager::MAX);
-
 			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
 			vS[pof::SaleManager::PRODUCT_UUID] = std::get<1>(prod);
+
+			//find row
+			auto iter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+				[&](const pof::base::data::row_t& row) -> bool {
+					return boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) == std::get<1>(prod);
+				});
+			bool status = CheckExpired(*iter);
+			if (!status) {
+				wxMessageBox(fmt::format("\'{}\' has expired, please update product inventory",
+					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				return;
+			}
+			
+			status = CheckInStock(*iter);
+			if (!status) {
+				wxMessageBox(fmt::format("{} is out of stock",
+					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				return;
+			}
+
+			std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+			if (presentStock < std::get<3>(prod)){
+				if (wxMessageBox(fmt::format("Adding more \'{}\' then there is available stock, present stock is {:d}, Do you want to reduce to present stock?",
+					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME]), presentStock), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxYES) {
+					std::get<3>(prod) = presentStock;
+				}else return;
+			}
+
+			std::optional<pof::base::data::iterator> iterOpt;
+			if ((iterOpt = CheckAlreadyAdded(std::get<2>(prod)))) {
+				
+			}
+
 			vS[pof::SaleManager::PRODUCT_NAME] = std::move(std::get<2>(prod));
 			vS[pof::SaleManager::PRODUCT_QUANTITY] = std::get<3>(prod);
 			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<6>(prod);
+
+
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
