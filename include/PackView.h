@@ -65,6 +65,7 @@ namespace pof
 			ID_TOOL_ADD_PACK,
 			ID_TOOL_REMOVE_PACK,
 			ID_TOOL_ADD_PRODUCT_PACK,
+			ID_TOOL_REMOVE_PRODUCT_PACK,
 			ID_SALE_PACK,
 
 		};
@@ -78,6 +79,7 @@ namespace pof
 		void CreateEmptyPackPanel();
 		void CreatePackTools();
 		void CreateTopTools(); //naming is hard
+		void CreateSpeicalCols();
 		void ShowPack();
 
 		void OnPackActivate(wxListEvent& evt);
@@ -87,6 +89,7 @@ namespace pof
 		void OnCreatePack(wxCommandEvent& evt);
 		void OnRemovePack(wxCommandEvent& evt);
 		void OnAddProductPack(wxCommandEvent& evt);
+		void OnRemoveProductPack(wxCommandEvent& evt);
 		void OnBack(wxCommandEvent& evt);
 		void OnSalePack(wxCommandEvent& evt);
 		void OnColEdited(wxDataViewEvent& evt);

@@ -8,6 +8,7 @@ EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 EVT_TOOL(wxID_BACKWARD, pof::PackView::OnBack)
 EVT_TOOL(pof::PackView::ID_SALE_PACK, pof::PackView::OnSalePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
+EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PRODUCT_PACK, pof::PackView::OnRemoveProductPack)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::OnColEdited)
 EVT_LIST_ITEM_SELECTED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackSelected)
 EVT_LIST_ITEM_ACTIVATED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackActivate)
@@ -63,8 +64,11 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 
 	m_dataViewCtrl3->AssociateModel(mPackModel);
 	mPackModel->DecRef();
+	CreateSpeicalCols();
+
 
 	mPackModel->Adapt<
+		pof::base::data::duuid_t,
 		pof::base::data::text_t,
 		std::uint64_t, //quantity
 		std::uint64_t, //package size
@@ -72,11 +76,11 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 		pof::base::data::currency_t
 	>();
 
-	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 0);
-	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 1, wxDATAVIEW_CELL_EDITABLE, 100);
-	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"),  2);
-	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 3);
-	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 4);
+	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 1);
+	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 2, wxDATAVIEW_CELL_EDITABLE, 100);
+	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"),  3);
+	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 4);
+	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 5);
 	bSizer3->Add( m_dataViewCtrl3, 1, wxALL|wxEXPAND, 2 );
 	
 	m_panel4 = new wxPanel( mPackData, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -221,9 +225,13 @@ void pof::PackView::CreatePackTools()
 
 	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
 	mTopTools->AddSpacer(20);
-	mTopTools->AddControl(new wxStaticText(mTopTools, wxID_ANY, mPackName));
+
+	auto name = mTopTools->AddTool(wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
+	name->SetLabel(fmt::format("PACK: {}", mPackName));
+
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");
+	mTopTools->AddTool(ID_TOOL_REMOVE_PRODUCT_PACK, wxT("Remove Product"), wxArtProvider::GetBitmap("action_delete"), "Remove product from pack");
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();
@@ -242,6 +250,36 @@ void pof::PackView::CreateTopTools()
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();
+}
+
+void pof::PackView::CreateSpeicalCols()
+{
+	pof::DataModel::SpeicalColHandler_t quan;
+	quan.second = [&](size_t row, size_t col, const wxVariant& val) -> bool {
+		wxBusyCursor cursoir;
+		auto& datastore = mPackModel->GetDatastore();
+		auto& r = datastore[row];
+		auto& prodId = boost::variant2::get<pof::base::data::duuid_t>(r.first[0]);
+		auto& quantity = boost::variant2::get<std::uint64_t>(r.first[2]);
+		auto& price = boost::variant2::get<pof::base::data::currency_t>(r.first[4]);
+		auto& extprice = boost::variant2::get<pof::base::data::currency_t>(r.first[5]);
+
+		quantity = val.GetInteger();
+		extprice = price * static_cast<double>(quantity);
+
+		pof::ProductManager::packType pk;
+		std::get<0>(pk) = *mCurPackId;
+		std::get<1>(pk) = prodId;
+		std::get<3>(pk) = quantity;
+		std::get<6>(pk) = extprice;
+
+		wxGetApp().mProductManager.UpdateProductPack(*mCurPackId, std::move(pk));
+
+		UpdateTotals();
+		return true;
+	};
+
+	mPackModel->SetSpecialColumnHandler(2,std::move(quan));
 }
 
 void pof::PackView::ShowPack()
@@ -273,13 +311,13 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 	for (auto& pk : *packRelation) {
 		pof::base::data::row_t row;
 		auto& v = row.first;
-		v.resize(5);
-
-		v[0] = std::get<2>(pk);
-		v[1] = std::get<3>(pk);
-		v[2] = std::get<4>(pk);
-		v[3] = std::get<5>(pk);
-		v[4] = std::get<6>(pk);
+		v.resize(6);
+		v[0] = std::get<1>(pk);
+		v[1] = std::get<2>(pk);
+		v[2] = std::get<3>(pk);
+		v[3] = std::get<4>(pk);
+		v[4] = std::get<5>(pk);
+		v[5] = std::get<6>(pk);
 		
 
 		mPackModel->EmplaceData(std::move(row));
@@ -371,13 +409,14 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 
 				pof::base::data::row_t r;
 				auto& v = r.first;
-				v.resize(5);
+				v.resize(6);
 
-				v[0] = std::get<2>(pk);
-				v[1] = std::get<3>(pk);
-				v[2] = std::get<4>(pk);
-				v[3] = std::get<5>(pk);
-				v[4] = std::get<6>(pk);
+				v[0] = std::get<1>(pk);
+				v[1] = std::get<2>(pk);
+				v[2] = std::get<3>(pk);
+				v[3] = std::get<4>(pk);
+				v[4] = std::get<5>(pk);
+				v[5] = std::get<6>(pk);
 
 
 				mPackModel->EmplaceData(std::move(r));
@@ -405,13 +444,13 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 
 			pof::base::data::row_t r;
 			auto& v = r.first;
-			v.resize(5);
-
-			v[0] = std::get<2>(pk);
-			v[1] = std::get<3>(pk);
-			v[2] = std::get<4>(pk);
-			v[3] = std::get<5>(pk);
-			v[4] = std::get<6>(pk);
+			v.resize(6);
+			v[0] = std::get<1>(pk);
+			v[1] = std::get<2>(pk);
+			v[2] = std::get<3>(pk);
+			v[3] = std::get<4>(pk);
+			v[4] = std::get<5>(pk);
+			v[5] = std::get<6>(pk);
 
 
 			mPackModel->EmplaceData(std::move(r));
@@ -423,6 +462,24 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 		}
 	}
 
+}
+
+void pof::PackView::OnRemoveProductPack(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl3->GetSelection();
+	if (!item.IsOk()) return;
+	
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& datastore = mPackModel->GetDatastore();
+	auto& row = datastore[idx];
+
+	pof::base::data::duuid_t& prodUuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[0]);
+	wxGetApp().mProductManager.RemoveProductPack(*mCurPackId, prodUuid);
+
+	mPackModel->RemoveData(item);
+	if (datastore.empty()) {
+		mBook->SetSelection(3);
+	}
 }
 
 void pof::PackView::OnBack(wxCommandEvent& evt)
@@ -457,12 +514,12 @@ void pof::PackView::UpdateTotals()
 
 	totalAmount = std::accumulate(datastore.begin(),
 		datastore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
-				return v + boost::variant2::get<pof::base::currency>(i.first[4]);
+				return v + boost::variant2::get<pof::base::currency>(i.first[5]);
 		});
 
 	extQuantity = std::accumulate(datastore.begin(), datastore.end(), extQuantity,
 		[&](size_t v, const pof::base::data::row_t& i) {
-			return v + boost::variant2::get<std::uint64_t>(i.first[1]);
+			return v + boost::variant2::get<std::uint64_t>(i.first[2]);
 		});
 
 	m_panel4->Freeze();
