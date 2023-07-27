@@ -60,11 +60,13 @@ namespace pof {
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
 
 		bool CreateSaleTable();
+		bool StoreSale();
 		bool DoPrintReceipt(const pof::base::data::currency_t& totalAmount);
 
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;
+		std::string mCurPaymentType;
 	private:
 		
 		std::unique_ptr<pof::DataModel> SaleData;

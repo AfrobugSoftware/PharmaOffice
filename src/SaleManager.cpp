@@ -48,9 +48,9 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 	if (mLocalDatabase) {
 		if (!mLoadProductHistory) {
 			constexpr const std::string_view sql = R"(
-				SELECT s.sale_date, s.product_name, s.product_quantity, s.product_ext_price
-				FROM sales s
-				WHERE s.product_uuid = ?
+				SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
+				FROM sales s, product p
+				WHERE s.product_uuid = ? AND p.uuid = s.product_uuid
 				ORDER BY s.sale_date DESC;
 			)";
 			auto stmt = mLocalDatabase->prepare(sql);
@@ -99,8 +99,6 @@ bool pof::SaleManager::CreateSaleTable()
 		constexpr const std::string_view table = R"(CREATE TABLE IF NOT EXSITS sales (
 		uuid blob,
 		product_uuid blob,
-		product_name text,
-		product_price blob,
 		product_quantity integer,
 		product_ext_price blob,
 		sale_date integer,
@@ -119,6 +117,56 @@ bool pof::SaleManager::CreateSaleTable()
 
 		mLocalDatabase->finalise(*stmt);
 		return true;
+	}
+	return false;
+}
+
+bool pof::SaleManager::StoreSale()
+{
+	if (mLocalDatabase) {
+		if (!mStoreSale) {
+			constexpr const std::string_view sql = R"(INSERT INTO sales VALUES (?,?,?,?,?,?);)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			mStoreSale = *stmt;
+		}
+		pof::base::relation<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t
+		> rel;
+		auto& datastore = SaleData->GetDatastore();
+		rel.reserve(datastore.size());
+
+		try {
+			for (auto& sale : datastore) {
+				auto& v = sale.first;
+				rel.emplace_back(
+					std::make_tuple(
+						boost::variant2::get<pof::base::data::duuid_t>(v[SALE_UUID]),
+						boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]),
+						boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]),
+						boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]),
+						boost::variant2::get<pof::base::data::datetime_t>(v[SALE_DATE]),
+						mCurPaymentType));
+			}
+			bool status = mLocalDatabase->store(mStoreSale, std::move(rel));
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+			}
+			return status;
+		}
+		catch (const std::exception& exp){
+			spdlog::critical(exp.what());
+			return false;
+		}
+
 	}
 	return false;
 }
