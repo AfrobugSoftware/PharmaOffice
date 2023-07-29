@@ -74,6 +74,7 @@ namespace pof
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
 			double mStubPrice;
+			bool mHistView = false;
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
 			wxPGChoices ExpChoices;
@@ -100,6 +101,7 @@ namespace pof
 				ID_TOOL_SHOW_PRODUCT_INFO,
 				ID_PROPERTY_GRID,
 				ID_SPLIT_WINDOW,
+				ID_SHOW_PRODUCT_SALE_HISTORY,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -120,6 +122,9 @@ namespace pof
 				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 			}
 	protected:
+		void CreateInventoryView();
+		void CreateHistoryView();
+
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
@@ -128,6 +133,7 @@ namespace pof
 		void OnSashDoubleClick(wxSplitterEvent& evt);
 		void OnUnspilt(wxSplitterEvent& evt);
 		void OnShowProductInfo(wxCommandEvent& evt);
+		void OnShowProducSaleHistory(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
 		pof::base::data::datetime_t PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const;

@@ -112,6 +112,7 @@ bool pof::ProductManager::LoadInventoryData(const pof::base::data::duuid_t& ud)
 			return false;
 		}
 
+		mInvwntoryData->GetDatastore().reserve(rel.size());
 		for (auto& v : *rel) {
 			pof::base::data::row_t row;
 			auto& f = row.first;

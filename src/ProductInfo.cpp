@@ -5,6 +5,7 @@
 BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
+	EVT_TOOL(pof::ProductInfo::ID_SHOW_PRODUCT_SALE_HISTORY, pof::ProductInfo::OnShowProducSaleHistory)
 	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
 	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
@@ -32,19 +33,21 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
 	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
-	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information grid", wxITEM_CHECK);
+	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information", wxITEM_CHECK);
+	m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Product History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->Realize(); 
 	
 	
 	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
-	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
+	/*InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
 
 	
 	mInputDate = InventoryView->AppendTextColumn( wxT("Input Date"), pof::ProductManager::INVENTORY_INPUT_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mBactchNo = InventoryView->AppendTextColumn( wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mExpiryDate = InventoryView->AppendTextColumn( wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockCount = InventoryView->AppendTextColumn( wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);*/
+	CreateInventoryView();
 	bSizer2->Add( InventoryView, 1, wxALL|wxEXPAND, 0 );
 	
 	m_panel1->SetSizer( bSizer2 );
@@ -299,6 +302,31 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
 }
 
+void pof::ProductInfo::CreateInventoryView()
+{
+	InventoryView->ClearColumns();
+	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
+	mHistView = false;
+
+
+	mInputDate = InventoryView->AppendTextColumn(wxT("Input Date"), pof::ProductManager::INVENTORY_INPUT_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mBactchNo = InventoryView->AppendTextColumn(wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mExpiryDate = InventoryView->AppendTextColumn(wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mStockCount = InventoryView->AppendTextColumn(wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mManuFactureName = InventoryView->AppendTextColumn(wxT("Manufactural Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+}
+
+void pof::ProductInfo::CreateHistoryView()
+{
+	InventoryView->ClearColumns();
+	InventoryView->AssociateModel(wxGetApp().mSaleManager.GetProductHistory().get());
+	mHistView = true;
+	
+	InventoryView->AppendTextColumn(wxT("Date"), pof::SaleManager::HIST_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	InventoryView->AppendTextColumn(wxT("Quantity Sold"), pof::SaleManager::HIST_QUANTITY, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	InventoryView->AppendTextColumn(wxT("Price"), pof::SaleManager::HIST_EXTPRICE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+}
+
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
@@ -307,6 +335,10 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 		mUpdatePropertySignal(mPropertyUpdate.value());
 		mPropertyUpdate = {};
 		RemovePropertyModification();
+	}
+	if (mHistView) {
+		CreateInventoryView();
+		wxGetApp().mSaleManager.GetProductHistory()->Clear();
 	}
 }
 
@@ -537,6 +569,21 @@ void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 	else {
 		m_splitter1->Unsplit();
 	}
+}
+
+void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
+{
+	if (evt.IsChecked()) {
+		pof::base::data::duuid_t& puid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+		if (wxGetApp().mSaleManager.GetProductHistory()->GetDatastore().empty()) {
+			wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
+		}
+		CreateHistoryView();
+	}
+	else {
+		CreateInventoryView();
+	}
+
 }
 
 void pof::ProductInfo::RemovePropertyModification()
