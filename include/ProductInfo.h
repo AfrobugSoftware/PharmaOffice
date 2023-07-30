@@ -14,6 +14,7 @@
 #include <wx/dataview.h>
 #include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/simplebook.h>
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
@@ -42,9 +43,12 @@ namespace pof
 			wxPanel* m_panel1;
 			wxAuiToolBar* m_auiToolBar1;
 			wxAuiToolBarItem* m_tool1;
+			wxAuiToolBarItem* mProductHist;
 			wxAuiToolBarItem* mProductNameText;
 			wxAuiToolBarItem* mShowAddInfo;
 			wxDataViewCtrl* InventoryView;
+			wxSimplebook* mBook;
+			wxDataViewCtrl* mHistView;
 			wxDataViewColumn* mInputDate;
 			wxDataViewColumn* mBactchNo;
 			wxDataViewColumn* mExpiryDate;
@@ -74,7 +78,6 @@ namespace pof
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
 			double mStubPrice;
-			bool mHistView = false;
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
 			wxPGChoices ExpChoices;
@@ -125,6 +128,7 @@ namespace pof
 		void CreateInventoryView();
 		void CreateHistoryView();
 
+		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
