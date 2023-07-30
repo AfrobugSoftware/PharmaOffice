@@ -49,7 +49,7 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 		if (!mLoadProductHistory) {
 			constexpr const std::string_view sql = R"(
 				SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
-				FROM sales s, product p
+				FROM sales s, products p
 				WHERE s.product_uuid = ? AND p.uuid = s.product_uuid
 				ORDER BY s.sale_date DESC;
 			)";
@@ -85,7 +85,7 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 			v[HIST_DATE] = std::get<HIST_DATE>(tup);
 			v[HIST_PROD_NAME] = std::get<HIST_PROD_NAME>(tup);
 			v[HIST_QUANTITY] = std::get<HIST_QUANTITY>(tup);
-			v[HIST_DATE] = std::get<HIST_EXTPRICE>(tup);
+			v[HIST_EXTPRICE] = std::get<HIST_EXTPRICE>(tup);
 			
 			ProductSaleHistory->EmplaceData(std::move(row));
 		}
@@ -96,7 +96,7 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 bool pof::SaleManager::CreateSaleTable()
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view table = R"(CREATE TABLE IF NOT EXSITS sales (
+		constexpr const std::string_view table = R"(CREATE TABLE IF NOT EXISTS sales (
 		uuid blob,
 		product_uuid blob,
 		product_quantity integer,
@@ -145,6 +145,7 @@ bool pof::SaleManager::StoreSale()
 		rel.reserve(datastore.size());
 
 		try {
+			auto saleDate = pof::base::data::clock_t::now();
 			for (auto& sale : datastore) {
 				auto& v = sale.first;
 				rel.emplace_back(
@@ -153,7 +154,7 @@ bool pof::SaleManager::StoreSale()
 						boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]),
 						boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]),
 						boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]),
-						boost::variant2::get<pof::base::data::datetime_t>(v[SALE_DATE]),
+						saleDate,
 						mCurPaymentType));
 			}
 			bool status = mLocalDatabase->store(mStoreSale, std::move(rel));

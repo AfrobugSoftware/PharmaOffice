@@ -405,7 +405,12 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		spdlog::error(exp.what());
 		return;
 	}
+	//update the stocks of the sold items
+
+
+	wxGetApp().mSaleManager.StoreSale();
 	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
+	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
 }
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
