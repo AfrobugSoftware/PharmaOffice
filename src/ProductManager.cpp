@@ -675,6 +675,37 @@ void pof::ProductManager::UpdateCategory(pof::base::data::const_iterator iter)
 	}
 }
 
+void pof::ProductManager::UpdateProductQuan(const std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>>& prodQuans)
+{
+	if (mLocalDatabase)
+	{
+		if (!UpdateProductQuanStmt) {
+			constexpr const std::string_view sql = R"(UPDATE products set quantity = ? WHERE uuid = ?;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return;
+			}
+			UpdateProductQuanStmt = *stmt;
+		}
+		mLocalDatabase->begin_trans();
+		for (auto& tup : prodQuans) {
+			bool status = mLocalDatabase->bind(UpdateProductPackStmt, std::make_tuple(std::get<1>(tup), std::get<0>(tup)));
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				break;
+			}
+			status = mLocalDatabase->execute(UpdateProductQuanStmt);
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				break;
+			}
+		}
+		mLocalDatabase->end_trans();
+	}
+
+}
+
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)
 {
 	mProductData->Emplace(std::forward<pof::base::data>(data));
@@ -1117,6 +1148,7 @@ void pof::ProductManager::Finialize()
 		mLocalDatabase->finalise(ProductPackStmt);
 		mLocalDatabase->finalise(GetPackStmt);
 		mLocalDatabase->finalise(ExistsInPackStmt);
+		mLocalDatabase->finalise(UpdateProductQuanStmt);
 	}
 }
 

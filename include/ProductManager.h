@@ -144,7 +144,7 @@ namespace pof {
 		const pof::base::data& GetCategories() const { return mCategories; }
 		pof::base::data& GetCategories() { return mCategories; }
 
-		
+		void UpdateProductQuan(const std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>>& prodQuans);
 
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
@@ -222,6 +222,7 @@ namespace pof {
 		pof::base::database::stmt_t UpdateProductPackStmt = nullptr;
 		pof::base::database::stmt_t UpdatePackDescStmt = nullptr;
 		pof::base::database::stmt_t ExistsInPackStmt = nullptr;
+		pof::base::database::stmt_t UpdateProductQuanStmt = nullptr;
 
 
 
