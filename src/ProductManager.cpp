@@ -209,6 +209,52 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 	return true;
 }
 
+bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase){
+		if (!LoadInventoryByDateStmt){
+			constexpr const std::string_view sql = R"(SELECT * 
+				FROM inventory i 
+				WHERE inpute_date BETWEEN ? AND ? LIMIT 1000;
+			)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			LoadInventoryByDateStmt = *stmt;
+		}
+		auto dttp = dt + date::days(1);
+		bool status = mLocalDatabase->bind(LoadInventoryByDateStmt, std::make_tuple(dt, dttp));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t, //ID
+			pof::base::data::duuid_t, //UUID
+			pof::base::data::datetime_t, // EXPIRE DATE
+			pof::base::data::datetime_t, // ADDED DATE
+			std::uint64_t, // STOCK COUNT
+			pof::base::data::currency_t, //CURRENCY
+			pof::base::data::text_t, // MANUFACTURE NAME
+			std::uint64_t,  // MANUFACTURER ADDRESS ID
+			pof::base::data::text_t // LOT NUMBER/ BATCH NUMBER
+		>(LoadInventoryByDateStmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto& r = rel.value();
+		mInventoryData->Clear();
+		mInventoryData->GetDatastore().reserve(r.size());
+		for (auto& tup : r) {
+			
+		}
+	}
+	return false;
+}
+
 bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)
 {
 	if (iter == mProductData->GetDatastore().end()) return false;

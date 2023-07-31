@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/noncopyable.hpp>
 #include <ranges>
+#include <date/date.h>
 #include <algorithm>
 #include <set>
 #include <shared_mutex>
@@ -117,6 +118,7 @@ namespace pof {
 		bool LoadInventoryData(const pof::base::data::duuid_t& ud);
 		bool LoadCategories();
 		bool LoadProductsFromDatabase();
+		bool LoadInventoryByDate(const pof::base::data::datetime_t& dt);
 
 
 		bool StrProductData(pof::base::data::const_iterator iter);
@@ -223,6 +225,7 @@ namespace pof {
 		pof::base::database::stmt_t UpdatePackDescStmt = nullptr;
 		pof::base::database::stmt_t ExistsInPackStmt = nullptr;
 		pof::base::database::stmt_t UpdateProductQuanStmt = nullptr;
+		pof::base::database::stmt_t LoadInventoryByDateStmt = nullptr;
 
 
 

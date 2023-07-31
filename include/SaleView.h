@@ -119,6 +119,7 @@ namespace pof
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
+		void ResetSaleDisplay();
 		void Checkout();
 
 		void OnClear(wxCommandEvent& evt);

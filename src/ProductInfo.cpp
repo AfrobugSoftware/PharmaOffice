@@ -10,6 +10,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
+	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 END_EVENT_TABLE()
 
 pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
@@ -38,6 +39,9 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mShowAddInfo->SetState(bitset.to_ulong());
 
 	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Product History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
+	m_auiToolBar1->AddStretchSpacer();
+	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	m_auiToolBar1->AddControl(mInventoryDate);
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
@@ -451,6 +455,22 @@ void pof::ProductInfo::SplitPeriodString(const pof::ProductManager::relation_t::
 	mExpDatePeriod->SetValue(wxVariant((int)std::distance(stringArray.begin(), iter)));
 }
 
+void pof::ProductInfo::LoadInventoryByDate(const pof::base::data::datetime_t& dt)
+{
+	bool status = wxGetApp().mProductManager.LoadInventoryByDate(dt);
+	if (!status) {
+		
+	}
+}
+
+void pof::ProductInfo::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
+{
+	bool status = wxGetApp().mSaleManager.LoadHistoryByDate(dt);
+	if (!status) {
+		
+	}
+}
+
 
 void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 {
@@ -600,6 +620,24 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 	InventoryView->Thaw();
 	InventoryView->Refresh();
 	InventoryView->Update();
+}
+
+void pof::ProductInfo::OnDateChange(wxDateEvent& evt)
+{
+	auto& dt = evt.GetDate();
+	pof::base::data::datetime_t dtt = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+	const int sel = mBook->GetSelection();
+	switch (sel)
+	{
+	case 0:
+		LoadInventoryByDate(dtt);
+		break;
+	case 1:
+		LoadHistoryByDate(dtt);
+		break;
+	default:
+		break;
+	}
 }
 
 void pof::ProductInfo::RemovePropertyModification()

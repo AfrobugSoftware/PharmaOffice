@@ -376,13 +376,37 @@ void pof::SaleView::UpdateSaleDisplay()
 
 }
 
+void pof::SaleView::ResetSaleDisplay()
+{
+	Freeze();
+	mQuantityValue->SetLabel(fmt::format("{:d}", 0));
+	mExtQuantityItem->SetLabel(fmt::format("{:d}", 0));
+	mDiscountValue->SetLabel(fmt::format("{:cu}", pof::base::data::currency_t{}));
+	mTotalQuantityValue->SetLabel(fmt::format("{:d}", 0));
+	mTotalAmount->SetLabel(fmt::format("{:cu}", pof::base::data::currency_t{}));
+	Thaw();
+	Update();
+	mTextOutPut->Layout();
+	mSalePaymentButtonsPane->Layout();
+}
+
 void pof::SaleView::Checkout()
 {
 }
 
 void pof::SaleView::OnClear(wxCommandEvent& evt)
 {
-	wxMessageBox("CLEAR", "CLEARING");
+	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+	if (datastore.empty()) return;
+	if (wxMessageBox("Are you sure you want to clear current sale?", "SALE", wxICON_WARNING | wxYES_NO) == wxNO) return;
+
+	wxGetApp().mSaleManager.GetSaleData()->Clear();
+	if (mPropertyManager->IsShown()) {
+		mPropertyManager->Hide();
+		mDataPane->Layout();
+		mDataPane->Refresh();
+	}
+	ResetSaleDisplay();
 }
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
@@ -426,6 +450,13 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
 	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
+	model->Clear();
+	if (mPropertyManager->IsShown()) {
+		mPropertyManager->Hide();
+		mDataPane->Layout();
+		mDataPane->Refresh();
+	}
+	ResetSaleDisplay();
 	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
 }
 
@@ -580,14 +611,14 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			if (!status) {
 				wxMessageBox(fmt::format("\'{}\' has expired, please update product inventory",
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-				return;
+				continue;
 			}
 			
 			status = CheckInStock(*iter);
 			if (!status) {
 				wxMessageBox(fmt::format("{} is out of stock",
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-				return;
+				continue;
 			}
 
 			std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
@@ -595,7 +626,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 				if (wxMessageBox(fmt::format("Adding more \'{}\' then there is available stock, present stock is {:d}, Do you want to reduce to present stock?",
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME]), presentStock), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxYES) {
 					std::get<3>(prod) = presentStock;
-				}else return;
+				}else continue;
 			}
 
 			std::optional<pof::base::data::iterator> iterOpt;

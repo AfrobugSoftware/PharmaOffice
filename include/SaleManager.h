@@ -55,6 +55,7 @@ namespace pof {
 		std::shared_ptr<pof::Account> mCurAccount;
 		std::shared_ptr<pof::Pharmacy> mCurPharmacy;
 
+		bool LoadHistoryByDate(const pof::base::data::datetime_t& dt);
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }

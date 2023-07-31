@@ -19,6 +19,7 @@
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
 #include <wx/splitter.h>
+#include <wx/datectrl.h>
 #include <Data.h>
 
 #include <bitset>
@@ -77,6 +78,7 @@ namespace pof
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
+			wxDatePickerCtrl* mInventoryDate;
 			double mStubPrice;
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
@@ -105,6 +107,7 @@ namespace pof
 				ID_PROPERTY_GRID,
 				ID_SPLIT_WINDOW,
 				ID_SHOW_PRODUCT_SALE_HISTORY,
+				ID_DATE
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -138,11 +141,15 @@ namespace pof
 		void OnUnspilt(wxSplitterEvent& evt);
 		void OnShowProductInfo(wxCommandEvent& evt);
 		void OnShowProducSaleHistory(wxCommandEvent& evt);
+		void OnDateChange(wxDateEvent& evt);
 
 		void RemovePropertyModification();
 		pof::base::data::datetime_t PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const;
 		pof::base::data::text_t CreatePeriodString();
 		void SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup);
+
+		void LoadInventoryByDate(const pof::base::data::datetime_t& dt);
+		void LoadHistoryByDate(const pof::base::data::datetime_t& dt);
 
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
