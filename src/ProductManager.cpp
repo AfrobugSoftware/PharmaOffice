@@ -680,7 +680,7 @@ void pof::ProductManager::UpdateProductQuan(const std::vector<std::tuple<pof::ba
 	if (mLocalDatabase)
 	{
 		if (!UpdateProductQuanStmt) {
-			constexpr const std::string_view sql = R"(UPDATE products set quantity = ? WHERE uuid = ?;)";
+			constexpr const std::string_view sql = R"(UPDATE products set stock_count = ? WHERE uuid = ?;)";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -690,7 +690,7 @@ void pof::ProductManager::UpdateProductQuan(const std::vector<std::tuple<pof::ba
 		}
 		mLocalDatabase->begin_trans();
 		for (auto& tup : prodQuans) {
-			bool status = mLocalDatabase->bind(UpdateProductPackStmt, std::make_tuple(std::get<1>(tup), std::get<0>(tup)));
+			bool status = mLocalDatabase->bind(UpdateProductQuanStmt, std::make_tuple(std::get<1>(tup), std::get<0>(tup)));
 			if (!status) {
 				spdlog::error(mLocalDatabase->err_msg());
 				break;

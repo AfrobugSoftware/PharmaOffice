@@ -387,7 +387,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 {
-	//wxMessageBox("CHECKOUT", "CHECKOUT");
+	//sale dialog
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	const pof::base::data& dataStore = model->GetDatastore();
 	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
@@ -406,8 +406,24 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		return;
 	}
 	//update the stocks of the sold items
+	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
+	quans.reserve(dataStore.size());
 
-
+	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	std::ranges::for_each(dataStore, [&](const pof::base::data::row_t& r) {
+		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::SaleManager::PRODUCT_UUID]);
+		auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
+			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+		});
+		auto& v = pIter->first;
+		//stock count is guranteed from the sale checks not to be less than the amount sold
+		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
+			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
+		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+	});
+	
+	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
 	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
 	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
