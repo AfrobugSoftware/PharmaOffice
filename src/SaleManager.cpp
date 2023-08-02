@@ -22,6 +22,7 @@ pof::SaleManager::SaleManager()
 
 pof::SaleManager::~SaleManager()
 {
+	Finalise();
 	SaleData.release();
 	//ProductSaleHistory.release();
 }
@@ -41,6 +42,58 @@ void pof::SaleManager::DoSale()
 	//if(payment.ShowModal == wxID_OK) {
 	// collect payment data details,
 	// write sale data to the database
+}
+
+bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase)
+	{
+		if (!mProductHistByDateStmt){
+			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
+					FROM sales s, products p
+					WHERE s.sale_date BETWEEN ? AND ?;)";
+			auto stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()){
+				spdlog::error(mLocalDatabase->err_msg());
+				return false;
+			}
+			mProductHistByDateStmt = *stmt;
+		}
+		auto ddt = dt + date::days(1);
+		bool status = mLocalDatabase->bind(mProductHistByDateStmt, std::make_tuple(dt, ddt));
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::datetime_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(mProductHistByDateStmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto& rr = rel.value();
+		ProductSaleHistory->Clear();
+		ProductSaleHistory->GetDatastore().reserve(rr.size());
+
+		for (auto& tup : rr) {
+			pof::base::data::row_t row;
+			auto& v = row.first;
+			v.resize(HIST_MAX);
+
+			v[HIST_DATE] = std::get<HIST_DATE>(tup);
+			v[HIST_PROD_NAME] = std::get<HIST_PROD_NAME>(tup);
+			v[HIST_QUANTITY] = std::get<HIST_QUANTITY>(tup);
+			v[HIST_EXTPRICE] = std::get<HIST_EXTPRICE>(tup);
+
+			ProductSaleHistory->EmplaceData(std::move(row));
+		}
+		return true;
+	}
+	return false;
 }
 
 void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productUUID)
@@ -368,4 +421,8 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 	}
 	fs << doc;
 	return true;
+}
+
+void pof::SaleManager::Finalise()
+{
 }

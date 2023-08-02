@@ -5,6 +5,7 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
+#include <date/date.h>
 
 #include "database.h"
 #include "Account.h"
@@ -63,7 +64,7 @@ namespace pof {
 		bool CreateSaleTable();
 		bool StoreSale();
 		bool DoPrintReceipt(const pof::base::data::currency_t& totalAmount);
-
+		void Finalise();
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;
@@ -75,6 +76,7 @@ namespace pof {
 
 		pof::base::database::stmt_t mLoadProductHistory = nullptr;
 		pof::base::database::stmt_t mStoreSale = nullptr;
+		pof::base::database::stmt_t mProductHistByDateStmt = nullptr;
 
 
 	};

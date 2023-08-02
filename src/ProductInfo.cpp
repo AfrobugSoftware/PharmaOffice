@@ -457,7 +457,7 @@ void pof::ProductInfo::SplitPeriodString(const pof::ProductManager::relation_t::
 
 void pof::ProductInfo::LoadInventoryByDate(const pof::base::data::datetime_t& dt)
 {
-	bool status = wxGetApp().mProductManager.LoadInventoryByDate(dt);
+	bool status = wxGetApp().mProductManager.LoadInventoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
 	if (!status) {
 		
 	}

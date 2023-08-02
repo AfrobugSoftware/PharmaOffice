@@ -209,13 +209,13 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 	return true;
 }
 
-bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::datetime_t& dt)
+bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt)
 {
 	if (mLocalDatabase){
 		if (!LoadInventoryByDateStmt){
 			constexpr const std::string_view sql = R"(SELECT * 
 				FROM inventory i 
-				WHERE inpute_date BETWEEN ? AND ? LIMIT 1000;
+				WHERE i.uuid = ? AND input_date BETWEEN ? AND ? LIMIT 1000;
 			)";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
@@ -225,7 +225,7 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::datetime_t&
 			LoadInventoryByDateStmt = *stmt;
 		}
 		auto dttp = dt + date::days(1);
-		bool status = mLocalDatabase->bind(LoadInventoryByDateStmt, std::make_tuple(dt, dttp));
+		bool status = mLocalDatabase->bind(LoadInventoryByDateStmt, std::make_tuple(ud,dt, dttp));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
@@ -249,8 +249,12 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::datetime_t&
 		mInventoryData->Clear();
 		mInventoryData->GetDatastore().reserve(r.size());
 		for (auto& tup : r) {
-			
+			pof::base::data::row_t row;
+			auto& f = row.first;
+			f = std::move(pof::base::make_row_from_tuple(std::move(tup)));
+			mInventoryData->EmplaceData(std::move(row));
 		}
+		return true;
 	}
 	return false;
 }
