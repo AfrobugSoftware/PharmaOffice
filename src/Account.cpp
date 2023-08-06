@@ -124,7 +124,7 @@ bool pof::Account::AddNewRole(const Privilage& p)
 		constexpr const std::string_view sql = R"(UPDATE users set privilage = ? WHERE id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(priv, accountID));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(priv.to_ulong(), accountID));
 		assert(status);
 		status = mLocalDatabase->execute(*stmt);
 		assert(status);
@@ -220,7 +220,7 @@ void pof::Account::SetSecurityQuestion(const std::string& question, const std::s
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 		std::string ans = std::move(answer);
-		std::transform(ans.begin(), ans.end(), ans.begin(), std::tolower);
+		std::transform(ans.begin(), ans.end(), ans.begin(), [&](char c) -> char { return std::tolower(c); });
 		std::string hash = bcrypt::generateHash(std::move(ans));
 
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(std::move(question), std::move(hash), accountID));

@@ -126,7 +126,7 @@ void pof::DispensaryView::SetSpecialCol()
 		return (found != mSelections.end());
 	};
 
-	handler.second = [&](size_t col, size_t row, const wxVariant& var) ->bool {
+	handler.second = [&](size_t row, size_t col, const wxVariant& var) ->bool {
 		auto item = pof::DataModel::GetItemFromIdx(row);
 		if (!item.IsOk()) return false;
 		if (var.GetBool()) {

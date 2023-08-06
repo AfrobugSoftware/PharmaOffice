@@ -42,6 +42,7 @@ static wxArrayString SplitIntoArrayString(const std::string& string)
 
 pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
+	mCurSaleuuid = boost::uuids::nil_uuid();
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
@@ -457,6 +458,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		mDataPane->Refresh();
 	}
 	ResetSaleDisplay();
+	mCurSaleuuid = boost::uuids::nil_uuid();
 	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
 }
 
@@ -720,7 +722,7 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			auto& v = row.first;
 
 			v[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
-			v[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+			v[pof::SaleManager::PRODUCT_UUID] = val.first[pof::ProductManager::PRODUCT_UUID];
 			v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
 			v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
 			v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
