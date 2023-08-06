@@ -233,7 +233,7 @@ bool pof::SignInDialog::ValidateLocal()
 	account->phonenumber = std::get<5>(v);
 	account->regnumber = std::get<6>(v);
 	account->passhash = std::get<7>(v);
-
+	account->SetSignInTime();
 	dbPtr->finalise(*stmt);
 	return true;
 }
@@ -302,10 +302,7 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 	if (!dbPtr) return false;
 
 	auto stmt = dbPtr->prepare(sql);
-	if (!stmt.has_value()) {
-		//read last error from database
-		return false;
-	}
+	assert(stmt.has_value());
 	dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
 		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
 	bool ret = dbPtr->execute(*stmt);

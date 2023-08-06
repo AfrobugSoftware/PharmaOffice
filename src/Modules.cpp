@@ -206,14 +206,12 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
 	//add the account type
-	wxStaticText* m_staticText3;
 	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
 	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText3->Wrap(-1);
 	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
 
-	wxStaticText* m_staticText1;
 	std::string AccountName = wxGetApp().MainAccount->GetName();
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
@@ -222,7 +220,6 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
-	wxStaticText* m_staticText2;
 	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
 			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
@@ -325,6 +322,29 @@ pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemI
 		return std::make_pair<wxTreeItemId, wxWindow*>(wxTreeItemId{}, nullptr);
 	}
 	return *iter;
+}
+
+void pof::Modules::ReloadAccountDetails()
+{
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	std::string AccountName = wxGetApp().MainAccount->GetName();
+	std::transform(AccountName.begin(), AccountName.end(),
+		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
+	std::transform(PharmacyName.begin(), PharmacyName.end(),
+		PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+
+	m_panel1->Freeze();
+
+	m_staticText1->SetLabel(std::move(AccountName));
+	m_staticText2->SetLabel(std::move(PharmacyName));
+	m_staticText3->SetLabel(std::move(AccountType));
+	
+	m_panel1->Layout();
+	m_panel1->Thaw();
+	m_panel1->Refresh();
+
+
 }
 
 boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)

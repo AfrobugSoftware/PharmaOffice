@@ -73,7 +73,7 @@ namespace pof {
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
 		virtual ~MainFrame();
 
-
+		void ReloadFrame();
 		std::shared_ptr<pof::Account> mAccount;
 	protected:
 		void CreateMenuBar();

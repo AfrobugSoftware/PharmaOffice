@@ -231,7 +231,7 @@ bool pof::Application::SignOut()
 	pof::SignInDialog Dialog(nullptr);
 	while (1) {
 		if (Dialog.ShowModal() == wxID_OK) {
-
+			mMainFrame->ReloadFrame();
 			mMainFrame->Show();
 			return true;
 		}

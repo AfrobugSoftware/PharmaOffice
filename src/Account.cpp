@@ -29,8 +29,8 @@ bool pof::Account::CreateAccountInfoTable()
 					 (user_id integer unique, 
 					 sec_question text,
 					 sec_ans_hash text, 
-					 signin_time blob, 
-					 signout_time blob);)";
+					 signin_time integer, 
+					 signout_time integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 
@@ -186,7 +186,7 @@ void pof::Account::DoSignOut()
 {
 	auto sotime = pof::base::data::clock_t::now();
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(UPDATE users_info set signout_time = ? WHERE user_id = ?)";
+		constexpr const std::string_view sql = R"(UPDATE users_info set signout_time = ? WHERE user_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 

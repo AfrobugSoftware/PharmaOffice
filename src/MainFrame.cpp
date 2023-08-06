@@ -41,6 +41,11 @@ pof::MainFrame::~MainFrame()
 }
 
 
+void pof::MainFrame::ReloadFrame()
+{
+	mModules->ReloadAccountDetails();
+}
+
 void pof::MainFrame::CreateMenuBar()
 {
 	constexpr const size_t MenuCount = 8;

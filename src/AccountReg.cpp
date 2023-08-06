@@ -260,7 +260,7 @@ void pof::RegistrationDialog::OnShowPassword(wxCommandEvent& evt)
 	mPasswordValue->Refresh();
 	mPasswordValue->Update();
 	mConfirmPasswordValue->Refresh();
-	mPasswordValue->Update();
+	mConfirmPasswordValue->Update();
 	Thaw();
 	Update();
 }
