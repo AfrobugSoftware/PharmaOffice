@@ -44,14 +44,14 @@ void pof::SaleManager::DoSale()
 	// write sale data to the database
 }
 
-bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
+bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::duuid_t& ud,const pof::base::data::datetime_t& dt)
 {
 	if (mLocalDatabase)
 	{
 		if (!mProductHistByDateStmt){
 			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
 					FROM sales s, products p
-					WHERE s.sale_date BETWEEN ? AND ?;)";
+					WHERE s.product_uuid = ? AND s.product_uuid = p.uuid AND s.sale_date BETWEEN ? AND ?;)";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()){
 				spdlog::error(mLocalDatabase->err_msg());
@@ -60,7 +60,7 @@ bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
 			mProductHistByDateStmt = *stmt;
 		}
 		auto ddt = dt + date::days(1);
-		bool status = mLocalDatabase->bind(mProductHistByDateStmt, std::make_tuple(dt, ddt));
+		bool status = mLocalDatabase->bind(mProductHistByDateStmt, std::make_tuple(ud,dt, ddt));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;

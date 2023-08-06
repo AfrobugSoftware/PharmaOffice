@@ -465,7 +465,7 @@ void pof::ProductInfo::LoadInventoryByDate(const pof::base::data::datetime_t& dt
 
 void pof::ProductInfo::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
 {
-	bool status = wxGetApp().mSaleManager.LoadHistoryByDate(dt);
+	bool status = wxGetApp().mSaleManager.LoadHistoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
 	if (!status) {
 		
 	}

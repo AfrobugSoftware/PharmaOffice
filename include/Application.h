@@ -57,6 +57,7 @@ namespace pof {
 		bool RegisterPharmacyLocal();
 		bool RegisterAccountLocal();
 		bool SignIn();
+		bool SignOut();
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		void TestAccountAndPharmacy();

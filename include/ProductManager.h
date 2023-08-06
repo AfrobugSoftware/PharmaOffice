@@ -136,7 +136,7 @@ namespace pof {
 		void RemoveCategory(const std::string& name);
 		void UpdateCategory(pof::base::data::const_iterator iter);
 
-
+		size_t GetInentoryCount(const pof::base::data::duuid_t& ud);
 		inline const pof::DataModel& GetBaseProductData() const { return *mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductData() { return mProductData; }
 		inline std::unique_ptr<pof::DataModel>& GetOrderList() { return mOrderList; }

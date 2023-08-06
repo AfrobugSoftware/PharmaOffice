@@ -96,7 +96,6 @@ bool pof::Application::OnInit()
 	mSaleManager.mCurAccount = MainAccount;
 	mSaleManager.mCurPharmacy = MainPharmacy;
 
-
 	return CreateMainFrame();
 }
 
@@ -122,6 +121,7 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame = new pof::MainFrame(nullptr,
 		wxID_ANY, wxDefaultPosition, wxSize(1122, 762));
 
+	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
 	mMainFrame->Show();
 	return true;
@@ -146,6 +146,7 @@ bool pof::Application::OpenLocalDatabase()
 	mProductManager.mLocalDatabase = mLocalDatabase;
 	mAuditManager.mLocalDatabase = mLocalDatabase;
 	mSaleManager.mLocalDatabase = mLocalDatabase;
+	MainAccount->mLocalDatabase = mLocalDatabase;
 
 	return true;
 }
@@ -223,6 +224,26 @@ bool pof::Application::SignIn()
 	}
 }
 
+bool pof::Application::SignOut()
+{
+	mMainFrame->Hide();
+
+	pof::SignInDialog Dialog(nullptr);
+	while (1) {
+		if (Dialog.ShowModal() == wxID_OK) {
+
+			mMainFrame->Show();
+			return true;
+		}
+		else {
+			spdlog::info("Sign in was cancelled");
+			mMainFrame->Close();
+			return false;
+		}
+	}
+	return false;
+}
+
 void pof::Application::TestAccountAndPharmacy()
 {
 	MainPharmacy->name = "D-GLOPA NIGERIA LIMITED"s;
@@ -285,6 +306,7 @@ void pof::Application::CreateTables()
 	mAuditManager.CreateAuditTable();
 	mProductManager.CreatePackTable();
 	mSaleManager.CreateSaleTable();
+	MainAccount->CreateAccountInfoTable();
 }
 
 void pof::Application::ReadSettingsFlags()

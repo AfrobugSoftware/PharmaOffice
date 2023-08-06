@@ -73,6 +73,8 @@ namespace pof {
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
 		virtual ~MainFrame();
 
+
+		std::shared_ptr<pof::Account> mAccount;
 	protected:
 		void CreateMenuBar();
 		void CreateStatusBar();
@@ -93,6 +95,7 @@ namespace pof {
 		void OnExportCSV(wxCommandEvent& evt);
 		void OnUpdateUI(wxUpdateUIEvent& evt);
 		void OnShowModules(wxCommandEvent& evt);
+		void OnSignOut(wxCommandEvent& evt);
 
 		//test 
 		void OnTestSave(wxCommandEvent& evt);

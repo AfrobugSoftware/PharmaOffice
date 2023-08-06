@@ -374,7 +374,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 	auto& i = datumInven->first;
 	i.resize(pof::ProductManager::INVENTORY_MAX);
-	i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(9999999); //test
+	i[pof::ProductManager::INVENTORY_ID] = 1; //test
 	i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
 	i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 	i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();

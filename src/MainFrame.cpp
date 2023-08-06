@@ -12,6 +12,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SAVE, pof::MainFrame::OnTestSave)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES, pof::MainFrame::OnShowModules)
+	EVT_MENU(pof::MainFrame::ID_MENU_ACCOUNT_SIGN_OUT, pof::MainFrame::OnSignOut)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -64,6 +65,8 @@ void pof::MainFrame::CreateMenuBar()
 		"Extentions",
 		"Help"
 	};
+	//account menu
+	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
 
 
 	//product menu
@@ -230,6 +233,7 @@ void pof::MainFrame::OnExportJson(wxCommandEvent& evt)
 
 void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
 {
+
 }
 
 void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
@@ -253,6 +257,12 @@ void pof::MainFrame::OnShowModules(wxCommandEvent& evt)
 		pane.Hide();
 	}
 	mAuiManager.Update();
+}
+
+void pof::MainFrame::OnSignOut(wxCommandEvent& evt)
+{
+	mAccount->DoSignOut();
+	wxGetApp().SignOut();
 }
 
 void pof::MainFrame::OnTestSave(wxCommandEvent& evt)

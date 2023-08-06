@@ -725,6 +725,33 @@ void pof::ProductManager::UpdateCategory(pof::base::data::const_iterator iter)
 	}
 }
 
+size_t pof::ProductManager::GetInentoryCount(const pof::base::data::duuid_t& ud)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT COUNT(id) FROM inventory WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return 0;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return 0;
+		}
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return 0;
+		}
+		if (rel->empty()) return 0;
+		else {
+			return std::get<0>((*rel)[0]);
+		}
+	}
+	return size_t(0);
+}
+
 void pof::ProductManager::UpdateProductQuan(const std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>>& prodQuans)
 {
 	if (mLocalDatabase)

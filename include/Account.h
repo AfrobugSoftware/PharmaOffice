@@ -12,6 +12,9 @@
 #include <bitset>
 #include <fmt/format.h>
 
+#include "database.h"
+#include <../base/bcrypt/include/bcrypt.h> //to avoid clashing
+
 namespace nl = nlohmann;
 namespace pof {
 	class Account : private boost::noncopyable {
@@ -42,6 +45,8 @@ namespace pof {
 		nl::json Pack() const;
 		void UnPack(const nl::json& package);
 
+		void DoSignOut();
+
 		inline constexpr const std::string& GetName() const { return name; }
 		inline constexpr std::uint64_t GetID() const { return accountID; }
 		inline constexpr const std::string& GetEmail() const { return email; }
@@ -55,18 +60,32 @@ namespace pof {
 			return priv.test(std::underlying_type_t<Privilage>(p));
 		}
 
+		//log out
+
+
+		bool CreateAccountInfoTable();
+		bool CreateAccountInfo();
+		bool CheckForUsername(const std::string& usersname);
+		bool ChangePassword(const std::string& newPass);
+		std::string GetSecurityQuestion(const std::string& username);
+		std::uint64_t GetLastId() const;
+
+		void SetSignInTime();
+		void SetSecurityQuestion(const std::string& question, const std::string& answer);
+		std::shared_ptr<pof::base::database> mLocalDatabase;
+		signal_t signOutSig; 
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;
 		std::uint64_t accountID = 0;
 		std::string name;
 		std::string lastname;
-		std::string username;
+		std::string username; //username should be unique
 		std::string email;
 		std::string phonenumber;
 		std::string regnumber;
 		std::string passhash;
 		bool isLoccum = false; 
 		//account details?
-	};
+	}; 
 };

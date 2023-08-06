@@ -212,6 +212,7 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 		return false;
 	}
 
+	mAccount.accountID = mAccount.GetLastId() + 1;
 	mAccount.name = mFirstNameValue->GetValue().ToStdString();
 	mAccount.lastname = mLastNameValue->GetValue().ToStdString();
 	mAccount.passhash = hash;
@@ -256,6 +257,10 @@ void pof::RegistrationDialog::OnShowPassword(wxCommandEvent& evt)
 	Freeze();
 	mPasswordValue->SetWindowStyle(pflags);
 	mConfirmPasswordValue->SetWindowStyle(cflags);
+	mPasswordValue->Refresh();
+	mPasswordValue->Update();
+	mConfirmPasswordValue->Refresh();
+	mPasswordValue->Update();
 	Thaw();
 	Update();
 }
