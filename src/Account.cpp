@@ -115,6 +115,26 @@ bool pof::Account::ChangePassword(const std::string& newPass)
 	return false;
 }
 
+bool pof::Account::AddNewRole(const Privilage& p)
+{
+	if (priv.to_ullong() & static_cast<unsigned long long>(p)) return false;
+	priv |= static_cast<unsigned long long>(p);
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE users set privilage = ? WHERE id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(priv, accountID));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
+
+		mLocalDatabase->finalise(*stmt);
+	}
+	
+	return true;
+}
+
 std::string pof::Account::GetSecurityQuestion(const std::string& un)
 {
 	if (mLocalDatabase){
@@ -151,6 +171,30 @@ std::uint64_t pof::Account::GetLastId() const
 	return std::uint64_t(0);
 }
 
+bool pof::Account::DeleteAccount()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(
+			BEGIN IMMEDIATE
+				DELETE FROM users WHERE id = ?
+				DELETE FROM users_info WHERE user_id = ?
+			END;
+		)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(accountID, accountID));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
+
+		mLocalDatabase->finalise(*stmt);
+		return true;
+	}
+	return false;
+}
+
 //save the current sign in time
 void pof::Account::SetSignInTime()
 {
@@ -170,6 +214,23 @@ void pof::Account::SetSignInTime()
 
 void pof::Account::SetSecurityQuestion(const std::string& question, const std::string& answer)
 {
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE users_info set sec_question = ?, set sec_ans_hash = ? WHERE user_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+		std::string ans = std::move(answer);
+		std::transform(ans.begin(), ans.end(), ans.begin(), std::tolower);
+		std::string hash = bcrypt::generateHash(std::move(ans));
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(std::move(question), std::move(hash), accountID));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
+
+		mLocalDatabase->finalise(*stmt);
+	}
 }
 
 
