@@ -65,11 +65,11 @@ namespace pof {
 		};
 		
 		enum : std::uint8_t {
-			ORDER_ID,
 			ORDER_PRODUCT_UUID,
 			ORDER_PRODUCT_NAME,
 			ORDER_QUANTITY,
-			ORDER_COST
+			ORDER_COST,
+			ORDER_MAX
 		};
 
 		enum : std::uint8_t {
@@ -119,7 +119,16 @@ namespace pof {
 		bool LoadCategories();
 		bool LoadProductsFromDatabase();
 		bool LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt);
-
+		
+		//orderlist
+		void CreateOrderListTable();
+		bool LoadOrderList();
+		bool ClearOrderList();
+		bool CheckIfInOrderList(const pof::base::data::duuid_t& ud);
+		bool IncrQuanInOrderList(const pof::base::data::duuid_t& ud);
+		bool AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
+		bool UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
+		bool RemvFromOrderList(const pof::base::data::duuid_t ud);
 
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);

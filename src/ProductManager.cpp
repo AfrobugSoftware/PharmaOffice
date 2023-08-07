@@ -259,6 +259,152 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud
 	return false;
 }
 
+void pof::ProductManager::CreateOrderListTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS order_list (prod_uuid blob, quan integer);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+
+		bool status = mLocalDatabase->execute(*stmt);
+		assert(status);
+
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+bool pof::ProductManager::LoadOrderList()
+{
+	if (!mOrderList->GetDatastore().empty()) mOrderList->Clear();
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, ol.quan, p.cost_price
+				FROM order_list ol, products p 
+				WHERE p.uuid = ol.prod_uuid
+			    LIMIT 1000;
+			)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+
+		auto rel = mLocalDatabase->retrive <
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		for (auto& tup : *rel){ 
+			pof::base::data::row_t row;
+			auto& v = row.first;
+			v.resize(ORDER_MAX);
+
+			v[ORDER_PRODUCT_UUID] = std::get<0>(tup);
+			v[ORDER_PRODUCT_NAME] = std::move(std::get<1>(tup));
+			v[ORDER_QUANTITY] = std::get<2>(tup);
+			v[ORDER_COST] = std::get<3>(tup);
+
+			mOrderList->EmplaceData(std::move(row));
+		}
+		return true;
+	}
+	return false;
+}
+
+bool pof::ProductManager::ClearOrderList()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM order_list;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+		bool status = mLocalDatabase->execute(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO order_list (?,?))";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud, quan));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE order_list set quan = ? WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(quan, ud));
+		if (!status) {
+			mLocalDatabase->finalise(*stmt);
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return false;
+	}
+	return false;
+}
+
+bool pof::ProductManager::RemvFromOrderList(const pof::base::data::duuid_t ud)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM order_list WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(*stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud));
+		if (!status) {
+			mLocalDatabase->finalise(*stmt);
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)
 {
 	if (iter == mProductData->GetDatastore().end()) return false;
