@@ -313,7 +313,6 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 {
 	//check privilage
-	
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
 
@@ -326,36 +325,26 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	auto& orderListDatastore = wxGetApp().mProductManager.GetOrderList();
 	if (mSelections.empty()) {
 		auto item = m_dataViewCtrl1->GetSelection();
 		if (!item.IsOk()) return;
 		size_t idx = pof::DataModel::GetIdxFromItem(item);
 		auto& row = datastore[idx];
+
 		pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
-		if (wxGetApp().mProductManager.CheckIfInOrderList(uuid)) {
-			
-		}
-		else {
-			std::uint64_t quantity = 1;
-			wxGetApp().mProductManager.AddToOrderList(uuid, quantity);
-		
-			std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
-			mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
-		}
+		wxGetApp().mProductManager.AddToOrderList(uuid, 1);
+
+		std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+		mInfoBar->ShowMessage(fmt::format("Added {} to order list", name), wxICON_INFORMATION);
 	}
 	else {
 		for (auto& item : mSelections) {
 			size_t idx = pof::DataModel::GetIdxFromItem(item);
 			auto& row = datastore[idx];
-			pof::base::data::row_t order;
-			std::string& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_NAME]);
+
 			pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
-			pof::base::data::currency_t cost;
-			std::uint64_t quantity = 1;
-			std::uint64_t id = 1;
-			order.first = { id, uuid, name, quantity, cost };
-			orderListDatastore->EmplaceData(std::move(order));
+			wxGetApp().mProductManager.AddToOrderList(uuid, 1);
+
 		}
 		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
 	}

@@ -125,7 +125,6 @@ namespace pof {
 		bool LoadOrderList();
 		bool ClearOrderList();
 		bool CheckIfInOrderList(const pof::base::data::duuid_t& ud);
-		bool IncrQuanInOrderList(const pof::base::data::duuid_t& ud);
 		bool AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool RemvFromOrderList(const pof::base::data::duuid_t ud);

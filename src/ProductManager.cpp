@@ -305,13 +305,7 @@ bool pof::ProductManager::LoadOrderList()
 		for (auto& tup : *rel){ 
 			pof::base::data::row_t row;
 			auto& v = row.first;
-			v.resize(ORDER_MAX);
-
-			v[ORDER_PRODUCT_UUID] = std::get<0>(tup);
-			v[ORDER_PRODUCT_NAME] = std::move(std::get<1>(tup));
-			v[ORDER_QUANTITY] = std::get<2>(tup);
-			v[ORDER_COST] = std::get<3>(tup);
-
+			v = std::move(pof::base::make_row_from_tuple(tup));
 			mOrderList->EmplaceData(std::move(row));
 		}
 		return true;
@@ -335,14 +329,44 @@ bool pof::ProductManager::ClearOrderList()
 	return false;
 }
 
-bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
+bool pof::ProductManager::CheckIfInOrderList(const pof::base::data::duuid_t& ud)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO order_list (?,?))";
+		constexpr const std::string_view sql = R"(SELECT 1 FROM order_list WHERE prod_uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud, quan));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel.has_value());
+
+		mLocalDatabase->finalise(*stmt);
+		return !rel->empty();
+
+	}
+	return false;
+}
+
+bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(
+		IF NOT EXISTS(SELECT 1 FROM order_list WHERE prod_uuid = ?)
+			BEGIN IMMEDIATE	
+			INSERT INTO order_list (?,?)
+			END
+		ELSE 
+			UPDATE order_list SET quan = quan + 1 WHERE prod_uuid = ?
+		ENDIF;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		//assert(stmt.has_value());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud, ud, quan, ud));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
