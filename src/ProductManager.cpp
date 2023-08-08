@@ -158,7 +158,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 300;";
+		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 1000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());
@@ -262,7 +262,7 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud
 void pof::ProductManager::CreateOrderListTable()
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS order_list (prod_uuid blob, quan integer);)";
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS order_list (prod_uuid blob primary key, quan integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 
@@ -352,21 +352,16 @@ bool pof::ProductManager::CheckIfInOrderList(const pof::base::data::duuid_t& ud)
 bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(
-		IF NOT EXISTS(SELECT 1 FROM order_list WHERE prod_uuid = ?)
-			BEGIN IMMEDIATE	
-			INSERT INTO order_list (?,?)
-			END
-		ELSE 
-			UPDATE order_list SET quan = quan + 1 WHERE prod_uuid = ?
-		ENDIF;)";
+		constexpr const std::string_view sql = R"(INSERT INTO order_list (prod_uuid, quan)
+			VALUES (:prod_uuid, :quan)
+			ON CONFLICT (prod_uuid) DO UPDATE SET quan = quan + 1 WHERE prod_uuid = :prod_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt.has_value());
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(ud, ud, quan, ud));
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(ud, quan), {"prod_uuid", "quan"});
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
@@ -427,6 +422,23 @@ bool pof::ProductManager::RemvFromOrderList(const pof::base::data::duuid_t ud)
 		return status;
 	}
 	return false;
+}
+
+size_t pof::ProductManager::GetOrderListCount() const
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT COUNT(prod_uuid) FROM order_list;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt.has_value());
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel.has_value());
+		mLocalDatabase->finalise(*stmt);
+
+		return (std::get<0>(*rel->begin()));
+	}
+	return size_t(0);
 }
 
 bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)

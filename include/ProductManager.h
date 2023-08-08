@@ -128,11 +128,43 @@ namespace pof {
 		bool AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool RemvFromOrderList(const pof::base::data::duuid_t ud);
+		size_t GetOrderListCount() const;
 
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductData(pof::base::data::const_iterator iter);
 		
+		//the first arg is the uuid
+		template<typename... Args>
+		bool UpdatePD(const std::tuple<Args...>& args, const std::array<std::string_view, sizeof...(Args)>& names) {
+			if (mLocalDatabase) {
+				std::ostringstream str;
+				str << "UPDATE products ";
+				for (int i = 1; i < names.size(); i++) {
+					if (i != 1) {
+						str << ",";
+					}
+					str << fmt::format("SET {s:} = :{s:}", fmt::arg("s", names[i]));
+				}
+				str << "WHERE uuid = :uuid;";
+				auto stmt = mLocalDatabase->prepare(str.str());
+				assert(stmt.has_value());
+
+				bool status = mLocalDatabase->bind_para(args, std::move(names));
+				if (!status) {
+					spdlog::error(mLocalDatabase->err_msg());
+					return false;
+				}
+				status = mLocalDatabase->execute(*stmt);
+				if (!status) {
+					spdlog::error(mLocalDatabase->err_msg());
+				}
+				mLocalDatabase->finalise(*stmt);
+				return status;
+			}
+			return false;
+		}
+
 		//load from a different source directly to the database
 		bool OnStoreProductData(pof::base::data::const_iterator iter);
 

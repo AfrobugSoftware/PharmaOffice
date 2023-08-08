@@ -288,6 +288,25 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 
 }
 
+void pof::ProductView::OnRemoveFromCategory(wxCommandEvent& evt)
+{
+	if (mActiveCategory.empty()) return;
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& v = datastore[idx].first;
+
+	auto& ud = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+	v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
+
+	wxGetApp().mProductManager.UpdatePD(std::make_tuple(ud, std::uint64_t(0)), { "uuid", "category_id" });
+
+
+
+}
+
 void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 {
 }

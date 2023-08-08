@@ -129,6 +129,7 @@ namespace pof
 		void OnExpiredProducts(wxCommandEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
+		void OnRemoveFromCategory(wxCommandEvent& evt);
 		void OnSearchFlag(wxCommandEvent& evt);
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
