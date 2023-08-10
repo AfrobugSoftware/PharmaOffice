@@ -29,6 +29,7 @@ EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOr
 EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
+EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 
 END_EVENT_TABLE()
 
@@ -291,19 +292,34 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 void pof::ProductView::OnRemoveFromCategory(wxCommandEvent& evt)
 {
 	if (mActiveCategory.empty()) return;
-	auto item = m_dataViewCtrl1->GetSelection();
-	if (!item.IsOk()) return;
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
 
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	auto& v = datastore[idx].first;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+		auto& v = datastore[idx].first;
 
-	auto& ud = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
-	v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
+		auto& ud = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+		v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 
-	wxGetApp().mProductManager.UpdatePD(std::make_tuple(ud, std::uint64_t(0)), { "uuid", "category_id" });
+		wxGetApp().mProductManager.UpdatePD(std::make_tuple(ud, std::uint64_t(0)), { "uuid", "category" });
+	}
+	else {
+		for (auto& item : mSelections) {
+			if (!item.IsOk()) return;
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+			auto& v = datastore[idx].first;
 
+			auto& ud = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+			v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 
+			wxGetApp().mProductManager.UpdatePD(std::make_tuple(ud, std::uint64_t(0)), { "uuid", "category_id" });
+		}
+	}
+	//reactivate
+	OnCategoryActivated(mActiveCategory);
 
 }
 
@@ -319,6 +335,10 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
 	auto cat = menu->Append(wxID_ANY, "Add to Category", catSub);
+	if (!mActiveCategory.empty()) {
+		auto remvcat = menu->Append(ID_REMOVE_FROM_CATEGORY, fmt::format("Remove from \'{}\'", mActiveCategory), nullptr);
+		remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
+	}
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add Inventory", nullptr);
 
 	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
@@ -679,6 +699,12 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
 	}
 	else {
+		if (!mActiveCategory.empty()) {
+			//reactivated from remove product from category
+			mActiveCategory.clear();
+			wxGetApp().mProductManager.GetProductData()->Reload();
+			return;
+		}
 		mInfoBar->ShowMessage(fmt::format("{} is empty", name), wxICON_INFORMATION);
 	}
 }

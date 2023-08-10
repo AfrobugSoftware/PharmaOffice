@@ -136,7 +136,7 @@ namespace pof {
 		
 		//the first arg is the uuid
 		template<typename... Args>
-		bool UpdatePD(const std::tuple<Args...>& args, const std::array<std::string_view, sizeof...(Args)>& names) {
+		bool UpdatePD(const std::tuple<Args...>& args, std::array<std::string_view, sizeof...(Args)>&& names) {
 			if (mLocalDatabase) {
 				std::ostringstream str;
 				str << "UPDATE products ";
@@ -144,13 +144,16 @@ namespace pof {
 					if (i != 1) {
 						str << ",";
 					}
-					str << fmt::format("SET {s:} = :{s:}", fmt::arg("s", names[i]));
+					str << fmt::format("SET {s:} = :{s:} ", fmt::arg("s", names[i]));
 				}
 				str << "WHERE uuid = :uuid;";
 				auto stmt = mLocalDatabase->prepare(str.str());
-				assert(stmt.has_value());
+				if (!stmt.has_value()){
+					spdlog::error(mLocalDatabase->err_msg());
+					return false;
+				}
 
-				bool status = mLocalDatabase->bind_para(args, std::move(names));
+				bool status = mLocalDatabase->bind_para(*stmt, args, std::move(names));
 				if (!status) {
 					spdlog::error(mLocalDatabase->err_msg());
 					return false;
@@ -190,6 +193,7 @@ namespace pof {
 
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
+		void InventoryBroughtForward(const pof::base::data::duuid_t& uid); 
 		
 		//add a product from UI
 		void AddProductData();
