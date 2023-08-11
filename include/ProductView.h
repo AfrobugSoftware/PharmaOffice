@@ -48,6 +48,8 @@ namespace pof
 			ID_BACK,
 			ID_FORWARD,
 			ID_DATA_VIEW,
+			ID_FUNCTIONS,
+			ID_FUNCTION_BROUGHT_FORWARD,
 			ID_REPORTS,
 			ID_REPORTS_CONSUMPTION_PATTERN,
 			ID_REPORTS_ENDOFDAY,
@@ -146,6 +148,8 @@ namespace pof
 		void OnConsumptionPattern(wxCommandEvent& evt);
 		void OnEndOfDayReport(wxCommandEvent& evt);
 		void OnPacks(wxCommandEvent& evt);
+		void OnFunctions(wxAuiToolBarEvent& evt);
+		void OnBFFunction(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

@@ -978,34 +978,44 @@ void pof::ProductManager::StoreProductData(pof::base::data&& data)
 void pof::ProductManager::InventoryBroughtForward(const pof::base::data::duuid_t& uid)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view qSql = R"(SELECT MAX(input_date), expire_date, stock_count
-			 FROM inventory WHERE uuid = ?;)";
+		constexpr const std::string_view qSql = R"(SELECT id, MAX(input_date), expire_date, stock_count
+			 FROM inventory 
+			 WHERE uuid = ? GROUP BY uuid;)";
 		auto stmt = mLocalDatabase->prepare(qSql);
 		assert(stmt);
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
+				std::uint64_t,
 				pof::base::data::datetime_t,
 				pof::base::data::datetime_t,
 				std::uint64_t>(*stmt);
 		assert(rel);
-		assert(!rel->empty());
+		if(rel->empty()) return;
+
 		mLocalDatabase->finalise(*stmt);
 
 
-		auto& maxInputDate = std::get<0>(*rel->begin());
+		auto& maxInputDate = std::get<1>(*rel->begin());
 		auto today = pof::base::data::clock_t::now();
 		auto month = std::chrono::duration_cast<date::months>(today.time_since_epoch());
 		auto lastMonth = std::chrono::duration_cast<date::months>(maxInputDate.time_since_epoch());
 		
 		if (lastMonth >= month) return;
 
-		constexpr const std::string_view sql = R"(INSERT INTO inventory
-		 VALUES (:id, :uuid, :expire_date, :input_date, :stock_count, :cost, );)";
+		constexpr const std::string_view sql = R"(INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?);)";
+		stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		auto& v = rel.value();
 
-		
+		status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<0>(v[0]) + 1, uid, 
+			std::get<2>(v[0]), today, std::get<3>(v[0]), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
 
+		mLocalDatabase->finalise(*stmt);
 	}
 }
 

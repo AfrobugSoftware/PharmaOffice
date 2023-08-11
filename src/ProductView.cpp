@@ -16,6 +16,7 @@ EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice
 EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
+EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
 
 
 //Search
@@ -30,6 +31,7 @@ EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
 EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
+EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
 
 END_EVENT_TABLE()
 
@@ -601,6 +603,37 @@ void pof::ProductView::OnPacks(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
+{
+	if (evt.IsDropDownClicked())
+	{
+		wxMenu* menu = new wxMenu;
+		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
+		
+
+		PopupMenu(menu);
+	}
+}
+
+void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
+{
+	wxProgressDialog dialog("BROUGHT FORWARD", "Starting brought forward", 100, this, wxPD_SMOOTH | wxPD_APP_MODAL);
+	double progress = 0.0;
+	size_t count = 0;
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto proup = [&]() -> size_t {
+		progress += (count / datastore.size()) * 100.0;
+		return static_cast<size_t>(progress);
+	};
+	for (auto& prod : datastore) {
+		auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
+		auto& uid = boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+
+		dialog.Update(proup(), fmt::format("Updating {}", name));
+		wxGetApp().mProductManager.InventoryBroughtForward(uid);
+	}
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -773,7 +806,15 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1 = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	m_auiToolBar1->SetToolBitmapSize(wxSize(16,16));
 
-	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(500, -1), wxWANTS_CHARS);
+	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("file"), wxT("Store reports"));
+	mReportItem->SetHasDropDown(true);
+	auto mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
+	mFuncDropItem->SetHasDropDown(true);
+
+	m_auiToolBar1->AddStretchSpacer();
+	m_auiToolBar1->AddSeparator();
+
+	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	m_searchCtrl1->ShowSearchButton(true);
 #endif
@@ -793,8 +834,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
-	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("file"), wxT("Store reports"));
-	mReportItem->SetHasDropDown(true);
+
 	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_PACKS, wxT("Pharm Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
