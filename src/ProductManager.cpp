@@ -262,7 +262,7 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud
 void pof::ProductManager::CreateOrderListTable()
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS order_list (prod_uuid blob primary key, quan integer);)";
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS order_list (prod_uuid blob primary key, quan integer, state integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 
@@ -278,8 +278,8 @@ bool pof::ProductManager::LoadOrderList()
 	if (!mOrderList->GetDatastore().empty()) mOrderList->Clear();
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, ol.quan, p.cost_price
-				FROM order_list ol, products p 
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, ol.quan, p.cost_price, ol.state
+				FROM order_list ol, products p
 				WHERE p.uuid = ol.prod_uuid
 			    LIMIT 1000;
 			)";
@@ -293,7 +293,8 @@ bool pof::ProductManager::LoadOrderList()
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			std::uint64_t,
-			pof::base::data::currency_t
+			pof::base::data::currency_t,
+			std::uint64_t
 		>(*stmt);
 		if (!rel.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -353,7 +354,7 @@ bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(INSERT INTO order_list (prod_uuid, quan)
-			VALUES (:prod_uuid, :quan)
+			VALUES (:prod_uuid, :quan, :state)
 			ON CONFLICT (prod_uuid) DO UPDATE SET quan = quan + 1 WHERE prod_uuid = :prod_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt.has_value());
@@ -361,7 +362,7 @@ bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
-		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(ud, quan), {"prod_uuid", "quan"});
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(ud, quan, PENDING), {"prod_uuid", "quan", "state"});
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
@@ -439,6 +440,26 @@ size_t pof::ProductManager::GetOrderListCount() const
 		return (std::get<0>(*rel->begin()));
 	}
 	return size_t(0);
+}
+
+bool pof::ProductManager::UpdateOrderState(const pof::base::data::duuid_t& uid, std::uint64_t state)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE order_list SET state = ? WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(state, uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
 }
 
 bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)

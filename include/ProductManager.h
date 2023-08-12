@@ -69,6 +69,7 @@ namespace pof {
 			ORDER_PRODUCT_NAME,
 			ORDER_QUANTITY,
 			ORDER_COST,
+			ORDER_STATE,
 			ORDER_MAX
 		};
 
@@ -84,6 +85,11 @@ namespace pof {
 			PACK_UUID_DECS,
 			PACK_NAME,
 			PACK_DESCRIPTION
+		};
+		//order state
+		enum : std::uint8_t {
+			PENDING,
+			ORDERED,
 		};
 
 		using relation_t = pof::base::relation <
@@ -129,6 +135,7 @@ namespace pof {
 		bool UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool RemvFromOrderList(const pof::base::data::duuid_t ud);
 		size_t GetOrderListCount() const;
+		bool UpdateOrderState(const pof::base::data::duuid_t& uid, std::uint64_t state);
 
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
