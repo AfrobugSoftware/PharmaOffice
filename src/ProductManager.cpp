@@ -45,11 +45,11 @@ pof::ProductManager::ProductManager() {
 	pof::base::adapt<std::uint64_t, pof::base::data::text_t>(mCategories);
 
 	mOrderList->Adapt<
-		std::uint64_t, //id
-		pof::base::data::duuid_t, //product uuid
-		pof::base::data::text_t, //product name
-		std::uint64_t, //quantity
-		pof::base::data::currency_t
+		pof::base::data::duuid_t,
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::data::currency_t,
+		std::uint64_t
 	>();
 
 	
@@ -353,7 +353,7 @@ bool pof::ProductManager::CheckIfInOrderList(const pof::base::data::duuid_t& ud)
 bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO order_list (prod_uuid, quan)
+		constexpr const std::string_view sql = R"(INSERT INTO order_list (prod_uuid, quan, state)
 			VALUES (:prod_uuid, :quan, :state)
 			ON CONFLICT (prod_uuid) DO UPDATE SET quan = quan + 1 WHERE prod_uuid = :prod_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);

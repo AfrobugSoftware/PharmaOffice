@@ -23,7 +23,7 @@
 #include "DataObject.h"
 #include "AddProductDialog.h"
 #include "InventoryDialog.h"
-
+#include "OrderView.h"
 
 #include <boost/signals2/signal.hpp>
 
@@ -43,6 +43,7 @@ namespace pof
 			ID_ADD_PRODUCT = wxID_HIGHEST + 2000,
 			ID_REMOVE_PRODUCT,
 			ID_ADD_ORDER_LIST,
+			ID_ORDER_LIST,
 			ID_REMOVE_FROM_CATEGORY,
 			ID_PRODUCTINFO,
 			ID_BACK,
@@ -150,6 +151,7 @@ namespace pof
 		void OnPacks(wxCommandEvent& evt);
 		void OnFunctions(wxAuiToolBarEvent& evt);
 		void OnBFFunction(wxCommandEvent& evt);
+		void OnShowOrderList(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

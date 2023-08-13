@@ -16,7 +16,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW|wxSTATIC_BORDER ); 
+	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( wxSize( -1,40 ) );
 	
 	m_tool11 = mTopTools->AddTool( wxID_ANY, wxT("tool"), wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
@@ -37,8 +37,9 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 
 	CreateEmptyPanel();
-	mBook->AddPage(mOrderView, wxT("ORDER VIEW"), true);
-	mBook->AddPage(mEmpty, wxT("EMPTY"), false);
+	bool empty = wxGetApp().mProductManager.GetOrderList()->GetDatastore().empty();
+	mBook->AddPage(mOrderView, wxT("ORDER VIEW"), !empty);
+	mBook->AddPage(mEmpty, wxT("EMPTY"), empty);
 	mBook->Layout();
 	bSizer2->Add( mBook, 1, wxEXPAND, 0 );
 	
@@ -95,6 +96,8 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	CreateSpeicalCol();
 }
 
 pof::OrderListView::~OrderListView()
@@ -129,7 +132,7 @@ void pof::OrderListView::CreateEmptyPanel()
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("Pack is empty"), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("Order list is empty"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
@@ -166,6 +169,8 @@ void pof::OrderListView::CreateSpeicalCol()
 {
 	pof::DataModel::SpeicalColHandler_t stateCol;
 	pof::DataModel::SpeicalColHandler_t quanCol;
+	pof::DataModel::SpeicalColHandler_t costCol;
+
 	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
 	stateCol.first = [&](size_t row, size_t col) -> wxVariant
 	{
@@ -184,12 +189,26 @@ void pof::OrderListView::CreateSpeicalCol()
 	};
 
 	quanCol.second = [&](size_t row, size_t col, const wxVariant& value) -> bool {
+		wxBusyCursor cusor;
+		std::uint64_t quan = static_cast<std::uint64_t>(value.GetInteger());
+		auto& rowid = datastore[row].first[pof::ProductManager::ORDER_PRODUCT_UUID];
+		auto& rowQuan = datastore[row].first[pof::ProductManager::ORDER_QUANTITY];
+		auto& cost = datastore[row].first[pof::ProductManager::ORDER_COST];
+		rowQuan = quan;
+		wxGetApp().mProductManager.UpdateOrderList(boost::variant2::get<pof::base::data::duuid_t>(rowid),quan);
+		return true;
+	};
 
+	costCol.first = [&](size_t row, size_t col) -> wxVariant {
+	   auto& cost = datastore[row].first[pof::ProductManager::ORDER_COST];
+	   auto& rowQuan = datastore[row].first[pof::ProductManager::ORDER_QUANTITY];
+	   auto show = boost::variant2::get<pof::base::data::currency_t>(cost) * 
+			static_cast<double>(boost::variant2::get<std::uint64_t>(rowQuan));
+	   return wxVariant(fmt::format("{:cu}", show));
 
 	};
 
-
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_STATE, std::move(stateCol));
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_QUANTITY, std::move(quanCol));
-
+	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_COST, std::move(costCol));
 }
