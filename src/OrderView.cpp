@@ -2,13 +2,16 @@
 #include "Application.h"
 
 BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
+EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
+EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
+EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
 END_EVENT_TABLE()
 
 
 pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
-	
+	this->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
@@ -18,8 +21,8 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( wxSize( -1,40 ) );
-	
-	m_tool11 = mTopTools->AddTool( wxID_ANY, wxT("tool"), wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
+	mTopTools->AddStretchSpacer();
+	m_tool11 = mTopTools->AddTool( wxID_ANY, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
 	mTopTools->Realize(); 
 	
@@ -27,7 +30,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	mBook = new wxSimplebook( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	
-	mOrderView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	mOrderView = new wxDataViewCtrl( mBook, ID_ORDER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES );
 	mOrderView->AssociateModel(wxGetApp().mProductManager.GetOrderList().get());
 	
 	mProductCol = mOrderView->AppendTextColumn( wxT("Product"), pof::ProductManager::ORDER_PRODUCT_NAME, wxDATAVIEW_CELL_INERT,  200);
@@ -211,4 +214,31 @@ void pof::OrderListView::CreateSpeicalCol()
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_STATE, std::move(stateCol));
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_QUANTITY, std::move(quanCol));
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_COST, std::move(costCol));
+}
+
+void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
+{
+}
+
+void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
+{
+	wxMenu* menu = new wxMenu;
+	auto remv = menu->Append(ID_REMOVE_ORDER, "Remove Order");
+	remv->SetBackgroundColour(*wxWHITE);
+	remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
+	PopupMenu(menu);
+}
+
+void pof::OrderListView::OnRemoveOrder(wxCommandEvent& evt)
+{
+	if (wxMessageBox("Are you sure you want to remove product from order list ?", "ORDER LIST", wxICON_WARNING | wxYES_NO, this) == wxNO) return;
+	auto item = mOrderView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& orderList = wxGetApp().mProductManager.GetOrderList();
+	auto& row = orderList->GetDatastore()[idx];
+	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+	wxGetApp().mProductManager.RemvFromOrderList(uid);
+	orderList->RemoveData(item);
 }

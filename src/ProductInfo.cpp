@@ -297,7 +297,7 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "DIRECTION FOR USE", pof::ProductManager::PRODUCT_USAGE_INFO });
 	mNameToProductElem.insert({ "HEALTH CONDITIONS", pof::ProductManager::PRODUCT_HEALTH_CONDITIONS });
 	mNameToProductElem.insert({ "DESCRIPTION", pof::ProductManager::PRODUCT_DESCRIP });
-	mNameToProductElem.insert({ "STRENGTH/CONC. ", pof::ProductManager::PRODUCT_STRENGTH });
+	mNameToProductElem.insert({ "STRENGTH/CONC.", pof::ProductManager::PRODUCT_STRENGTH });
 	mNameToProductElem.insert({ "STRENGTH TYPE", pof::ProductManager::PRODUCT_STRENGTH_TYPE });
 	mNameToProductElem.insert({ "SIDE EFFECTS", pof::ProductManager::PRODUCT_SIDEEFFECTS});
 	mNameToProductElem.insert({ "EXPIRE PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
@@ -426,13 +426,13 @@ pof::base::data::datetime_t pof::ProductInfo::PeriodTime(int periodCount, const 
 
 pof::base::data::text_t pof::ProductInfo::CreatePeriodString()
 {
-	auto val = mExpDatePeriod->GetValueAsString().ToStdString();
 	//do also for count 
-	int count = mExpDateCount->GetValue().GetInteger();
-	if (val.empty()) {
+	if (mExpDatePeriod->GetValue().IsNull() || mExpDateCount->GetValue().IsNull()) {
 		wxMessageBox("Expired Period Count specified, but duration is not specified", "PRODUCT INFO", wxICON_WARNING | wxOK);
 		return {};
 	}
+	auto val = mExpDatePeriod->GetValueAsString().ToStdString();
+	int count = mExpDateCount->GetValue().GetInteger();
 	return fmt::format("{:d},{}", count, val);
 }
 
@@ -526,7 +526,8 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
 	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
 	{
-		size_t count = mExpDateCount->GetValue().GetInteger();
+		size_t count = 0;
+		if(!mExpDateCount->GetValue().IsNull()) count = mExpDateCount->GetValue().GetInteger();
 		auto& duid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
 		auto periodString = CreatePeriodString();
 		if (periodString.empty()) {

@@ -44,9 +44,11 @@ namespace pof
 		wxSimplebook* mBook;
 		wxPanel* mEmpty;
 	public:
-
 		enum {
 			ID_ORDER_VIEW = wxID_HIGHEST + 40,
+			ID_PRINT_ORDER,
+			ID_REMOVE_ORDER,
+			ID_PLACE
 		};
 
 		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(766, 535), long style = wxDEFAULT_DIALOG_STYLE);
@@ -54,7 +56,9 @@ namespace pof
 		void CreateEmptyPanel();
 		void CreateSpeicalCol();
 
-
+		void OnPrintOrder(wxCommandEvent& evt);
+		void OnContexMenu(wxDataViewEvent& evt);
+		void OnRemoveOrder(wxCommandEvent& evt);
 		DECLARE_EVENT_TABLE()
 	};
 }
