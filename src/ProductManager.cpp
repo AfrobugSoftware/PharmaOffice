@@ -1084,6 +1084,13 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 		}
 		
 		pof::base::data data;
+		data.set_metadata({
+			pof::base::data::kind::blob,
+			pof::base::data::kind::datetime,
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency
+		});
 		std::unordered_map<pof::base::data::duuid_t, size_t> mSumMap;
 		auto& v = rel.value();
 		data.reserve(v.size());
@@ -1101,7 +1108,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 				boost::variant2::get<pof::base::currency>(row.first[4]) += curn;
 			}
 			else {
-				data.emplace(pof::base::make_row_from_tuple(tup));
+				data.insert(pof::base::make_row_from_tuple(tup));
 			}
 		}
 		data.shrink_to_fit();

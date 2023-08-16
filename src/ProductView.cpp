@@ -622,7 +622,7 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 	}
 
 
-	dialog.Show();
+	dialog.ShowModal();
 }
 
 void pof::ProductView::OnPacks(wxCommandEvent& evt)
