@@ -25,6 +25,7 @@ int test_main(int argc, char** const argv)
 }
 
 
+
 pof::Application::Application()
 {
 	SetAppName("PharmaOffice");
@@ -116,6 +117,19 @@ void pof::Application::SetUpColorTable()
 	wxTheColourDatabase->AddColour("Papaya whip", wxColour(255, 239, 213));
 }
 
+void pof::Application::SetupDatabaseExt()
+{
+	if (mLocalDatabase) {
+		pof::base::func_aggregate costAgg;
+		costAgg.name = "SumCost";
+		costAgg.arg_count = 1;
+		costAgg.fstep = pof::base::cost_step_func;
+		costAgg.ffinal = pof::base::cost_final_func;
+
+		mLocalDatabase->register_func(costAgg);
+	}
+}
+
 bool pof::Application::CreateMainFrame()
 {
 	mMainFrame = new pof::MainFrame(nullptr,
@@ -143,6 +157,8 @@ bool pof::Application::OpenLocalDatabase()
 	auto dbPath = std::filesystem::current_path() / "localdatabase.db";
 	sqlite3_initialize();
 	mLocalDatabase = std::make_shared<pof::base::database>(dbPath);
+	SetupDatabaseExt();
+
 	mProductManager.mLocalDatabase = mLocalDatabase;
 	mAuditManager.mLocalDatabase = mLocalDatabase;
 	mSaleManager.mLocalDatabase = mLocalDatabase;

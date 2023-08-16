@@ -146,6 +146,7 @@ namespace pof
 
             inline void reserve(size_t size) { value.reserve(size); }
             inline void resize(size_t size) { value.resize(size); }
+            void shrink_to_fit();
 
             inline const auto& back() const { return value.back(); }
             inline const auto& front() const { return value.front(); }

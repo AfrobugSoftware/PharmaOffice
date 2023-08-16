@@ -43,7 +43,7 @@ namespace pof {
 
 
 		static void SetUpColorTable();
-
+		void SetupDatabaseExt();
 		bool CreateMainFrame();
 		bool CheckForUpdate();
 		bool LunchWizard();

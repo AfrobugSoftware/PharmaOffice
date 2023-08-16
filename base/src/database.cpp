@@ -1,5 +1,25 @@
 #include "database.h"
 
+void pof::base::cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals) {
+	using currency_ptr = std::add_pointer_t<pof::base::currency>;
+	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(con, sizeof(pof::base::currency)));
+	if (cur) {
+		pof::base::currency temp;
+		const currency_ptr val = (const currency_ptr)(sqlite3_value_blob(vals[0]));
+		std::copy(val->data().begin(), val->data().end(), temp.data().begin());
+		*cur += temp;
+	}
+}
+
+void pof::base::cost_final_func(sqlite3_context* conn) {
+	using currency_ptr = std::add_pointer_t<pof::base::currency>;
+	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(conn, sizeof(pof::base::currency)));
+	if (cur) {
+		sqlite3_result_blob(conn, (const void*)cur, pof::base::currency::max, SQLITE_TRANSIENT);
+	}
+}
+
+
 pof::base::database::database(const std::filesystem::path& path)
 {
 	int ret = sqlite3_open(path.string().c_str(), &m_connection);
@@ -112,6 +132,41 @@ std::optional<pof::base::database::stmt_t> pof::base::database::get_map(const st
 	return iter->second;
 }
 
+void pof::base::database::set_commit_handler(commit_callback callback, void* UserData)
+{
+	sqlite3_commit_hook(m_connection, callback, UserData);
+}
+
+bool pof::base::database::set_trace_handler(trace_callback callback, std::uint32_t mask, void* UserData)
+{
+	return (sqlite3_trace_v2(m_connection, mask, callback, UserData) == SQLITE_OK);
+}
+
+bool pof::base::database::set_busy_handler(busy_callback callback, void* UserData)
+{
+	return (sqlite3_busy_handler(m_connection, callback, UserData) != SQLITE_ERROR);
+}
+
+void pof::base::database::set_rowback_handler(rollback_callback callback, void* UserData)
+{
+	sqlite3_rollback_hook(m_connection, callback, UserData);
+}
+
+void pof::base::database::set_update_handler(update_callback callback, void* UserData)
+{
+	sqlite3_update_hook(m_connection, callback, UserData);
+}
+
+bool pof::base::database::set_auth_handler(auth callback, void* UserData)
+{
+	return (sqlite3_set_authorizer(m_connection, callback, UserData) != SQLITE_ERROR);
+}
+
+void pof::base::database::set_progress_handler(progress_callback callback, void* UserData, int frq)
+{
+	sqlite3_progress_handler(m_connection, frq, callback, UserData);
+}
+
 bool pof::base::database::execute(const query_t& query) const
 {
 	char* errmessage;
@@ -155,4 +210,17 @@ bool pof::base::database::end_trans() const
 	reset(begin_immidiate);
 	reset(end);
 	return ret;
+}
+
+bool pof::base::database::flush_db()
+{
+	int ret = sqlite3_db_cacheflush(m_connection);
+	return ret == SQLITE_OK;
+}
+
+bool pof::base::database::register_func(const func_aggregate& argg)
+{
+	int ret = sqlite3_create_function(m_connection, argg.name.c_str(), argg.arg_count, func_aggregate::encoding,
+		argg.user_data, argg.func, argg.fstep, argg.ffinal);
+	return ret == SQLITE_OK;
 }

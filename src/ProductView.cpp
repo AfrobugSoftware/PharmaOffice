@@ -594,6 +594,35 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
+	auto data = wxGetApp().mProductManager.GetEndOfDay();
+	if (!data.has_value()) return;
+
+	if (data->empty()) {
+		wxMessageBox("No end of day, no sale has comersend yet", "END OF DAY", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	pof::ReportsDialog::ReportParams params;
+	params.colCount = data.value()[0].first.size();
+	params.rowCount = data.value().size();
+	params.enableEditing = false;
+	params.enableDragGridSize = true;
+	params.colLabelSize = 200;
+
+	pof::ReportsDialog dialog(this, params);
+	auto& grid = dialog.GetGrid();
+	{
+		//load data into grid
+		wxBusyCursor cursor;
+		pof::base::currency totalAmount;
+		std::uint64_t totalQuan = 0;
+		for (auto iter = data->begin(); iter != data->end(); iter++){
+
+		}
+	}
+
+
+	dialog.Show();
 }
 
 void pof::ProductView::OnPacks(wxCommandEvent& evt)

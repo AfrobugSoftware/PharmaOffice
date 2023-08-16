@@ -24,6 +24,7 @@
 #include "AddProductDialog.h"
 #include "InventoryDialog.h"
 #include "OrderView.h"
+#include "Reports.h"
 
 #include <boost/signals2/signal.hpp>
 

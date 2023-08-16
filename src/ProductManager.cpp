@@ -1,5 +1,5 @@
 #include "ProductManager.h"
-
+boost::hash<boost::uuids::uuid> std::hash<pof::base::data::duuid_t>::uuid_hasher;
 pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();
 	mInventoryData = std::make_unique<pof::DataModel>();
@@ -1042,6 +1042,95 @@ void pof::ProductManager::InventoryBroughtForward(const pof::base::data::duuid_t
 
 void pof::ProductManager::AddProductData()
 {
+}
+
+std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price
+		FROM sales s, products p
+		WHERE s.product_uuid = p.uuid AND s.sale_date BETWEEN ? AND ?;  )";
+		
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		auto todayClockDur = pof::base::data::clock_t::now();
+		auto qq = std::chrono::duration_cast<date::days>(todayClockDur.time_since_epoch());
+		auto ff = std::chrono::duration_cast<pof::base::data::clock_t::duration>(qq);
+
+		pof::base::data::clock_t::time_point today(ff);
+		auto nextDay = today + date::days(1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(today, nextDay));
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		
+		pof::base::data data;
+		std::unordered_map<pof::base::data::duuid_t, size_t> mSumMap;
+		auto& v = rel.value();
+		data.reserve(v.size());
+		for (size_t i = 0; i < v.size(); i++)
+		{
+			auto& tup = v[i];
+			pof::base::data::duuid_t& uid = std::get<0>(tup);
+			auto [iter, inserted] = mSumMap.insert({ uid, i });
+			if (!inserted) {
+				std::uint64_t quan = std::get<3>(tup);
+				pof::base::data::currency_t& curn = std::get<4>(tup);
+				auto& row = data[iter->second];
+
+				boost::variant2::get<std::uint64_t>(row.first[3]) += quan;
+				boost::variant2::get<pof::base::currency>(row.first[4]) += curn;
+			}
+			else {
+				data.emplace(pof::base::make_row_from_tuple(tup));
+			}
+		}
+		data.shrink_to_fit();
+		mLocalDatabase->finalise(*stmt);
+		return data;
+	}
+	return std::nullopt;
+}
+
+std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
+{
+	if (mLocalDatabase){
+		//product name 
+		//openning stock, first stock entry of the month
+		//total outgoing stock
+		//total incoming came in, this is plus opening stock
+		//total amount that left the pharmacy,
+		//total amount spent on the product
+		//use aggregate functions
+		constexpr const std::string_view invensql = R"( SELECT in.product_uuid, SUM(in.stock_count)
+			FROM inventory in
+			WHERE in.input_date > ? GROUP BY in.uuid;
+		)";
+
+		constexpr const std::string_view productsql = R"(SELECT p.name, 
+		FROM products p, inventory in;)";
+
+	}
+	return std::nullopt;
 }
 
 auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDataViewItem>>

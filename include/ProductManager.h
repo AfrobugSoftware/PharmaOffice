@@ -14,6 +14,21 @@
 /// 
 ///		Prescriptions page called backlog
 /// </summary>
+/// 
+/// 
+
+namespace std
+{
+	template<>
+	struct hash<pof::base::data::duuid_t> {
+		static boost::hash<boost::uuids::uuid> uuid_hasher;
+		size_t operator()(const pof::base::data::duuid_t& v) const noexcept
+		{
+			return uuid_hasher(v);
+		}
+	};
+};
+
 namespace pof {
 	class ProductManager : private boost::noncopyable {
 	public:
@@ -210,6 +225,11 @@ namespace pof {
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		boost::uuids::random_generator_mt19937 UuidGen;
+
+
+		//reports
+		std::optional<pof::base::data> GetEndOfDay();
+		std::optional<pof::base::data> GetConsumptionPattern();
 
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();

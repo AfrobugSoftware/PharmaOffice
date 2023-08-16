@@ -372,11 +372,44 @@ namespace pof {
 
 		}
 
+		struct func_aggregate
+		{
+			typedef void (*arg_func)(sqlite3_context*, int, sqlite3_value**);
+			typedef void(*arg_step)(sqlite3_context*, int, sqlite3_value**);
+			typedef void(*arg_final)(sqlite3_context*);
+			constexpr const static std::int32_t encoding = SQLITE_UTF8;
+
+			std::string name;
+			std::int32_t arg_count = 0;
+			void* user_data =  nullptr;
+			arg_func func = nullptr;
+			arg_step fstep = nullptr;
+			arg_final ffinal =  nullptr;
+
+			func_aggregate() = default;
+		};
+
+
+
+		extern void cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals);
+		extern void cost_final_func(sqlite3_context* conn);
+
+
 		class database : public boost::noncopyable {
 		public:
 			using stmt_t = std::add_pointer_t<sqlite3_stmt>;
 			using stmt_map = std::unordered_map<std::string, stmt_t>;
 			using query_t = std::string;
+
+			typedef int(*exeu_callback)(void* arg, int col, char** rol_val, char** col_names);
+			typedef int(*commit_callback)(void* arg);
+			typedef void(*rollback_callback)(void* arg);
+			typedef void(*update_callback)(void* arg, int evt, char const* database_name, char const* table_name, sqlite_int64 rowid);
+			typedef int(*trace_callback)(std::uint32_t traceType, void* UserData, void* statement, void* traceData);
+			typedef int(*busy_callback)(void* arg, int i);
+			typedef int(*progress_callback)(void* arg);
+			typedef int(*auth)(void* arg, int eventCode, const char* evt_1, const char* evt_2, const char* database_name, const char* tig_view_name);
+
 
 			database(const std::filesystem::path& path);
 			~database();
@@ -391,7 +424,18 @@ namespace pof {
 			void clear_bindings(stmt_t stmt) const;
 			bool add_map(const std::string& name, stmt_t stmt);
 			bool remove_map(const std::string& name);
+			bool flush_db();
+			bool register_func(const func_aggregate& argg);
 			std::optional<stmt_t> get_map(const std::string& value);
+
+			void set_commit_handler(commit_callback callback, void* UserData);
+			bool set_trace_handler(trace_callback callback, std::uint32_t mask, void* UserData);
+			bool set_busy_handler(busy_callback callback, void* UserData);
+			void set_rowback_handler(rollback_callback callback, void* UserData);
+			void set_update_handler(update_callback callback, void* UserData);
+			bool set_auth_handler(auth callback, void* UserData);
+			void set_progress_handler(progress_callback callback, void* UserData, int frq);
+
 
 			bool execute(const query_t& query) const;
 			bool execute(stmt_t stmt) const;
