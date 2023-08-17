@@ -126,7 +126,19 @@ void pof::Application::SetupDatabaseExt()
 		costAgg.fstep = pof::base::cost_step_func;
 		costAgg.ffinal = pof::base::cost_final_func;
 
+		pof::base::func_aggregate monthFunc;
+		monthFunc.name = "Months";
+		monthFunc.arg_count = 1;
+		monthFunc.func = pof::base::month_func;
+	
+		pof::base::func_aggregate daysFunc;
+		daysFunc.name = "Days";
+		daysFunc.arg_count = 1;
+		daysFunc.func = pof::base::day_func;
+
 		mLocalDatabase->register_func(costAgg);
+		mLocalDatabase->register_func(monthFunc);
+		mLocalDatabase->register_func(daysFunc);
 	}
 }
 

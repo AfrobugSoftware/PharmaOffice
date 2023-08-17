@@ -1128,14 +1128,52 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		//total amount that left the pharmacy,
 		//total amount spent on the product
 		//use aggregate functions
-		constexpr const std::string_view invensql = R"( SELECT in.product_uuid, SUM(in.stock_count)
-			FROM inventory in
-			WHERE in.input_date > ? GROUP BY in.uuid;
-		)";
+		constexpr const std::string_view sql = R"(SELECT iv.uuid, p.name, p.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
+			FROM inventory iv, products p
+			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid 
+			GROUP BY iv.uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		spdlog::info("month count {:d}", month.count());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		spdlog::info("month datetime count {:d}", pof::base::data::datetime_t(month).time_since_epoch().count());
 
-		constexpr const std::string_view productsql = R"(SELECT p.name, 
-		FROM products p, inventory in;)";
-
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		pof::base::data data;
+		data.set_metadata({
+			pof::base::data::kind::uuid,
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency,
+		});
+		spdlog::info("The size is : {:d}", rel->size());
+		data.reserve(rel->size());
+		for(auto& tup : *rel){
+			spdlog::info("{} {:d} {:d} {:cu}", std::get<1>(tup), std::get<2>(tup), std::get<3>(tup), std::get<4>(tup));
+			data.insert(pof::base::make_row_from_tuple(tup));
+		}
+		data.shrink_to_fit();
 	}
 	return std::nullopt;
 }

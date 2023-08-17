@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <exception>
 #include <utility>
+#include <date/date.h>
 
 namespace pof {
 	namespace base {
@@ -390,7 +391,9 @@ namespace pof {
 		};
 
 
-
+		extern void month_func(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		extern void day_func(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		//extern void _func(sqlite3_context* conn, int arg, sqlite3_value** vals);
 		extern void cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals);
 		extern void cost_final_func(sqlite3_context* conn);
 

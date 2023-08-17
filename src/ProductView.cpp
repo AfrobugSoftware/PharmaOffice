@@ -590,6 +590,14 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 
 void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 {
+	auto data = wxGetApp().mProductManager.GetConsumptionPattern();
+	if (!data.has_value()) return;
+
+	if (data->empty()) {
+		wxMessageBox("NO Transaction has occured in your store this month", "CONSUMPTION PATTERN", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 }
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
@@ -620,7 +628,6 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 
 		}
 	}
-
 
 	dialog.ShowModal();
 }

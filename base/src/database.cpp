@@ -1,5 +1,31 @@
 #include "database.h"
 
+void pof::base::month_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
+{
+	if (sqlite3_value_type(vals[0]) != SQLITE_INTEGER){
+		sqlite3_result_error(conn, "INVALID DATETIME TYPE", 500);
+		return;
+	}
+	std::uint64_t duration = sqlite3_value_int64(vals[0]);
+	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
+	auto month = std::chrono::duration_cast<date::months>(tt.time_since_epoch());
+	//spdlog::info("month count {:d}", month.count());
+	sqlite3_result_int64(conn, pof::base::data::datetime_t(month).time_since_epoch().count());
+}
+
+void pof::base::day_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
+{
+	if (sqlite3_value_type(vals[0]) != SQLITE_INTEGER) {
+		sqlite3_result_error(conn, "INVALID DATETIME TYPE", 500);
+		return;
+	}
+	std::uint64_t duration = sqlite3_value_int64(vals[0]);
+	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
+	auto day = std::chrono::duration_cast<date::days>(tt.time_since_epoch());
+
+	sqlite3_result_int64(conn, day.count());
+}
+
 void pof::base::cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals) {
 	using currency_ptr = std::add_pointer_t<pof::base::currency>;
 	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(con, sizeof(pof::base::currency)));
@@ -15,6 +41,7 @@ void pof::base::cost_final_func(sqlite3_context* conn) {
 	using currency_ptr = std::add_pointer_t<pof::base::currency>;
 	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(conn, sizeof(pof::base::currency)));
 	if (cur) {
+		//spdlog::info("{:cu}", *cur);
 		sqlite3_result_blob(conn, (const void*)cur, pof::base::currency::max, SQLITE_TRANSIENT);
 	}
 }
