@@ -1,12 +1,9 @@
 #include "Reports.h"
 BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
-EVT_DATE_CHANGED(pof::ReportsDialog::ID_DATE_FROM, pof::ReportsDialog::OnDateFromChanged)
-EVT_DATE_CHANGED(pof::ReportsDialog::ID_DATE_TO, pof::ReportsDialog::OnDateToChanged)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
-EVT_CHOICE(pof::ReportsDialog::ID_PEIOD_CHOICE, pof::ReportsDialog::OnChoiceChanged)
 END_EVENT_TABLE()
 
-pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::ReportParams& params, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
+pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
 	: wxDialog(parent, id, title, pos, size, style)
 {
 	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
@@ -21,38 +18,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::Re
 	bSizer7 = new wxBoxSizer(wxVERTICAL);
 
 	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW);
-	mTools->SetMaxSize(wxSize(-1, 40));
-
-	auto text = new wxStaticText(mTools, wxID_ANY, "FROM: ");
-	text->SetBackgroundColour(*wxWHITE);
-	mDateFrom = new wxDatePickerCtrl(mTools, ID_DATE_FROM);
+	mTools->SetMaxSize(wxSize(-1, 40));	
 	
-	auto text2 = new wxStaticText(mTools, wxID_ANY, "TO: ");
-	text2->SetBackgroundColour(*wxWHITE);
-	mDateTo = new wxDatePickerCtrl(mTools, ID_DATE_TO);
-
-	mTools->AddControl(text);
-	mTools->AddSpacer(5);
-	mTools->AddControl(mDateFrom);
-	
-	mTools->AddSpacer(5);
-
-	mTools->AddControl(text2);
-	mTools->AddSpacer(5);
-	mTools->AddControl(mDateTo);
-
-	mTools->AddSpacer(10);
-	auto text3 = new wxStaticText(mTools, wxID_ANY, "Period: ");
-	wxArrayString pChoices;
-
-	pChoices.push_back("QUARTER");
-	pChoices.push_back("MONTH");
-	pChoices.push_back("YEAR");
-
-
-	mPeriodChoice = new wxChoice(mTools, ID_PEIOD_CHOICE, wxDefaultPosition, wxDefaultSize, pChoices);
-	mTools->AddControl(mPeriodChoice);
-
     mTools->AddStretchSpacer();
 	mPrint = mTools->AddTool(ID_PRINT, wxT("Print"), wxArtProvider::GetBitmap(wxART_PRINT), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 
@@ -61,34 +28,13 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, const pof::ReportsDialog::Re
 
 	bSizer7->Add(mTools, 0, wxALL | wxEXPAND, 2);
 
-	mGrid = new wxGrid(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-
-	// Grid
-	mGrid->CreateGrid(params.rowCount, params.colCount);
-	mGrid->EnableEditing(params.enableEditing);
-	mGrid->EnableGridLines(params.enableGridLines);
-	mGrid->EnableDragGridSize(params.enableDragGridSize);
-	mGrid->SetMargins(0, 0);
-
-	// Columns
-	mGrid->EnableDragColMove(true);
-	mGrid->EnableDragColSize(true);
-	mGrid->SetColLabelSize(params.colLabelSize);
-	mGrid->SetColLabelAlignment(wxALIGN_CENTRE, wxALIGN_CENTRE);
-
-	// Rows
-	mGrid->EnableDragRowSize(true);
-	mGrid->SetRowLabelSize(params.rowLabelSize);
-	mGrid->SetRowLabelAlignment(wxALIGN_CENTRE, wxALIGN_CENTRE);
-
-	// Label Appearance
-	mGrid->SetLabelBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK));
-
-	// Cell Defaults
-	mGrid->SetDefaultCellAlignment(wxALIGN_LEFT, wxALIGN_TOP);
-	bSizer7->Add(mGrid, 1, wxALL | wxEXPAND, 0);
-
-
+	mListReport = new wxListCtrl(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+	wxImageList* imageList = new wxImageList(16, 16);
+	imageList->Add(wxArtProvider::GetBitmap("action_check"));
+	imageList->Add(wxArtProvider::GetBitmap("action_delete"));
+	mListReport->AssignImageList(imageList, wxIMAGE_LIST_SMALL);
+	
+	bSizer7->Add(mListReport, 1, wxALL | wxEXPAND, 0);
 	m_panel5->SetSizer(bSizer7);
 	m_panel5->Layout();
 	bSizer7->Fit(m_panel5);
@@ -105,18 +51,8 @@ pof::ReportsDialog::~ReportsDialog()
 {
 }
 
-void pof::ReportsDialog::OnDateFromChanged(wxDateEvent& evt)
-{
-}
-
-void pof::ReportsDialog::OnDateToChanged(wxDateEvent& evt)
-{
-}
-
 void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 {
 }
 
-void pof::ReportsDialog::OnChoiceChanged(wxCommandEvent& evt)
-{
-}
+

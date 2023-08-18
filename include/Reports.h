@@ -19,6 +19,7 @@
 #include <wx/dateevt.h>
 #include <wx/stattext.h>
 #include <wx/choice.h>
+#include <wx/listctrl.h>
 
 namespace pof
 {
@@ -30,52 +31,28 @@ namespace pof
 		wxPanel* m_panel5 = nullptr;
 		wxAuiToolBar* mTools = nullptr;
 		wxAuiToolBarItem* mPrint = nullptr;
-		wxDatePickerCtrl* mDateFrom = nullptr;
-		wxDatePickerCtrl* mDateTo = nullptr;
-		wxChoice* mPeriodChoice = nullptr;
-		wxGrid* mGrid = nullptr;
-
+		wxListCtrl* mListReport = nullptr;
 	public:
 		enum {
 			ID_PRINT = 4567,
-			ID_DATE_FROM,
-			ID_DATE_TO,
-			ID_PEIOD_CHOICE,
+			ID_EXCEL,
 		};
 
-		//report type
-		enum class reportType : std::uint8_t {
-			EOD,
-			CONSUMP,
-		};
-
-		struct ReportParams
-		{
-			int colCount = 5;
-			int rowCount = 5;
-			int colLabelSize = 30;
-			int rowLabelSize = 80;
-
-			bool enableEditing = false;
-			bool enableDragGridSize = false;
-			bool enableGridLines = true;
-
+		enum {
+			IMAGE_CHECK = 0,
+			IMAGE_DELETE
 		};
 
 
-		ReportsDialog(wxWindow* parent, const ReportParams& params = {},  wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(799, 611), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL);
+		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
 		~ReportsDialog();
 
-		constexpr inline wxGrid& GetGrid() { return *mGrid; }
-
+		constexpr inline wxListCtrl& GetListReport() { return *mListReport; }
 
 
 	protected:
 		//EVENTS
-		void OnDateFromChanged(wxDateEvent& evt);
-		void OnDateToChanged(wxDateEvent& evt);
 		void OnPrint(wxCommandEvent& evt);
-		void OnChoiceChanged(wxCommandEvent& evt);
 
 
 		DECLARE_EVENT_TABLE()

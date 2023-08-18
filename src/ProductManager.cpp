@@ -996,18 +996,23 @@ void pof::ProductManager::StoreProductData(pof::base::data&& data)
 	mProductData->Store(std::forward<pof::base::data>(data));
 }
 
-void pof::ProductManager::InventoryBroughtForward(const pof::base::data::duuid_t& uid)
+void pof::ProductManager::InventoryBroughtForward()
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view qSql = R"(SELECT id, MAX(input_date), expire_date, stock_count
+		constexpr const std::string_view qSql = R"(SELECT uuid, id, MAX(input_date), expire_date, stock_count
 			 FROM inventory 
-			 WHERE uuid = ? GROUP BY uuid;)";
+			 WHERE Months(input_date) = ? 
+			 AND uuid NOT IN (SELECT uuid FROM inventory WHERE Months(input_date) = ?)
+			 GROUP BY uuid;)";
 		auto stmt = mLocalDatabase->prepare(qSql);
 		assert(stmt);
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		auto lastMonth = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch()) - date::months(1);
+		auto thisMonth = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(lastMonth), pof::base::data::datetime_t(thisMonth)));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
+				pof::base::data::duuid_t,
 				std::uint64_t,
 				pof::base::data::datetime_t,
 				pof::base::data::datetime_t,
@@ -1017,25 +1022,19 @@ void pof::ProductManager::InventoryBroughtForward(const pof::base::data::duuid_t
 
 		mLocalDatabase->finalise(*stmt);
 
-
-		auto& maxInputDate = std::get<1>(*rel->begin());
-		auto today = pof::base::data::clock_t::now();
-		auto month = std::chrono::duration_cast<date::months>(today.time_since_epoch());
-		auto lastMonth = std::chrono::duration_cast<date::months>(maxInputDate.time_since_epoch());
-		
-		if (lastMonth >= month) return;
-
 		constexpr const std::string_view sql = R"(INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?);)";
 		stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		auto& v = rel.value();
+		auto today = pof::base::data::clock_t::now();
+		for (auto& tup : v) {
+			status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<1>(tup) + 1, std::get<0>(tup),
+				std::get<2>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
+			assert(status);
+			status = mLocalDatabase->execute(*stmt);
+			assert(status);
 
-		status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<0>(v[0]) + 1, uid, 
-			std::get<2>(v[0]), today, std::get<3>(v[0]), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
-		assert(status);
-		status = mLocalDatabase->execute(*stmt);
-		assert(status);
-
+		}
 		mLocalDatabase->finalise(*stmt);
 	}
 }
@@ -1128,23 +1127,35 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		//total amount that left the pharmacy,
 		//total amount spent on the product
 		//use aggregate functions
-		constexpr const std::string_view sql = R"(SELECT iv.uuid, p.name, p.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
-			FROM inventory iv, products p
-			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid 
-			GROUP BY iv.uuid;)";
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
+			FROM inventory iv, products p, sales s
+			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid
+			GROUP BY p.uuid;)";
+		
+		constexpr const std::string_view salesql = R"(SELECT p.uuid, SUM(s.product_quantity), SumCost(s.product_ext_price)
+			FROM products p, sales s
+			WHERE Months(s.sale_date) = ? AND s.product_uuid = p.uuid
+			GROUP BY p.uuid;)";
+
 		auto stmt = mLocalDatabase->prepare(sql);
-		if (!stmt.has_value()){
+		auto stmt2 = mLocalDatabase->prepare(salesql);
+
+		if (!stmt.has_value() || !stmt2.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
 			return std::nullopt;
 		}
+
+
 		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
 		spdlog::info("month count {:d}", month.count());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month))) 
+			 && mLocalDatabase->bind(*stmt2, std::make_tuple(pof::base::data::datetime_t(month)));
 		spdlog::info("month datetime count {:d}", pof::base::data::datetime_t(month).time_since_epoch().count());
 
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
+			mLocalDatabase->finalise(*stmt2);
 			return std::nullopt;
 		}
 		auto rel = mLocalDatabase->retrive<
@@ -1154,11 +1165,19 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 			std::uint64_t,
 			pof::base::data::currency_t
 		>(*stmt);
-		if (!rel.has_value()) {
+
+		auto rel2 = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(*stmt2);
+
+		if (!rel.has_value() || !rel2.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
 			return std::nullopt;
 		}
+
 		pof::base::data data;
 		data.set_metadata({
 			pof::base::data::kind::uuid,
@@ -1166,14 +1185,38 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 			pof::base::data::kind::uint64,
 			pof::base::data::kind::uint64,
 			pof::base::data::kind::currency,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency
 		});
 		spdlog::info("The size is : {:d}", rel->size());
+		std::unordered_map<pof::base::data::duuid_t, size_t> mSumMap;
 		data.reserve(rel->size());
+		size_t i = 0;
 		for(auto& tup : *rel){
 			spdlog::info("{} {:d} {:d} {:cu}", std::get<1>(tup), std::get<2>(tup), std::get<3>(tup), std::get<4>(tup));
-			data.insert(pof::base::make_row_from_tuple(tup));
+			pof::base::data::row_t::first_type row;
+			row.resize(7);
+			pof::base::data::row_t::first_type row2 = std::move(pof::base::make_row_from_tuple(tup));
+			
+			std::move(row2.begin(), row2.end(), row.begin());
+			row[5] = static_cast<std::uint64_t>(0);
+			row[6] = pof::base::data::currency_t{};
+			data.insert(std::move(row));
+
+			mSumMap.insert({ std::get<0>(tup), i });
+			i++;
+		}
+		for (auto& tup : *rel2) {
+			auto iter = mSumMap.find(std::get<0>(tup));
+			if (iter == mSumMap.end()) continue;
+			auto& v = data[iter->second];
+			v.first[5] = (std::get<1>(tup));
+			v.first[6] = (std::get<2>(tup));
 		}
 		data.shrink_to_fit();
+		mLocalDatabase->finalise(*stmt);
+		mLocalDatabase->finalise(*stmt2);
+		return data;
 	}
 	return std::nullopt;
 }

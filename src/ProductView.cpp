@@ -598,6 +598,106 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 		return;
 	}
 
+	pof::ReportsDialog dialog(this, wxID_ANY, "CONSUMPTION PATTERN");
+	auto& report = dialog.GetListReport();
+	{
+		//move from a grid to a listcontrol in report view
+		//load data into report
+		wxBusyCursor cursor;
+		//create the columns
+		wxListItem itemCol;
+		itemCol.SetText("PRODUCT NAME");
+		itemCol.SetImage(-1);
+		report.InsertColumn(0, itemCol);
+		report.SetColumnWidth(0, 200);
+
+		itemCol.SetText("STOCK");
+		itemCol.SetImage(-1);
+		report.InsertColumn(1, itemCol);
+		report.SetColumnWidth(1, 150);
+
+		itemCol.SetText("IN");
+		itemCol.SetImage(-1);
+		report.InsertColumn(2, itemCol);
+		report.SetColumnWidth(2, 50);
+
+		itemCol.SetText("AMOUNT IN");
+		itemCol.SetImage(-1);
+		report.InsertColumn(3, itemCol);
+		report.SetColumnWidth(3, 150);
+
+
+		itemCol.SetText("OUT");
+		itemCol.SetImage(-1);
+		report.InsertColumn(4, itemCol);
+		report.SetColumnWidth(4, 150);
+
+
+		itemCol.SetText("AMOUNT OUT");
+		itemCol.SetImage(-1);
+		report.InsertColumn(5, itemCol);
+		report.SetColumnWidth(5, 150);
+
+		size_t i = 0;
+		for (auto iter = data->begin(); iter != data->end(); iter++) {
+			auto& v = iter->first;
+			wxListItem item;
+
+			item.SetColumn(0);
+			item.SetId(i);
+			item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
+			item.SetImage(0);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.InsertItem(item);
+
+			item.SetColumn(1);
+			item.SetId(i);
+			item.SetText(fmt::format("{:d}",boost::variant2::get<std::uint64_t>(v[2])));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE |wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+			item.SetColumn(2);
+			item.SetId(i);
+			item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[3])));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+
+			item.SetColumn(3);
+			item.SetId(i);
+			item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[4])));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+
+			item.SetColumn(4);
+			item.SetId(i);
+			item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[5])));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+
+			item.SetColumn(5);
+			item.SetId(i);
+			item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[6])));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_DATA);
+			report.SetItem(item);
+
+			i++;
+		}
+	}
+	dialog.ShowModal();
 }
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
@@ -606,19 +706,12 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 	if (!data.has_value()) return;
 
 	if (data->empty()) {
-		wxMessageBox("No end of day, no sale has comersend yet", "END OF DAY", wxICON_INFORMATION | wxOK);
+		wxMessageBox("No end of day, No sale has happened yet.", "END OF DAY", wxICON_INFORMATION | wxOK);
 		return;
 	}
 
-	pof::ReportsDialog::ReportParams params;
-	params.colCount = data.value()[0].first.size();
-	params.rowCount = data.value().size();
-	params.enableEditing = false;
-	params.enableDragGridSize = true;
-	params.colLabelSize = 200;
-
-	pof::ReportsDialog dialog(this, params);
-	auto& grid = dialog.GetGrid();
+	pof::ReportsDialog dialog(this,wxID_ANY, "END OF DAY");
+	auto& report = dialog.GetListReport();
 	{
 		//load data into grid
 		wxBusyCursor cursor;
@@ -654,21 +747,8 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 
 void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
 {
-	wxProgressDialog dialog("BROUGHT FORWARD", "Starting brought forward", 100, this, wxPD_SMOOTH | wxPD_APP_MODAL);
-	double progress = 0.0;
-	size_t count = 0;
-	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	auto proup = [&]() -> size_t {
-		progress += (count / datastore.size()) * 100.0;
-		return static_cast<size_t>(progress);
-	};
-	for (auto& prod : datastore) {
-		auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
-		auto& uid = boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
-
-		dialog.Update(proup(), fmt::format("Updating {}", name));
-		wxGetApp().mProductManager.InventoryBroughtForward(uid);
-	}
+	wxBusyCursor cursor;
+	wxGetApp().mProductManager.InventoryBroughtForward();
 }
 
 void pof::ProductView::OnShowOrderList(wxCommandEvent& evt)

@@ -215,7 +215,7 @@ namespace pof {
 
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
-		void InventoryBroughtForward(const pof::base::data::duuid_t& uid); 
+		void InventoryBroughtForward(); 
 		
 		//add a product from UI
 		void AddProductData();
