@@ -129,7 +129,7 @@ namespace pof {
 			//PRODUCT SETTINGS
 			std::uint32_t, //MIN_STOCJ_COUNT
 			pof::base::data::text_t, //EXPIRE PERIOD
-			pof::base::data::datetime_t //EXPIRE DATE
+			std::uint64_t //EXPIRE DATE
 		> ;
 
 		~ProductManager();
@@ -216,7 +216,9 @@ namespace pof {
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
 		void InventoryBroughtForward(); 
-		
+		void MarkUpProducts(double markUp);
+		void MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp);
+
 		//add a product from UI
 		void AddProductData();
 
@@ -232,6 +234,7 @@ namespace pof {
 		std::optional<pof::base::data> GetConsumptionPattern();
 
 		//data functions
+		std::optional<std::vector<wxDataViewItem>> DoExpireProductPeriod();
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 

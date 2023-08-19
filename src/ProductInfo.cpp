@@ -394,44 +394,47 @@ static std::string JoinArrayList(const wxVariant& Value) {
 	return fmt::format("{}", fmt::join(arrayString, ","));
 }
 
-pof::base::data::datetime_t pof::ProductInfo::PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const
+std::uint64_t pof::ProductInfo::PeriodTime(int periodCount) const
 {
 	int idx = mExpDatePeriod->GetChoiceSelection();
 	if (idx == wxNOT_FOUND) {
-		return {};
+		idx = 0; //if no selection use days
 	}
-	pof::base::data::datetime_t period;
+	pof::base::data::datetime_t::duration expireDuration = {};
 	switch (idx) {
 	case 0: //day
 	{
 		date::days point(periodCount);
-		period = expire - point;
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
 	}
 		break;
 	case 1: //week
 	{
 		date::weeks point(periodCount * 7);
-		period = expire - point;
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
 	}
 		break;
 	case 2: //month
 	{
 		date::months point(periodCount);
-		period = expire - point;
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
 	}
 		break;
 	}
-	return period;
+	return expireDuration.count();
 }
 
 pof::base::data::text_t pof::ProductInfo::CreatePeriodString()
 {
 	//do also for count 
-	if (mExpDatePeriod->GetValue().IsNull() || mExpDateCount->GetValue().IsNull()) {
-		wxMessageBox("Expired Period Count specified, but duration is not specified", "PRODUCT INFO", wxICON_WARNING | wxOK);
+	if (mExpDateCount->GetValue().IsNull()) {
+		wxMessageBox("Expired Period count not specified", "PRODUCT INFO", wxICON_WARNING | wxOK);
 		return {};
 	}
-	auto val = mExpDatePeriod->GetValueAsString().ToStdString();
+	std::string val;
+	if (!mExpDatePeriod->GetValue().IsNull())
+		val = mExpDatePeriod->GetValueAsString().ToStdString();
+	else val = "DAY";
 	int count = mExpDateCount->GetValue().GetInteger();
 	return fmt::format("{:d},{}", count, val);
 }
@@ -524,26 +527,18 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_DESCRIP] = std::move(PropertyValue.GetString().ToStdString());
 		break;
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
-	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
 	{
 		size_t count = 0;
 		if(!mExpDateCount->GetValue().IsNull()) count = mExpDateCount->GetValue().GetInteger();
-		auto& duid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
 		auto periodString = CreatePeriodString();
 		if (periodString.empty()) {
 			mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx, false);
 			break;
 		}
+		
 		v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = periodString;
-		auto exp = wxGetApp().mProductManager.GetCurrentExpireDate(duid);
-		if (!exp.has_value()) {
-			spdlog::info("No exp date");
-			break;
-		}
-		else {
-			v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = PeriodTime(count, exp.value());
-			mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_EXPIRE_PERIOD);
-		}
+		v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = PeriodTime(count);
+		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_TO_EXPIRE_DATE, true);
 	}
 		break;
 	case pof::ProductManager::PRODUCT_SIDEEFFECTS:

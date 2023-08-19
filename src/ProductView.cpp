@@ -33,7 +33,7 @@ EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnC
 EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
 EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
-
+EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 END_EVENT_TABLE()
 
 
@@ -343,11 +343,13 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 		remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
 	}
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add Inventory", nullptr);
+	menu->AppendSeparator();
+	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark Up product", nullptr);
 
-	orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
+	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
 	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
-	inven->SetBitmap(wxArtProvider::GetBitmap("file"));
+	inven->SetBitmap(wxArtProvider::GetBitmap("file"));*/
 
 	PopupMenu(menu);
 }
@@ -758,6 +760,21 @@ void pof::ProductView::OnShowOrderList(wxCommandEvent& evt)
 	wxGetApp().mProductManager.GetOrderList()->Reload();
 	orderView.ShowModal();
 
+}
+
+void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+
+	//the actual markup should come from the settings of the pharmaoffice
+	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+	auto& v = row.first;
+	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+	wxGetApp().mProductManager.MarkUpProducts(uid, 30.0); //30% mark up for texts
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

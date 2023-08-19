@@ -71,6 +71,7 @@ namespace pof
 			ID_PRODUCT_CONTEXT_QUICKEDIT,
 			ID_PRODUCT_CONTEXT_REMOVE,
 			ID_PRODUCT_EXPIRE,
+			ID_PRODUCT_MARKUP,
 			ID_EXPIRY_VIEW,
 			ID_SELECT_MULTIPLE,
 			ID_UNSELECT_MULTIPLE,
@@ -153,6 +154,7 @@ namespace pof
 		void OnFunctions(wxAuiToolBarEvent& evt);
 		void OnBFFunction(wxCommandEvent& evt);
 		void OnShowOrderList(wxCommandEvent& evt);
+		void OnMarkUp(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

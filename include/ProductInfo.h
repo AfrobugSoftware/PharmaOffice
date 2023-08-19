@@ -144,7 +144,7 @@ namespace pof
 		void OnDateChange(wxDateEvent& evt);
 
 		void RemovePropertyModification();
-		pof::base::data::datetime_t PeriodTime(int periodCount, const pof::base::data::datetime_t& expire) const;
+		std::uint64_t PeriodTime(int periodCount) const;
 		pof::base::data::text_t CreatePeriodString();
 		void SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup);
 

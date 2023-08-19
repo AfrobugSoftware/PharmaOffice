@@ -27,7 +27,7 @@ pof::ProductManager::ProductManager() {
 		//PRODUCT SETTINGS
 		std::uint32_t, //MIN_STOCJ_COUNT
 		pof::base::data::text_t, //EXPIRE PERIOD
-		pof::base::data::datetime_t //EXPIRE DATE
+		std::uint64_t //EXPIRE DATE
 
 	>();
 	
@@ -187,7 +187,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 			//PRODUCT SETTINGS
 			std::uint32_t, //MIN_STOCJ_COUNT
 			pof::base::data::text_t, //EXPIRE PERIOD
-			pof::base::data::datetime_t //EXPIRE DATE
+			std::uint64_t //EXPIRE DATE
 		> (stmt.value());
 
 		if (!relation.has_value()) {
@@ -498,7 +498,10 @@ bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)
 			std::uint64_t, //STOCK COUNT
 			pof::base::data::text_t, //SIDE EFFECTS
 			pof::base::data::text_t, //BARCODE
-			std::uint64_t //CATEGORY ID
+			std::uint64_t, //CATEGORY ID
+			std::uint32_t, //MIN_STOCJ_COUNT
+			pof::base::data::text_t, //EXPIRE PERIOD
+			std::uint64_t //EXPIRE DATE
 		>;
 		auto tup = pof::base::make_tuple_from_row<tuple_t>(v);
 		bool status = mLocalDatabase->bind(productStoreStmt, std::move(tup));
@@ -1039,6 +1042,23 @@ void pof::ProductManager::InventoryBroughtForward()
 	}
 }
 
+//markup is a pecentage
+void pof::ProductManager::MarkUpProducts(double markUp)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = cost_price + (cost_price * ?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+
+
+	}
+}
+
+void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp)
+{
+}
+
 void pof::ProductManager::AddProductData()
 {
 }
@@ -1117,6 +1137,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 	return std::nullopt;
 }
 
+//customization points to allow consumption pattern for differend months, product formulation
 std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 {
 	if (mLocalDatabase){
@@ -1217,6 +1238,14 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		mLocalDatabase->finalise(*stmt);
 		mLocalDatabase->finalise(*stmt2);
 		return data;
+	}
+	return std::nullopt;
+}
+
+std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpireProductPeriod()
+{
+	if (mLocalDatabase){
+
 	}
 	return std::nullopt;
 }
