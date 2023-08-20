@@ -131,6 +131,7 @@ void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
 	auto name = evt.GetLabel().ToStdString();
 	if (name.empty() || oldName == name) {
 		evt.Veto();
+		return;
 	}
 	spdlog::info("Changing {} to {}", oldName, name);
 	mChildEditedSignal(oldName, name); //signal a name change

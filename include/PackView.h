@@ -67,6 +67,7 @@ namespace pof
 			ID_TOOL_ADD_PRODUCT_PACK,
 			ID_TOOL_REMOVE_PRODUCT_PACK,
 			ID_SALE_PACK,
+			ID_RENAME_PACK,
 
 		};
 
@@ -93,6 +94,8 @@ namespace pof
 		void OnBack(wxCommandEvent& evt);
 		void OnSalePack(wxCommandEvent& evt);
 		void OnColEdited(wxDataViewEvent& evt);
+		void OnRightClick(wxListEvent& evt);
+		void OnRenamePack(wxCommandEvent& evt);
 
 		bool mShowSale = false;
 		void UpdateTotals();
@@ -101,6 +104,7 @@ namespace pof
 		pof::DataModel* mPackModel = nullptr;
 		boost::uuids::uuid* mCurPackId = nullptr;
 		std::string mPackName;
+		wxListItem mSelItem;
 		DECLARE_EVENT_TABLE()
 	};
 

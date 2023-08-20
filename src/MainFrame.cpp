@@ -13,6 +13,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES, pof::MainFrame::OnShowModules)
 	EVT_MENU(pof::MainFrame::ID_MENU_ACCOUNT_SIGN_OUT, pof::MainFrame::OnSignOut)
+	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
@@ -28,7 +29,8 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
-
+	SetExtraStyle(wxWS_EX_PROCESS_IDLE);
+	mExpireWatchTime = std::chrono::system_clock::now();
 
 	wxIcon appIcon;
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
@@ -303,6 +305,17 @@ void pof::MainFrame::OnTestLoad(wxCommandEvent& evt)
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
+	}
+}
+
+void pof::MainFrame::OnIdle(wxIdleEvent& evt)
+{
+	if (wxGetApp().bCheckExpirePeiodOnIdle){
+		//check how often, 30 mins
+		auto now = std::chrono::system_clock::now();
+		if (now >= mExpireWatchTime + std::chrono::minutes(30)){
+			mExpireWatchTime = now;
+		}
 	}
 }
 

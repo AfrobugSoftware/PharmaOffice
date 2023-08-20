@@ -496,6 +496,7 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	mSearchPopup->SetSize(wxSize(sz.x + 100, 600));
 
 	//mSearchPopup->Show();
+	mSearchPopup->CaptureFocus();
 	mSearchPopup->Popup();
 	mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
 
@@ -946,6 +947,7 @@ void pof::SaleView::ProductNameKeyEvent()
 	mProductNameValue->Bind(wxEVT_CHAR, [&](wxKeyEvent& evt) {
 		spdlog::info("{:d} Key code", evt.GetKeyCode());
 		if (evt.GetKeyCode() == WXK_DOWN) {
+			spdlog::info("Setting focus");
 			mSearchPopup->SetFocus();
 		}
 		else {

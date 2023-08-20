@@ -586,7 +586,7 @@ void pof::ProductInfo::OnUnspilt(wxSplitterEvent& evt)
 void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 {
 	if(evt.IsChecked() && !m_splitter1->IsSplit()){
-		m_panel2->SetSize(wxSize(400, -1));
+		//m_panel2->SetSize(wxSize(400, -1));
 		m_panel2->Layout();
 		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
 		m_splitter1->SetSashGravity(1.0);

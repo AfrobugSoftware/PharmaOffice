@@ -83,6 +83,7 @@ namespace pof {
 		bool bCheckExpired = true;
 		bool bCheckOutOfStock = true;
 		bool bCheckPOM = true;
+		bool bCheckExpirePeiodOnIdle = true;
 
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
 		std::shared_ptr<pof::Account> MainAccount;

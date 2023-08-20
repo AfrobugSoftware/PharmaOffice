@@ -17,7 +17,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer(wxVERTICAL);
 
-	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW);
+	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mTools->SetMaxSize(wxSize(-1, 40));	
 	
     mTools->AddStretchSpacer();
@@ -28,7 +28,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer7->Add(mTools, 0, wxALL | wxEXPAND, 2);
 
-	mListReport = new wxListCtrl(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+	mListReport = new wxListCtrl(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
 	wxImageList* imageList = new wxImageList(16, 16);
 	imageList->Add(wxArtProvider::GetBitmap("action_check"));
 	imageList->Add(wxArtProvider::GetBitmap("action_delete"));

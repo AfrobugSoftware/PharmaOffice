@@ -19,6 +19,7 @@
 
 IMPLEMENT_APP(pof::Application)
 
+
 int test_main(int argc, char** const argv)
 {
 	return 0;
@@ -51,7 +52,7 @@ bool pof::Application::OnInit()
 	//lunch mainframe
 	if (!wxApp::OnInit()) return false;
 
-
+	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();
 	wxArtProvider::Push(new pof::ArtProvider);

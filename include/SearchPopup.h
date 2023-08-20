@@ -20,9 +20,9 @@ namespace pof {
 			const std::vector<std::pair<std::string, size_t>>& colNames = {});
 
 		void SearchString(size_t col, const std::string& searchString);
+		void CaptureFocus();
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames);
-		void CaptureFocus();
 		void OnDataItemSelected(wxDataViewEvent& evt);
 
 

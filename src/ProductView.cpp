@@ -719,9 +719,77 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 		wxBusyCursor cursor;
 		pof::base::currency totalAmount;
 		std::uint64_t totalQuan = 0;
-		for (auto iter = data->begin(); iter != data->end(); iter++){
+		
+		//make the columns
+		wxListItem itemCol;
+		itemCol.SetText("DATE");
+		itemCol.SetImage(-1);
+		report.InsertColumn(0, itemCol);
+		report.SetColumnWidth(0, 200);
+		
+		itemCol.SetText("PRODUCT");
+		itemCol.SetImage(-1);
+		report.InsertColumn(1, itemCol);
+		report.SetColumnWidth(1, 200);
 
+		itemCol.SetText("QUANTITY");
+		itemCol.SetImage(-1);
+		report.InsertColumn(2, itemCol);
+		report.SetColumnWidth(2, 200);
+
+		itemCol.SetText("AMOUNT");
+		itemCol.SetImage(-1);
+		report.InsertColumn(3, itemCol);
+		report.SetColumnWidth(3, 200);
+		size_t i = 0;
+		for (auto iter = data->begin(); iter != data->end(); iter++){
+			auto& v = iter->first;
+			wxListItem item;
+
+			item.SetColumn(0);
+			item.SetId(i);
+			auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[1]));
+			auto s = fmt::format("{:%d-%m-%y}", fmt::localtime(t));
+			item.SetText(std::move(s));
+			item.SetImage(0);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.InsertItem(item);
+
+
+			item.SetColumn(1);
+			item.SetId(i);
+			item.SetText(boost::variant2::get<pof::base::data::text_t>(v[2]));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+			std::uint64_t quan = boost::variant2::get<std::uint64_t>(v[3]);
+			totalQuan += quan;
+			item.SetColumn(2);
+			item.SetId(i);
+			item.SetText(fmt::format("{:d}", quan));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+			auto& amount = boost::variant2::get<pof::base::data::currency_t>(v[4]);
+			totalAmount += amount;
+			item.SetColumn(3);
+			item.SetId(i);
+			item.SetText(fmt::format("{:cu}", amount));
+			item.SetImage(-1);
+			item.SetWidth(200);
+			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+			report.SetItem(item);
+
+
+
+			i++;
 		}
+
 	}
 
 	dialog.ShowModal();
@@ -974,6 +1042,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
 
+	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxEmptyString, wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
@@ -982,7 +1051,6 @@ void pof::ProductView::CreateToolBar()
 	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
 	auto mOrderListItem = m_auiToolBar1->AddTool(ID_ORDER_LIST, wxT("Order List"), wxArtProvider::GetBitmap("time"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
 	m_auiToolBar1->AddTool(ID_PACKS, wxT("Pharm Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
-	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxT("Cost Price"), wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
@@ -1030,7 +1098,7 @@ void pof::ProductView::CreateSpecialCols()
 
 void pof::ProductView::Style()
 {
-	//m_dataViewCtrl1->SetAlternateRowColour(wxTheColourDatabase->Find("Aqua"));
+	//m_dataViewCtrl1->SetAlternateRowColour(wxTheColourDatabase->Find("Navajo_white"));
 }
 
 void pof::ProductView::SwapCenterPane(bool IsInventoryView)

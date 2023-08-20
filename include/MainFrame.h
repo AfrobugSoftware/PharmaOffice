@@ -100,7 +100,7 @@ namespace pof {
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);
-
+		void OnIdle(wxIdleEvent& evt);
 
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);
@@ -125,6 +125,7 @@ namespace pof {
 		pof::PrescriptionView* mPrescriptionView = nullptr;
 		pof::AuditView* mAuditView = nullptr;
 
+		std::chrono::system_clock::time_point mExpireWatchTime;
 		DECLARE_EVENT_TABLE()
 	};
 };

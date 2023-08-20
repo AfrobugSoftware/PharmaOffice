@@ -1245,7 +1245,43 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpireProductPeriod()
 {
 	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid 
+		FROM products p, inventory i 
+		WHERE (p.uuid, i.input_date) IN (
+			SELECT i.uuid, MAX(i.input_date)
+			FROM inventory i
+			WHERE i.uuid NOT NULL
+			GROUP BY i.uuid
+		)
+		AND ? + p.expire_date > in.expire_date;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		pof::base::data::datetime_t today = pof::base::data::clock_t::now();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(today));
+		assert(status);
 
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+
+		std::set<pof::base::data::duuid_t> set;
+		std::ranges::transform(*rel, std::inserter(set, set.end()), [&](auto& tup) -> pof::base::data::duuid_t {
+			return std::get<0>(tup);
+			});
+		auto& datastore = mProductData->GetDatastore();
+		std::vector<wxDataViewItem> items;
+		items.reserve(rel->size());
+		for (size_t i = 0; i < datastore.size(); i++) {
+			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[PRODUCT_UUID]);
+			if (set.find(uid) != set.end()) {
+				items.emplace_back(pof::DataModel::GetItemFromIdx(i));
+			}
+		}
+		items.shrink_to_fit();
+		return items;
 	}
 	return std::nullopt;
 }

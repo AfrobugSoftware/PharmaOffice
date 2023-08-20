@@ -4,7 +4,6 @@
 BEGIN_EVENT_TABLE(pof::PackView, wxDialog)
 EVT_TOOL(pof::PackView::ID_TOOL_CREATE_PACK, pof::PackView::OnCreatePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
-EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 EVT_TOOL(wxID_BACKWARD, pof::PackView::OnBack)
 EVT_TOOL(pof::PackView::ID_SALE_PACK, pof::PackView::OnSalePack)
 EVT_TOOL(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
@@ -12,8 +11,12 @@ EVT_TOOL(pof::PackView::ID_TOOL_REMOVE_PRODUCT_PACK, pof::PackView::OnRemoveProd
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PackView::ID_PACK_DATA, pof::PackView::OnColEdited)
 EVT_LIST_ITEM_SELECTED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackSelected)
 EVT_LIST_ITEM_ACTIVATED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackActivate)
-EVT_LIST_BEGIN_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
+//EVT_LIST_BEGIN_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
 EVT_LIST_END_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
+EVT_LIST_ITEM_RIGHT_CLICK(pof::PackView::ID_PACK_SELECT, pof::PackView::OnRightClick)
+
+EVT_MENU(pof::PackView::ID_RENAME_PACK, pof::PackView::OnRenamePack)
+EVT_MENU(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 END_EVENT_TABLE()
 
 
@@ -45,7 +48,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER);
+	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 	bSizer2->Add(mPackSelect, 1, wxALL|wxEXPAND, 2 );
 	wxImageList* imagelist = new wxImageList(60, 60);
 	imagelist->Add(wxArtProvider::GetBitmap("cart"));
@@ -329,7 +332,35 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 
 void pof::PackView::OnEditPackName(wxListEvent& evt)
 {
+	if (evt.IsEditCancelled()) return;
 
+	auto& item = evt.GetItem();
+	auto packID = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
+	if (!packID) {
+		evt.Veto();
+		return;
+	}
+
+	auto name = evt.GetLabel().ToStdString();
+	if (name.empty()){
+		evt.Veto();
+		return;
+	}
+	
+	//check for duplicates
+	for (int i = 0; i < mPackSelect->GetItemCount(); i++){
+		if (name == mPackSelect->GetItemText(i)) {
+			wxMessageBox("Name already exisits", "PACK", wxICON_INFORMATION | wxOK);
+			evt.Veto();
+			return; 
+		}
+	}
+
+	//save to database
+	bool status = wxGetApp().mProductManager.UpdatePackDesc({ *packID, name, pof::base::data::text_t{} });
+	if (!status) {
+		evt.Veto();
+	}else evt.Skip();
 }
 
 void pof::PackView::OnPackSelected(wxListEvent& evt)
@@ -504,6 +535,23 @@ void pof::PackView::OnColEdited(wxDataViewEvent& evt)
 	val.SetMin(0);
 	val.SetMax(10000);
 	Ctrl->SetValidator(val);
+}
+
+void pof::PackView::OnRightClick(wxListEvent& evt)
+{
+	mSelItem = evt.GetItem();
+	wxMenu* menu = new wxMenu;
+	auto rn = menu->Append(ID_RENAME_PACK, "Rename", nullptr);
+	auto rv = menu->Append(ID_TOOL_REMOVE_PACK, "Remove", nullptr);
+
+	PopupMenu(menu);
+}
+
+void pof::PackView::OnRenamePack(wxCommandEvent& evt)
+{
+	int id = mSelItem.GetId();
+	if (id == wxNOT_FOUND) return;
+	mPackSelect->EditLabel(id);
 }
 
 void pof::PackView::UpdateTotals()

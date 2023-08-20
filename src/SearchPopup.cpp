@@ -39,6 +39,7 @@ void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, s
 
 void pof::SearchPopup::CaptureFocus()
 {
+	mTable->SetFocus();
 }
 
 void pof::SearchPopup::OnDataItemSelected(wxDataViewEvent& evt)
