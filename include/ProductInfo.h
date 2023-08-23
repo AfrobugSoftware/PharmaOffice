@@ -25,8 +25,9 @@
 #include <bitset>
 #include <unordered_map>
 #include <optional>
-
+#include <random>
 #include <date/date.h>
+
 
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
@@ -100,6 +101,7 @@ namespace pof
 
 
 			enum {
+				ID_DATA_VIEW,
 				ID_TOOL_GO_BACK = wxID_HIGHEST + 2000,
 				ID_TOOL_ADD_INVENTORY,
 				ID_TOOL_REMV_EXPIRE_BATCH,
@@ -107,7 +109,8 @@ namespace pof
 				ID_PROPERTY_GRID,
 				ID_SPLIT_WINDOW,
 				ID_SHOW_PRODUCT_SALE_HISTORY,
-				ID_DATE
+				ID_DATE,
+				ID_INVEN_MENU_REMOVE,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -124,7 +127,7 @@ namespace pof
 
 			void m_splitter1OnIdle( wxIdleEvent& )
 			{
-				m_splitter1->SetSashPosition( 700 );
+				m_splitter1->SetSashPosition( 450 );
 				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 			}
 	protected:
@@ -142,6 +145,8 @@ namespace pof
 		void OnShowProductInfo(wxCommandEvent& evt);
 		void OnShowProducSaleHistory(wxCommandEvent& evt);
 		void OnDateChange(wxDateEvent& evt);
+		void OnRemoveInventory(wxCommandEvent& evt);
+		void OnInvenContextMenu(wxDataViewEvent& evt);
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;

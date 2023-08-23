@@ -196,6 +196,8 @@ namespace pof {
 		bool StoreInventoryData(pof::base::data::const_iterator iter);
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
 		bool RemoveInventoryData(pof::base::data::const_iterator iter);
+		std::optional<std::uint64_t> GetLastInventoryId(const pof::base::data::duuid_t& uid);
+
 
 		void AddCategory(const std::string& name);
 		void RemoveCategory(const std::string& name);

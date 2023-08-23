@@ -29,13 +29,13 @@ namespace pof {
 				"MANAGER"
 		};
 		enum class Privilage: std::uint8_t {
-				PHARMACIST = 1,
-				PHARMTECH = 1 << 1,
-				DISPENSER = 1 << 2,
-				SALES_ASSISTANT = 1 << 3,
-				INTEN_PHARMCIST = 1 << 4,
-				STUDENT_PHARMACIST = 1 << 5,
-				MANAGER = 1 << 6
+				PHARMACIST = 0,
+				PHARMTECH,
+				DISPENSER,
+				SALES_ASSISTANT,
+				INTEN_PHARMCIST,
+				STUDENT_PHARMACIST,
+				MANAGER
 		};
 		
 		Account();

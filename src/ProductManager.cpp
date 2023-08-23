@@ -801,7 +801,44 @@ bool pof::ProductManager::UpdateInventoryData(pof::base::data::const_iterator it
 
 bool pof::ProductManager::RemoveInventoryData(pof::base::data::const_iterator iter)
 {
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM inventory WHERE id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		auto& row = *iter;
+		auto& id = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::INVENTORY_ID]);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(id));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
 	return false;
+}
+
+std::optional<std::uint64_t> pof::ProductManager::GetLastInventoryId(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT id, MAX(input_date) FROM inventory WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t, pof::base::data::datetime_t>(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		return std::get<0>(*rel->begin());
+	}
+	return std::nullopt;
 }
 
 void pof::ProductManager::AddCategory(const std::string& name)
@@ -809,7 +846,7 @@ void pof::ProductManager::AddCategory(const std::string& name)
 	if (name.empty()) return;
 	if (bUsingLocalDatabase && mLocalDatabase) {
 		if (!CategoryStoreStmt) {
-			static constexpr const std::string_view sql = "INSERT INTO category (id, name) VALUES (? ,?);";
+			constexpr const std::string_view sql = "INSERT INTO category (id, name) VALUES (? ,?);";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());

@@ -607,7 +607,7 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 		//load data into report
 		wxBusyCursor cursor;
 		//create the columns
-		wxListItem itemCol;
+	/*	wxListItem itemCol;
 		itemCol.SetText("PRODUCT NAME");
 		itemCol.SetImage(-1);
 		report.InsertColumn(0, itemCol);
@@ -638,7 +638,14 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 		itemCol.SetText("AMOUNT OUT");
 		itemCol.SetImage(-1);
 		report.InsertColumn(5, itemCol);
-		report.SetColumnWidth(5, 150);
+		report.SetColumnWidth(5, 150);*/
+
+		report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("STOCK", wxLIST_FORMAT_LEFT, 150);
+		report.AppendColumn("IN", wxLIST_FORMAT_LEFT, 150);
+		report.AppendColumn("AMOUNT IN", wxLIST_FORMAT_LEFT, 150);
+		report.AppendColumn("OUT", wxLIST_FORMAT_LEFT, 150);
+		report.AppendColumn("AMOUNT OUT", wxLIST_FORMAT_LEFT, 150);
 
 		size_t i = 0;
 		for (auto iter = data->begin(); iter != data->end(); iter++) {
@@ -648,7 +655,7 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 			item.SetColumn(0);
 			item.SetId(i);
 			item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
-			item.SetImage(0);
+			item.SetImage(-1);
 			item.SetWidth(200);
 			item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
 			report.InsertItem(item);

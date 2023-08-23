@@ -43,18 +43,27 @@ namespace pof
 			IMAGE_DELETE
 		};
 
+		enum class ReportType
+		{
+			COMSUMPTION_PATTARN,
+			EOD,
+		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
 		~ReportsDialog();
 
 		constexpr inline wxListCtrl& GetListReport() { return *mListReport; }
 
+		bool LoadReport(ReportType repType);
 
+		//different report loading function
+		bool LoadConsumptionPattern();
+		bool LoadEndOFDay();
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
 
-
+		ReportType mCurReportType;
 		DECLARE_EVENT_TABLE()
 	};
 

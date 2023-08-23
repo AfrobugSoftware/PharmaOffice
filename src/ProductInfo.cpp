@@ -11,6 +11,8 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
+	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
 END_EVENT_TABLE()
 
 pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
@@ -19,6 +21,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
 	m_splitter1 = new wxSplitterWindow( this, ID_SPLIT_WINDOW, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
+	m_splitter1->SetExtraStyle(wxWS_EX_PROCESS_IDLE);
 	m_splitter1->Connect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 	
 	m_panel1 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -45,7 +48,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
-	InventoryView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
+	InventoryView = new wxDataViewCtrl( mBook, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
 	mHistView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
 	mBook->AddPage(InventoryView, wxEmptyString, true);
 	mBook->AddPage(mHistView, wxEmptyString, false);
@@ -146,7 +149,6 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
-	
 	m_panel2->SetSize(wxSize(400, -1));
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
@@ -362,7 +364,6 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	pof::InventoryDialog dialog(nullptr);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
-		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
 
 		if (!mPropertyUpdate.has_value()) {
@@ -634,6 +635,41 @@ void pof::ProductInfo::OnDateChange(wxDateEvent& evt)
 	default:
 		break;
 	}
+}
+
+void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
+{
+	//only pharmacist or manager can alter inventroy entries
+	constexpr const int p = static_cast<int>(pof::Account::Privilage::PHARMACIST);
+	constexpr const int m = static_cast<int>(pof::Account::Privilage::MANAGER);
+	auto accountPriv = wxGetApp().MainAccount->priv;
+	auto& productManager = wxGetApp().mProductManager;
+	if (!accountPriv.test(p) && !accountPriv.test(m)) {
+		wxMessageBox("This account do not have the privilage to remove an inventory entry", "INVENTORY", wxICON_WARNING | wxOK);
+		return;
+	}
+	auto item = InventoryView->GetSelection();
+	if (!item.IsOk()) return;
+	auto& datastore = productManager.GetInventory()->GetDatastore();
+	auto iter = std::next(datastore.begin(), pof::DataModel::GetIdxFromItem(item));
+	pof::base::data::duuid_t& uid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::INVENTORY_PRODUCT_UUID]);
+	std::uint64_t& id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
+	
+	if (id != productManager.GetLastInventoryId(uid)){
+		wxMessageBox("Can only remove the most recently entered inventory", "INVENTORY", wxICON_WARNING | wxOK);
+		return;
+	}
+	
+	productManager.RemoveInventoryData(iter);
+	productManager.GetInventory()->RemoveData(item);
+}
+
+void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
+{
+	wxMenu* menu = new wxMenu;
+	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
+
+	PopupMenu(menu);
 }
 
 void pof::ProductInfo::RemovePropertyModification()
