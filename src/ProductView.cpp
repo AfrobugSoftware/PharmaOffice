@@ -229,6 +229,9 @@ void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 		if (!items.has_value()) {
 			return;
 		}
+		if (items->empty()) {
+			wxMessageBox("There are no expired products in the store", "PRODUCTS", wxICON_INFORMATION | wxOK);
+		}
 		wxGetApp().mProductManager.GetProductData()->Reload(*items);
 	}
 	else {
@@ -512,6 +515,7 @@ void pof::ProductView::OnShowCostPrice(wxCommandEvent& evt)
 	}
 }
 
+//move logic to read directly from the database 
 void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 {
 	auto& pd = wxGetApp().mProductManager.GetProductData();
@@ -538,6 +542,10 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 			}
 		}
 		items.shrink_to_fit();
+		if (items.empty()) {
+			wxMessageBox("No out of stock product in store", "PRODUCTS", wxICON_INFORMATION | wxOK);
+			return;
+		}
 		pd->Reload(std::move(items));
 	}
 	else {

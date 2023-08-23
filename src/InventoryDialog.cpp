@@ -74,7 +74,7 @@ void pof::InventoryDialog::CreateDialog()
 	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
 	mBatchNumber->SetValidator(wxTextValidator{ wxFILTER_DIGITS  | wxFILTER_EMPTY});
 	mManufactureName = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
-	mManufactureName->SetValidator(wxTextValidator{ wxFILTER_ALPHANUMERIC | wxFILTER_EMPTY });
+	mManufactureName->SetValidator(wxTextValidator{  wxFILTER_EMPTY });
 }
 
 void pof::InventoryDialog::SizeDialog()

@@ -1186,7 +1186,7 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		//total amount spent on the product
 		//use aggregate functions
 		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
-			FROM inventory iv, products p, sales s
+			FROM inventory iv, products p
 			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid
 			GROUP BY p.uuid;)";
 		
