@@ -659,6 +659,18 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		wxMessageBox("Can only remove the most recently entered inventory", "INVENTORY", wxICON_WARNING | wxOK);
 		return;
 	}
+
+	if (!mPropertyUpdate.has_value()) {
+		mPropertyUpdate.emplace();
+		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+			mProductData.first[pof::ProductManager::PRODUCT_UUID];
+	}
+	mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+	mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+		boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
+		- boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+
 	
 	productManager.RemoveInventoryData(iter);
 	productManager.GetInventory()->RemoveData(item);
