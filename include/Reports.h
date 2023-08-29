@@ -36,6 +36,7 @@ namespace pof
 		enum {
 			ID_PRINT = 4567,
 			ID_EXCEL,
+
 		};
 
 		enum {
@@ -62,6 +63,8 @@ namespace pof
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
+		void OnDownloadExcel(wxCommandEvent& evt);
+
 
 		ReportType mCurReportType;
 		DECLARE_EVENT_TABLE()

@@ -55,4 +55,8 @@ void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 {
 }
 
+void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
+{
+}
+
 

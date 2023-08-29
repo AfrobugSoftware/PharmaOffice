@@ -101,10 +101,75 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 
 void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to)
 {
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT * FROM audit WHERE data = ? AND id BETWEEN ? and ? LIMIT 1000;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(date, from, to));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t
+		>(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		size_t i = 0;
+		for (auto& tup : *rel) {
+			if (bColourAuditTypes) {
+				auto item = pof::DataModel::GetItemFromIdx(i);
+				mAuditData->AddAttr(item, auditAttr[std::get<AUDIT_TYPE>(tup)]);
+			}
+			pof::base::data::row_t row;
+			row.first = std::move(pof::base::make_row_from_tuple(tup));
+			mAuditData->EmplaceData(std::move(row));
+			i++;
+		}
+	}
 }
 
 void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 {
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT * FROM audit 
+		WHERE type = :type AND id BETWEEN :from AND :to LIMIT 1000;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to), { "type", "from", "to" });
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t
+		>(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if(!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		size_t i = 0;
+		for (auto& tup : *rel){
+			if (bColourAuditTypes){
+				auto item = pof::DataModel::GetItemFromIdx(i);
+				mAuditData->AddAttr(item, auditAttr[std::get<AUDIT_TYPE>(tup)]);
+			}
+			pof::base::data::row_t row;
+			row.first = std::move(pof::base::make_row_from_tuple(tup));
+			mAuditData->EmplaceData(std::move(row));
+			i++;
+		}
+	}
 }
 
 std::optional<size_t> pof::AuditManager::GetDataSize() const
@@ -177,7 +242,7 @@ void pof::AuditManager::CreateAuditTable()
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = 
-			"CREATE TABLE IF NOT EXISTS audit (id integer unqiue auto increment, type integer, date integer, user_name text, message text);";
+			"CREATE TABLE IF NOT EXISTS audit (id integer unqiue auto increment, date integer, type integer, user_name text, message text);";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			wxMessageBox(mLocalDatabase->err_msg().data(), "AUDIT");
@@ -201,8 +266,6 @@ void pof::AuditManager::CreateSpeicalCols()
 
 		return wxVariant(types[type]);
 	};
-
-
 
 	mAuditData->SetSpecialColumnHandler(AUDIT_TYPE, std::move(handler));
 }

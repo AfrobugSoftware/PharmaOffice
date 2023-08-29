@@ -423,6 +423,13 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 	return true;
 }
 
+bool pof::SaleManager::DoPrintReceipt2(const pof::base::data::currency_t& totalAmount)
+{
+
+
+	return false;
+}
+
 void pof::SaleManager::Finalise()
 {
 }

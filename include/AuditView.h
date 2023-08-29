@@ -16,6 +16,7 @@
 #include <ranges>
 #include <utility>
 #include <queue>
+#include <stack>
 
 namespace pof
 {
@@ -27,6 +28,7 @@ namespace pof
 			ID_INFOBAR,
 			ID_FILTER_TYPE,
 			ID_COLOUR_TYPE,
+			ID_DOWNLOAD_EXCEL,
 		};
 		using range_t = std::pair<size_t, size_t>;
 		AuditView(wxWindow* parent, wxWindowID id, const wxPoint& position = wxDefaultPosition,
@@ -46,6 +48,7 @@ namespace pof
 		void OnFilterSelected(wxCommandEvent& evt);
 		void OnApplyFilter(wxCommandEvent& evt);
 		void OnColourAuditType(wxCommandEvent& evt);
+		void OnDownloadExcel(wxCommandEvent& evt);
 		void OnAuiThemeChange();
 
 
@@ -66,7 +69,7 @@ namespace pof
 		wxFont mDataViewFont;
 
 		//vector and current position into the range
-		std::pair<std::vector<range_t>, size_t> mPageRanges;
+		std::stack<range_t> mPageRanges;
 
 
 		wxAuiManager mAuiManager;
@@ -79,7 +82,8 @@ namespace pof
 		wxInfoBar* mInfoBar = nullptr;
 		wxPopupTransientWindow* mAdditionalInfoPopup = nullptr;
 		wxDataViewCtrl* mDataView = nullptr;
-
+		bool bFilterType = false;
+		pof::AuditManager::auditType mCurType;
 		DECLARE_EVENT_TABLE()
 	};
 };

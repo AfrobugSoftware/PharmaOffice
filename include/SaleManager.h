@@ -64,6 +64,7 @@ namespace pof {
 		bool CreateSaleTable();
 		bool StoreSale();
 		bool DoPrintReceipt(const pof::base::data::currency_t& totalAmount);
+		bool DoPrintReceipt2(const pof::base::data::currency_t& totalAmount);
 		void Finalise();
 
 		boost::uuids::random_generator_mt19937 sUidGen;
