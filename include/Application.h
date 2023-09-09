@@ -87,6 +87,7 @@ namespace pof {
 
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
 		std::shared_ptr<pof::Account> MainAccount;
+		
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 

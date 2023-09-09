@@ -228,7 +228,7 @@ bool pof::SaleManager::StoreSale()
 bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAmount)
 {
 	const std::string style = R"(
-		#invoice-POS{
+		.invoice{
 				box-shadow: 0 0 1in -0.25in rgba(0, 0, 0, 0.5);
 				padding:2mm;
 				margin: 0 auto;
@@ -279,7 +279,7 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 		}
 		.info{
 			display: block;
-			//float:left;
+			float:left;
 			margin-left: 0;
 		}
 		.title{
@@ -291,11 +291,11 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 			border-collapse: collapse;
 		}
 		td{
-			//padding: 5px 0 5px 15px;
-			//border: 1px solid #EEE
+			padding: 5px 0 5px 15px;
+			border: 1px solid #EEE
 		}
 		.tabletitle{
-			//padding: 5px;
+			padding: 5px;
 			font-size: .5em;
 			background: #EEE;
 		}
@@ -313,7 +313,6 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 	html::Document doc("....");
 	doc << html::Style(style);
 	html::Div invoiceDiv("invoice");
-	invoiceDiv.cls("Invoice-POS");
 	html::Div top("top");
 	top << html::Div("logo");
 	html::Div info1("info");
@@ -379,7 +378,7 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 	}
 
 	html::Row r3;
-	r3.cls("tabletitle");
+	r3.cls("tableTitle");
 	r3 << html::Col();
 
 	html::Col vatC("VAT");
@@ -393,7 +392,7 @@ bool pof::SaleManager::DoPrintReceipt(const pof::base::data::currency_t& totalAm
 	tab << std::move(r3);
 
 	html::Row r4;
-	r4.cls("tabletitle");
+	r4.cls("tableTitle");
 	r4 << html::Col();
 
 	html::Col totl("TOTAL ");

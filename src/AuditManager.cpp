@@ -172,6 +172,10 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 	}
 }
 
+void pof::AuditManager::LoadDate(auditType type, const pof::base::data::datetime_t& date, size_t from, size_t to)
+{
+}
+
 std::optional<size_t> pof::AuditManager::GetDataSize() const
 {
 	size_t size = 0;

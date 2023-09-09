@@ -185,13 +185,16 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxSize(-1, 20), 0);
+	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mClear->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mClear, 0, wxALL, 5);
 
-	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxSize(-1, 20), 0);
+	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mSave->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mSave, 0, wxALL, 5);
 
-	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(-1, 20), 0);
+	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mCheckout->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mCheckout, 0, wxALL, 5);
 
 	bSizer4->Add(0, 0, 1, wxEXPAND, 5);
@@ -416,7 +419,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	const pof::base::data& dataStore = model->GetDatastore();
 	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
-
+	if (dataStore.empty()) return;
 	pof::base::currency totalAmount;
 	try {
 		totalAmount = std::accumulate(dataStore.begin(),
@@ -451,6 +454,10 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
 	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
+	//Print receipt
+	wxGetApp().mPrintManager->PrintSaleReceipt(this);
+
+
 	model->Clear();
 	if (mPropertyManager->IsShown()) {
 		mPropertyManager->Hide();
@@ -459,6 +466,8 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	}
 	ResetSaleDisplay();
 	mCurSaleuuid = boost::uuids::nil_uuid();
+
+
 	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
 }
 
@@ -599,6 +608,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 		}
 
 		for (auto& prod : prods) {
+
 			pof::base::data::row_t rowSale;
 			auto& vS = rowSale.first;
 			vS.resize(pof::SaleManager::MAX);
@@ -610,6 +620,34 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 				[&](const pof::base::data::row_t& row) -> bool {
 					return boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) == std::get<1>(prod);
 				});
+
+			//check if already in sale
+			std::optional<pof::base::data::iterator> iterOpt;
+			if ((iterOpt = CheckAlreadyAdded(std::get<2>(prod)))) {
+				//think and implement
+				auto& iterS = iterOpt.value();
+				auto& v = iter->first;
+				std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+				auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
+				auto& extCur = boost::variant2::get<pof::base::currency>(iterS->first[pof::SaleManager::PRODUCT_EXT_PRICE]);
+				auto& cur = boost::variant2::get<pof::base::currency>(iterS->first[pof::SaleManager::PRODUCT_PRICE]);
+				quan--; //this is from the function CheckAlreadyAdded, it increments it internally, remove this here
+				quan += std::get<3>(prod);
+				if (quan > curStock) {
+					wxMessageBox(fmt::format("Cannot add \'{}\', Adding Quantity \'{:d}\' that is more than the current stock",
+						boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]), std::get<3>(prod)), "SALE", wxICON_WARNING | wxOK);
+					quan -= std::get<3>(prod);
+					continue; //move to the next product in the pack
+				}
+
+				if (mPropertyManager->IsShown()) {
+					//update product details
+					stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
+					LoadProductDetails(*iter);
+				}
+				extCur = cur * static_cast<double>(quan);
+				continue; //move to the next pack
+			}
 			bool status = CheckExpired(*iter);
 			if (!status) {
 				wxMessageBox(fmt::format("\'{}\' has expired, please update product inventory",
@@ -632,17 +670,11 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 				}else continue;
 			}
 
-			std::optional<pof::base::data::iterator> iterOpt;
-			if ((iterOpt = CheckAlreadyAdded(std::get<2>(prod)))) {
-				
-			}
-
+			
 			vS[pof::SaleManager::PRODUCT_NAME] = std::move(std::get<2>(prod));
 			vS[pof::SaleManager::PRODUCT_QUANTITY] = std::get<3>(prod);
 			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<6>(prod);
-
-
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}

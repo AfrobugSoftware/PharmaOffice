@@ -21,6 +21,7 @@ namespace pof
 			SALE,
 			PRODUCT,
 			CATEGORY,
+			ALL,
 			MAX
 		};
 
@@ -28,7 +29,8 @@ namespace pof
 			"INFORMAITON",
 			"SALE",
 			"PRODUCT",
-			"CATEGORY"
+			"CATEGORY",
+			"ALL"
 		};
 
 		static std::array<std::shared_ptr<wxDataViewItemAttr>, static_cast<size_t>(auditType::MAX)> auditAttr;
@@ -47,6 +49,7 @@ namespace pof
 		void LoadCache(size_t from, size_t to);
 		void LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to);
 		void LoadType(auditType type, size_t from, size_t to);
+		void LoadDate(auditType type, const pof::base::data::datetime_t& date, size_t from, size_t to);
 		void WriteAudit(auditType type, const std::string& message);
 		void Refresh();
 		void CreateAuditTable();

@@ -54,6 +54,8 @@ namespace pof{
 		inline const std::bitset<8>& GetPharmacyType() const { return pharmacyType; }
 		inline const std::string& GetName() const { return name; }
 		inline const address& GetAddress() const { return addy; }
+		std::string GetAddressAsString() const;
+		std::string GetContactAsString() const;
 		inline void SetPharmacyType(const std::bitset<8>& bitset) { pharmacyType = bitset; }
 		inline void SetPharmacyType(PharmacyType ty) {
 			pharmacyType.set(static_cast<size_t>(std::underlying_type_t<PharmacyType>(ty)));

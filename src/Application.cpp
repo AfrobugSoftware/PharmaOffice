@@ -38,7 +38,6 @@ pof::Application::Application()
 	MainAccount = std::make_shared<pof::Account>();
 	mPrintManager = std::make_shared<pof::PrintManager>();
 
-
 }
 
 bool pof::Application::OnInit()
@@ -276,6 +275,11 @@ bool pof::Application::SignOut()
 void pof::Application::TestAccountAndPharmacy()
 {
 	MainPharmacy->name = "D-GLOPA NIGERIA LIMITED"s;
+	MainPharmacy->addy.number = "16";
+	MainPharmacy->addy.street = "Peterburg";
+	MainPharmacy->addy.city = "Asaba";
+	MainPharmacy->addy.state = "Delta State";
+	MainPharmacy->addy.country = "Nigeria";
 }
 
 void pof::Application::CreateTables()

@@ -5,7 +5,7 @@ BEGIN_EVENT_TABLE(pof::AuditView, wxPanel)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnItemActivated)
 EVT_DATAVIEW_CACHE_HINT(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnCacheHint)
 EVT_COMBOBOX(pof::AuditView::ID_FILTER_TYPE, pof::AuditView::OnFilterSelected)
-EVT_BUTTON(wxID_APPLY, pof::AuditView::OnApplyFilter)
+EVT_TOOL(wxID_APPLY, pof::AuditView::OnApplyFilter)
 EVT_TOOL(wxID_FORWARD, pof::AuditView::OnNextPage)
 EVT_TOOL(wxID_BACKWARD, pof::AuditView::OnBackPage)
 EVT_TOOL(pof::AuditView::ID_COLOUR_TYPE, pof::AuditView::OnColourAuditType)
@@ -41,11 +41,12 @@ void pof::AuditView::CreateToolBar()
 	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));
 
 
-
 	choices.push_back("INFORMATION");
 	choices.push_back("SALE");
 	choices.push_back("PRODUCT");
 	choices.push_back("CATEGORY");
+	choices.push_back("ALL");
+
 	mToolBar->AddSeparator();
 	mFilterType = new wxChoice(mToolBar, ID_FILTER_TYPE, wxDefaultPosition, wxSize(200, -1), choices);
 	mFilterType->SetBackgroundColour(*wxWHITE);
@@ -147,11 +148,14 @@ void pof::AuditView::OnApplyFilter(wxCommandEvent& evt)
 {
 	int sel = mFilterType->GetSelection();
 	if (sel == wxNOT_FOUND) return;
+	
 
 	mCurType = static_cast<pof::AuditManager::auditType>(sel);
 	bFilterType = true;
 	int count = mDataView->GetCountPerPage();
 	
+
+
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
 	wxGetApp().mAuditManager.LoadType(mCurType, 0, count);
 }

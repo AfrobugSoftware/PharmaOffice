@@ -4,10 +4,38 @@ pof::PrintManager::PrintManager()
 {
 	//mPageSetupData = std::make_unique<wxPageSetupData>();
 	mPrintData = std::make_unique<wxPrintData>();
+	mPrintDialogData = std::make_unique<wxPrintDialogData>(*mPrintData);
+
+	mPrintDialogData->EnableSelection(true);
+	mPrintDialogData->EnablePageNumbers(true);
+	mPrintDialogData->SetMinPage(1);
+	mPrintDialogData->SetMaxPage(2);
+	mPrintDialogData->SetFromPage(1);
+	mPrintDialogData->SetToPage(2);
+	mPrintDialogData->SetAllPages(true);
 }
 
 pof::PrintManager::~PrintManager()
 {
+}
+
+void pof::PrintManager::PrinterSetup()
+{
+	if (!mPrintDialogData) return;
+	(*mPageSetupData) = *mPrintData;
+
+	wxPageSetupDialog pageSetupDialog(nullptr, mPageSetupData.get());
+	pageSetupDialog.ShowModal();
+
+	(*mPrintData) = pageSetupDialog.GetPageSetupDialogData().GetPrintData();
+	(*mPageSetupData) = pageSetupDialog.GetPageSetupDialogData();
+}
+
+void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
+{
+	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
+	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	Preview(parent, po, po2);
 }
 
 void pof::PrintManager::PrintJob(wxWindow* parent, std::unique_ptr<wxPrintout> printout)
@@ -17,7 +45,7 @@ void pof::PrintManager::PrintJob(wxWindow* parent, std::unique_ptr<wxPrintout> p
 	if (printout) {
 		if (!printer.Print(parent, &(*printout))) {
 			if (GetLastError() == wxPRINTER_ERROR) {
-				wxMessageBox("Problem printing the document", "Printing", wxICON_ERROR | wxOK);
+				wxMessageBox("Problem printing", "Printing", wxICON_ERROR | wxOK);
 			}
 			else {
 				wxMessageBox("Printing cancelled", "Printing", wxOK);
@@ -42,7 +70,7 @@ void pof::PrintManager::Preview(wxWindow* parent,wxPrintout* previewout, wxPrint
 	}
 
 	wxPreviewFrame* frame = new wxPreviewFrame(preview, parent,
-		wxT("Label Print Preview"));
+		wxT("Label Print Preview"), wxDefaultPosition, wxDefaultSize);
 	frame->Centre(wxBOTH);
 	frame->Initialize();
 	frame->Show(true);

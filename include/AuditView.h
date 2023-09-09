@@ -17,7 +17,7 @@
 #include <utility>
 #include <queue>
 #include <stack>
-
+#include "AuditManager.h"
 namespace pof
 {
 	class AuditView : public wxPanel {
