@@ -88,6 +88,8 @@ namespace pof
 			void OnDate(wxDateEvent& evt);
 			void OnDialogInit(wxInitDialogEvent& evt);
 			void OnEditingStarted(wxDataViewEvent& evt);
+
+			void OnAuiThemeChange();
 			DECLARE_EVENT_TABLE()
 		
 	};	

@@ -625,6 +625,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 	{
 		wxMenu* menu = new wxMenu;
 		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
+		auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
 		
 
 		PopupMenu(menu);

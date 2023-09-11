@@ -16,13 +16,15 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(wxAUI_MGR_DEFAULT);
 	
-	mMainPane = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	mMainPane = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER );
 	m_mgr.AddPane( mMainPane, wxAuiPaneInfo().Name("MainPane").Left().CaptionVisible(false).CloseButton(false).PaneBorder(false).Dock().Resizable().FloatingSize(wxDefaultSize).CentrePane());
 	
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	CreateToolBar();
-	mStockData = new wxDataViewCtrl( mMainPane,ID_STOCK_DATA, wxDefaultPosition, wxDefaultSize, 0 );
+	mStockData = new wxDataViewCtrl( mMainPane,ID_STOCK_DATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	mStockData->AssociateModel(wxGetApp().mProductManager.GetStockCheckData().get());
+
 	mProductName = mStockData->AppendTextColumn( wxT("Product Name"), STOCK_PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, wxALIGN_CENTER);
 	mCurrenctStock = mStockData->AppendTextColumn( wxT("Currenct Stock"), STOCK_CURRENT_STOCK, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mCheckedStock = mStockData->AppendTextColumn(wxT("Checked Stock"), STOCK_CHECKED_STOCK, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
@@ -34,7 +36,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mMainPane->SetSizer( bSizer1 );
 	mMainPane->Layout();
 	bSizer1->Fit( mMainPane );
-	mSummary = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	mSummary = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER );
 	mSummary->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
 	m_mgr.AddPane( mSummary, wxAuiPaneInfo() .Name( wxT("TotalPane") ).Bottom() .Caption( wxT("Summary") ).PinButton( true ).Dock().Resizable().FloatingSize( wxSize( 50,67 ) ).TopDockable( false ).LeftDockable( false ).RightDockable( false ).Floatable( false ).Row( 1 ).MinSize( wxSize( 50,150 ) ) );
@@ -86,7 +88,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 
 void pof::StockCheck::CreateToolBar()
 {
-	mTools = new wxAuiToolBar(this, ID_TOOL);
+	mTools = new wxAuiToolBar(this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mTools->AddStretchSpacer();
 	mTools->AddSeparator();
 	mTools->AddSpacer(5);
@@ -262,6 +264,7 @@ void pof::StockCheck::OnDate(wxDateEvent& evt)
 void pof::StockCheck::OnDialogInit(wxInitDialogEvent& evt)
 {
 	//load the dialog, with today's time
+	OnAuiThemeChange();
 	AddSpecialCols();
 	mStockCheckMonth->SetValue(wxDateTime::Now());
 	wxGetApp().mProductManager.LoadStockCheckDate(pof::base::data::clock_t::now());
@@ -277,4 +280,10 @@ void pof::StockCheck::OnEditingStarted(wxDataViewEvent& evt)
 	val.SetMin(0);
 	val.SetMax(10000);
 	Ctrl->SetValidator(val);
+}
+
+void pof::StockCheck::OnAuiThemeChange()
+{
+	auto auiArtProvider = m_mgr.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
 }
