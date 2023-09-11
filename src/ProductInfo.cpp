@@ -347,7 +347,9 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 		mPropertyUpdate = {};
 		RemovePropertyModification();
 	}
-	if (mHistView) {
+
+	if (mBook->GetSelection() == PAGE_SALE_HIST)
+	{
 		wxGetApp().mSaleManager.GetProductHistory()->Clear();
 
 		std::bitset<32> bitset(mProductHist->GetState());
@@ -355,6 +357,7 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 			bitset.flip(5);
 			mProductHist->SetState(bitset.to_ulong());
 		}
+		mBook->SetSelection(PAGE_INVENTORY);
 	}
 	wxGetApp().mProductManager.GetInventory()->Clear();
 }
@@ -608,11 +611,11 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 			wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
 		}
 		wxGetApp().mSaleManager.GetProductHistory()->Reload();
-		mBook->SetSelection(1);
+		mBook->SetSelection(PAGE_SALE_HIST);
 	}
 	else {
 		wxGetApp().mProductManager.GetInventory()->Reload();
-		mBook->SetSelection(0);
+		mBook->SetSelection(PAGE_INVENTORY);
 	}
 	InventoryView->Thaw();
 	InventoryView->Refresh();

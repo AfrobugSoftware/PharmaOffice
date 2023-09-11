@@ -4,6 +4,7 @@ pof::ProductManager::ProductManager() {
 	mProductData = std::make_unique<pof::DataModel>();
 	mInventoryData = std::make_unique<pof::DataModel>();
 	mOrderList = std::make_unique<pof::DataModel>();
+	mStockCheckData = std::make_unique<pof::DataModel>();
 	mProductData->Adapt<
 		pof::base::data::duuid_t, //UUID
 		std::uint64_t, //SERIAL NUM
@@ -52,6 +53,13 @@ pof::ProductManager::ProductManager() {
 		std::uint64_t
 	>();
 
+	mStockCheckData->Adapt<
+		pof::base::data::duuid_t, // prod uuid
+		pof::base::data::text_t, //prod name
+		std::uint64_t, //currenct stock
+		std::uint64_t, //checked stock
+		std::uint64_t //status
+	>();
 	
 
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StrProductData, this), pof::DataModel::Signals::STORE);
@@ -1079,7 +1087,7 @@ void pof::ProductManager::InventoryBroughtForward()
 	}
 }
 
-//markup is a pecentage
+//markup is a pecentage in float so markUp = markup/100
 void pof::ProductManager::MarkUpProducts(double markUp)
 {
 	if (mLocalDatabase){
@@ -1087,13 +1095,33 @@ void pof::ProductManager::MarkUpProducts(double markUp)
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(markUp));
+		assert(status);
 
-
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
 	}
 }
 
 void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp)
 {
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = cost_price + (cost_price * ?) WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(markUp, uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
 }
 
 void pof::ProductManager::AddProductData()
@@ -1412,6 +1440,164 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpire
 		return std::get<0>(*rel->begin());
 	}
 	return std::nullopt;
+}
+
+bool pof::ProductManager::CreateStockCheckTable()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS stock_check (prod_uuid blob, check_stock integer, status integer, date integer);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+std::unique_ptr<pof::DataModel>& pof::ProductManager::GetStockCheckData()
+{
+	// TODO: insert return statement here
+	return mStockCheckData;
+}
+
+void pof::ProductManager::LoadStockCheckDate(pof::base::data::datetime_t m)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, sc.check_stock, sc.status
+		FROM products p, stock_check sc
+		WHERE p.uuid = sc.prod_uuid AND Months(sc.date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t, // product uuid
+			pof::base::data::text_t, //product name
+			std::uint64_t, //currenct stock
+			std::uint64_t, //checked stock
+			std::uint64_t //status
+		>(*stmt);
+		assert(rel);
+		auto& value = rel.value();
+		mStockCheckData->Clear();
+		for (auto& tup : value){
+			pof::base::data::row_t row;
+			row.first = std::move(pof::base::make_row_from_tuple(tup));
+			mStockCheckData->EmplaceData(std::move(row));
+		}
+	}
+}
+
+void pof::ProductManager::SaveStockCheckData()
+{
+}
+
+bool pof::ProductManager::CheckIfAdded(const pof::base::data::duuid_t& pid)
+{
+	if (mLocalDatabase)
+	{
+		//figure how to do this with tiggers 
+		constexpr const std::string_view sql = R"(SELECT 1 FROM stock_check WHERE prod_uuid = ? AND Months(date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, pof::base::data::datetime_t(month)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel);
+		mLocalDatabase->finalise(*stmt);
+		return !rel->empty();
+	}
+	return false;
+}
+
+bool pof::ProductManager::IsStockCheckComplete()
+{
+	//check if all the 
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT Count(pid)
+		FROM stock_check WHERE Months(date) = ?;)";
+		
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		//all products have been accounted for this month
+		return (mProductData->GetDatastore().size() == std::get<0>(*(rel->begin())));
+
+	}
+}
+
+void pof::ProductManager::UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET check_stock = ? WHERE prod_uuid = ? AND Months(date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return; 
+		}
+		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(stock, pid, pof::base::data::datetime_t(month)));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) spdlog::error(mLocalDatabase->err_msg());
+		mLocalDatabase->finalise(*stmt);
+		return;
+	}
+}
+
+bool pof::ProductManager::InsertProductInStockCheck(const pof::base::data::duuid_t& pid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO stock_check (prod_uuid, check_stock, status, date) VALUES (?, 0, 0, ?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto today = pof::base::data::clock_t::now();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, today));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+
+	return false;
 }
 
 void pof::ProductManager::CreatePackTable()

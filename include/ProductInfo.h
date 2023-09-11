@@ -96,6 +96,12 @@ namespace pof
 				pof::base::data::row_t mUpdatedElementsValues;
 			};
 			
+			//pages
+			enum {
+				PAGE_INVENTORY = 0,
+				PAGE_SALE_HIST
+			};
+
 			using back_signal_t = boost::signals2::signal<void(void)>;
 			using update_signal_t = boost::signals2::signal<void(const PropertyUpdate&)>;
 

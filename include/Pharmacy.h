@@ -17,11 +17,11 @@ namespace pof{
 	public:
 		enum class PharmacyType : std::uint8_t
 		{
-			COMMUNITY = 1,
-			HOSPITAL = 1 << 1,
-			MANUFACTURE = 1 << 2,
-			WHOLESALE = 1 << 3,
-			UNIVERSITY = 1 << 4
+			COMMUNITY,
+			HOSPITAL,
+			MANUFACTURE,
+			WHOLESALE,
+			UNIVERSITY
 		};
 		
 		using employeModel_t = std::shared_ptr<pof::DataModel>;

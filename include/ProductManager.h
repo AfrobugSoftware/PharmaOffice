@@ -240,6 +240,16 @@ namespace pof {
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 
+		//stock check
+		bool CreateStockCheckTable();
+		std::unique_ptr<pof::DataModel>& GetStockCheckData();
+		void LoadStockCheckDate(pof::base::data::datetime_t month);
+		void SaveStockCheckData();
+		bool CheckIfAdded(const pof::base::data::duuid_t& pid);
+		bool IsStockCheckComplete();
+		void UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock);
+		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
+
 		using packDescType = std::tuple<pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t>;
@@ -310,6 +320,7 @@ namespace pof {
 		std::unique_ptr<pof::DataModel> mProductData;
 		std::unique_ptr<pof::DataModel> mInventoryData;
 		std::unique_ptr<pof::DataModel> mOrderList;
+		std::unique_ptr<pof::DataModel> mStockCheckData;
 
 
 	};

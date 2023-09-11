@@ -34,6 +34,7 @@ EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayRepo
 EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
 EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
+EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
 END_EVENT_TABLE()
 
 
@@ -634,6 +635,12 @@ void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
 {
 	wxBusyCursor cursor;
 	wxGetApp().mProductManager.InventoryBroughtForward();
+}
+
+void pof::ProductView::OnSCFunction(wxCommandEvent& evt)
+{
+	//we need a stock check dialog
+
 }
 
 void pof::ProductView::OnShowOrderList(wxCommandEvent& evt)

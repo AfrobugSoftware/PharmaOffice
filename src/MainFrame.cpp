@@ -26,7 +26,7 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateViews();
 	CreateModules();
 	CreateImageList();
-	CreateStatusBar();
+	//CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
 	SetExtraStyle(wxWS_EX_PROCESS_IDLE);

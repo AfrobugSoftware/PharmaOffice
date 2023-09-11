@@ -52,6 +52,7 @@ namespace pof
 			ID_DATA_VIEW,
 			ID_FUNCTIONS,
 			ID_FUNCTION_BROUGHT_FORWARD,
+			ID_FUNCTION_STOCK_CHECK,
 			ID_REPORTS,
 			ID_REPORTS_CONSUMPTION_PATTERN,
 			ID_REPORTS_ENDOFDAY,
@@ -153,6 +154,7 @@ namespace pof
 		void OnPacks(wxCommandEvent& evt);
 		void OnFunctions(wxAuiToolBarEvent& evt);
 		void OnBFFunction(wxCommandEvent& evt);
+		void OnSCFunction(wxCommandEvent& evt);
 		void OnShowOrderList(wxCommandEvent& evt);
 		void OnMarkUp(wxCommandEvent& evt);
 
