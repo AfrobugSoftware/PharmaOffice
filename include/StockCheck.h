@@ -1,0 +1,94 @@
+#pragma once
+
+#include <ranges>
+#include <algorithm>
+#include <numeric>
+
+#include "SearchProduct.h"
+
+#include <wx/artprov.h>
+#include <wx/xrc/xmlres.h>
+#include <wx/string.h>
+#include <wx/dataview.h>
+#include <wx/gdicmn.h>
+#include <wx/font.h>
+#include <wx/colour.h>
+#include <wx/settings.h>
+#include <wx/sizer.h>
+#include <wx/panel.h>
+#include <wx/stattext.h>
+#include <wx/dialog.h>
+#include <wx/aui/aui.h>
+#include <wx/datectrl.h>
+#include <wx/dateevt.h>
+
+
+namespace pof
+{
+	class StockCheck : public wxDialog 
+	{
+		private:
+		
+		protected:
+			wxAuiToolBar* mTools;
+			wxPanel* mMainPane;
+			wxDataViewCtrl* mStockData;
+			wxDataViewColumn* mProductName;
+			wxDataViewColumn* mCurrenctStock;
+			wxDataViewColumn* mCheckedStock;
+			wxDataViewColumn* mShortage;
+			wxDataViewColumn* mStatus;
+			wxPanel* mSummary;
+			wxStaticText* mTotalStockCheckedLabel;
+			wxStaticText* mTotalStockCheckedValue;
+			wxStaticText* mTotalShortageLabel;
+			wxStaticText* mTotalShortageValue;
+			wxStaticText* mShortageAmountLabel;
+			wxStaticText* mShortageAmountValue;
+			wxDatePickerCtrl* mStockCheckMonth;
+		
+		public:
+			enum {
+					ID_TOOL = wxID_HIGHEST + 1,
+					ID_ADD_PRODUCT,
+					ID_STOCK_DATA,
+					ID_DATE,
+
+			};
+
+			//status
+			enum {
+				DONE,
+				PENDING
+			};
+
+			//stock columns
+			enum {
+				STOCK_PRODUCT_UUID = 0,
+				STOCK_PRODUCT_NAME,
+				STOCK_CURRENT_STOCK,
+				STOCK_CHECKED_STOCK,
+				STOCK_STATUS,
+				STOCK_SHORTAGE,
+			};
+
+			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 878,689 ), long style = wxDEFAULT_DIALOG_STYLE );
+			wxAuiManager m_mgr;
+			void CreateToolBar();
+			void AddSpecialCols();
+			virtual bool TransferDataFromWindow() override;
+			~StockCheck();
+
+
+		protected:
+			void UpdateSummary();
+			void OnAddProduct(wxCommandEvent& evt);
+			//void OnMonthChange(wxDateEvent& evt);
+			//void OnMonthChange(wxDateEvent& evt);
+			void OnDate(wxDateEvent& evt);
+			void OnDialogInit(wxInitDialogEvent& evt);
+			void OnEditingStarted(wxDataViewEvent& evt);
+			DECLARE_EVENT_TABLE()
+		
+	};	
+}

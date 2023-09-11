@@ -25,6 +25,7 @@
 #include "InventoryDialog.h"
 #include "OrderView.h"
 #include "Reports.h"
+#include "StockCheck.h"
 
 #include <boost/signals2/signal.hpp>
 

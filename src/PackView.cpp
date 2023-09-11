@@ -410,7 +410,8 @@ void pof::PackView::OnCreatePack(wxCommandEvent& evt)
 
 void pof::PackView::OnRemovePack(wxCommandEvent& evt)
 {
-
+	if (wxMessageBox("Are you sure you want to remove pack?", "PACK", wxICON_QUESTION | wxYES_NO) == wxNO) return;
+	wxGetApp().mProductManager.RemovePack(*mCurPackId);
 }
 
 void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
