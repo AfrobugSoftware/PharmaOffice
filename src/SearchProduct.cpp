@@ -10,6 +10,7 @@ EVT_CLOSE(pof::SearchProduct::OnClose)
 EVT_SEARCH_CANCEL(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearchCancelled)
 EVT_TEXT(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearch)
 EVT_TOOL(pof::SearchProduct::ID_ADD_PRODUCT, pof::SearchProduct::OnAddProduct )
+EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnHeaderClicked)
 END_EVENT_TABLE()
 
 
@@ -70,7 +71,7 @@ void pof::SearchProduct::CreateSearchView()
 	mModel = new DataModel(wxGetApp().mProductManager.GetProductData()->ShareDatastore());
 
 	SearchData = new wxDataViewCtrl(m_panel1, ID_SEARCH_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_ROW_LINES);
-	SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, 50);
+	selectedCol = SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, 50);
 	SearchData->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	SearchData->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	SearchData->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
@@ -184,7 +185,36 @@ const std::vector<std::reference_wrapper<pof::base::data::row_t>>
 void pof::SearchProduct::OnAddProduct(wxCommandEvent& evt)
 {
 	EndModal(wxID_OK);
-}	
+}
+void pof::SearchProduct::OnHeaderClicked(wxDataViewEvent& evt)
+{
+	if (selectedCol == evt.GetDataViewColumn()){
+		static bool sel = true;
+		SearchData->Freeze();
+		auto& items = mModel->GetDataViewItems();
+		if (sel) {
+			if (!mSelectedProducts.empty()) {
+				mSelectedProducts.clear();
+				sel = false;
+			}
+			else {
+				std::ranges::transform(items, std::inserter(mSelectedProducts, mSelectedProducts.end()), [&](const wxDataViewItem& item) {return pof::DataModel::GetIdxFromItem(item); });
+			}
+		}
+		else {
+			for (auto& item : items) {
+				mSelectedProducts.erase(pof::DataModel::GetIdxFromItem(item));
+			}
+		}
+		sel = !sel;
+		SearchData->Thaw();
+		SearchData->Refresh();
+		evt.Veto();
+	}
+	else {
+		evt.Skip();
+	}
+}
 
 void pof::SearchProduct::DoSearch(const std::string& search_for)
 {

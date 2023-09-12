@@ -363,8 +363,8 @@
                     </object>
                     <object class="sizeritem" expanded="1">
                         <property name="border">0</property>
-                        <property name="flag">wxEXPAND</property>
-                        <property name="proportion">1</property>
+                        <property name="flag">wxALIGN_TOP</property>
+                        <property name="proportion">0</property>
                         <object class="wxGridSizer" expanded="1">
                             <property name="cols">2</property>
                             <property name="hgap">2</property>
@@ -375,7 +375,7 @@
                             <property name="vgap">2</property>
                             <object class="sizeritem" expanded="1">
                                 <property name="border">2</property>
-                                <property name="flag">wxALL</property>
+                                <property name="flag">wxALIGN_CENTER|wxALL</property>
                                 <property name="proportion">0</property>
                                 <object class="wxStaticText" expanded="1">
                                     <property name="BottomDockable">1</property>
@@ -457,8 +457,8 @@
                                 </object>
                             </object>
                             <object class="sizeritem" expanded="1">
-                                <property name="border">5</property>
-                                <property name="flag">wxALL</property>
+                                <property name="border">0</property>
+                                <property name="flag">wxALIGN_CENTER|wxALL</property>
                                 <property name="proportion">0</property>
                                 <object class="wxStaticText" expanded="1">
                                     <property name="BottomDockable">1</property>
@@ -624,7 +624,7 @@
                             </object>
                             <object class="sizeritem" expanded="1">
                                 <property name="border">5</property>
-                                <property name="flag">wxALL</property>
+                                <property name="flag">wxALIGN_CENTER|wxALL</property>
                                 <property name="proportion">0</property>
                                 <object class="wxStaticText" expanded="1">
                                     <property name="BottomDockable">1</property>
@@ -790,7 +790,7 @@
                             </object>
                             <object class="sizeritem" expanded="1">
                                 <property name="border">5</property>
-                                <property name="flag">wxALL</property>
+                                <property name="flag">wxALIGN_CENTER|wxALL</property>
                                 <property name="proportion">0</property>
                                 <object class="wxStaticText" expanded="1">
                                     <property name="BottomDockable">1</property>

@@ -37,6 +37,7 @@ namespace pof {
 		wxDataViewColumn* ProductIdCol;
 		wxDataViewColumn* ProductName;
 		wxDataViewColumn* PriceCol;
+		wxDataViewColumn* selectedCol;
 
 
 		//id, name, price
@@ -79,6 +80,7 @@ namespace pof {
 		void OnSearchCancelled(wxCommandEvent& evt);
 		void OnClose(wxCloseEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
+		void OnHeaderClicked(wxDataViewEvent& evt);
 
 		void DoSearch(const std::string& search_for);
 

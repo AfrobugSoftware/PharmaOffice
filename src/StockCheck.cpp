@@ -4,7 +4,7 @@
 BEGIN_EVENT_TABLE(pof::StockCheck, wxDialog)
 EVT_TOOL(pof::StockCheck::ID_ADD_PRODUCT, pof::StockCheck::OnAddProduct)
 EVT_DATE_CHANGED(pof::StockCheck::ID_DATE, pof::StockCheck::OnDate)
-EVT_INIT_DIALOG(pof::StockCheck::OnInitDialog)
+//EVT_INIT_DIALOG(pof::StockCheck::OnInitDialog)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnEditingStarted)
 END_EVENT_TABLE()
 
@@ -50,32 +50,32 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	wxGridSizer* gSizer1;
 	gSizer1 = new wxGridSizer( 0, 2, 2, 2 );
 	
-	mTotalStockCheckedLabel = new wxStaticText( mSummary, wxID_ANY, wxT("Total Stock Checked:"), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalStockCheckedLabel->Wrap( -1 );
-	gSizer1->Add( mTotalStockCheckedLabel, 0, wxALL, 2 );
-	
-	mTotalStockCheckedValue = new wxStaticText( mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalStockCheckedValue->Wrap( -1 );
-	gSizer1->Add( mTotalStockCheckedValue, 0, wxALL, 5 );
-	
-	mTotalShortageLabel = new wxStaticText( mSummary, wxID_ANY, wxT("Total Shortage"), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalShortageLabel->Wrap( -1 );
-	gSizer1->Add( mTotalShortageLabel, 0, wxALL, 5 );
-	
-	mTotalShortageValue = new wxStaticText( mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalShortageValue->Wrap( -1 );
-	gSizer1->Add( mTotalShortageValue, 0, wxALL, 5 );
-	
-	mShortageAmountLabel = new wxStaticText( mSummary, wxID_ANY, wxT("Shortage Amount:"), wxDefaultPosition, wxDefaultSize, 0 );
-	mShortageAmountLabel->Wrap( -1 );
-	gSizer1->Add( mShortageAmountLabel, 0, wxALL, 5 );
-	
-	mShortageAmountValue = new wxStaticText( mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	mShortageAmountValue->Wrap( -1 );
-	gSizer1->Add( mShortageAmountValue, 0, wxALL, 5 );
-	
-	
-	bSizer2->Add( gSizer1, 1, wxEXPAND, 0 );
+	mTotalStockCheckedLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Total Stock Checked:"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalStockCheckedLabel->Wrap(-1);
+	gSizer1->Add(mTotalStockCheckedLabel, 0, wxALIGN_CENTER | wxALL, 2);
+
+	mTotalStockCheckedValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalStockCheckedValue->Wrap(-1);
+	gSizer1->Add(mTotalStockCheckedValue, 0, wxALIGN_CENTER | wxALL, 0);
+
+	mTotalShortageLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Total Shortage"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalShortageLabel->Wrap(-1);
+	gSizer1->Add(mTotalShortageLabel, 0, wxALL, 5);
+
+	mTotalShortageValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalShortageValue->Wrap(-1);
+	gSizer1->Add(mTotalShortageValue, 0, wxALIGN_CENTER | wxALL, 5);
+
+	mShortageAmountLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Shortage Amount:"), wxDefaultPosition, wxDefaultSize, 0);
+	mShortageAmountLabel->Wrap(-1);
+	gSizer1->Add(mShortageAmountLabel, 0, wxALL, 5);
+
+	mShortageAmountValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mShortageAmountValue->Wrap(-1);
+	gSizer1->Add(mShortageAmountValue, 0, wxALIGN_CENTER | wxALL, 5);
+
+
+	bSizer2->Add(gSizer1, 0, wxALIGN_TOP, 0);
 	
 	
 	mSummary->SetSizer( bSizer2 );
@@ -84,6 +84,12 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	
 	m_mgr.Update();
 	this->Centre( wxBOTH );
+
+	OnAuiThemeChange();
+	AddSpecialCols();
+	mStockCheckMonth->SetValue(wxDateTime::Now());
+	wxGetApp().mProductManager.LoadStockCheckDate(pof::base::data::clock_t::now());
+	UpdateSummary();
 }
 
 void pof::StockCheck::CreateToolBar()
@@ -120,6 +126,7 @@ void pof::StockCheck::AddSpecialCols()
 
 
 		v[STOCK_CHECKED_STOCK] = quan;
+		v[STOCK_STATUS] = DONE;
 		wxGetApp().mProductManager.UpdateStockCheck(pid, quan);
 		UpdateSummary();
 		return true;
@@ -140,14 +147,15 @@ void pof::StockCheck::AddSpecialCols()
 
 	shortage.first = [&](size_t r, size_t col) -> wxVariant {
 		auto& row = datastore[r];
-		return wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(row.first[STOCK_CURRENT_STOCK]) -
+		auto text = fmt::format("{:d}", (boost::variant2::get<std::uint64_t>(row.first[STOCK_CURRENT_STOCK]) -
 			boost::variant2::get<std::uint64_t>(row.first[STOCK_CHECKED_STOCK])));
+		return text;
 	};
 
 	auto& dm = wxGetApp().mProductManager.GetStockCheckData();
 	dm->SetSpecialColumnHandler(STOCK_STATUS, std::move(status));
 	dm->SetSpecialColumnHandler(STOCK_SHORTAGE, std::move(shortage));
-	dm->SetSpecialColumnHandler(STOCK_CHECKED_STOCK, std::move(shortage));
+	dm->SetSpecialColumnHandler(STOCK_CHECKED_STOCK, std::move(checkedStock));
 	
 }
 
@@ -203,15 +211,22 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 	}
 
 	pof::SearchProduct dialog(this);
+	auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
 	if (dialog.ShowModal() == wxID_OK){
 		if (dialog.HasMultipleSelections()){
 			auto vec = dialog.GetSelectedProducts();
 			for (auto& prod : vec) {
+
 				pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(prod.get().first[pof::ProductManager::PRODUCT_UUID]);
 				//insert into the datamodel
 				pof::base::data::row_t row;
 				auto& v = row.first;
 				auto& p = prod.get().first;
+				if (std::ranges::any_of(datastore, [&](pof::base::data::row_t& item) -> bool {
+					return boost::variant2::get<pof::base::data::duuid_t>(item.first[STOCK_PRODUCT_UUID]) == pid; }))
+				{
+					continue;
+				}
  				v.resize(5);
 
 
@@ -219,7 +234,7 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 				v[STOCK_PRODUCT_NAME] = p[pof::ProductManager::PRODUCT_NAME];
 				v[STOCK_CURRENT_STOCK] = p[pof::ProductManager::PRODUCT_STOCK_COUNT];
 				v[STOCK_CHECKED_STOCK] = static_cast<std::uint64_t>(0);
-				v[STOCK_PRODUCT_NAME] = static_cast<std::uint64_t>(PENDING);
+				v[STOCK_STATUS] = static_cast<std::uint64_t>(PENDING);
 
 				wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(row));
 				wxGetApp().mProductManager.InsertProductInStockCheck(pid);
@@ -232,6 +247,13 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 			pof::base::data::row_t rowx;
 			auto& v = rowx.first;
 			auto& p = row.first;
+
+			if (std::ranges::any_of(datastore, [&](pof::base::data::row_t& item) -> bool {
+				return boost::variant2::get<pof::base::data::duuid_t>(item.first[STOCK_PRODUCT_UUID]) == pid; }))
+			{
+				return;
+			}
+
 			v.resize(5);
 
 
@@ -239,11 +261,12 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 			v[STOCK_PRODUCT_NAME] = p[pof::ProductManager::PRODUCT_NAME];
 			v[STOCK_CURRENT_STOCK] = p[pof::ProductManager::PRODUCT_STOCK_COUNT];
 			v[STOCK_CHECKED_STOCK] = static_cast<std::uint64_t>(0);
-			v[STOCK_PRODUCT_NAME] = static_cast<std::uint64_t>(PENDING);
+			v[STOCK_STATUS] = static_cast<std::uint64_t>(PENDING);
 
 			wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(rowx));
 			wxGetApp().mProductManager.InsertProductInStockCheck(pid);
 		}
+		UpdateSummary();
 	}
 }
 
@@ -259,6 +282,7 @@ void pof::StockCheck::OnDate(wxDateEvent& evt)
 	auto& date = evt.GetDate();
 	pof::base::data::datetime_t curTime = pof::base::data::clock_t::from_time_t(date.GetTicks());
 	wxGetApp().mProductManager.LoadStockCheckDate(curTime);
+	UpdateSummary();
 }
 
 void pof::StockCheck::OnDialogInit(wxInitDialogEvent& evt)

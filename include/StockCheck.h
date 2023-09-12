@@ -58,8 +58,8 @@ namespace pof
 
 			//status
 			enum {
-				DONE,
-				PENDING
+				PENDING,
+				DONE
 			};
 
 			//stock columns
@@ -72,7 +72,7 @@ namespace pof
 				STOCK_SHORTAGE,
 			};
 
-			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 878,689 ), long style = wxDEFAULT_DIALOG_STYLE );
+			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 878,689 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 			wxAuiManager m_mgr;
 			void CreateToolBar();
 			void AddSpecialCols();
