@@ -54,6 +54,7 @@ namespace pof
 			ID_FUNCTIONS,
 			ID_FUNCTION_BROUGHT_FORWARD,
 			ID_FUNCTION_STOCK_CHECK,
+			ID_FUNCTION_MARK_UP_PRODUCTS,
 			ID_REPORTS,
 			ID_REPORTS_CONSUMPTION_PATTERN,
 			ID_REPORTS_ENDOFDAY,
@@ -158,6 +159,7 @@ namespace pof
 		void OnSCFunction(wxCommandEvent& evt);
 		void OnShowOrderList(wxCommandEvent& evt);
 		void OnMarkUp(wxCommandEvent& evt);
+		void OnMarkUpProducts(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

@@ -1034,6 +1034,49 @@ void pof::ProductManager::UpdateProductQuan(const std::vector<std::tuple<pof::ba
 
 }
 
+void pof::ProductManager::RefreshRowFromDatabase(const pof::base::data::duuid_t& pid, pof::base::data::row_t& row)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM products WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t, //UUID
+			std::uint64_t, //SERIAL NUM
+			pof::base::data::text_t, // NAME
+			pof::base::data::text_t, // GENERIC NAME
+			pof::base::data::text_t, //CLASS
+			pof::base::data::text_t, //FORMULATION
+			pof::base::data::text_t, // STRENGTH
+			pof::base::data::text_t, // STRENGTH TYPE
+			pof::base::data::text_t, // USAGE INFO
+			pof::base::data::text_t, // PRODUCT DESCRIPTION
+			pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
+			pof::base::data::currency_t, // UNIT PRICE
+			pof::base::data::currency_t, // COST PRICE
+			std::uint64_t, //PACAKGE SIZE
+			std::uint64_t, //STOCK COUNT
+			pof::base::data::text_t, //SIDE EFFECTS
+			pof::base::data::text_t, //BARCODE
+			std::uint64_t, //CATEGORY ID
+			//PRODUCT SETTINGS
+			std::uint32_t, //MIN_STOCJ_COUNT
+			pof::base::data::text_t, //EXPIRE PERIOD
+			std::uint64_t //EXPIRE DATE
+		>(*stmt);
+		assert(rel);
+
+		if (rel->empty()) return;
+		auto& tup = *(rel->begin());
+		row.first = std::move(pof::base::make_row_from_tuple(tup));
+	}
+}
+
 void pof::ProductManager::EmplaceProductData(pof::base::data&& data)
 {
 	mProductData->Emplace(std::forward<pof::base::data>(data));
@@ -1047,6 +1090,7 @@ void pof::ProductManager::StoreProductData(pof::base::data&& data)
 void pof::ProductManager::InventoryBroughtForward()
 {
 	if (mLocalDatabase){
+
 		constexpr const std::string_view qSql = R"(SELECT uuid, id, MAX(input_date), expire_date, stock_count
 			 FROM inventory 
 			 WHERE Months(input_date) = ? 
@@ -1091,7 +1135,7 @@ void pof::ProductManager::InventoryBroughtForward()
 void pof::ProductManager::MarkUpProducts(double markUp)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = cost_price + (cost_price * ?);)";
+		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = ScaleCost(cost_price,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -1109,7 +1153,7 @@ void pof::ProductManager::MarkUpProducts(double markUp)
 void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = cost_price + (cost_price * ?) WHERE uuid = ?;)";
+		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = ScaleCost(cost_price, ?) WHERE uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -1532,7 +1576,7 @@ bool pof::ProductManager::IsStockCheckComplete()
 	//check if all the 
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT Count(pid)
-		FROM stock_check WHERE Months(date) = ?;)";
+		FROM stock_check WHERE Months(date) = ? AND status = 1;)"; // 1 means done
 		
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt) {

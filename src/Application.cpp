@@ -136,9 +136,15 @@ void pof::Application::SetupDatabaseExt()
 		daysFunc.arg_count = 1;
 		daysFunc.func = pof::base::day_func;
 
+		pof::base::func_aggregate scaleCost;
+		scaleCost.name = "ScaleCost";
+		scaleCost.arg_count = 2;
+		scaleCost.func = pof::base::cost_multi_add;
+
 		mLocalDatabase->register_func(costAgg);
 		mLocalDatabase->register_func(monthFunc);
 		mLocalDatabase->register_func(daysFunc);
+		mLocalDatabase->register_func(scaleCost);
 	}
 }
 

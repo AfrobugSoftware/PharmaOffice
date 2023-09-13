@@ -35,6 +35,7 @@ EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFr
 EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
 EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
+EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
 END_EVENT_TABLE()
 
 
@@ -626,6 +627,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		wxMenu* menu = new wxMenu;
 		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
 		auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
+		auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
 		
 
 		PopupMenu(menu);
@@ -634,6 +636,10 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 
 void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
 {
+	if (!wxGetApp().mProductManager.IsStockCheckComplete()) {
+		wxMessageBox("Stock check is not complete for this month, complete stock check before brought forward", "BROUGHT FORWARD", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	wxBusyCursor cursor;
 	wxGetApp().mProductManager.InventoryBroughtForward();
 }
@@ -666,7 +672,21 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
 	auto& v = row.first;
 	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
-	wxGetApp().mProductManager.MarkUpProducts(uid, 30.0); //30% mark up for texts
+	wxGetApp().mProductManager.MarkUpProducts(uid, 0.3); //30% mark up for texts
+	wxGetApp().mProductManager.RefreshRowFromDatabase(uid, row);
+}
+
+void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
+{
+	wxGetApp().mProductManager.MarkUpProducts(0.3);
+	
+	//refresh the display
+	m_dataViewCtrl1->Freeze();
+	wxGetApp().mProductManager.GetProductData()->Clear();
+	wxGetApp().mProductManager.LoadProductsFromDatabase();
+	wxGetApp().mProductManager.GetProductData()->Reload();
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Refresh();
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

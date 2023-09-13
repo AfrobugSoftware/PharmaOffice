@@ -214,7 +214,7 @@ namespace pof {
 		pof::base::data& GetCategories() { return mCategories; }
 
 		void UpdateProductQuan(const std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>>& prodQuans);
-
+		void RefreshRowFromDatabase(const pof::base::data::duuid_t& pid, pof::base::data::row_t& row);
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
 		void InventoryBroughtForward(); 

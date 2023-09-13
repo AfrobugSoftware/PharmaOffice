@@ -120,27 +120,21 @@ bool pof::ReportsDialog::LoadConsumptionPattern()
 		item.SetColumn(3);
 		item.SetId(i);
 		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[4])));
-		item.SetImage(-1);
-		item.SetWidth(200);
-		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+		item.SetMask(wxLIST_MASK_TEXT );
 		report.SetItem(item);
 
 
 		item.SetColumn(4);
 		item.SetId(i);
 		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[5])));
-		item.SetImage(-1);
-		item.SetWidth(200);
-		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_WIDTH);
+		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 
 		item.SetColumn(5);
 		item.SetId(i);
 		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[6])));
-		item.SetImage(-1);
-		item.SetWidth(200);
-		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_DATA);
+		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 		i++;
