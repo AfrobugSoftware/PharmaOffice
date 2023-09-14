@@ -84,12 +84,15 @@ namespace pof
 		wxButton* mScanProduct;
 		wxPanel* m_panel6;
 		wxPanel* mProductInvenPanel;
+		wxCheckBox* mAddInventory;
 		wxStaticText* mBacthNumber;
 		wxTextCtrl* mBatchNumbeValue;
 		wxStaticText* m_staticText8;
 		wxDatePickerCtrl* m_datePicker1;
 		wxStaticText* mQuntity;
 		wxTextCtrl* mQunatityValue;
+		wxStaticText* mSupplierName;
+		wxTextCtrl* mSuplierNameValue;
 		wxPanel* m_panel7;
 		wxStdDialogButtonSizer* m_sdbSizer2;
 		wxButton* m_sdbSizer2OK;
@@ -114,7 +117,7 @@ namespace pof
 			ID_MORE_SIDEEFFECTS,
 			ID_MORE_HEALTHCON,
 		};
-		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		~AddProdutDialog();
 
 		virtual bool TransferDataFromWindow() override final;

@@ -17,12 +17,12 @@ namespace pof {
 			ID_DATA_VIEW = 10,
 		};
 		SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData,
-			const std::vector<std::pair<std::string, size_t>>& colNames = {});
+			const std::vector<std::pair<std::string, size_t>>& colNames = {}, const std::vector<size_t>& colSizes = {});
 
 		void SearchString(size_t col, const std::string& searchString);
 		void CaptureFocus();
 	private:
-		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames);
+		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
 		void OnDataItemSelected(wxDataViewEvent& evt);
 
 

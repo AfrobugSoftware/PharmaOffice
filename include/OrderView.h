@@ -51,7 +51,7 @@ namespace pof
 			ID_PLACE
 		};
 
-		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(766, 535), long style = wxDEFAULT_DIALOG_STYLE);
+		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		~OrderListView();
 		void CreateEmptyPanel();
 		void CreateSpeicalCol();
@@ -59,6 +59,8 @@ namespace pof
 		void OnPrintOrder(wxCommandEvent& evt);
 		void OnContexMenu(wxDataViewEvent& evt);
 		void OnRemoveOrder(wxCommandEvent& evt);
+
+		void UpdateTexts();
 		DECLARE_EVENT_TABLE()
 	};
 }

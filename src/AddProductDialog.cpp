@@ -1,5 +1,6 @@
-
 #include "AddProductDialog.h"
+#include "Application.h"
+
 BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 	EVT_BUTTON(pof::AddProdutDialog::ID_SCAN_PRODUCT, pof::AddProdutDialog::OnScanProduct)
 END_EVENT_TABLE()
@@ -21,7 +22,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("ADD PRODUCT"), wxDefaultPosition, wxDefaultSize, 0 );
 	TitleText->Wrap( -1 );
-	TitleText->SetFont( wxFont( 15, 70, 90, 92, false, wxEmptyString ) );
+	TitleText->SetFont( wxFont(wxFontInfo(12).Bold()));
 	
 	bSizer2->Add( TitleText, 1, wxALL, 15 );
 	
@@ -274,11 +275,17 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->SetFlexibleDirection( wxBOTH );
 	fgSizer21->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
+	mAddInventory = new wxCheckBox(mProductInvenPanel, wxID_ANY,wxT("Add Inventory"), wxDefaultPosition, wxDefaultSize, 0);
+	fgSizer21->Add(mAddInventory, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	fgSizer21->AddStretchSpacer();
+
 	mBacthNumber = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mBacthNumber->Wrap( -1 );
 	fgSizer21->Add( mBacthNumber, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mBatchNumbeValue = new wxTextCtrl( mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mBatchNumbeValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add( mBatchNumbeValue, 1, wxALL|wxEXPAND, 5 );
 	
 	m_staticText8 = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Product Expiry Date"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -296,7 +303,14 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mQunatityValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add( mQunatityValue, 0, wxALL|wxEXPAND, 5 );
 	
-	
+	mSupplierName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Supplier Name"), wxDefaultPosition, wxDefaultSize, 0);
+	mSupplierName->Wrap(-1);
+	fgSizer21->Add(mSupplierName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mSuplierNameValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	fgSizer21->Add(mSuplierNameValue, 0, wxALL | wxEXPAND, 5);
+
+
 	mProductInvenPanel->SetSizer( fgSizer21 );
 	mProductInvenPanel->Layout();
 	fgSizer21->Fit( mProductInvenPanel );
@@ -336,6 +350,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
+	bSizer1->Fit(this);
 	
 	this->Centre( wxBOTH );
 }
@@ -370,17 +385,18 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 
 	//only emplace when the fields are 
-	datumInven.emplace();
-	datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
-	auto& i = datumInven->first;
-	i.resize(pof::ProductManager::INVENTORY_MAX);
-	i[pof::ProductManager::INVENTORY_ID] = 1; //test
-	i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
-	i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
-	i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
-	i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA"; //test
-	i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
-
+	if (mAddInventory->GetValue()) {
+		datumInven.emplace();
+		datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+		auto& i = datumInven->first;
+		i.resize(pof::ProductManager::INVENTORY_MAX);
+		i[pof::ProductManager::INVENTORY_ID] = 0; //test
+		i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
+		i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
+		i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
+		i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = std::move(mSuplierNameValue->GetValue().ToStdString()); //test
+		i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
+	}
 	return true;
 }
 

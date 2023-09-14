@@ -673,7 +673,10 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	auto& v = row.first;
 	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
 	wxGetApp().mProductManager.MarkUpProducts(uid, 0.3); //30% mark up for texts
+	m_dataViewCtrl1->Freeze();
 	wxGetApp().mProductManager.RefreshRowFromDatabase(uid, row);
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Update();
 }
 
 void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)

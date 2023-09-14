@@ -28,51 +28,35 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	bSizer2->Add( mTopTools, 0, wxEXPAND, 5 );
 	
-	mBook = new wxSimplebook( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	
-	mOrderView = new wxDataViewCtrl( mBook, ID_ORDER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES );
-	mOrderView->AssociateModel(wxGetApp().mProductManager.GetOrderList().get());
-	
-	mProductCol = mOrderView->AppendTextColumn( wxT("Product"), pof::ProductManager::ORDER_PRODUCT_NAME, wxDATAVIEW_CELL_INERT,  200);
-	mQuanCol = mOrderView->AppendTextColumn( wxT("Quantity"), pof::ProductManager::ORDER_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100 );
-	m_dataViewColumn3 = mOrderView->AppendTextColumn(wxT("Cost"), pof::ProductManager::ORDER_COST, wxDATAVIEW_CELL_INERT, 100);
-	m_dataViewColumn4 = mOrderView->AppendBitmapColumn( wxT("Ordered"), pof::ProductManager::ORDER_STATE, wxDATAVIEW_CELL_INERT, 100);
-	
-
-	CreateEmptyPanel();
-	bool empty = wxGetApp().mProductManager.GetOrderList()->GetDatastore().empty();
-	mBook->AddPage(mOrderView, wxT("ORDER VIEW"), !empty);
-	mBook->AddPage(mEmpty, wxT("EMPTY"), empty);
-	mBook->Layout();
-	bSizer2->Add( mBook, 1, wxEXPAND, 0 );
-	
-	m_panel3 = new wxPanel( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel3 = new wxPanel( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL |wxNO_BORDER );
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER|wxTAB_TRAVERSAL );
+	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER|wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxHORIZONTAL );
 	
+	bSizer4->AddStretchSpacer();
 	
-	bSizer4->Add( 0, 0, 1, wxEXPAND, 5 );
-	
-	m_staticText1 = new wxStaticText( m_panel4, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1 = new wxStaticText( m_panel4, wxID_ANY, wxT("Total Orders:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1->SetFont(wxFont(wxFontInfo(10).Bold()));
 	m_staticText1->Wrap( -1 );
 	bSizer4->Add( m_staticText1, 0, wxALL, 5 );
 	
-	m_staticText2 = new wxStaticText( m_panel4, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText2 = new wxStaticText( m_panel4, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText2->SetFont(wxFont(wxFontInfo(10)));
 	m_staticText2->Wrap( -1 );
 	bSizer4->Add( m_staticText2, 0, wxALL, 5 );
 	
 	
-	bSizer4->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	m_staticText3 = new wxStaticText( m_panel4, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText3 = new wxStaticText( m_panel4, wxID_ANY, wxT("Order Cost: "), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText3->SetFont(wxFont(wxFontInfo(10).Bold()));
 	m_staticText3->Wrap( -1 );
 	bSizer4->Add( m_staticText3, 0, wxALL, 5 );
 	
-	m_staticText4 = new wxStaticText( m_panel4, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText4 = new wxStaticText(m_panel4, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText4->SetFont(wxFont(wxFontInfo(10)));
 	m_staticText4->Wrap( -1 );
 	bSizer4->Add( m_staticText4, 0, wxALL, 5 );
 	
@@ -88,7 +72,24 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	bSizer3->Fit( m_panel3 );
 	bSizer2->Add( m_panel3, 0, wxEXPAND | wxALL, 0 );
 	
-	
+	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mOrderView = new wxDataViewCtrl(mBook, ID_ORDER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
+	mOrderView->AssociateModel(wxGetApp().mProductManager.GetOrderList().get());
+
+	mProductCol = mOrderView->AppendTextColumn(wxT("Product"), pof::ProductManager::ORDER_PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 500);
+	mQuanCol = mOrderView->AppendTextColumn(wxT("Quantity"), pof::ProductManager::ORDER_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100);
+	m_dataViewColumn3 = mOrderView->AppendTextColumn(wxT("Cost"), pof::ProductManager::ORDER_COST, wxDATAVIEW_CELL_INERT, 100);
+	m_dataViewColumn4 = mOrderView->AppendBitmapColumn(wxT("Ordered"), pof::ProductManager::ORDER_STATE, wxDATAVIEW_CELL_INERT, 100);
+
+
+	CreateEmptyPanel();
+	bool empty = wxGetApp().mProductManager.GetOrderList()->GetDatastore().empty();
+	mBook->AddPage(mOrderView, wxT("ORDER VIEW"), !empty);
+	mBook->AddPage(mEmpty, wxT("EMPTY"), empty);
+	mBook->Layout();
+	bSizer2->Add(mBook, 1, wxEXPAND, 0);
+
+
 	m_panel1->SetSizer( bSizer2 );
 	m_panel1->Layout();
 	bSizer2->Fit( m_panel1 );
@@ -101,6 +102,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	this->Centre( wxBOTH );
 
 	CreateSpeicalCol();
+	UpdateTexts();
 }
 
 pof::OrderListView::~OrderListView()
@@ -199,6 +201,7 @@ void pof::OrderListView::CreateSpeicalCol()
 		auto& cost = datastore[row].first[pof::ProductManager::ORDER_COST];
 		rowQuan = quan;
 		wxGetApp().mProductManager.UpdateOrderList(boost::variant2::get<pof::base::data::duuid_t>(rowid),quan);
+		UpdateTexts();
 		return true;
 	};
 
@@ -241,4 +244,26 @@ void pof::OrderListView::OnRemoveOrder(wxCommandEvent& evt)
 	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
 	wxGetApp().mProductManager.RemvFromOrderList(uid);
 	orderList->RemoveData(item);
+	UpdateTexts();
+}
+
+void pof::OrderListView::UpdateTexts()
+{
+	size_t count = 0;
+	pof::base::currency cur;
+	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+	cur = std::accumulate(datastore.begin(), datastore.end(), cur, [&](const pof::base::currency&, const pof::base::data::row_t& row) {
+		auto& orderAmount = boost::variant2::get<pof::base::currency>(row.first[pof::ProductManager::ORDER_COST]);
+		auto& rowQuan = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_QUANTITY]);
+
+		return(cur = cur + (orderAmount * static_cast<double>(rowQuan)));
+	});
+
+	m_panel4->Freeze();
+	m_staticText2->SetLabel(fmt::format("{:d}", datastore.size()));
+	m_staticText4->SetLabel(fmt::format("{:cu}", cur));
+
+	m_panel4->Layout();
+	m_panel4->Thaw();
+	m_panel4->Refresh();
 }

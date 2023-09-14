@@ -300,7 +300,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 void pof::SaleView::CreateSearchPopup()
 {
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
-	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE}});
+	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE} }, {500, 100});
 	mSearchPopup->sSelectedSignal.connect(std::bind_front(&pof::SaleView::OnSearchPopup, this));
 }
 
