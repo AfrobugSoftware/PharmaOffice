@@ -350,7 +350,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
-	bSizer1->Fit(this);
+	//bSizer1->Fit(this);
 	
 	this->Centre( wxBOTH );
 }

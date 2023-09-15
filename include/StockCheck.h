@@ -21,6 +21,7 @@
 #include <wx/aui/aui.h>
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
+#include <wx/choice.h>
 
 
 namespace pof
@@ -46,6 +47,7 @@ namespace pof
 			wxStaticText* mShortageAmountLabel;
 			wxStaticText* mShortageAmountValue;
 			wxDatePickerCtrl* mStockCheckMonth;
+			wxChoice* mCategorySelect;
 		
 		public:
 			enum {
@@ -53,6 +55,7 @@ namespace pof
 					ID_ADD_PRODUCT,
 					ID_STOCK_DATA,
 					ID_DATE,
+					ID_CATEGORY_SELECT
 
 			};
 
@@ -88,7 +91,7 @@ namespace pof
 			void OnDate(wxDateEvent& evt);
 			void OnDialogInit(wxInitDialogEvent& evt);
 			void OnEditingStarted(wxDataViewEvent& evt);
-
+			void OnCategorySelected(wxCommandEvent& evt);
 			void OnAuiThemeChange();
 			DECLARE_EVENT_TABLE()
 		

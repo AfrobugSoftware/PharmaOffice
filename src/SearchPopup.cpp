@@ -5,7 +5,7 @@ END_EVENT_TABLE()
 
 
 pof::SearchPopup::SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData, const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes)
-: wxPopupTransientWindow(parent){
+: wxPopupTransientWindow(parent, wxBORDER_NONE){
 	mTableModel = new pof::DataModel(ptrData);
 	CreateDataView(colNames, colSizes);
 }

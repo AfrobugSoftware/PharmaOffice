@@ -249,6 +249,7 @@ namespace pof {
 		bool IsStockCheckComplete();
 		void UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
+		void LoadStockDataByCategory(pof::base::data::datetime_t month, std::uint64_t catID);
 
 		using packDescType = std::tuple<pof::base::data::duuid_t,
 			pof::base::data::text_t,

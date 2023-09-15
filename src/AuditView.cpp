@@ -48,8 +48,21 @@ void pof::AuditView::CreateToolBar()
 	choices.push_back("ALL");
 
 	mToolBar->AddSeparator();
+	mToolBar->AddStretchSpacer();
 	mFilterType = new wxChoice(mToolBar, ID_FILTER_TYPE, wxDefaultPosition, wxSize(200, -1), choices);
-	mFilterType->SetBackgroundColour(*wxWHITE);
+	mFilterType->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mFilterType);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = mFilterType->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+	}
+	});
 	auto text = new wxStaticText(mToolBar, wxID_ANY, "Filter: ");
 	text->SetBackgroundColour(*wxWHITE);
 	mToolBar->AddControl(text);
@@ -59,7 +72,6 @@ void pof::AuditView::CreateToolBar()
 	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("action_check"), "Apply selected filter");
 	mToolBar->AddSpacer(10);
 	mToolBar->AddTool(ID_COLOUR_TYPE, "Type Highlight", wxArtProvider::GetBitmap("pen"), "Highlight different audit types", wxITEM_CHECK);
-	mToolBar->AddStretchSpacer();
 	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download"), "Download Audit as EXCEL worksheet");
 
 	mToolBar->Realize();

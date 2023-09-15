@@ -12,7 +12,6 @@ EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
 EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
-EVT_TOOL(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
 EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 EVT_TOOL(pof::ProductView::ID_ORDER_LIST, pof::ProductView::OnShowOrderList)
@@ -33,6 +32,7 @@ EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnC
 EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
 EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
+EVT_MENU(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
 EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
 EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
@@ -509,12 +509,14 @@ void pof::ProductView::OnSelection(wxCommandEvent& evt)
 
 void pof::ProductView::OnShowCostPrice(wxCommandEvent& evt)
 {
-	if (evt.IsChecked()) {
+	static bool clicked = true;
+	if (clicked) {
 		ShowCostPriceColumn();
 	}
 	else {
 		HideCostPriceColumn();
 	}
+	clicked = !clicked;
 }
 
 //move logic to read directly from the database 
@@ -628,7 +630,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
 		auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
 		auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
-		
+		auto scp = menu->Append(ID_SHOW_COST_PRICE, "Show cost price", nullptr);
 
 		PopupMenu(menu);
 	}
@@ -887,9 +889,6 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
-	m_auiToolBar1->AddSeparator();
-
-	m_auiToolBar1->AddTool(ID_SHOW_COST_PRICE, wxEmptyString, wxArtProvider::GetBitmap(wxART_MINUS, wxART_TOOLBAR), "Product cost price", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));

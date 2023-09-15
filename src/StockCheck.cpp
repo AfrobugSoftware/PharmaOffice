@@ -4,6 +4,7 @@
 BEGIN_EVENT_TABLE(pof::StockCheck, wxDialog)
 EVT_TOOL(pof::StockCheck::ID_ADD_PRODUCT, pof::StockCheck::OnAddProduct)
 EVT_DATE_CHANGED(pof::StockCheck::ID_DATE, pof::StockCheck::OnDate)
+EVT_CHOICE(pof::StockCheck::ID_CATEGORY_SELECT, pof::StockCheck::OnCategorySelected)
 //EVT_INIT_DIALOG(pof::StockCheck::OnInitDialog)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnEditingStarted)
 END_EVENT_TABLE()
@@ -98,7 +99,32 @@ void pof::StockCheck::CreateToolBar()
 	mTools->AddStretchSpacer();
 	mTools->AddSeparator();
 	mTools->AddSpacer(5);
-	
+
+	auto& category = wxGetApp().mProductManager.GetCategories();
+	wxArrayString choices;
+
+	for (auto& value : category){
+		choices.push_back(boost::variant2::get<pof::base::data::text_t>(value.first[pof::ProductManager::CATEGORY_NAME]));
+	}
+	mCategorySelect = new wxChoice(mTools, ID_CATEGORY_SELECT, wxDefaultPosition, wxSize(200, -1), choices);
+	mCategorySelect->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mCategorySelect);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = mCategorySelect->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+	}
+	});
+	mTools->AddControl(mCategorySelect, "Select Category");
+	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap("pen"));
+	this->Bind(wxEVT_TOOL, [&](wxCommandEvent& evt) {
+		
+	}, wxID_RESET);
 	mStockCheckMonth = new wxDatePickerCtrl(mTools, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mTools->AddControl(mStockCheckMonth, "Stock Check Month");
 	mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"));
@@ -304,6 +330,23 @@ void pof::StockCheck::OnEditingStarted(wxDataViewEvent& evt)
 	val.SetMin(0);
 	val.SetMax(10000);
 	Ctrl->SetValidator(val);
+}
+
+void pof::StockCheck::OnCategorySelected(wxCommandEvent& evt)
+{
+	int sel = evt.GetSelection();
+	if (sel == wxNOT_FOUND) return;
+	auto& data = wxGetApp().mProductManager.GetCategories();
+	std::string value = mCategorySelect->GetStringSelection().ToStdString();
+	auto iter = std::ranges::find_if(data, [&](const pof::base::data::row_t& row) -> bool {
+		return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == value);
+	});
+	if (iter == data.end()) return;
+	std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::CATEGORY_ID]);
+	mStockData->Freeze();
+	wxGetApp().mProductManager.LoadStockDataByCategory(pof::base::data::clock_t::now(), id);
+	mStockData->Thaw();
+	mStockData->Refresh();
 }
 
 void pof::StockCheck::OnAuiThemeChange()

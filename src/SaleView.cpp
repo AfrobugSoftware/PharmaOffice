@@ -224,6 +224,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	this->Layout();
 	bSizer1->Fit(this);
 
+	wxGetApp().mProductManager.GetProductData()->ConnectSlot(std::bind_front(&pof::SaleView::OnProductUpdate, this), pof::DataModel::Signals::UPDATE);
+
 	SetupDropTarget();
 	CreateSpecialColumnHandlers();
 	CreateSearchPopup();
@@ -300,7 +302,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 void pof::SaleView::CreateSearchPopup()
 {
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
-	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE} }, {500, 100});
+	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE} }, {275, 100});
 	mSearchPopup->sSelectedSignal.connect(std::bind_front(&pof::SaleView::OnSearchPopup, this));
 }
 
@@ -308,8 +310,8 @@ void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
 	productName = new wxStringProperty("PRODUCT NAME");
-	strength = new wxStringProperty("STRENGTH");
-	strength_type = new wxStringProperty("STRENGTH UNIT");
+	strength = new wxStringProperty("UNIT STRENGTH");
+	strength_type = new wxStringProperty("STRENGTH TYPE");
 	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
 	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
 	stock = new wxIntProperty("CURRENT STOCK");
@@ -508,7 +510,7 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	mSearchPopup->CaptureFocus();
 	mSearchPopup->Popup();
 	mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
-
+	mSearchPopup->SetFocus();
 }
 
 void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
@@ -980,7 +982,7 @@ void pof::SaleView::ProductNameKeyEvent()
 		spdlog::info("{:d} Key code", evt.GetKeyCode());
 		if (evt.GetKeyCode() == WXK_DOWN) {
 			spdlog::info("Setting focus");
-			mSearchPopup->SetFocus();
+			mSearchPopup->CaptureFocus();
 		}
 		else {
 			evt.Skip();
@@ -1008,12 +1010,37 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 		strength->SetValue(stren);
 
 		auto& stren_type = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
-		strength->SetValue(stren_type);
+		strength_type->SetValue(stren_type);
 
 	}
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());
 	}
 }
+
+void pof::SaleView::OnProductUpdate(pof::base::data::const_iterator prop)
+{
+	auto& sett = prop->second.second;
+	auto& saleData = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+	auto iter = std::ranges::find_if(saleData, [&](const pof::base::data::row_t& row) -> bool {
+		return (boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::SaleManager::PRODUCT_UUID]) == 
+		boost::variant2::get<pof::base::data::duuid_t>(prop->first[pof::ProductManager::PRODUCT_UUID]));
+	});
+	if (iter == saleData.end()) return;
+	auto& s = iter->first;
+	auto& p = prop->first;
+
+	m_dataViewCtrl1->Freeze();
+	if (sett.test(pof::ProductManager::PRODUCT_NAME)){
+		s[pof::SaleManager::PRODUCT_NAME] = p[pof::ProductManager::PRODUCT_NAME];
+	}
+	else if (sett.test(pof::ProductManager::PRODUCT_UNIT_PRICE)) {
+		s[pof::SaleManager::PRODUCT_PRICE] = p[pof::ProductManager::PRODUCT_UNIT_PRICE];
+	}
+
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Refresh();
+}
+
 
 

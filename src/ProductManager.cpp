@@ -1644,6 +1644,38 @@ bool pof::ProductManager::InsertProductInStockCheck(const pof::base::data::duuid
 	return false;
 }
 
+void pof::ProductManager::LoadStockDataByCategory(pof::base::data::datetime_t m, std::uint64_t catID)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, sc.check_stock, sc.status
+		FROM products p, stock_check sc
+		WHERE  Months(sc.date) = ? AND p.category = ? AND p.uuid = sc.prod_uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month), catID));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t, // product uuid
+			pof::base::data::text_t, //product name
+			std::uint64_t, //currenct stock
+			std::uint64_t, //checked stock
+			std::uint64_t //status
+		>(*stmt);
+		auto& value = rel.value();
+		mStockCheckData->Clear();
+		for (auto& tup : value) {
+			pof::base::data::row_t row;
+			row.first = std::move(pof::base::make_row_from_tuple(tup));
+			mStockCheckData->EmplaceData(std::move(row));
+		}
+	}
+}
+
 void pof::ProductManager::CreatePackTable()
 {
 	if (mLocalDatabase) {

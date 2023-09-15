@@ -150,6 +150,7 @@ namespace pof
 		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);
+		void OnProductUpdate(pof::base::data::const_iterator iter);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
