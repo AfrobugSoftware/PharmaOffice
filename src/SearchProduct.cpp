@@ -184,6 +184,10 @@ const std::vector<std::reference_wrapper<pof::base::data::row_t>>
 
 void pof::SearchProduct::OnAddProduct(wxCommandEvent& evt)
 {
+	if (mSelectedProduct == wxNOT_FOUND) {
+		wxMessageBox("No product selected to add, please select one", "SEARCH PRODUCT", wxICON_WARNING | wxOK);
+		return;
+	}
 	EndModal(wxID_OK);
 }
 void pof::SearchProduct::OnHeaderClicked(wxDataViewEvent& evt)

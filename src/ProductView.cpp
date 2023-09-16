@@ -671,7 +671,8 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 
 	//the actual markup should come from the settings of the pharmaoffice
-	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& row = datastore[idx];
 	auto& v = row.first;
 	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
 	wxGetApp().mProductManager.MarkUpProducts(uid, 0.3); //30% mark up for texts
@@ -679,6 +680,12 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	wxGetApp().mProductManager.RefreshRowFromDatabase(uid, row);
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Update();
+
+
+	//FIX THE OVERWRITE
+	row.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+
 }
 
 void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
@@ -715,10 +722,11 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 
 	int idx = std::distance(DataStore.begin(), Iter);
 	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
-
 	DataStore.set_state(idx,pof::base::data::state::MODIFIED);
-	wxDataViewItem i{ reinterpret_cast<void*>(++idx) };
-	DatModelptr->AddAttr(i, mUpdatedAttr); //set timer to remove attribute
+	
+	std::string& name = boost::variant2::get<pof::base::data::text_t>(Iter->first[pof::ProductManager::PRODUCT_NAME]);
+	mInfoBar->ShowMessage(fmt::format("{} is updated sucessfully", name), wxICON_INFORMATION);
+
 }
 
 //remove this one, use only activated 

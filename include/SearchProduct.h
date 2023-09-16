@@ -42,7 +42,7 @@ namespace pof {
 
 		//id, name, price
 		pof::DataModel* mModel;
-		size_t mSelectedProduct;
+		int mSelectedProduct = -1;
 
 		std::set<size_t> mSelectedProducts;
 	public:

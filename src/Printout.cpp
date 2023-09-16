@@ -59,11 +59,27 @@ bool pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxStri
 	dc->DrawText(addy, xPos, yPos);
 
 	//print contact
+	std::string contact = app.MainPharmacy->GetContactAsString();
+	yPos += yExtent + border;
+	dc->GetTextExtent(contact, &xExtent, &yExtent);
+	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->SetFont(wxFont(wxFontInfo(8)));
+	dc->DrawText(contact, xPos, yPos);
 
+	yPos += yExtent;
 
 	dc->SetPen(*wxBLACK_PEN);
-	dc->DrawLine(leftMarginLogical, topMarginLogical + yPos + border,
-		rightMarginLogical, topMarginLogical + yPos + border);
+	dc->DrawLine(leftMarginLogical, yPos + border,
+		rightMarginLogical, yPos + border);
+
+	//draw titile
+	const std::string title = "INVOICE";
+	dc->GetTextExtent(title, &xExtent, &yExtent);
+	yPos += border;
+	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+
+	dc->SetFont(wxFont(wxFontInfo(12).Bold()));
+	dc->DrawText(title, xPos, yPos);
 
 	dc->SetDeviceOrigin(xPos, yPos + topMarginLogical + (border * 2)); //set the origin for the ext
 	return true;
@@ -83,9 +99,19 @@ bool pof::Printout::WriteSaleData(double mmToLogical)
 	int border = 5;
 	int xPos = 0, yPos = 0, xExtent = 0, yExtent = 0;
 	int lineLength = rightMarginLogical - leftMarginLogical;
+	int lineHeight = 0;
 
 	for (auto& v : saleData->GetDatastore())
 	{
+
+
+
+	/*	int yPos = yExtent + border + topMarginLogical;
+		dc->GetTextExtent(addy, &xExtent, &yExtent);
+		xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+		dc->DrawText(addy, xPos, yPos);*/
+
+
 		
 	}
 

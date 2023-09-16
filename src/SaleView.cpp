@@ -1036,10 +1036,14 @@ void pof::SaleView::OnProductUpdate(pof::base::data::const_iterator prop)
 	}
 	else if (sett.test(pof::ProductManager::PRODUCT_UNIT_PRICE)) {
 		s[pof::SaleManager::PRODUCT_PRICE] = p[pof::ProductManager::PRODUCT_UNIT_PRICE];
+		s[pof::SaleManager::PRODUCT_EXT_PRICE] = (boost::variant2::get<pof::base::currency>(p[pof::ProductManager::PRODUCT_UNIT_PRICE]) *
+		static_cast<double>(boost::variant2::get<std::uint64_t>(s[pof::SaleManager::PRODUCT_QUANTITY])));
 	}
 
+	LoadProductDetails(*prop);
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Refresh();
+	UpdateSaleDisplay();
 }
 
 
