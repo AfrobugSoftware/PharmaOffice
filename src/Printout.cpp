@@ -32,7 +32,7 @@ void pof::Printout::GetPageInfo(int* minPage, int* maxPage, int* selPageFrom, in
 {
 }
 
-bool pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
+size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
 {
 	auto& app = wxGetApp();
 	int pageWidthMM, pageHeightMM;
@@ -63,29 +63,59 @@ bool pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxStri
 	yPos += yExtent + border;
 	dc->GetTextExtent(contact, &xExtent, &yExtent);
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->SetFont(wxFont(wxFontInfo(8)));
+	dc->SetFont(wxFont(wxFontInfo(10)));
 	dc->DrawText(contact, xPos, yPos);
 
-	yPos += yExtent;
 
-	dc->SetPen(*wxBLACK_PEN);
+
+	dc->SetFont(mBodyFont);
+	
+	//date/time
+	yPos += yExtent + border;
+	wxRect rect(leftMarginLogical, yPos, (rightMarginLogical - leftMarginLogical), yExtent);
+	pof::base::data::datetime_t& date = boost::variant2::get<pof::base::data::datetime_t>(
+			(wxGetApp().mSaleManager.GetSaleData()->GetDatastore().begin())->first[pof::SaleManager::SALE_DATE]);
+
+	dc->DrawLabel(fmt::format("Date/Time: {:%Y-%m-%d %H:%M:%S}", date), rect, wxALIGN_LEFT);
+
+	//account name and status
+	yPos += yExtent + border;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos));
+	auto& acc = wxGetApp().MainAccount;
+	std::string accName = fmt::format("{}, {} {}", acc->GetAccountTypeString(), acc->lastname, acc->name);
+	dc->DrawLabel(accName, rect, wxALIGN_LEFT);
+
+	//sale id
+	yPos += yExtent + border;
+	pof::base::data::duuid_t& d = boost::variant2::get<pof::base::data::duuid_t>(
+		(wxGetApp().mSaleManager.GetSaleData()->GetDatastore().begin())->first[pof::SaleManager::SALE_UUID]);
+	std::stringstream os;
+	os << d;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos));
+	dc->DrawLabel(fmt::format("Receipt id: {}", os.str()), rect, wxALIGN_LEFT);
+
+	yPos += yExtent + border;
+
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
 	dc->DrawLine(leftMarginLogical, yPos + border,
 		rightMarginLogical, yPos + border);
+	dc->DrawLine(leftMarginLogical, yPos + border + 5,
+		rightMarginLogical, yPos + border + 5);
 
 	//draw titile
 	const std::string title = "INVOICE";
+	dc->SetFont(wxFont(wxFontInfo(14).Bold()));
 	dc->GetTextExtent(title, &xExtent, &yExtent);
-	yPos += border;
+	yPos += border + 20;
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-
-	dc->SetFont(wxFont(wxFontInfo(12).Bold()));
 	dc->DrawText(title, xPos, yPos);
 
-	dc->SetDeviceOrigin(xPos, yPos + topMarginLogical + (border * 2)); //set the origin for the ext
-	return true;
+	yPos += yExtent + border + 20;
+
+	return yPos;
 }
 
-bool pof::Printout::WriteSaleData(double mmToLogical)
+size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 {
 	wxDC* dc = GetDC();
 	auto& saleData = wxGetApp().mSaleManager.GetSaleData();
@@ -97,26 +127,65 @@ bool pof::Printout::WriteSaleData(double mmToLogical)
 	int topMarginLogical = int(mmToLogical * topMargin);
 	int rightMarginLogical = int(mmToLogical * (pageWidthMM - rightMargin));
 	int border = 5;
-	int xPos = 0, yPos = 0, xExtent = 0, yExtent = 0;
+	int xPos = 0, yPos = y, xExtent = 0, yExtent = 18;
 	int lineLength = rightMarginLogical - leftMarginLogical;
-	int lineHeight = 0;
+	int lineHeight = 18;
 
-	for (auto& v : saleData->GetDatastore())
+	dc->SetFont(mBodyFont);
+	wxRect rect(leftMarginLogical, yPos, lineLength, lineHeight);
+	pof::base::currency totalAmount;
+	for (auto& r : saleData->GetDatastore())
 	{
-
-
-
-	/*	int yPos = yExtent + border + topMarginLogical;
-		dc->GetTextExtent(addy, &xExtent, &yExtent);
-		xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-		dc->DrawText(addy, xPos, yPos);*/
-
-
+		auto& v = r.first;
+		pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(v[pof::SaleManager::PRODUCT_NAME]);
+		pof::base::data::currency_t& amount = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_EXT_PRICE]);
+		std::uint64_t quantity = boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
 		
+		dc->DrawLabel(fmt::to_string(quantity), rect, wxALIGN_LEFT);
+		dc->DrawLabel(name, rect, wxALIGN_CENTER);
+		dc->DrawLabel(fmt::format("{:cu}", amount), rect, wxALIGN_RIGHT);
+
+
+		totalAmount += amount;
+		yPos += lineHeight + 2;
+		rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
 	}
 
+	//footer
+	yPos += lineHeight;
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(leftMarginLogical, yPos + border,
+		rightMarginLogical, yPos + border);
+	dc->DrawLine(leftMarginLogical, yPos + border + 5,
+		rightMarginLogical, yPos + border + 5);
+	dc->SetFont(wxFontInfo(14).Bold());
+	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
+	dc->GetTextExtent(totalA, &xExtent, &yExtent);
+	yPos += border + 20;
+	wxRect TotalRect(leftMarginLogical, yPos + border,  lineLength, yExtent);
 
-	return false;
+	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
+
+	yPos += yExtent + border;
+	dc->SetFont(mBodyFont);
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(leftMarginLogical, yPos + border + 5,
+		rightMarginLogical, yPos + border + 5);
+	dc->GetTextExtent(mFooterMessage, &xExtent, &yExtent);
+	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->DrawText(mFooterMessage, xPos, yPos + border + 20);
+
+
+	//
+	yPos += yExtent + border;
+	dc->SetFont(wxFontInfo(8).Bold().Italic());
+	std::string copyRight = "Powered by PharmaOffice";
+	dc->GetTextExtent(copyRight, &xExtent, &yExtent);
+	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->DrawText(copyRight, xPos, yPos + border + 20);
+
+
+	return yPos;
 }
 
 bool pof::Printout::DrawSalePrint()
@@ -146,8 +215,8 @@ bool pof::Printout::DrawSalePrint()
 	dc->SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 	dc->SetBrush(*wxTRANSPARENT_BRUSH);
 	//calculate the length of a line
-	WritePageHeader(this, dc, app.MainPharmacy->name, logUnitsFactor);
-	WriteSaleData(logUnitsFactor);
+	int y = WritePageHeader(this, dc, app.MainPharmacy->name, logUnitsFactor);
+	WriteSaleData(logUnitsFactor, y);
 
 
 	return false;

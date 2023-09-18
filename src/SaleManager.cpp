@@ -198,7 +198,6 @@ bool pof::SaleManager::StoreSale()
 		rel.reserve(datastore.size());
 
 		try {
-			auto saleDate = pof::base::data::clock_t::now();
 			for (auto& sale : datastore) {
 				auto& v = sale.first;
 				rel.emplace_back(
@@ -207,7 +206,7 @@ bool pof::SaleManager::StoreSale()
 						boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]),
 						boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]),
 						boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]),
-						saleDate,
+						boost::variant2::get<pof::base::data::datetime_t>(v[SALE_DATE]),
 						mCurPaymentType));
 			}
 			bool status = mLocalDatabase->store(mStoreSale, std::move(rel));

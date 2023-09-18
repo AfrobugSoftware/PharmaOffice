@@ -35,6 +35,8 @@ void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 {
 	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
 	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	po->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
+	po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	Preview(parent, po, po2);
 }
 
@@ -70,9 +72,9 @@ void pof::PrintManager::Preview(wxWindow* parent,wxPrintout* previewout, wxPrint
 	}
 
 	wxPreviewFrame* frame = new wxPreviewFrame(preview, parent,
-		wxT("Label Print Preview"), wxDefaultPosition, wxDefaultSize);
+		wxT("Label Print Preview"), wxDefaultPosition, wxSize(878, 689));
 	frame->Centre(wxBOTH);
 	frame->Initialize();
-	frame->Show(true);
+	frame->Show();
 }
 

@@ -413,13 +413,15 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 		mDataPane->Refresh();
 	}
 	ResetSaleDisplay();
+	mCurSaleuuid = boost::uuids::nil_uuid();
+
 }
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 {
 	//sale dialog
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
-	const pof::base::data& dataStore = model->GetDatastore();
+	pof::base::data& dataStore = model->GetDatastore();
 	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
 	if (dataStore.empty()) return;
 	pof::base::currency totalAmount;
@@ -435,12 +437,14 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		spdlog::error(exp.what());
 		return;
 	}
-	//update the stocks of the sold items
+	//update the stocks of the sold items, set date
+	auto now = pof::base::data::clock_t::now();
 	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
 	quans.reserve(dataStore.size());
 
 	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	std::ranges::for_each(dataStore, [&](const pof::base::data::row_t& r) {
+	for (pof::base::data::row_t& r : dataStore) {
+		r.first[pof::SaleManager::SALE_DATE] = now;
 		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::SaleManager::PRODUCT_UUID]);
 		auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
 			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
@@ -451,7 +455,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
 			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
 		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
-	});
+	};
 	
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
@@ -459,15 +463,15 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	//Print receipt
 	wxGetApp().mPrintManager->PrintSaleReceipt(this);
 
-
-	model->Clear();
-	if (mPropertyManager->IsShown()) {
-		mPropertyManager->Hide();
-		mDataPane->Layout();
-		mDataPane->Refresh();
-	}
-	ResetSaleDisplay();
-	mCurSaleuuid = boost::uuids::nil_uuid();
+	//to put back when testing is over
+	//model->Clear();
+	//if (mPropertyManager->IsShown()) {
+	//	mPropertyManager->Hide();
+	//	mDataPane->Layout();
+	//	mDataPane->Refresh();
+	//}
+	//ResetSaleDisplay();
+	//mCurSaleuuid = boost::uuids::nil_uuid();
 
 
 	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
