@@ -147,7 +147,13 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
 
+	mWarnings = m_propertyGridPage1->Append(new wxArrayStringProperty(wxT("WARNINGS"), wxPG_LABEL));
+	m_propertyGridPage1->SetPropertyHelpString(mWarnings, wxT("Warning associated with this product"));
 
+	mWarningsLevel = m_propertyGridPage1->Append(new wxArrayStringProperty(wxT("WARNINGS LEVEL"), wxPG_LABEL));
+	m_propertyGridPage1->SetPropertyHelpString(mWarningsLevel, wxT("The level of the warning"));
+
+	
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
 	m_panel2->SetSize(wxSize(400, -1));
 	m_panel2->SetSizer( bSizer3 );

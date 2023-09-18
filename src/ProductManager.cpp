@@ -1995,6 +1995,93 @@ bool pof::ProductManager::ExistsInPack(const pof::base::data::duuid_t& packID,co
 	return false;
 }
 
+bool pof::ProductManager::CreateWarningTable()
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS warning (prod_uuid blob, level integer, message text);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::InsertWarning(const pof::base::data::duuid_t* pid, size_t level, const std::string& message)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO warning (prod_uuid, level, message) VALUES (?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, level, message));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+std::optional<std::vector<std::pair<size_t, std::string>>> pof::ProductManager::GetWarning(const pof::base::data::duuid_t& pid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT level, message FROM warning WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t,
+			pof::base::data::text_t
+		>(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		std::vector<std::pair<size_t, std::string>> ret;
+		ret.reserve(rel->size());
+
+		for (const auto& tup : rel.value()){
+			ret.emplace_back(std::make_pair(std::get<0>(tup), std::move(std::get<1>(tup))));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+
+bool pof::ProductManager::RemoveWarning(const pof::base::data::duuid_t& pid, const std::string& message)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM warning WHERE prod_uuid = ? AND message LIKE ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, message));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+	return false;
+}
+
 void pof::ProductManager::Finialize()
 {
 	if (bUsingLocalDatabase) {

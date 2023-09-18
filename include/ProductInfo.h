@@ -79,6 +79,8 @@ namespace pof
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
+			wxPGProperty* mWarnings;
+			wxPGProperty* mWarningsLevel;
 			wxDatePickerCtrl* mInventoryDate;
 			double mStubPrice;
 			wxPGChoices ProductClassChoices;
@@ -161,7 +163,7 @@ namespace pof
 
 		void LoadInventoryByDate(const pof::base::data::datetime_t& dt);
 		void LoadHistoryByDate(const pof::base::data::datetime_t& dt);
-
+		void UpdateWarnings();
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;

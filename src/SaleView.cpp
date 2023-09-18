@@ -459,7 +459,6 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
-	wxGetApp().mSaleManager.DoPrintReceipt(totalAmount);
 	//Print receipt
 	wxGetApp().mPrintManager->PrintSaleReceipt(this);
 
@@ -474,7 +473,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	//mCurSaleuuid = boost::uuids::nil_uuid();
 
 
-	wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
+	//wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
 }
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
