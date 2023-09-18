@@ -10,6 +10,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
+	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
@@ -41,6 +42,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bitset.set(5);
 	mShowAddInfo->SetState(bitset.to_ulong());
 
+	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Product Warnings"), wxArtProvider::GetBitmap("action_remove"), "Warnings associated with this product", wxITEM_NORMAL);
 	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Product History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->AddStretchSpacer();
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
@@ -146,12 +148,6 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	val.SetRange(0, 999999999999);
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
-
-	mWarnings = m_propertyGridPage1->Append(new wxArrayStringProperty(wxT("WARNINGS"), wxPG_LABEL));
-	m_propertyGridPage1->SetPropertyHelpString(mWarnings, wxT("Warning associated with this product"));
-
-	mWarningsLevel = m_propertyGridPage1->Append(new wxArrayStringProperty(wxT("WARNINGS LEVEL"), wxPG_LABEL));
-	m_propertyGridPage1->SetPropertyHelpString(mWarningsLevel, wxT("The level of the warning"));
 
 	
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
@@ -691,6 +687,13 @@ void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
 	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
 
 	PopupMenu(menu);
+}
+
+void pof::ProductInfo::OnWarnings(wxCommandEvent& evt)
+{
+	pof::Warning warn(this);
+	warn.LoadWarnings(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
+	warn.ShowModal();
 }
 
 void pof::ProductInfo::RemovePropertyModification()

@@ -282,7 +282,7 @@ namespace pof {
 
 		//warning system
 		bool CreateWarningTable();
-		bool InsertWarning(const pof::base::data::duuid_t* pid, size_t level, const std::string& message);
+		bool InsertWarning(const pof::base::data::duuid_t& pid, size_t level, const std::string& message);
 		std::optional<std::vector<std::pair<size_t, std::string>>> GetWarning(const pof::base::data::duuid_t& pid);
 		bool RemoveWarning(const pof::base::data::duuid_t& pid, const std::string& message); //uses both as the key
 

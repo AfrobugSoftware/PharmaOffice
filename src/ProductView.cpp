@@ -630,9 +630,10 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
 		auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
 		auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
-		auto scp = menu->Append(ID_SHOW_COST_PRICE, "Show cost price", nullptr);
+		auto scp = menu->AppendCheckItem(ID_SHOW_COST_PRICE, "Show cost price",wxT("Show the cost price for each product"));
 
-		PopupMenu(menu);
+	
+		m_auiToolBar1->PopupMenu(menu);
 	}
 }
 

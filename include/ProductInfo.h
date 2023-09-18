@@ -32,6 +32,7 @@
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
 #include "InventoryDialog.h"
+#include "WarningViewDialog.h"
 
 namespace pof
 {
@@ -79,8 +80,6 @@ namespace pof
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
-			wxPGProperty* mWarnings;
-			wxPGProperty* mWarningsLevel;
 			wxDatePickerCtrl* mInventoryDate;
 			double mStubPrice;
 			wxPGChoices ProductClassChoices;
@@ -119,6 +118,7 @@ namespace pof
 				ID_SHOW_PRODUCT_SALE_HISTORY,
 				ID_DATE,
 				ID_INVEN_MENU_REMOVE,
+				ID_WARNINGS = 9000,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -155,6 +155,7 @@ namespace pof
 		void OnDateChange(wxDateEvent& evt);
 		void OnRemoveInventory(wxCommandEvent& evt);
 		void OnInvenContextMenu(wxDataViewEvent& evt);
+		void OnWarnings(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;

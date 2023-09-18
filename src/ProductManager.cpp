@@ -2012,7 +2012,7 @@ bool pof::ProductManager::CreateWarningTable()
 	return false;
 }
 
-bool pof::ProductManager::InsertWarning(const pof::base::data::duuid_t* pid, size_t level, const std::string& message)
+bool pof::ProductManager::InsertWarning(const pof::base::data::duuid_t& pid, size_t level, const std::string& message)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(INSERT INTO warning (prod_uuid, level, message) VALUES (?,?,?);)";
