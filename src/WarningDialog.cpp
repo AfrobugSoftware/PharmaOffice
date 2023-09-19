@@ -70,6 +70,12 @@ pof::Warning::Warning( wxWindow* parent, wxWindowID id, const wxString& title, c
 	bSizer7 = new wxBoxSizer( wxVERTICAL );
 	
 	mWarningView = new wxListCtrl( m_panel6, ID_WARN_VIEW, wxDefaultPosition, wxDefaultSize, wxLC_HRULES|wxLC_REPORT|wxLC_VRULES|wxNO_BORDER );
+	//mWarningView->EnableAlternateRowColours(true);
+	wxItemAttr attr;
+	attr.SetBackgroundColour(*wxBLACK);
+	attr.SetFont(wxFontInfo(12).Bold());
+	mWarningView->SetHeaderAttr(attr);
+	
 	bSizer7->Add( mWarningView, 1, wxALL|wxEXPAND, 2 );
 	
 	
@@ -133,8 +139,14 @@ void pof::Warning::OnContextMenu(wxListEvent& evt)
 {
 	wxMenu* menu = new wxMenu;
 	auto rmv = menu->Append(wxID_REMOVE, "Remove", nullptr);
-	auto change = menu->Append(ID_CHANGE_LEVEL, "Change Level", nullptr);
+	wxMenu* submenu = new wxMenu;
+	submenu->Append(0, "WARN", nullptr);
+	submenu->Bind(wxEVT_MENU, std::bind_front(&pof::Warning::OnChangeLevel, this), 0);
 
+	submenu->Append(1, "CRITICAL", nullptr);
+	submenu->Bind(wxEVT_MENU, std::bind_front(&pof::Warning::OnChangeLevel, this), 1);
+
+	auto change = menu->Append(ID_CHANGE_LEVEL, "Change Level", submenu);
 	mWarningView->PopupMenu(menu);
 }
 
@@ -151,14 +163,28 @@ void pof::Warning::OnRemove(wxCommandEvent& evt)
 void pof::Warning::OnChangeLevel(wxCommandEvent& evt)
 {
 	//maybe you should remove and add back
-	std::string levelText = mWarningView->GetItemText(mItem.GetId(), 1).ToStdString();
-	size_t level;
-	if (levelText == "WARN") {
-		level = 0;
+	int level = evt.GetId();
+	mWarningView->Freeze();
+	wxListItem item;
+	item.SetColumn(1);
+	item.SetId(mItem.GetId());
+	switch (level)
+	{
+	case pof::ProductManager::SIMPLE:
+		item.SetText("WARN");
+		break;
+	case pof::ProductManager::CRITICAL:
+		item.SetText("CRITICAL");
+		break;
+	default:
+		break;
 	}
-	else if (levelText == "CRITICAL") {
-		level = 1;
-	}
+	item.SetMask(wxLIST_MASK_TEXT);
+	mWarningView->SetItem(item);
+
+	mWarningView->Thaw();
+	mWarningView->Refresh();
+	wxGetApp().mProductManager.UpdateWarnLevel(mPuid, level);	
 }
 
 void pof::Warning::OnItemSelected(wxListEvent& evt)

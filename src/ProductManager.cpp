@@ -2073,10 +2073,30 @@ bool pof::ProductManager::RemoveWarning(const pof::base::data::duuid_t& pid, con
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);
-		mLocalDatabase->finalise(*stmt);
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE warning SET level = ? WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(level, pid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
 		return status;
 	}
 	return false;

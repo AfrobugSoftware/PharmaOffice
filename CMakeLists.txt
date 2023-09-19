@@ -23,6 +23,27 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/base)
 add_subdirectory(${PROJECT_SOURCE_DIR}/formulary)
 
+#wxWidget external
+add_subdirectory(thirdparty)
+
+include(ExternalProject)
+ExternalProject_Add(${PROJECT_NAME}_core
+  DEPENDS
+  wxWidgets_external
+  SOURCE_DIR
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  CMAKE_ARGS
+  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+
+  -DwxWidgets_ROOT_DIR=${wxWidgets_ROOT_DIR}
+  -DENV_WX_CONFIG=${ENV_WX_CONFIG}
+  CMAKE_CACHE_ARGS
+  -DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}
+  BUILD_ALWAYS
+  1
+  INSTALL_COMMAND
+  ""
+)
 
 add_executable(pharmaoffice ${APP} ${incs} ${srcs})
 add_definitions(${CONAN_DEFINES})

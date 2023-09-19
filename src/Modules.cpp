@@ -276,7 +276,7 @@ void pof::Modules::CreateTree()
 
 
 	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 3);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
 	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
 	
