@@ -1,5 +1,4 @@
 #include "AuditView.h"
-//#include "Application.h"
 #include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::AuditView, wxPanel)

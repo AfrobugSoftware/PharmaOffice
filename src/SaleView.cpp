@@ -90,8 +90,13 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxHORIZONTAL);
 
+
+	wxPanel* panel = new wxPanel(mDataPane, wxID_ANY);
+	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+	mInfoBar = new wxInfoBar(panel, wxID_ANY);
 	
-	m_dataViewCtrl1 = new wxDataViewCtrl(mDataPane, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
+	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
 
 
@@ -105,8 +110,15 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mPropertyManager->Hide();
 	CreateProductDetails();
 
-	bSizer6->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
-	bSizer6->Add(mPropertyManager, wxSizerFlags().Expand().Border(wxALL, 2));
+	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
+	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
+
+	panel->SetSizer(sizer);
+	panel->Layout();
+	sizer->Fit(panel);
+
+	bSizer6->Add(panel, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
+	bSizer6->Add(mPropertyManager, wxSizerFlags().Expand().Border(wxALL, 0));
 
 	mDataPane->SetSizer(bSizer6);
 	mDataPane->Layout();
@@ -317,10 +329,10 @@ void pof::SaleView::CreateProductDetails()
 	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
 	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
 	stock = new wxIntProperty("CURRENT STOCK");
-	warning = new wxStringProperty("WARNING");
+	warning = new wxArrayStringProperty("WARNING");
 
 	stock->Enable(false);
-	warning->Enable(false);
+	//warning->Enable(false);
 		
 	mPropertyManager->Append(productName);
 	mPropertyManager->Append(strength);
@@ -683,6 +695,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<6>(prod);
 
+			CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::PRODUCT_UUID]));
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		UpdateSaleDisplay();
@@ -770,6 +783,7 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
 		}
+		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
 	}
 	else {
@@ -831,6 +845,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
+		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
 
 		mProductNameValue->Clear(); 
@@ -908,6 +923,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
+		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
 
 		mScanProductValue->Clear();
@@ -936,6 +952,33 @@ bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)
 		spdlog::error(exp.what());
 		return false;
 	}
+}
+
+bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
+{
+	auto warns = wxGetApp().mProductManager.GetWarning(pid);
+	if (!warns) {
+		return false;
+	}
+	wxArrayString values;
+	std::vector<std::string> mCritical;
+	values.reserve(warns->size());
+	mCritical.reserve(warns->size());
+	for (auto& tup : *warns){
+		values.push_back(std::get<1>(tup));
+		if (std::get<0>(tup) == pof::ProductManager::CRITICAL){
+			mCritical.emplace_back(std::get<1>(tup));
+		}
+	}
+	values.Shrink();
+	mCritical.shrink_to_fit();
+	if(!values.empty()) warning->SetValue(wxVariant(std::move(values)));
+	if (!mCritical.empty()) {
+		auto colorbg = mInfoBar->GetBackgroundColour();
+		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(mCritical, "\n")), wxICON_WARNING);
+	}
+
+	return true;
 }
 
 bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
@@ -1016,6 +1059,8 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 
 		auto& stren_type = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
 		strength_type->SetValue(stren_type);
+
+		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 
 	}
 	catch (std::exception& exp) {

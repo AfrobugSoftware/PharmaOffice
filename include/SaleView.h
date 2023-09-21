@@ -74,6 +74,8 @@ namespace pof
 		pof::base::database::stmt_t mExpiredStatement = nullptr;
 		std::string mCurPack;
 		pof::base::data::duuid_t mCurPackID;
+		wxInfoBar* mInfoBar = nullptr;
+
 
 		//product properties
 		wxStringProperty* productName = nullptr;
@@ -82,7 +84,7 @@ namespace pof
 		wxIntProperty* stock = nullptr;
 		wxStringProperty* strength = nullptr;
 		wxStringProperty* strength_type = nullptr;
-		wxStringProperty* warning = nullptr;
+		wxArrayStringProperty* warning = nullptr;
 
 
 
@@ -145,6 +147,7 @@ namespace pof
 		void OnScanBarCode(wxCommandEvent& evt);
 	
 		bool CheckInStock(const pof::base::data::row_t& product);
+		bool CheckProductWarning(const pof::base::data::duuid_t& pid);
 		bool CheckProductClass(const pof::base::data::row_t& product);
 		bool CheckExpired(const pof::base::data::row_t& product);
 		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
