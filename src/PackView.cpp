@@ -1,5 +1,6 @@
 #include "PackView.h"
-#include "Application.h"
+#include "PofPch.h"
+//#include "Application.h"
 
 BEGIN_EVENT_TABLE(pof::PackView, wxDialog)
 EVT_TOOL(pof::PackView::ID_TOOL_CREATE_PACK, pof::PackView::OnCreatePack)
@@ -167,10 +168,6 @@ void pof::PackView::CreateEmptyPackPanel()
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxVERTICAL);
 
-	wxPanel* m4 = new wxPanel(mEmptyPack, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxBoxSizer* bSizer7;
-	bSizer7 = new wxBoxSizer(wxVERTICAL);
-
 	wxPanel* m5 = new wxPanel(mEmptyPack, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer8;
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
@@ -208,13 +205,7 @@ void pof::PackView::CreateEmptyPackPanel()
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer7->Add(m5, 1, wxEXPAND | wxALL, 5);
-
-
-	m4->SetSizer(bSizer7);
-	m4->Layout();
-	bSizer7->Fit(m4);
-	bSizer6->Add(m4, 1, wxEXPAND | wxALL, 0);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
 
 
 	mEmptyPack->SetSizer(bSizer6);

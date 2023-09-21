@@ -1,5 +1,6 @@
 #include "WarningViewDialog.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::Warning, wxDialog)
 EVT_BUTTON(wxID_ADD, pof::Warning::OnAdd)

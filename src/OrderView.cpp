@@ -1,5 +1,6 @@
 #include "OrderView.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
 EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
@@ -157,7 +158,7 @@ void pof::OrderListView::CreateEmptyPanel()
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer7->Add(m5, 1, wxEXPAND | wxALL, 5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
 
 
 	m4->SetSizer(bSizer7);

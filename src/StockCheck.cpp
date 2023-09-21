@@ -1,5 +1,6 @@
 #include "StockCheck.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::StockCheck, wxDialog)
 EVT_TOOL(pof::StockCheck::ID_ADD_PRODUCT, pof::StockCheck::OnAddProduct)

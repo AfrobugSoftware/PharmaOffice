@@ -1,5 +1,6 @@
 #include "Reports.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)

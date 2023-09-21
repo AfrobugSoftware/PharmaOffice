@@ -1,6 +1,6 @@
 #include "Printout.h"
-#include "Application.h"
-
+//#include "Application.h"
+#include "PofPch.h"
 
 
 pof::Printout::Printout(wxPrintDialogData* printDlgData, const std::string& title)

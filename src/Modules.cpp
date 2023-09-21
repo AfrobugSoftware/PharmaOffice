@@ -1,5 +1,6 @@
 #include "Modules.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_ITEM_ACTIVATED(pof::Modules::ID_TREE, pof::Modules::OnActivated)

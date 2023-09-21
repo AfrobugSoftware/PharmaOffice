@@ -1,6 +1,6 @@
 #include "SearchProduct.h"
-#include "Application.h"
-
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::SearchProduct, wxDialog)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnActivated)

@@ -1,5 +1,6 @@
 #include "AddProductDialog.h"
-#include "Application.h"
+#include "PofPch.h"
+//#include "Application.h"
 
 BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 	EVT_BUTTON(pof::AddProdutDialog::ID_SCAN_PRODUCT, pof::AddProdutDialog::OnScanProduct)

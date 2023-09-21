@@ -1,5 +1,6 @@
 #include "MainFrame.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)

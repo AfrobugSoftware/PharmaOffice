@@ -1,6 +1,6 @@
 #include "SignInDIalog.h"
-#include "Application.h"
-
+//#include "Application.h"
+#include "PofPch.h"
 BEGIN_EVENT_TABLE(pof::SignInDialog, wxDialog)
 	EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
 	EVT_BUTTON(pof::SignInDialog::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)

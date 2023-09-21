@@ -1,5 +1,7 @@
 #include "SaleView.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
+
 BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
 	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)

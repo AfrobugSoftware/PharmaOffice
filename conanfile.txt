@@ -1,10 +1,9 @@
 [options]
 boost:shared=True
-wxwidgets:shared=True
+
 
 [requires]
 boost/1.81.0
-wxwidgets/3.1.5@bincrafters/stable
 fmt/9.1.0
 spdlog/1.11.0
 zlib/1.2.13

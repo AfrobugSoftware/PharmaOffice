@@ -1,5 +1,6 @@
 #include "InventoryDialog.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 #include "ProductManager.h" //circular dependcies ? 
 
 BEGIN_EVENT_TABLE(pof::InventoryDialog, wxDialog)

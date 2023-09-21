@@ -1,5 +1,6 @@
 #include "ProductView.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 EVT_SIZE(pof::ProductView::OnResize)
