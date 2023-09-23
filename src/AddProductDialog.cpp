@@ -4,6 +4,7 @@
 
 BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 	EVT_BUTTON(pof::AddProdutDialog::ID_SCAN_PRODUCT, pof::AddProdutDialog::OnScanProduct)
+	EVT_CHECKBOX(pof::AddProdutDialog::ID_INVENTORY_ADD, pof::AddProdutDialog::OnInventoryCheck)
 END_EVENT_TABLE()
 
 
@@ -276,7 +277,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->SetFlexibleDirection( wxBOTH );
 	fgSizer21->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	mAddInventory = new wxCheckBox(mProductInvenPanel, wxID_ANY,wxT("Add Inventory"), wxDefaultPosition, wxDefaultSize, 0);
+	mAddInventory = new wxCheckBox(mProductInvenPanel, ID_INVENTORY_ADD,wxT("Add Inventory"), wxDefaultPosition, wxDefaultSize, 0);
 	fgSizer21->Add(mAddInventory, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	fgSizer21->AddStretchSpacer();
@@ -391,7 +392,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 		auto& i = datumInven->first;
 		i.resize(pof::ProductManager::INVENTORY_MAX);
-		i[pof::ProductManager::INVENTORY_ID] = 0; //test
+		i[pof::ProductManager::INVENTORY_ID] = 0; //first ever inventory
 		i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
 		i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 		i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
@@ -403,8 +404,8 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 
 void pof::AddProdutDialog::OnScanProduct(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog(this, "Please scan a product with a barcode scanner");
-	dialog.SetValidator(wxTextValidator{ wxFILTER_DIGITS });
+	wxTextEntryDialog dialog(this, "Please scan a product with a barcode scanner","SCAN PRODUCT");
+	dialog.SetTextValidator(wxTextValidator{ wxFILTER_DIGITS });
 	if (dialog.ShowModal() == wxID_OK) {
 		mScanProductString = std::move(dialog.GetValue().ToStdString());
 	}
@@ -424,4 +425,15 @@ void pof::AddProdutDialog::OnMoreSideffects(wxCommandEvent& evt)
 
 void pof::AddProdutDialog::OnMoreHealthConditions(wxCommandEvent& evt)
 {
+}
+
+void pof::AddProdutDialog::OnInventoryCheck(wxCommandEvent& evt)
+{
+	if (evt.IsChecked())
+	{
+		mBatchNumbeValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	}
+	else {
+		mBatchNumbeValue->SetValidator(wxTextValidator{ });
+	}
 }
