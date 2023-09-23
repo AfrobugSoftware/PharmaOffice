@@ -73,7 +73,7 @@ pof::Warning::Warning( wxWindow* parent, wxWindowID id, const wxString& title, c
 	//mWarningView->EnableAlternateRowColours(true);
 	wxItemAttr attr;
 	attr.SetBackgroundColour(*wxBLACK);
-	attr.SetFont(wxFontInfo(12).Bold());
+	attr.SetFont(wxFontInfo(12).Bold().AntiAliased());
 	mWarningView->SetHeaderAttr(attr);
 	
 	bSizer7->Add( mWarningView, 1, wxALL|wxEXPAND, 2 );

@@ -59,7 +59,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddSpacer(10);
 
 	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
-	mProductNameValue->SetValidator(wxTextValidator{wxFILTER_ALPHANUMERIC});
+	//mProductNameValue->SetValidator(wxTextValidator{wxFILTER_SPACE});
 	mProductNameValue->SetHint("Search product by name");
 	mTopTools->AddControl(mProductNameValue);
 

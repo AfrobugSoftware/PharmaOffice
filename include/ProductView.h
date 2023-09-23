@@ -112,6 +112,9 @@ namespace pof
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
 		std::set<wxDataViewItem> mSelections;
 
+		std::chrono::system_clock::time_point mExpireProductWatchDog;
+		std::chrono::system_clock::time_point mOutOfStockProductWatchDog;
+		std::chrono::system_clock::duration mWatchDogDuration = std::chrono::minutes(30);
 	public:
 		boost::signals2::signal<void(const std::string&)> CategoryAddSignal;
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
@@ -162,6 +165,7 @@ namespace pof
 		void OnMarkUp(wxCommandEvent& evt);
 		void OnMarkUpProducts(wxCommandEvent& evt);
 		void OnMoveExpiredStock(wxCommandEvent& evt);
+		void OnUpdateUI(wxUpdateUIEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

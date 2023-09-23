@@ -85,6 +85,7 @@ namespace pof {
 		bool bCheckPOM = true;
 		bool bCheckExpirePeiodOnIdle = true;
 		bool bAlertCriticalWarnings = true;
+		bool bCheckExpiredOnUpdate = true;
 
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
 		std::shared_ptr<pof::Account> MainAccount;

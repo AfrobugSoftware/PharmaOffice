@@ -38,6 +38,8 @@ EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
 EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
 EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
+
+EVT_UPDATE_UI(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnUpdateUI)
 END_EVENT_TABLE()
 
 
@@ -231,6 +233,7 @@ void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 
 		auto items = wxGetApp().mProductManager.DoExpiredProducts();
 		if (!items.has_value()) {
+			RemoveCheckedState(mExpireProductItem);
 			return;
 		}
 		if (items->empty()) {
@@ -342,18 +345,18 @@ void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 {
 	wxMenu* menu = new wxMenu;
-	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add Order List", nullptr);
-	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove Product", nullptr);
+	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
+	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product", nullptr);
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
-	auto cat = menu->Append(wxID_ANY, "Add to Category", catSub);
+	auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	if (!mActiveCategory.empty()) {
 		auto remvcat = menu->Append(ID_REMOVE_FROM_CATEGORY, fmt::format("Remove from \'{}\'", mActiveCategory), nullptr);
 		remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
 	}
-	auto inven = menu->Append(ID_ADD_INVENTORY, "Add Inventory", nullptr);
+	auto inven = menu->Append(ID_ADD_INVENTORY, "Add inventory", nullptr);
 	menu->AppendSeparator();
-	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark Up product", nullptr);
+	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
 	auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 
 	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
@@ -738,6 +741,22 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 
 	pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
 	mInfoBar->ShowMessage(fmt::format("{} was moved to expired successfully", name), wxICON_INFORMATION);
+}
+
+void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
+{
+	//check for expired 
+	if (wxGetApp().bCheckExpiredOnUpdate){
+		auto now = std::chrono::system_clock::now();
+		if (now >= mExpireProductWatchDog + mWatchDogDuration){
+			auto items = wxGetApp().mProductManager.DoExpiredProducts();
+			if (!items.has_value()) { }
+			else if (!items->empty()){
+				mInfoBar->ShowMessage(fmt::format("{:d} products in store has expired", items->size()), wxICON_WARNING);
+			}
+			mExpireProductWatchDog = now;
+		}
+	}
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
