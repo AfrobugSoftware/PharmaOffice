@@ -184,7 +184,8 @@ void pof::Warning::OnChangeLevel(wxCommandEvent& evt)
 
 	mWarningView->Thaw();
 	mWarningView->Refresh();
-	wxGetApp().mProductManager.UpdateWarnLevel(mPuid, level);	
+	std::string message = mWarningView->GetItemText(mItem.GetId(), 0).ToStdString();
+	wxGetApp().mProductManager.UpdateWarnLevel(mPuid, level, message);	
 }
 
 void pof::Warning::OnItemSelected(wxListEvent& evt)

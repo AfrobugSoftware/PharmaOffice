@@ -348,6 +348,7 @@ void pof::Application::CreateTables()
 	mProductManager.CreateOrderListTable();
 	mProductManager.CreateStockCheckTable();
 	mProductManager.CreateWarningTable();
+	mProductManager.CreateExpiredStockTable();
 	mSaleManager.CreateSaleTable();
 	MainAccount->CreateAccountInfoTable();
 }

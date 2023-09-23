@@ -966,16 +966,22 @@ bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
 	mCritical.reserve(warns->size());
 	for (auto& tup : *warns){
 		values.push_back(std::get<1>(tup));
-		if (std::get<0>(tup) == pof::ProductManager::CRITICAL){
-			mCritical.emplace_back(std::get<1>(tup));
+		if (wxGetApp().bAlertCriticalWarnings) {
+			if (std::get<0>(tup) == pof::ProductManager::CRITICAL) {
+				mCritical.emplace_back(std::get<1>(tup));
+			}
 		}
 	}
 	values.Shrink();
 	mCritical.shrink_to_fit();
-	if(!values.empty()) warning->SetValue(wxVariant(std::move(values)));
-	if (!mCritical.empty()) {
+	if (!values.empty()) warning->SetValue(wxVariant(std::move(values)));
+	else warning->SetValue(wxVariant{});
+	if (wxGetApp().bAlertCriticalWarnings && !mCritical.empty()) {
 		auto colorbg = mInfoBar->GetBackgroundColour();
-		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(mCritical, "\n")), wxICON_WARNING);
+		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(mCritical, ",")), wxICON_WARNING);
+	}
+	else {
+		mInfoBar->Dismiss();
 	}
 
 	return true;

@@ -230,7 +230,11 @@ namespace pof {
 		//add a product from UI
 		void AddProductData();
 
-		//product uuid generators
+		bool CreateExpiredStockTable();
+		bool MoveStockToExpire(const pof::base::data::duuid_t& pid, std::uint64_t stock);
+		std::optional<std::uint64_t> GetTotalExpired(const pof::base::data::duuid_t& pid, pof::base::data::datetime_t date);
+		std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> GetExpiredProductsStock(pof::base::data::datetime_t m);
+ 		//product uuid generators
 		bool bUsingLocalDatabase = false;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
@@ -285,7 +289,7 @@ namespace pof {
 		bool InsertWarning(const pof::base::data::duuid_t& pid, size_t level, const std::string& message);
 		std::optional<std::vector<std::pair<size_t, std::string>>> GetWarning(const pof::base::data::duuid_t& pid);
 		bool RemoveWarning(const pof::base::data::duuid_t& pid, const std::string& message); //uses both as the key
-		bool UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level);
+		bool UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level, const std::string& message);
 	private:
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 

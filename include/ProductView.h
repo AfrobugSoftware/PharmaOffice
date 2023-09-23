@@ -82,6 +82,7 @@ namespace pof
 			ID_TO_JSON,
 			ID_FILE,
 			ID_PACKS,
+			ID_MOVE_PRODUCT_STOCK
 		};
 
 		size_t mRowHeights;
@@ -160,6 +161,7 @@ namespace pof
 		void OnShowOrderList(wxCommandEvent& evt);
 		void OnMarkUp(wxCommandEvent& evt);
 		void OnMarkUpProducts(wxCommandEvent& evt);
+		void OnMoveExpiredStock(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

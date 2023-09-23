@@ -1131,6 +1131,8 @@ void pof::ProductManager::InventoryBroughtForward()
 	}
 }
 
+
+
 //markup is a pecentage in float so markUp = markup/100
 void pof::ProductManager::MarkUpProducts(double markUp)
 {
@@ -1170,6 +1172,99 @@ void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid, do
 
 void pof::ProductManager::AddProductData()
 {
+}
+
+bool pof::ProductManager::CreateExpiredStockTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS expired_stock (prod_uuid blob, stock integer, date integer);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::MoveStockToExpire(const pof::base::data::duuid_t& pid, std::uint64_t stock)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO expired_stock (prod_uuid, stock, date) VALUES (?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, stock, pof::base::data::clock_t::now()));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+}
+
+std::optional<std::uint64_t> pof::ProductManager::GetTotalExpired(const pof::base::data::duuid_t& pid, pof::base::data::datetime_t date)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT SUM(stock) FROM expired_stock 
+		WHERE Months(date) = ? AND prod_uuid = ?
+		GROUP BY prod_uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		auto month = std::chrono::duration_cast<date::months>(date.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month), pid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return (std::get<0>(*rel->begin()));
+	}
+	return std::nullopt;
+}
+
+std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> pof::ProductManager::GetExpiredProductsStock(pof::base::data::datetime_t m)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT prod_uuid, SUM(stock) 
+		FROM  expired_stock 
+		WHERE Months(date) = ?
+		GROUP BY prod_uuid;)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(m));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t, std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>> ret;
+		ret.reserve(rel->size());
+
+		for (auto& tup : *rel){
+			ret.emplace_back(std::make_pair(std::get<0>(tup), std::get<1>(tup)));
+		}
+		ret.shrink_to_fit();
+		return ret;
+	}
+	return std::nullopt;
 }
 
 std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
@@ -1409,7 +1504,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 						WHERE i.uuid NOT NULL
 						GROUP BY i.uuid
 					)  
-			AND ? > i.expire_date; )";
+			AND ? > i.expire_date AND p.stock_count > 0; )";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -2055,7 +2150,7 @@ std::optional<std::vector<std::pair<size_t, std::string>>> pof::ProductManager::
 		ret.reserve(rel->size());
 
 		for (const auto& tup : rel.value()){
-			ret.emplace_back(std::make_pair(std::get<0>(tup), std::move(std::get<1>(tup))));
+			ret.emplace_back(std::make_pair(std::get<0>(tup), std::get<1>(tup)));
 		}
 		return ret;
 	}
@@ -2082,14 +2177,14 @@ bool pof::ProductManager::RemoveWarning(const pof::base::data::duuid_t& pid, con
 	return false;
 }
 
-bool pof::ProductManager::UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level)
+bool pof::ProductManager::UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level, const std::string& message)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(UPDATE warning SET level = ? WHERE prod_uuid = ?;)";
+		constexpr const std::string_view sql = R"(UPDATE warning SET level = ? WHERE prod_uuid = ? AND message LIKE ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(level, pid));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(level, pid, message));
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);

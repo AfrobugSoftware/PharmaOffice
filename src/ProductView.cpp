@@ -37,6 +37,7 @@ EVT_MENU(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice
 EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
 EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
+EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
 END_EVENT_TABLE()
 
 
@@ -234,6 +235,8 @@ void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 		}
 		if (items->empty()) {
 			wxMessageBox("There are no expired products in the store", "PRODUCTS", wxICON_INFORMATION | wxOK);
+			RemoveCheckedState(mExpireProductItem);
+			return;
 		}
 		wxGetApp().mProductManager.GetProductData()->Reload(*items);
 	}
@@ -351,6 +354,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add Inventory", nullptr);
 	menu->AppendSeparator();
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark Up product", nullptr);
+	auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 
 	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
@@ -701,6 +705,39 @@ void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
 	wxGetApp().mProductManager.GetProductData()->Reload();
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Refresh();
+}
+
+void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+	wxBusyCursor cursor;
+
+	auto items = wxGetApp().mProductManager.DoExpiredProducts();
+	if (!items.has_value()) return;
+	if (!std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {return item == i; })) {
+		wxMessageBox("Product is not expired", "EXPIRED", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(datastore[idx].first[pof::ProductManager::PRODUCT_UUID]);
+	std::uint64_t& stockCount = boost::variant2::get<std::uint64_t>(datastore[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	if (stockCount == 0) return; //cannot move empty stock
+
+	wxGetApp().mProductManager.MoveStockToExpire(pid, stockCount);
+	//zero out the stock that was moved
+	std::uint64_t temp = stockCount;
+	m_dataViewCtrl1->Freeze();
+	stockCount = 0;
+
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Refresh();
+	wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, stockCount), { "uuid", "stock_count" });
+
+	pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
+	mInfoBar->ShowMessage(fmt::format("{} was moved to expired successfully", name), wxICON_INFORMATION);
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
