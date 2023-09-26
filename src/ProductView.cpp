@@ -948,8 +948,6 @@ void pof::ProductView::CreateToolBar()
 	mReportItem->SetHasDropDown(true);
 	auto mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
 	mFuncDropItem->SetHasDropDown(true);
-
-	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
 
 	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
@@ -964,17 +962,25 @@ void pof::ProductView::CreateToolBar()
 	menu->Check(ID_SEARCH_BY_NAME, true);
 
 	m_searchCtrl1->SetMenu(menu);
+	m_auiToolBar1->AddSpacer(5);
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
-	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
-	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add Category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
+	m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxEmptyString, wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxEmptyString, wxArtProvider::GetBitmap("action_add"), "Add a new Product");
+	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxEmptyString, wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
+	m_auiToolBar1->AddSpacer(2);
 
-	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxT("Out Of Stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
-	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired Products"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
-	auto mOrderListItem = m_auiToolBar1->AddTool(ID_ORDER_LIST, wxT("Order List"), wxArtProvider::GetBitmap("time"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
-	m_auiToolBar1->AddTool(ID_PACKS, wxT("Pharm Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
+	mOutOfStockItem = m_auiToolBar1->AddTool(ID_OUT_OF_STOCK, wxEmptyString, wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
+	m_auiToolBar1->AddSpacer(2);
+	mExpireProductItem = m_auiToolBar1->AddTool(ID_PRODUCT_EXPIRE, wxEmptyString, wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	m_auiToolBar1->AddSpacer(2);
+	auto mOrderListItem = m_auiToolBar1->AddTool(ID_ORDER_LIST, wxEmptyString, wxArtProvider::GetBitmap("file"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
+	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddTool(ID_PACKS, wxEmptyString, wxArtProvider::GetBitmap(wxART_FOLDER), wxT("Pharamcy Packs"));
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));

@@ -58,10 +58,11 @@ namespace pof {
 			ID_CATEGORY_FILTER,
 			ID_FORMULATION_FILTER,
 			ID_FILTER,
+			ID_RESET,
 		};
 
 
-		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(813, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1013, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		wxAuiManager m_mgr;
 
 		~SearchProduct();
@@ -90,6 +91,7 @@ namespace pof {
 		void OnHeaderClicked(wxDataViewEvent& evt);
 		void OnFilter(wxCommandEvent& evt);
 		void OnFilerChoice(wxCommandEvent& evt);
+		void OnReset(wxCommandEvent& evt);
 		void DoSearch(const std::string& search_for);
 
 		DECLARE_EVENT_TABLE()

@@ -11,6 +11,7 @@ EVT_SEARCH_CANCEL(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSear
 EVT_TEXT(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearch)
 EVT_TOOL(pof::SearchProduct::ID_ADD_PRODUCT, pof::SearchProduct::OnAddProduct )
 EVT_TOOL(pof::SearchProduct::ID_FILTER, pof::SearchProduct::OnFilter)
+EVT_TOOL(pof::SearchProduct::ID_RESET, pof::SearchProduct::OnReset)
 EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnHeaderClicked)
 EVT_CHOICE(pof::SearchProduct::ID_CATEGORY_FILTER, pof::SearchProduct::OnFilerChoice)
 EVT_CHOICE(pof::SearchProduct::ID_FORMULATION_FILTER, pof::SearchProduct::OnFilerChoice)
@@ -54,9 +55,63 @@ void pof::SearchProduct::CreateToolBar()
 	SearchCtrl->SetDescriptiveText("Search products by name");
 
 	SearchProductBar->AddControl(SearchCtrl);
-	//m_tool1 = SearchProductBar->AddTool(ID_SEARCH_BUTTON, wxT("tool"), wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	SearchProductBar->AddStretchSpacer();
 	SearchProductBar->AddSeparator();
+
+	auto& category = wxGetApp().mProductManager.GetCategories();
+	wxArrayString choices;
+
+	for (auto& value : category) {
+		choices.push_back(boost::variant2::get<pof::base::data::text_t>(value.first[pof::ProductManager::CATEGORY_NAME]));
+	}
+
+	mCategoryFilter = new wxChoice(SearchProductBar, ID_CATEGORY_FILTER, wxDefaultPosition, wxSize(200, -1), choices);
+	mCategoryFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mCategoryFilter);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = mCategoryFilter->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+	}
+		});
+	SearchProductBar->AddControl(mCategoryFilter, "Select Category");
+	SearchProductBar->AddSpacer(10);
+	wxArrayString FormulationChoices;
+	FormulationChoices.Add("TABLET");
+	FormulationChoices.Add("CAPSULE");
+	FormulationChoices.Add("SOLUTION");
+	FormulationChoices.Add("SUSPENSION");
+	FormulationChoices.Add("IV");
+	FormulationChoices.Add("IM");
+	FormulationChoices.Add("EMULSION");
+	FormulationChoices.Add("COMSUMABLE");
+
+	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, wxSize(200, -1), FormulationChoices);
+	mFormulationFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mFormulationFilter);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = mFormulationFilter->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+		}
+	});
+	SearchProductBar->AddControl(mFormulationFilter, "Select Formulaton");
+
+	SearchProductBar->AddSpacer(10);
+	SearchProductBar->AddTool(ID_FILTER, wxT("Filter"), wxArtProvider::GetBitmap("pen"));
+	SearchProductBar->AddSpacer(5);
+	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
+	SearchProductBar->AddSpacer(5);
 	SearchProductBar->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"));
 	SearchProductBar->Realize();
 	m_mgr.AddPane(SearchProductBar, wxAuiPaneInfo().Name(wxT("SearchToolBar")).Top().MinSize(-1, 30).DockFixed().CloseButton(false).PaneBorder(false).Dock().Resizable().BottomDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).Layer(10).ToolbarPane());
@@ -187,7 +242,7 @@ const std::vector<std::reference_wrapper<pof::base::data::row_t>>
 
 void pof::SearchProduct::OnAddProduct(wxCommandEvent& evt)
 {
-	if (mSelectedProduct == wxNOT_FOUND) {
+	if (mSelectedProduct == wxNOT_FOUND && mSelectedProducts.empty()) {
 		wxMessageBox("No product selected to add, please select one", "SEARCH PRODUCT", wxICON_WARNING | wxOK);
 		return;
 	}
@@ -225,14 +280,48 @@ void pof::SearchProduct::OnHeaderClicked(wxDataViewEvent& evt)
 
 void pof::SearchProduct::OnFilter(wxCommandEvent& evt)
 {
-	if (mCategoryName.empty() || mFormulation.empty()) return;
-	auto& categories = wxGetApp().mProductManager.GetCategories();
-	auto iter = std::ranges::find_if(categories, [&](const pof::base::data::row_t& row) -> bool {
-		return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == mCategoryName);
-	});
-	if (iter == categories.end()) return;
+	if (mCategoryName.empty() && mFormulation.empty()) return; //nothing to filer
+	
+	std::vector<wxDataViewItem> mCategoryItems;
+	auto& datastore = mModel->GetDatastore();
+	mCategoryItems.reserve(datastore.size());
 
+	if (!mCategoryName.empty())
+	{
+	//filter the store with the category them the formulation.
+		auto& categories = wxGetApp().mProductManager.GetCategories();
+		auto iter = std::ranges::find_if(categories, [&](const pof::base::data::row_t& row) -> bool {
+			return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == mCategoryName);
+			});
+		if (iter == categories.end()) return;
 
+		size_t i = 0;
+		for (const auto& row : datastore) {
+			if (boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::PRODUCT_CATEGORY])
+				== boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::CATEGORY_ID])) {
+				if (mFormulation ==
+					boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_FORMULATION])) {
+					mCategoryItems.emplace_back(pof::DataModel::GetItemFromIdx(i));
+				}
+			}
+			i++;
+		}
+	} else {
+		//filter the whole store with the formulation only
+		size_t i = 0;
+		for (const auto& row : datastore) {
+			if (mFormulation ==
+				boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::PRODUCT_FORMULATION])) {
+				mCategoryItems.emplace_back(pof::DataModel::GetItemFromIdx(i));
+			}
+			i++;
+		}
+	}
+	mCategoryItems.shrink_to_fit();
+	SearchData->Freeze();
+	mModel->Reload(std::move(mCategoryItems));
+	SearchData->Thaw();
+	SearchData->Refresh();
 }
 
 void pof::SearchProduct::OnFilerChoice(wxCommandEvent& evt)
@@ -249,6 +338,28 @@ void pof::SearchProduct::OnFilerChoice(wxCommandEvent& evt)
 	default:
 		break;
 	}
+}
+
+void pof::SearchProduct::OnReset(wxCommandEvent& evt)
+{
+	mCategoryName.clear();
+	mFormulation.clear();
+	
+	mCategoryFilter->Freeze();
+	mFormulationFilter->Freeze();
+	mCategoryFilter->SetSelection(wxNOT_FOUND);
+	mFormulationFilter->SetSelection(wxNOT_FOUND);
+
+	mFormulationFilter->Thaw();
+	mCategoryFilter->Thaw();
+	mFormulationFilter->Refresh();
+	mFormulationFilter->Refresh();
+
+	SearchData->Freeze();
+	mModel->Reload();
+	SearchData->Thaw();
+	SearchData->Refresh();
+
 }
 
 void pof::SearchProduct::DoSearch(const std::string& search_for)

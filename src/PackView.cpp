@@ -80,7 +80,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 		pof::base::data::currency_t
 	>();
 
-	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 1);
+	mProductName = m_dataViewCtrl3->AppendTextColumn( wxT("Name"), 1, wxDATAVIEW_CELL_INERT, 500);
 	mProductQuantity = m_dataViewCtrl3->AppendTextColumn( wxT("Quantity"), 2, wxDATAVIEW_CELL_EDITABLE, 100);
 	mPackageSize = m_dataViewCtrl3->AppendTextColumn( wxT("Package Size"),  3);
 	mPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Price"), 4);

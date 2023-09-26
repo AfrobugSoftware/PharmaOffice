@@ -138,6 +138,7 @@ void pof::StockCheck::CreateToolBar()
 	mStockCheckMonth->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
 
 	mTools->AddControl(mStockCheckMonth, "Stock Check Month");
+	mTools->AddSpacer(10);
 	mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"));
 
 	m_mgr.AddPane(mTools, wxAuiPaneInfo().Name("Tools").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
