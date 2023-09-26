@@ -201,7 +201,7 @@ void pof::AuditView::SetupAuiTheme()
 void pof::AuditView::SetupDataViewStyle()
 {
 	mRowHeights = 50;
-	mHeaderAttr.SetBackgroundColour(*wxWHITE);
+	mHeaderAttr.SetBackgroundColour(*wxLIGHT_GREY);
 	auto Info = wxFontInfo(10).Weight(24).FaceName("Helvetica").Bold();
 	mHeaderAttr.SetFont(wxFont(std::move(Info)));
 

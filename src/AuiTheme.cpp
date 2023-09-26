@@ -9,14 +9,14 @@ size_t pof::AuiTheme::sSashSize = 2;
 size_t pof::AuiTheme::sPaneBorderSize = 0;
 size_t pof::AuiTheme::sGradientType = wxAUI_GRADIENT_HORIZONTAL;
 
-wxColour pof::AuiTheme::sSashColour = *wxWHITE;
+wxColour pof::AuiTheme::sSashColour = *wxLIGHT_GREY;
 wxColour pof::AuiTheme::sBackgroundColour = *wxWHITE;
 wxColour pof::AuiTheme::sBorderColour = *wxBLACK;
-wxColour pof::AuiTheme::sActiveCaptionColour = *wxWHITE;
+wxColour pof::AuiTheme::sActiveCaptionColour = *wxLIGHT_GREY;
 wxColour pof::AuiTheme::sActiveGradientColour = *wxWHITE;
 wxColour pof::AuiTheme::sActiveTextCaptionColour = *wxBLACK;
 wxColour pof::AuiTheme::sInactiveTextCaptionColour = *wxBLACK;
-wxColour pof::AuiTheme::sInactiveCaptionColour = *wxWHITE;
+wxColour pof::AuiTheme::sInactiveCaptionColour = *wxLIGHT_GREY;
 wxColour pof::AuiTheme::sInactiveGradientColour = *wxWHITE;
 
 void pof::AuiTheme::Update(wxAuiDockArt* art)

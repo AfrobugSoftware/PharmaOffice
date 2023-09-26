@@ -246,7 +246,7 @@ void pof::AuditManager::CreateAuditTable()
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = 
-			"CREATE TABLE IF NOT EXISTS audit (id integer unqiue auto increment, date integer, type integer, user_name text, message text);";
+			"CREATE TABLE IF NOT EXISTS audit (id integer auto increment, date integer, type integer, user_name text, message text);";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			wxMessageBox(mLocalDatabase->err_msg().data(), "AUDIT");

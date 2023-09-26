@@ -10,7 +10,10 @@ EVT_CLOSE(pof::SearchProduct::OnClose)
 EVT_SEARCH_CANCEL(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearchCancelled)
 EVT_TEXT(pof::SearchProduct::ID_SEARCH_CTRL, pof::SearchProduct::OnSearch)
 EVT_TOOL(pof::SearchProduct::ID_ADD_PRODUCT, pof::SearchProduct::OnAddProduct )
+EVT_TOOL(pof::SearchProduct::ID_FILTER, pof::SearchProduct::OnFilter)
 EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::SearchProduct::ID_SEARCH_VIEW, pof::SearchProduct::OnHeaderClicked)
+EVT_CHOICE(pof::SearchProduct::ID_CATEGORY_FILTER, pof::SearchProduct::OnFilerChoice)
+EVT_CHOICE(pof::SearchProduct::ID_FORMULATION_FILTER, pof::SearchProduct::OnFilerChoice)
 END_EVENT_TABLE()
 
 
@@ -217,6 +220,34 @@ void pof::SearchProduct::OnHeaderClicked(wxDataViewEvent& evt)
 	}
 	else {
 		evt.Skip();
+	}
+}
+
+void pof::SearchProduct::OnFilter(wxCommandEvent& evt)
+{
+	if (mCategoryName.empty() || mFormulation.empty()) return;
+	auto& categories = wxGetApp().mProductManager.GetCategories();
+	auto iter = std::ranges::find_if(categories, [&](const pof::base::data::row_t& row) -> bool {
+		return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == mCategoryName);
+	});
+	if (iter == categories.end()) return;
+
+
+}
+
+void pof::SearchProduct::OnFilerChoice(wxCommandEvent& evt)
+{
+	int id = evt.GetId();
+	switch (id)
+	{
+	case ID_CATEGORY_FILTER:
+		mCategoryName = mCategoryFilter->GetStringSelection().ToStdString();
+		break;
+	case ID_FORMULATION_FILTER:
+		mFormulation = mFormulationFilter->GetStringSelection().ToStdString();
+		break;
+	default:
+		break;
 	}
 }
 

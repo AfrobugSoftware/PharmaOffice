@@ -248,9 +248,11 @@ namespace pof {
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpireProductPeriod();
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
+		std::optional<std::vector<wxDataViewItem>> DoOutOfStock();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 
 		//stock check
+		bool CaptureStock(const pof::base::data::duuid_t& pid);
 		bool CreateStockCheckTable();
 		std::unique_ptr<pof::DataModel>& GetStockCheckData();
 		void LoadStockCheckDate(pof::base::data::datetime_t month);
@@ -260,6 +262,7 @@ namespace pof {
 		void UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
 		void LoadStockDataByCategory(pof::base::data::datetime_t month, std::uint64_t catID);
+		std::optional<pof::base::data::datetime_t> GetFirstStockMonth();
 
 		using packDescType = std::tuple<pof::base::data::duuid_t,
 			pof::base::data::text_t,
@@ -290,6 +293,9 @@ namespace pof {
 		std::optional<std::vector<std::pair<size_t, std::string>>> GetWarning(const pof::base::data::duuid_t& pid);
 		bool RemoveWarning(const pof::base::data::duuid_t& pid, const std::string& message); //uses both as the key
 		bool UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level, const std::string& message);
+
+		//product search filters
+
 	private:
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 

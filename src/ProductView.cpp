@@ -262,6 +262,7 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 			wxGetApp().mProductManager.GetInventory()->StoreData(std::move(productinvenopt.value()));
 		}
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created A product");
 	}
 }
 
@@ -301,7 +302,7 @@ void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
 			break;
 		}
 	}
-
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created a category");
 }
 
 void pof::ProductView::OnRemoveFromCategory(wxCommandEvent& evt)
@@ -335,6 +336,7 @@ void pof::ProductView::OnRemoveFromCategory(wxCommandEvent& evt)
 	}
 	//reactivate
 	OnCategoryActivated(mActiveCategory);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Removed a product from category");
 
 }
 
@@ -576,7 +578,6 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 	pof::InventoryDialog dialog(nullptr);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
-		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID];
 
 		pof::ProductInfo::PropertyUpdate mPropertyUpdate;
@@ -755,6 +756,17 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 				mInfoBar->ShowMessage(fmt::format("{:d} products in store has expired", items->size()), wxICON_WARNING);
 			}
 			mExpireProductWatchDog = now;
+		}
+	}
+	if (wxGetApp().bCheckOutOfStockOnUpdate){
+		auto now = std::chrono::system_clock::now();
+		if (now >= mOutOfStockProductWatchDog + mWatchDogDuration){
+			auto items = wxGetApp().mProductManager.DoOutOfStock();
+			if (!items.has_value()) {}
+			else if (!items->empty()) {
+				mInfoBar->ShowMessage(fmt::format("{:d} products in store are out of stock", items->size()), wxICON_WARNING);
+			}
+			mOutOfStockProductWatchDog = now;
 		}
 	}
 }

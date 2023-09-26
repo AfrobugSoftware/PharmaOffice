@@ -4,6 +4,7 @@
 
 BEGIN_EVENT_TABLE(pof::StockCheck, wxDialog)
 EVT_TOOL(pof::StockCheck::ID_ADD_PRODUCT, pof::StockCheck::OnAddProduct)
+EVT_TOOL(pof::StockCheck::ID_SHOW_SUMMARY, pof::StockCheck::OnShowSummary)
 EVT_DATE_CHANGED(pof::StockCheck::ID_DATE, pof::StockCheck::OnDate)
 EVT_CHOICE(pof::StockCheck::ID_CATEGORY_SELECT, pof::StockCheck::OnCategorySelected)
 //EVT_INIT_DIALOG(pof::StockCheck::OnInitDialog)
@@ -41,7 +42,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mSummary = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER );
 	mSummary->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
-	m_mgr.AddPane( mSummary, wxAuiPaneInfo() .Name( wxT("TotalPane") ).Bottom() .Caption( wxT("Summary") ).PinButton( true ).Dock().Resizable().FloatingSize( wxSize( 50,67 ) ).TopDockable( false ).LeftDockable( false ).RightDockable( false ).Floatable( false ).Row( 1 ).MinSize( wxSize( 50,150 ) ) );
+	m_mgr.AddPane( mSummary, wxAuiPaneInfo() .Name( wxT("SummaryPane") ).Bottom() .Caption( wxT("Summary") ).PinButton( true ).Dock().Resizable().FloatingSize( wxSize( 50,67 ) ).TopDockable( false ).LeftDockable( false ).RightDockable( false ).Floatable( false ).Row( 1 ).MinSize( wxSize( 50,150 ) ) );
 	
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxHORIZONTAL );
@@ -122,11 +123,20 @@ void pof::StockCheck::CreateToolBar()
 	}
 	});
 	mTools->AddControl(mCategorySelect, "Select Category");
+	mTools->AddSpacer(10);
 	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap("pen"));
 	this->Bind(wxEVT_TOOL, [&](wxCommandEvent& evt) {
 		
 	}, wxID_RESET);
+	mTools->AddTool(ID_SHOW_SUMMARY, "Show Summary", wxNullBitmap, "Show the summary of the stock check");
+	mTools->AddSpacer(10);
 	mStockCheckMonth = new wxDatePickerCtrl(mTools, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	auto firstMonth = wxGetApp().mProductManager.GetFirstStockMonth();
+	if (!firstMonth.has_value()){
+		firstMonth.emplace();
+	}
+	mStockCheckMonth->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
+
 	mTools->AddControl(mStockCheckMonth, "Stock Check Month");
 	mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"));
 
@@ -289,9 +299,12 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 			v[STOCK_CURRENT_STOCK] = p[pof::ProductManager::PRODUCT_STOCK_COUNT];
 			v[STOCK_CHECKED_STOCK] = static_cast<std::uint64_t>(0);
 			v[STOCK_STATUS] = static_cast<std::uint64_t>(PENDING);
-
+			mStockData->Freeze();
 			wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(rowx));
 			wxGetApp().mProductManager.InsertProductInStockCheck(pid);
+			wxGetApp().mProductManager.CaptureStock(pid);
+			mStockData->Thaw();
+			mStockData->Refresh();
 		}
 		UpdateSummary();
 	}
@@ -348,6 +361,14 @@ void pof::StockCheck::OnCategorySelected(wxCommandEvent& evt)
 	wxGetApp().mProductManager.LoadStockDataByCategory(pof::base::data::clock_t::now(), id);
 	mStockData->Thaw();
 	mStockData->Refresh();
+}
+
+void pof::StockCheck::OnShowSummary(wxCommandEvent& evt)
+{
+	wxAuiPaneInfo& pane = m_mgr.GetPane("SummaryPane");
+	if (pane.IsOk() && !pane.IsShown()){
+		pane.Show();
+	}
 }
 
 void pof::StockCheck::OnAuiThemeChange()

@@ -38,11 +38,15 @@ namespace pof {
 		wxDataViewColumn* ProductName;
 		wxDataViewColumn* PriceCol;
 		wxDataViewColumn* selectedCol;
-
+		wxChoice* mCategoryFilter;
+		wxChoice* mFormulationFilter;
 
 		//id, name, price
 		pof::DataModel* mModel;
 		int mSelectedProduct = -1;
+
+		std::string mCategoryName; 
+		std::string mFormulation;
 
 		std::set<size_t> mSelectedProducts;
 	public:
@@ -51,10 +55,13 @@ namespace pof {
 			ID_SEARCH_CTRL,
 			ID_SEARCH_VIEW,
 			ID_ADD_PRODUCT,
+			ID_CATEGORY_FILTER,
+			ID_FORMULATION_FILTER,
+			ID_FILTER,
 		};
 
 
-		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(713, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(813, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		wxAuiManager m_mgr;
 
 		~SearchProduct();
@@ -81,7 +88,8 @@ namespace pof {
 		void OnClose(wxCloseEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnHeaderClicked(wxDataViewEvent& evt);
-
+		void OnFilter(wxCommandEvent& evt);
+		void OnFilerChoice(wxCommandEvent& evt);
 		void DoSearch(const std::string& search_for);
 
 		DECLARE_EVENT_TABLE()

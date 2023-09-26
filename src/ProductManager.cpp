@@ -1543,6 +1543,37 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 	}
 }
 
+std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoOutOfStock()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid FROM products p WHERE p.stock_count = 0; )";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t>(*stmt);
+		assert(rel);
+
+		if (rel->empty()) return std::vector<wxDataViewItem>{};
+
+		std::set<pof::base::data::duuid_t> set;
+		std::ranges::transform(*rel, std::inserter(set, set.end()), [&](auto& tup) -> pof::base::data::duuid_t {
+			return std::get<0>(tup);
+		});
+		auto& datastore = mProductData->GetDatastore();
+		std::vector<wxDataViewItem> items;
+		items.reserve(rel->size());
+		for (size_t i = 0; i < datastore.size(); i++) {
+			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[PRODUCT_UUID]);
+			if (set.find(uid) != set.end()) {
+				items.emplace_back(pof::DataModel::GetItemFromIdx(i));
+			}
+		}
+		items.shrink_to_fit();
+		return items;
+
+	}
+}
+
 std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpireDate(const pof::base::data::duuid_t& prod)
 {
 	if (mLocalDatabase) {
@@ -1581,11 +1612,34 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpire
 	return std::nullopt;
 }
 
+bool pof::ProductManager::CaptureStock(const pof::base::data::duuid_t& pid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET stock_count = 
+			(SELECT stock_count FROM products WHERE uuid = :pid) WHERE prod_uuid = :pid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(pid), { "pid" });
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 bool pof::ProductManager::CreateStockCheckTable()
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS stock_check (prod_uuid blob, check_stock integer, status integer, date integer);)";
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS stock_check (prod_uuid blob, check_stock integer, stock_count, status integer, date integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
@@ -1610,7 +1664,7 @@ std::unique_ptr<pof::DataModel>& pof::ProductManager::GetStockCheckData()
 void pof::ProductManager::LoadStockCheckDate(pof::base::data::datetime_t m)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, sc.check_stock, sc.status
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, sc.check_stock, sc.status
 		FROM products p, stock_check sc
 		WHERE p.uuid = sc.prod_uuid AND Months(sc.date) = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1627,7 +1681,7 @@ void pof::ProductManager::LoadStockCheckDate(pof::base::data::datetime_t m)
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t, // product uuid
 			pof::base::data::text_t, //product name
-			std::uint64_t, //currenct stock
+			std::uint64_t, //captured stock
 			std::uint64_t, //checked stock
 			std::uint64_t //status
 		>(*stmt);
@@ -1718,7 +1772,7 @@ void pof::ProductManager::UpdateStockCheck(const pof::base::data::duuid_t& pid, 
 bool pof::ProductManager::InsertProductInStockCheck(const pof::base::data::duuid_t& pid)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO stock_check (prod_uuid, check_stock, status, date) VALUES (?, 0, 0, ?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO stock_check (prod_uuid, check_stock, stock_count, status, date) VALUES (?, 0, 0, 0, ?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt){
 			spdlog::error(mLocalDatabase->err_msg());
@@ -1742,7 +1796,7 @@ bool pof::ProductManager::InsertProductInStockCheck(const pof::base::data::duuid
 void pof::ProductManager::LoadStockDataByCategory(pof::base::data::datetime_t m, std::uint64_t catID)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, sc.check_stock, sc.status
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, sc.check_stock, sc.status
 		FROM products p, stock_check sc
 		WHERE  Months(sc.date) = ? AND p.category = ? AND p.uuid = sc.prod_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1769,6 +1823,31 @@ void pof::ProductManager::LoadStockDataByCategory(pof::base::data::datetime_t m,
 			mStockCheckData->EmplaceData(std::move(row));
 		}
 	}
+}
+
+std::optional<pof::base::data::datetime_t> pof::ProductManager::GetFirstStockMonth()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT MIN(Months(date)) FROM stock_check;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) {
+			return std::nullopt;
+		}
+		return (std::get<0>(*(rel->begin())));
+	}
+	return std::nullopt;
 }
 
 void pof::ProductManager::CreatePackTable()

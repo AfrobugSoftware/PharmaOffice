@@ -55,7 +55,8 @@ namespace pof
 					ID_ADD_PRODUCT,
 					ID_STOCK_DATA,
 					ID_DATE,
-					ID_CATEGORY_SELECT
+					ID_CATEGORY_SELECT,
+					ID_SHOW_SUMMARY,
 
 			};
 
@@ -92,6 +93,7 @@ namespace pof
 			void OnDialogInit(wxInitDialogEvent& evt);
 			void OnEditingStarted(wxDataViewEvent& evt);
 			void OnCategorySelected(wxCommandEvent& evt);
+			void OnShowSummary(wxCommandEvent& evt);
 			void OnAuiThemeChange();
 			DECLARE_EVENT_TABLE()
 		
