@@ -262,7 +262,10 @@ namespace pof {
 		void UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
 		void LoadStockDataByCategory(pof::base::data::datetime_t month, std::uint64_t catID);
+		bool RemoveStockEntry(const pof::base::data::duuid_t& pid, const pof::base::data::datetime_t& date);
 		std::optional<pof::base::data::datetime_t> GetFirstStockMonth();
+		std::optional<std::vector<std::tuple<pof::base::data::datetime_t, std::uint64_t, bool>>> GetStockMonthStatus();
+
 
 		using packDescType = std::tuple<pof::base::data::duuid_t,
 			pof::base::data::text_t,

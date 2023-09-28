@@ -49,7 +49,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	mPackSelect = new wxListCtrl( mPackView, ID_PACK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 	bSizer2->Add(mPackSelect, 1, wxALL|wxEXPAND, 2 );
 	wxImageList* imagelist = new wxImageList(60, 60);
 	imagelist->Add(wxArtProvider::GetBitmap("cart"));

@@ -107,11 +107,11 @@ void pof::SearchProduct::CreateToolBar()
 	});
 	SearchProductBar->AddControl(mFormulationFilter, "Select Formulaton");
 
-	SearchProductBar->AddSpacer(10);
+	SearchProductBar->AddSpacer(5);
 	SearchProductBar->AddTool(ID_FILTER, wxT("Filter"), wxArtProvider::GetBitmap("pen"));
-	SearchProductBar->AddSpacer(5);
+	SearchProductBar->AddSpacer(2);
 	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
-	SearchProductBar->AddSpacer(5);
+	SearchProductBar->AddSpacer(2);
 	SearchProductBar->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"));
 	SearchProductBar->Realize();
 	m_mgr.AddPane(SearchProductBar, wxAuiPaneInfo().Name(wxT("SearchToolBar")).Top().MinSize(-1, 30).DockFixed().CloseButton(false).PaneBorder(false).Dock().Resizable().BottomDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).Layer(10).ToolbarPane());

@@ -22,6 +22,8 @@
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <wx/choice.h>
+#include <wx/simplebook.h>
+#include <wx/listctrl.h>
 
 
 namespace pof
@@ -39,6 +41,7 @@ namespace pof
 			wxDataViewColumn* mCheckedStock;
 			wxDataViewColumn* mShortage;
 			wxDataViewColumn* mStatus;
+			wxDataViewColumn* mDateAdded;
 			wxPanel* mSummary;
 			wxStaticText* mTotalStockCheckedLabel;
 			wxStaticText* mTotalStockCheckedValue;
@@ -48,8 +51,19 @@ namespace pof
 			wxStaticText* mShortageAmountValue;
 			wxDatePickerCtrl* mStockCheckMonth;
 			wxChoice* mCategorySelect;
+			wxListCtrl* mStockSelect;
+			wxPanel* mEmptyPanel;
+			wxSimplebook* mBook;
+			wxAuiToolBarItem* mBackButton;
+			pof::base::data::datetime_t* mSelectedMonth = nullptr;
 		
 		public:
+			enum {
+				PAGE_STOCK_EMPTY,
+				PAGE_STOCK_LIST,
+				PAGE_STOCK_SELECT,
+			};
+
 			enum {
 					ID_TOOL = wxID_HIGHEST + 1,
 					ID_ADD_PRODUCT,
@@ -57,7 +71,11 @@ namespace pof
 					ID_DATE,
 					ID_CATEGORY_SELECT,
 					ID_SHOW_SUMMARY,
-
+					ID_STOCK_CHECK,
+					ID_BOOK,
+					ID_MARK_COMPLETE,
+					ID_STOCK_SELECT,
+					ID_REMOVE_STOCK,
 			};
 
 			//status
@@ -73,12 +91,18 @@ namespace pof
 				STOCK_CURRENT_STOCK,
 				STOCK_CHECKED_STOCK,
 				STOCK_STATUS,
+				STOCK_DATE_ADDED,
 				STOCK_SHORTAGE,
 			};
 
 			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1178,689 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 			wxAuiManager m_mgr;
 			void CreateToolBar();
+			void CreateStockSelectToolbar();
+			void CreateEmptyStockCheck();
+			void CreateStockSelect();
+			void LoadStockSelect();
+			void SwitchToolBar(int page);
 			void AddSpecialCols();
 			virtual bool TransferDataFromWindow() override;
 			~StockCheck();
@@ -95,6 +119,11 @@ namespace pof
 			void OnCategorySelected(wxCommandEvent& evt);
 			void OnShowSummary(wxCommandEvent& evt);
 			void OnAuiThemeChange();
+			void OnStockActivated(wxListEvent& evt);
+			void OnBack(wxCommandEvent& evt);
+			void OnRemoveStock(wxCommandEvent& evt);
+			void OnContextMenu(wxDataViewEvent& evt);
+			void OnReset(wxCommandEvent& evt);
 			DECLARE_EVENT_TABLE()
 		
 	};	
