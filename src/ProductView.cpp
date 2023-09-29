@@ -38,6 +38,8 @@ EVT_MENU(pof::ProductView::ID_PRODUCT_MARKUP, pof::ProductView::OnMarkUp)
 EVT_MENU(pof::ProductView::ID_FUNCTION_STOCK_CHECK, pof::ProductView::OnSCFunction)
 EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
 EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
+EVT_MENU(pof::ProductView::ID_DOWNLOAD_EXCEL, pof::ProductView::OnDownloadExcel)
+
 
 EVT_UPDATE_UI(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnUpdateUI)
 END_EVENT_TABLE()
@@ -641,7 +643,11 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
 		auto scp = menu->AppendCheckItem(ID_SHOW_COST_PRICE, "Show cost price",wxT("Show the cost price for each product"));
 
-	
+		if (!mActiveCategory.empty()) {
+			wxMenu* catMenu = new wxMenu;
+			auto ctp = menu->Append(wxID_ANY, "Category functions", catMenu);
+		}
+		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Download as excel", nullptr);
 		m_auiToolBar1->PopupMenu(menu);
 	}
 }
@@ -769,6 +775,124 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			mOutOfStockProductWatchDog = now;
 		}
 	}
+}
+
+void pof::ProductView::OnDownloadExcel(wxCommandEvent& evt)
+{
+	wxFileDialog dialog(this, "Save Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Products");
+	const size_t colSize = m_dataViewCtrl1->GetColumnCount();
+	const size_t rowSize = datastore.size();
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	wxBusyCursor cursor;
+	writeHeader("Serial Number");
+	writeHeader("Product Name");
+	writeHeader("Package Size");
+	writeHeader("Stock Count");
+	writeHeader("Unit Price");
+	if(mProductCostPriceCol != nullptr)
+			writeHeader("Cost Price");
+
+	auto& metadata = datastore.get_metadata();
+	constexpr const std::array<int, 6> colIdx = {
+		pof::ProductManager::PRODUCT_SERIAL_NUM,
+		pof::ProductManager::PRODUCT_NAME,
+		pof::ProductManager::PRODUCT_PACKAGE_SIZE,
+		pof::ProductManager::PRODUCT_STOCK_COUNT,
+		pof::ProductManager::PRODUCT_UNIT_PRICE,
+		pof::ProductManager::PRODUCT_COST_PRICE
+	};
+	size_t col = 0;
+	size_t i = 0;
+	size_t row = 0;
+	for (; iter != range.end(); iter++){
+		pof::base::data::kind knd = metadata[colIdx[col]];
+		auto& v = iter->value();
+		switch (knd)
+		{
+		case pof::base::data::kind::int32:
+			v.set(boost::variant2::get<std::int32_t>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::int64:
+			v.set(boost::variant2::get<std::int64_t>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::uint32:
+			v.set(boost::variant2::get<std::uint32_t>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::uint64:
+			v.set(boost::variant2::get<std::uint64_t>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::float32:
+			v.set(boost::variant2::get<float>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::float64:
+			v.set(boost::variant2::get<double>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::datetime:
+		{
+			const std::string tf = fmt::format("{:%d/%m/%y}", boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[colIdx[col]]));
+			v.set(tf);
+		}
+			break;
+		case pof::base::data::kind::text:
+			v.set(boost::variant2::get<pof::base::data::text_t>(datastore[row].first[colIdx[col]]));
+			break;
+		case pof::base::data::kind::blob:
+			break;
+		case pof::base::data::kind::uuid:
+		{
+			std::stringstream os;
+			os << boost::variant2::get<pof::base::data::duuid_t>(datastore[row].first[colIdx[col]]);
+			v.set(os.str());
+		}
+			break;
+		case pof::base::data::kind::currency:
+		{
+			const std::string tf = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(datastore[row].first[colIdx[col]]));
+			v.set(tf);
+		}
+			break;
+		case pof::base::data::kind::null:
+			break;
+		default:
+			break;
+		}
+		col = ++i % colSize;
+		row =   i / colSize;
+	}
+
+
+	doc.save();
+	doc.close();
+
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

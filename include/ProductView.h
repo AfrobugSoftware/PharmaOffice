@@ -28,7 +28,9 @@
 #include "StockCheck.h"
 
 #include <boost/signals2/signal.hpp>
+#include <OpenXLSX.hpp>
 
+namespace excel = OpenXLSX;
 namespace pof
 {
 	class ProductView : public wxPanel
@@ -82,7 +84,8 @@ namespace pof
 			ID_TO_JSON,
 			ID_FILE,
 			ID_PACKS,
-			ID_MOVE_PRODUCT_STOCK
+			ID_MOVE_PRODUCT_STOCK,
+			ID_DOWNLOAD_EXCEL,
 		};
 
 		size_t mRowHeights;
@@ -166,6 +169,7 @@ namespace pof
 		void OnMarkUpProducts(wxCommandEvent& evt);
 		void OnMoveExpiredStock(wxCommandEvent& evt);
 		void OnUpdateUI(wxUpdateUIEvent& evt);
+		void OnDownloadExcel(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

@@ -295,10 +295,14 @@ void pof::StockCheck::AddSpecialCols()
 	{
 		auto& datum = datastore[row];
 		auto& v = datum.first;
+		std::uint64_t preQuan = boost::variant2::get<std::uint64_t>(v[STOCK_CHECKED_STOCK]);
 		auto quan = static_cast<std::uint64_t>(atoll(value.GetString().ToStdString().c_str()));
 		if (quan > boost::variant2::get<std::uint64_t>(v[STOCK_CURRENT_STOCK])){
 			wxMessageBox("Excess stock, please enter excess as inventory and update check to current stock.", "STOCK CHECK", wxICON_INFORMATION | wxOK);
 			return false;
+		}
+		else if (quan == preQuan) {
+			return false; //value did not change so ignore
 		}
 		const auto& pid = boost::variant2::get<pof::base::data::duuid_t>(v[STOCK_PRODUCT_UUID]);
 
@@ -603,6 +607,7 @@ void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)
 
 void pof::StockCheck::OnContextMenu(wxDataViewEvent& evt)
 {
+	if (!evt.GetItem().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto tt = menu->Append(ID_REMOVE_STOCK, "Remove stock check", nullptr);
 

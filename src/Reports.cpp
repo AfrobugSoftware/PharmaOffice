@@ -15,17 +15,20 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxVERTICAL);
 
-	m_panel5 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	m_panel5 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	m_panel5->SetBackgroundColour(wxColour(255, 255, 255));
 
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer(wxVERTICAL);
 
 	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTools->SetMaxSize(wxSize(-1, 40));	
-	
+	mTools->SetMaxSize(wxSize(-1, 30));
+	text = new wxStaticText(mTools, wxID_ANY, "testing the main stuff");
+	text->SetBackgroundColour(*wxWHITE);
+	textItem = mTools->AddControl(text, wxEmptyString);
     mTools->AddStretchSpacer();
-	mTools->AddTool(ID_EXCEL, wxT("Download as EXCEL"), wxArtProvider::GetBitmap("dowload"));
+	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download"));
+	mTools->AddSpacer(2);
 	mPrint = mTools->AddTool(ID_PRINT, wxT("Print"), wxArtProvider::GetBitmap(wxART_PRINT), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 
 
@@ -86,6 +89,16 @@ bool pof::ReportsDialog::LoadConsumptionPattern()
 	auto& report = *mListReport;
 	wxBusyCursor cursor;
 	//create the columns
+	mTools->Freeze();
+	std::string tt = fmt::format("Consumption pattern for {:%m/%y}", pof::base::data::clock_t::now());
+	text->SetFont(wxFontInfo().AntiAliased().Bold().Italic());
+	text->SetLabelText(tt);
+	textItem->SetMinSize(text->GetSize());
+	//text->Layout();
+	text->Update();
+	mTools->Thaw();
+	mTools->Realize();
+	mTools->Refresh();
 
 	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
 	report.AppendColumn("STOCK", wxLIST_FORMAT_LEFT, 150);
@@ -159,6 +172,18 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		pof::base::currency totalAmount;
 		std::uint64_t totalQuan = 0;
 
+		mTools->Freeze();
+		std::string tt = fmt::format("End of day for {:%d/%m/%y}", pof::base::data::clock_t::now());
+		text->SetFont(wxFontInfo().AntiAliased().Bold().Italic());
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+		//text->Layout();
+		text->Update();
+		mTools->Thaw();
+		mTools->Realize();
+		mTools->Refresh();
+
+
 		//make the columns
 		report.AppendColumn("DATE", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
@@ -213,6 +238,15 @@ void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 
 void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 {
+}
+
+wxSize pof::ReportsDialog::ResizeText(const std::string& text)
+{
+	std::string x = "X";
+	int w, h, temp;
+	mTools->GetTextExtent(x, &temp, &h);
+	mTools->GetTextExtent(text, &w, &temp);
+	return wxSize(w, h);
 }
 
 

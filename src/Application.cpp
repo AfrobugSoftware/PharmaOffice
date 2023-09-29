@@ -372,3 +372,9 @@ pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDat
 {
 	return clock_t::from_time_t(dt.GetTicks());
 }
+
+bool pof::Application::HasPrivilage(pof::Account::Privilage& priv)
+{
+	const int idx = static_cast<int>(priv);
+	return (MainAccount->priv.test(idx));
+}

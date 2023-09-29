@@ -32,6 +32,9 @@ namespace pof
 		wxAuiToolBar* mTools = nullptr;
 		wxAuiToolBarItem* mPrint = nullptr;
 		wxListCtrl* mListReport = nullptr;
+		wxStaticText* text = nullptr;
+		wxAuiToolBarItem* textItem = nullptr;
+
 	public:
 		enum {
 			ID_PRINT = 4567,
@@ -50,7 +53,7 @@ namespace pof
 			EOD,
 		};
 
-		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
+		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
 		~ReportsDialog();
 
 		constexpr inline wxListCtrl& GetListReport() { return *mListReport; }
@@ -64,7 +67,7 @@ namespace pof
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
-
+		wxSize ResizeText(const std::string& text);
 
 		ReportType mCurReportType;
 		DECLARE_EVENT_TABLE()

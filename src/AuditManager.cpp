@@ -46,7 +46,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 	if (mLocalDatabase) {
 		//select where id is less than or equal to from and limit (to  -  from)
 		if (!mLoadCacheStatement) {
-			constexpr const std::string_view sql = "SELECT * FROM audit WHERE id > ? OR id = ? LIMIT ? ORDER BY date DESC;";
+			constexpr const std::string_view sql = "SELECT * FROM audit WHERE rowid > ? OR rowid = ? LIMIT ? ORDER BY date DESC;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -102,7 +102,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT * FROM audit WHERE data = ? AND id BETWEEN ? and ? LIMIT 1000;)";
+		constexpr const std::string_view sql = R"(SELECT * FROM audit WHERE date = ? AND rowid BETWEEN ? and ? LIMIT 1000;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -139,7 +139,7 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT * FROM audit 
-		WHERE type = :type AND id BETWEEN :from AND :to LIMIT 1000;)";
+		WHERE type = :type AND rowid BETWEEN :from AND :to LIMIT 1000;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -246,10 +246,9 @@ void pof::AuditManager::CreateAuditTable()
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = 
-			"CREATE TABLE IF NOT EXISTS audit (id integer auto increment, date integer, type integer, user_name text, message text);";
+			"CREATE TABLE IF NOT EXISTS audit (date integer, type integer, user_name text, message text);";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
-			wxMessageBox(mLocalDatabase->err_msg().data(), "AUDIT");
 			spdlog::error(mLocalDatabase->err_msg());
 			return; //cannot create audit table
 		}
@@ -268,7 +267,7 @@ void pof::AuditManager::CreateSpeicalCols()
 		auto& datastore = mAuditData->GetDatastore();
 		std::uint64_t type = boost::variant2::get<std::uint64_t>(datastore[row].first[col]);
 
-		return wxVariant(types[type]);
+		return wxVariant(std::string(types[type]));
 	};
 
 	mAuditData->SetSpecialColumnHandler(AUDIT_TYPE, std::move(handler));

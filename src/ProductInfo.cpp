@@ -385,6 +385,8 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory to {}",
+			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	}
 	else {
 		//rejected
@@ -678,6 +680,8 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		- boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
 
 	
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory from {}", 
+			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	productManager.RemoveInventoryData(iter);
 	productManager.GetInventory()->RemoveData(item);
 }

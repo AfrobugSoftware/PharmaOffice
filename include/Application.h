@@ -96,6 +96,7 @@ namespace pof {
 
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);
+		bool HasPrivilage(pof::Account::Privilage& priv);
 	private:
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
