@@ -58,6 +58,10 @@ bool pof::Application::OnInit()
 	wxArtProvider::Push(new pof::ArtProvider);
 	SetUpColorTable();
 
+	//do system settings here?
+	//need to change the font globally, how to do that ??
+
+
 	//where do I lunch set up wizard?? 
 	
 	//load the settings

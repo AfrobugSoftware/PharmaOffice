@@ -20,7 +20,9 @@
 #include <wx/stattext.h>
 #include <wx/choice.h>
 #include <wx/listctrl.h>
+#include <OpenXLSX.hpp>
 
+namspace excel = OpenXLSX;
 namespace pof
 {
 	class ReportsDialog : public wxDialog
@@ -67,7 +69,10 @@ namespace pof
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
-		wxSize ResizeText(const std::string& text);
+
+		//download for the report type
+		void ConsumptionPatternExcel();
+		void EODExcel();
 
 		ReportType mCurReportType;
 		DECLARE_EVENT_TABLE()

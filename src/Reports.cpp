@@ -100,11 +100,11 @@ bool pof::ReportsDialog::LoadConsumptionPattern()
 	mTools->Realize();
 	mTools->Refresh();
 
-	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("STOCK", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("IN", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 430);
+	report.AppendColumn("CURRENT STOCK", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("INVENTORY IN", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("AMOUNT IN", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("OUT", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("INVENTORY OUT", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("AMOUNT OUT", wxLIST_FORMAT_LEFT, 150);
 
 	size_t i = 0;
@@ -238,15 +238,79 @@ void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 
 void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 {
+	switch (mCurReportType)
+	{
+	case ReportType::COMSUMPTION_PATTARN:
+		ConsumptionPatternExcel();
+		break;
+	case ReportType::EOD:
+		EODExcel();
+		break;
+	default:
+		break;
+	}
 }
 
-wxSize pof::ReportsDialog::ResizeText(const std::string& text)
+void pof::ReportsDialog::ConsumptionPatternExcel(){
+	wxFileDialog dialog(this, "Save Consumption pattern Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto datastore = wxGetApp().mProductManager.GetConsumptionPattern();
+	if (!datastore.has_value()){
+		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Consumption pattern");
+	const size_t colSize = mListReport->GetColumnCount();
+	const size_t rowSize = datastore.value().size();
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	wxBusyCursor cursor;
+	writeHeader("PRODUCT NAME");
+	writeHeader("CURRENT STOCK");
+	writeHeader("INVENTORY IN");
+	writeHeader("AMOUNT IN");
+	writeHeader("INVENTORY OUT");
+	writeHeader("AMOUNT OUT");
+	auto& v = datastore.value();
+	for (auto iter = v.begin(); iter != v.end(); iter++){
+
+	}
+
+
+	doc.save();
+	doc.close();
+
+}
+
+void pof::ReportsDialog::EODExcel()
 {
-	std::string x = "X";
-	int w, h, temp;
-	mTools->GetTextExtent(x, &temp, &h);
-	mTools->GetTextExtent(text, &w, &temp);
-	return wxSize(w, h);
 }
 
 

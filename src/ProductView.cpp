@@ -892,7 +892,7 @@ void pof::ProductView::OnDownloadExcel(wxCommandEvent& evt)
 
 	doc.save();
 	doc.close();
-
+	wxMessageBox(fmt::format("Downloaded excel to \n{}", fullPath.string()), "Excel export", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
