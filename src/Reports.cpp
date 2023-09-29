@@ -291,7 +291,6 @@ void pof::ReportsDialog::ConsumptionPatternExcel(){
 		iter->value().set(name);
 		iter++;
 	};
-	wxBusyCursor cursor;
 	writeHeader("PRODUCT NAME");
 	writeHeader("CURRENT STOCK");
 	writeHeader("INVENTORY IN");

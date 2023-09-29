@@ -22,7 +22,7 @@
 #include <wx/listctrl.h>
 #include <OpenXLSX.hpp>
 
-namspace excel = OpenXLSX;
+namespace excel = OpenXLSX;
 namespace pof
 {
 	class ReportsDialog : public wxDialog
