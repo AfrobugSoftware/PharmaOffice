@@ -197,8 +197,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(0);
 			item.SetId(i);
-			auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[1]));
-			auto s = fmt::format("{:%d-%m-%y}", fmt::localtime(t));
+			auto s = fmt::format("{:%d-%m-%y}", boost::variant2::get<pof::base::data::datetime_t>(v[1]));
 			item.SetText(std::move(s));
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);
@@ -251,7 +250,12 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 	}
 }
 
+void pof::ReportsDialog::OnReportSelectSelected(wxListEvent& evt)
+{
+}
+
 void pof::ReportsDialog::ConsumptionPatternExcel(){
+
 	wxFileDialog dialog(this, "Save Consumption pattern Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_CANCEL) return;
@@ -291,6 +295,7 @@ void pof::ReportsDialog::ConsumptionPatternExcel(){
 		iter->value().set(name);
 		iter++;
 	};
+
 	writeHeader("PRODUCT NAME");
 	writeHeader("CURRENT STOCK");
 	writeHeader("INVENTORY IN");
@@ -298,10 +303,26 @@ void pof::ReportsDialog::ConsumptionPatternExcel(){
 	writeHeader("INVENTORY OUT");
 	writeHeader("AMOUNT OUT");
 	auto& v = datastore.value();
-	for (auto iter = v.begin(); iter != v.end(); iter++){
+	for (auto it = v.begin(); it != v.end() && iter != range.end(); it++){
+		auto& row = it->first;
+		iter->value().set(boost::variant2::get<pof::base::data::text_t>(row[1]));
+		iter++;
 
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[2]));
+		iter++;
+
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[3]));
+		iter++;
+
+		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[4])));
+		iter++;
+
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[5]));
+		iter++;
+		
+		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[6])));
+		iter++;
 	}
-
 
 	doc.save();
 	doc.close();

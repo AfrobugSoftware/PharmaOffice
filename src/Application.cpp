@@ -51,7 +51,7 @@ bool pof::Application::OnInit()
 	// check for updates
 	//lunch mainframe
 	if (!wxApp::OnInit()) return false;
-
+	gVersion = "0.0.1 pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();

@@ -14,6 +14,10 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES, pof::MainFrame::OnShowModules)
 	EVT_MENU(pof::MainFrame::ID_MENU_ACCOUNT_SIGN_OUT, pof::MainFrame::OnSignOut)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_EXCEL, pof::MainFrame::OnImportExcel)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_MARKUP_SETTINGS, pof::MainFrame::OnMarkupSettings)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_OS, pof::MainFrame::OnNotif)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_EXPIRE, pof::MainFrame::OnNotif)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
@@ -78,18 +82,27 @@ void pof::MainFrame::CreateMenuBar()
 
 
 	//product menu
-	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json\tCtrl-J", nullptr);
 	wxMenu* exportSubMenu = new wxMenu;
+	wxMenu* importSubMenu = new wxMenu;
+
+	importSubMenu->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
+	importSubMenu->Append(ID_MENU_PRODUCT_IMPORT_EXCEL, "Import Excel", nullptr);
+	
 	exportSubMenu->Append(ID_MENU_EXPORT_JSON, "JSON", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
-	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export\tCtrl-E", exportSubMenu);
+	
+
+	Menus[2]->Append(ID_MENU_PRODUCT_MARKUP_SETTINGS, "Mark-up", nullptr);
+	Menus[2]->Append(wxID_ANY, "Import Products", importSubMenu);
+	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export Products", exportSubMenu);
+
 
 	//TEST
+#ifdef DEBUG
 	Menus[2]->Append(ID_MENU_PRODUCT_SAVE, "Save\tCtrl-S", nullptr);
 	Menus[2]->Append(ID_MENU_PRODUCT_LOAD, "Load\tCtrl-L", nullptr);
-
-
+#endif // DEBUG
 
 	//view
 	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
@@ -176,6 +189,7 @@ void pof::MainFrame::CreateImageList()
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
 	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
 	mImageList->Add(wxArtProvider::GetBitmap("user"));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST));
 
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
@@ -210,7 +224,7 @@ void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
 	wxAboutDialogInfo info;
 	info.SetName(wxT("D-Glopa PharmaOffice"));
-	info.SetVersion(wxT("0.0.1 pre beta")); //version string need to come from settings
+	info.SetVersion(wxGetApp().gVersion); //version string need to come from settings
 	info.SetDescription(wxT("Pharmacy mamagement system aid in the managment of pharmaceutical products, sale, transactions, prescription, expiry and so much more"));
 	info.SetCopyright(wxT("(C) 2023 D-Glopa Technologies"));
 	info.AddDeveloper("Ferife Zino :)");
@@ -306,6 +320,39 @@ void pof::MainFrame::OnTestLoad(wxCommandEvent& evt)
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
+	}
+}
+
+void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnMarkupSettings(wxCommandEvent& evt)
+{
+	wxTextEntryDialog dialog(this, "Please enter the precentage(%) mark-up Range( 0 - 100 )", "Product Markup");
+	dialog.SetTextValidator(wxTextValidator{wxFILTER_DIGITS});
+	if (dialog.ShowModal() == wxID_OK) {
+		float input =  static_cast<float>(std::atoi(dialog.GetValue().ToStdString().c_str()));
+		input = std::max(0.0f, std::min(input, 100.0f));
+		input /= 100.0f;
+		wxGetApp().mProductManager.gMarkup = input;
+	}
+}
+
+void pof::MainFrame::OnNotif(wxCommandEvent& evt)
+{
+	wxWindowID id = evt.GetId();
+	bool checked = evt.IsChecked();
+	switch (id)
+	{
+	case ID_MENU_PRODUCT_NOTIF_OS:
+		wxGetApp().bCheckOutOfStockOnUpdate = checked;
+		break;
+	case ID_MENU_PRODUCT_NOTIF_EXPIRE:
+		wxGetApp().bCheckExpiredOnUpdate = checked;
+		break;
+	default:
+		break;
 	}
 }
 

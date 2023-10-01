@@ -90,6 +90,7 @@ namespace pof {
 
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
 		std::shared_ptr<pof::Account> MainAccount;
+		std::string gVersion;
 		
 
 		boost::property_tree::ptree& operator[](const std::string& path);
@@ -100,7 +101,6 @@ namespace pof {
 	private:
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
-		std::string mVersion;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
 

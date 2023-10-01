@@ -21,6 +21,7 @@
 #include <wx/choice.h>
 #include <wx/listctrl.h>
 #include <OpenXLSX.hpp>
+#include <wx/simplebook.h>
 
 namespace excel = OpenXLSX;
 namespace pof
@@ -34,10 +35,18 @@ namespace pof
 		wxAuiToolBar* mTools = nullptr;
 		wxAuiToolBarItem* mPrint = nullptr;
 		wxListCtrl* mListReport = nullptr;
+		wxListCtrl* mReportSelect = nullptr;
 		wxStaticText* text = nullptr;
 		wxAuiToolBarItem* textItem = nullptr;
+		wxSimplebook* mBook = nullptr;
 
 	public:
+		//pages
+		enum {
+			REPORT_SELECT,
+			REPORT_VIEW,
+		};
+
 		enum {
 			ID_PRINT = 4567,
 			ID_EXCEL,
@@ -69,6 +78,9 @@ namespace pof
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
+		void OnReportSelectSelected(wxListEvent& evt);
+
+
 
 		//download for the report type
 		void ConsumptionPatternExcel();

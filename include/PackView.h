@@ -50,7 +50,8 @@ namespace pof
 		wxStaticText* mTotalQuantity;
 		wxStaticText* mTotalAmountText;
 		wxStaticText* mTotalAmount;
-
+		wxStaticText* mPackText = nullptr;
+		wxAuiToolBarItem* mTextItem = nullptr;
 	public:
 
 		PackView(wxWindow* parent, bool showSale = false, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1057, 642), long style = wxDEFAULT_DIALOG_STYLE);

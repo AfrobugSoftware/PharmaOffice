@@ -37,7 +37,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
 	mTopTools->AddStretchSpacer();
 	if (mShowSale) {
-		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("action_remove"), "Sell pack");
+		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("application"), "Sell pack");
 	}
 
 	mTopTools->Realize(); 
@@ -220,8 +220,16 @@ void pof::PackView::CreatePackTools()
 	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
 	mTopTools->AddSpacer(20);
 
-	auto name = mTopTools->AddTool(wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
-	name->SetLabel(fmt::format("PACK: {}", mPackName));
+	if (mPackText) {
+		mPackText->Destroy();
+		mPackText = nullptr;
+	}
+	mPackText = new wxStaticText(mTopTools, wxID_ANY, fmt::format("{}", mPackName));
+	mPackText->SetFont(wxFontInfo().AntiAliased().Bold());
+	mPackText->SetBackgroundColour(*wxWHITE);
+	mTopTools->AddSpacer(2);
+	mTextItem = mTopTools->AddControl(mPackText);
+	mTextItem->SetAlignment(wxALIGN_CENTER);
 
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");
@@ -240,7 +248,13 @@ void pof::PackView::CreateTopTools()
 	mTopTools->AddStretchSpacer();
 	if (mShowSale) {
 		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("action_remove"), "Sell pack");
+	}	
+
+	if (mPackText) {
+		mPackText->Destroy();
+		mPackText = nullptr;
 	}
+
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();

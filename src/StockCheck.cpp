@@ -13,6 +13,8 @@ EVT_LIST_ITEM_ACTIVATED(pof::StockCheck::ID_STOCK_SELECT, pof::StockCheck::OnSto
 EVT_INIT_DIALOG(pof::StockCheck::OnInitDialog)
 EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnEditingStarted)
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnContextMenu)
+EVT_LIST_ITEM_RIGHT_CLICK(pof::StockCheck::ID_STOCK_SELECT, pof::StockCheck::OnStockSelectRightClick)
+EVT_MENU(pof::StockCheck::ID_STOCK_CONSUMPTION_PATTERN, pof::StockCheck::OnStockConsumptionPattern)
 EVT_MENU(pof::StockCheck::ID_REMOVE_STOCK, pof::StockCheck::OnRemoveStock)
 END_EVENT_TABLE()
 
@@ -626,4 +628,18 @@ void pof::StockCheck::OnReset(wxCommandEvent& evt)
 	wxGetApp().mProductManager.LoadStockCheckDate(*mSelectedMonth);
 	mStockData->Thaw();
 	mStockData->Refresh();
+}
+
+void pof::StockCheck::OnStockSelectRightClick(wxListEvent& evt)
+{
+	wxMenu* menu = new wxMenu;
+	auto pp = menu->Append(ID_STOCK_CONSUMPTION_PATTERN, "Consumption pattern", nullptr);
+
+	mStockSelect->PopupMenu(menu);
+}
+
+void pof::StockCheck::OnStockConsumptionPattern(wxCommandEvent& evt)
+{
+	pof::ReportsDialog dialog(this, wxID_ANY, "Consumption pattern");
+	if (dialog.LoadReport(pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN)) dialog.ShowModal();
 }

@@ -224,8 +224,8 @@ namespace pof {
 		void EmplaceProductData(pof::base::data&& data);
 		void StoreProductData(pof::base::data&& data);
 		void InventoryBroughtForward(); 
-		void MarkUpProducts(double markUp);
-		void MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp);
+		void MarkUpProducts();
+		void MarkUpProducts(const pof::base::data::duuid_t& uid);
 
 		//add a product from UI
 		void AddProductData();
@@ -236,6 +236,7 @@ namespace pof {
 		std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> GetExpiredProductsStock(pof::base::data::datetime_t m);
  		//product uuid generators
 		bool bUsingLocalDatabase = false;
+		float gMarkup = 0.3f;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		boost::uuids::random_generator_mt19937 UuidGen;

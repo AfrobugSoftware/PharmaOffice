@@ -1135,14 +1135,14 @@ void pof::ProductManager::InventoryBroughtForward()
 
 
 //markup is a pecentage in float so markUp = markup/100
-void pof::ProductManager::MarkUpProducts(double markUp)
+void pof::ProductManager::MarkUpProducts()
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = ScaleCost(cost_price,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(markUp));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(gMarkup));
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);
@@ -1153,14 +1153,14 @@ void pof::ProductManager::MarkUpProducts(double markUp)
 	}
 }
 
-void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid, double markUp)
+void pof::ProductManager::MarkUpProducts(const pof::base::data::duuid_t& uid)
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = R"(UPDATE products SET unit_price = ScaleCost(cost_price, ?) WHERE uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(markUp, uid));
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(gMarkup, uid));
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);

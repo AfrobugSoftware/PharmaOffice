@@ -26,6 +26,7 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <nlohmann/json.hpp>
+#include <OpenXLSX.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -34,6 +35,7 @@
 #include <unordered_map>
 
 
+namespace excel = OpenXLSX;
 namespace pof {
 	class MainFrame : public wxFrame
 	{
@@ -59,6 +61,7 @@ namespace pof {
 			ID_MENU_VIEW_LOG,
 			ID_MENU_ACCOUNT_SIGN_OUT,
 			ID_MENU_PRODUCT_IMPORT_JSON,
+			ID_MENU_PRODUCT_IMPORT_EXCEL,
 			ID_MENU_HELP_ABOUT,
 			ID_MENU_PRODUCT_EXPORT,
 			ID_MENU_EXPORT_JSON,
@@ -66,8 +69,9 @@ namespace pof {
 			ID_MENU_EXPORT_CSV,
 			ID_MENU_PRODUCT_SAVE,
 			ID_MENU_PRODUCT_LOAD,
-		
-
+			ID_MENU_PRODUCT_MARKUP_SETTINGS,
+			ID_MENU_PRODUCT_NOTIF_OS, //NOTIY OUT OF STOCK
+			ID_MENU_PRODUCT_NOTIF_EXPIRE,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -96,6 +100,9 @@ namespace pof {
 		void OnUpdateUI(wxUpdateUIEvent& evt);
 		void OnShowModules(wxCommandEvent& evt);
 		void OnSignOut(wxCommandEvent& evt);
+		void OnImportExcel(wxCommandEvent& evt);
+		void OnMarkupSettings(wxCommandEvent& evt);
+		void OnNotif(wxCommandEvent& evt);
 
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
@@ -111,7 +118,6 @@ namespace pof {
 		void OnAuiThemeChangeSlot();
 		void OnCategoryAdded(const std::string& name);
 		void OnProductModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);
-
 	private:
 		wxAuiManager mAuiManager;
 		pof::Modules* mModules = nullptr;

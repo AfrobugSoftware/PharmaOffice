@@ -246,7 +246,8 @@ void pof::SearchProduct::OnAddProduct(wxCommandEvent& evt)
 		wxMessageBox("No product selected to add, please select one", "SEARCH PRODUCT", wxICON_WARNING | wxOK);
 		return;
 	}
-	EndModal(wxID_OK);
+	if(IsModal()) 
+		EndModal(wxID_OK);
 }
 void pof::SearchProduct::OnHeaderClicked(wxDataViewEvent& evt)
 {
