@@ -92,7 +92,12 @@ void pof::MainFrame::CreateMenuBar()
 	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
 	
+	auto it  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_OS, "Notify Out of Stock", "Notify when products go out of stock");
+	auto it2 = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_EXPIRE, "Notify Expire Products", "Notify when products are expired");
+	it->Check(wxGetApp().bCheckOutOfStockOnUpdate);
+	it2->Check(wxGetApp().bCheckExpiredOnUpdate);
 
+	Menus[2]->AppendSeparator();
 	Menus[2]->Append(ID_MENU_PRODUCT_MARKUP_SETTINGS, "Mark-up", nullptr);
 	Menus[2]->Append(wxID_ANY, "Import Products", importSubMenu);
 	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export Products", exportSubMenu);
@@ -325,11 +330,31 @@ void pof::MainFrame::OnTestLoad(wxCommandEvent& evt)
 
 void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
 {
+	wxFileDialog dialog(this, "Open Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_FILE_MUST_EXIST | wxFD_OPEN );
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	excel::XLDocument doc;
+
+	//do mapping
+	std::unordered_map<size_t,std::string> mHeaders;
+	{
+		//create mapping dialog
+		wxDialog dialog;
+
+	}
 }
 
 void pof::MainFrame::OnMarkupSettings(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog(this, "Please enter the precentage(%) mark-up Range( 0 - 100 )", "Product Markup");
+	wxTextEntryDialog dialog(this, "Please enter the precentage(%) Mark-Up\nRange ( 0 - 100 )", "Product Markup");
 	dialog.SetTextValidator(wxTextValidator{wxFILTER_DIGITS});
 	if (dialog.ShowModal() == wxID_OK) {
 		float input =  static_cast<float>(std::atoi(dialog.GetValue().ToStdString().c_str()));
