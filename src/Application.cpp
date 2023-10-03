@@ -59,6 +59,9 @@ bool pof::Application::OnInit()
 	SetUpColorTable();
 
 	//do system settings here?
+	wxSystemOptions::SetOption(wxT("msw.remap"), 0);
+	wxSystemOptions::SetOption(wxT("msw.staticbox.optimized-paint"), 0);
+
 	//need to change the font globally, how to do that ??
 
 

@@ -22,7 +22,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
-: wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this, AUIMGRSTYLE) {
+: wxFrame(parent, id, "PHARMAOFFICE - Personal", position, size), mAuiManager(this, AUIMGRSTYLE) {
 	SetBackgroundColour(*wxWHITE); //wrap in theme
 	SetupAuiTheme();
 	CreateMenuBar();
@@ -337,7 +337,7 @@ void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
 	auto fullPath = fs::path(filename);
 
 	if (fullPath.extension() != ".xlsx") {
-		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Import Excel",
 			wxICON_INFORMATION | wxOK);
 		return;
 	}
@@ -346,8 +346,7 @@ void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
 	//do mapping
 	std::unordered_map<size_t,std::string> mHeaders;
 	{
-		//create mapping dialog
-		wxDialog dialog;
+		
 
 	}
 }

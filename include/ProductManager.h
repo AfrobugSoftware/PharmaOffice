@@ -113,6 +113,12 @@ namespace pof {
 			SIMPLE,
 			CRITICAL,
 		};
+
+		enum :std::uint8_t
+		{
+			STOCK_CHECKED,
+
+		};
 		using relation_t = pof::base::relation <
 			pof::base::data::duuid_t, //UUID
 			std::uint64_t, //SERIAL NUM
@@ -260,6 +266,7 @@ namespace pof {
 		void SaveStockCheckData();
 		bool CheckIfAdded(const pof::base::data::duuid_t& pid);
 		bool IsStockCheckComplete();
+		bool IsStockCheckComplete(const pof::base::data::datetime_t& month);
 		void UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
 		void LoadStockDataByCategory(pof::base::data::datetime_t month, std::uint64_t catID);
@@ -299,6 +306,10 @@ namespace pof {
 		bool UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level, const std::string& message);
 
 		//product search filters
+
+		//actions are things done in the month
+		void CreateActionTable();
+
 
 	private:
 		std::shared_mutex mCategoryMutex;

@@ -1734,6 +1734,7 @@ bool pof::ProductManager::IsStockCheckComplete()
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
+		//let us do this, check if we are in this month, 
 		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
 		assert(status);
@@ -1750,6 +1751,36 @@ bool pof::ProductManager::IsStockCheckComplete()
 		return (mProductData->GetDatastore().size() == std::get<0>(*(rel->begin())));
 
 	}
+}
+
+bool pof::ProductManager::IsStockCheckComplete(const pof::base::data::datetime_t& month)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT Count(pid)
+		FROM stock_check WHERE Months(date) = ? AND status = 1;)"; // 1 means done
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		//let us do this, check if we are in this month, 
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		//all products have been accounted for this month
+		return (mProductData->GetDatastore().size() == std::get<0>(*(rel->begin())));
+
+	}
+	return false;
 }
 
 void pof::ProductManager::UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock)

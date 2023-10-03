@@ -207,7 +207,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mSave->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mSave, 0, wxALL, 5);
 
-	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(-1, 80), wxSUNKEN_BORDER);
 	mCheckout->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mCheckout, 0, wxALL, 5);
 

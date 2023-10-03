@@ -2,6 +2,9 @@
 #include <wx/busyinfo.h>
 #include <wx/msgdlg.h>
 #include <wx/aui/framemanager.h>
+#include <wx/sysopt.h>
+#include <wx/config.h>
+#include <wx/stdpaths.h>
 
 #include <filesystem>
 #include <netmanager.h>

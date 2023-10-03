@@ -664,6 +664,7 @@ void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
 	}
 	wxBusyCursor cursor;
 	wxGetApp().mProductManager.InventoryBroughtForward();
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Brought Forward");
 }
 
 void pof::ProductView::OnSCFunction(wxCommandEvent& evt)
@@ -705,6 +706,8 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	//FIX THE OVERWRITE
 	row.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
 	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Marked up {}",
+		boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])));
 
 }
 
