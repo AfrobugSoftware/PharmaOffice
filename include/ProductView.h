@@ -193,6 +193,7 @@ namespace pof
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
+		void DoBroughtForward();
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 	private:
 		DECLARE_EVENT_TABLE()

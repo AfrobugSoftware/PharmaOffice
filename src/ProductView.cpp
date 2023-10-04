@@ -75,7 +75,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
 
-
+	DoBroughtForward();
 	m_mgr.Update();
 }
 
@@ -1185,6 +1185,19 @@ void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
 		menu->Append(range, name, nullptr);
 		menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this),range);
 	}
+}
+
+void pof::ProductView::DoBroughtForward()
+{
+	if (!wxGetApp().bAutomaticBroughtForward) return;
+	auto today = pof::base::data::clock_t::now();
+	if (wxGetApp().mProductManager.CheckAction(pof::ProductManager::BROUGHT_FORWARD, today)) return;
+
+	//we have not done brought forward this month
+	wxBusyCursor cursor;
+	wxGetApp().mProductManager.InventoryBroughtForward();
+	wxGetApp().mProductManager.AddAction(pof::ProductManager::BROUGHT_FORWARD);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Automatic Brought Forward");
 }
 
 void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)

@@ -55,6 +55,7 @@ namespace pof
 			wxPanel* mEmptyPanel;
 			wxSimplebook* mBook;
 			wxAuiToolBarItem* mBackButton;
+			wxAuiToolBarItem* mAddButton;
 			pof::base::data::datetime_t* mSelectedMonth = nullptr;
 		
 		public:
@@ -77,6 +78,7 @@ namespace pof
 					ID_STOCK_SELECT,
 					ID_REMOVE_STOCK,
 					ID_STOCK_CONSUMPTION_PATTERN,
+					ID_STOCK_MARK_AS_COMPLETE,
 			};
 
 			//status
@@ -99,7 +101,6 @@ namespace pof
 			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1178,689 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 			wxAuiManager m_mgr;
 			void CreateToolBar();
-			void CreateStockSelectToolbar();
 			void CreateEmptyStockCheck();
 			void CreateStockSelect();
 			void LoadStockSelect();
@@ -127,6 +128,8 @@ namespace pof
 			void OnReset(wxCommandEvent& evt);
 			void OnStockSelectRightClick(wxListEvent& evt);
 			void OnStockConsumptionPattern(wxCommandEvent& evt);
+			void OnToolUpdateUI(wxUpdateUIEvent& evt);
+			void OnMarkAsComplete(wxCommandEvent& evt);
 			DECLARE_EVENT_TABLE()
 		
 	};	

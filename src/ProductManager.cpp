@@ -2363,6 +2363,66 @@ bool pof::ProductManager::UpdateWarnLevel(const pof::base::data::duuid_t& pid, s
 	return false;
 }
 
+void pof::ProductManager::CreateActionTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS actions (date integer, action integer);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+bool pof::ProductManager::AddAction(size_t actionType)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO actions VALUES (?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(
+		pof::base::data::clock_t::now(), static_cast<std::uint64_t>(actionType)));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::CheckAction(size_t actionType, pof::base::data::datetime_t date)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT 1 
+		FROM actions WHERE Months(date) = ? AND action = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		
+
+		auto month = std::chrono::duration_cast<date::months>(date.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month), static_cast<std::uint64_t>(actionType)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel);
+		
+		mLocalDatabase->finalise(*stmt);
+		return !rel->empty();
+	
+	}
+	return false;
+}
+
 void pof::ProductManager::Finialize()
 {
 	if (bUsingLocalDatabase) {

@@ -117,6 +117,7 @@ namespace pof {
 		enum :std::uint8_t
 		{
 			STOCK_CHECKED,
+			BROUGHT_FORWARD,
 
 		};
 		using relation_t = pof::base::relation <
@@ -309,7 +310,8 @@ namespace pof {
 
 		//actions are things done in the month
 		void CreateActionTable();
-
+		bool AddAction(size_t actionType); //writes an action for the currenct date
+		bool CheckAction(size_t actionType, pof::base::data::datetime_t date);
 
 	private:
 		std::shared_mutex mCategoryMutex;

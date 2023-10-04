@@ -356,16 +356,20 @@ void pof::Application::CreateTables()
 	mProductManager.CreateStockCheckTable();
 	mProductManager.CreateWarningTable();
 	mProductManager.CreateExpiredStockTable();
+	mProductManager.CreateActionTable();
 	mSaleManager.CreateSaleTable();
 	MainAccount->CreateAccountInfoTable();
 }
 
 void pof::Application::ReadSettingsFlags()
 {
+	
 }
+
 
 void pof::Application::SaveSettingsFlags()
 {
+
 }
 
 boost::property_tree::ptree& pof::Application::operator[](const std::string& path)
