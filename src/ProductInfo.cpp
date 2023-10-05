@@ -47,6 +47,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Product History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->AddStretchSpacer();
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	
 	m_auiToolBar1->AddControl(mInventoryDate);
 	m_auiToolBar1->Realize(); 
 	
@@ -196,6 +197,13 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		m_auiToolBar1->Update();
 		mProductData = row;
 		LoadProductProperty(row);
+
+		auto firstMonth = wxGetApp().mProductManager.GetLastInventoryDate(boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+		if (!firstMonth.has_value()) {
+			firstMonth.emplace();
+		}
+		mInventoryDate->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
+
  	}
 	catch (const std::exception& exp) {
 		spdlog::critical(exp.what());
@@ -478,7 +486,7 @@ void pof::ProductInfo::LoadInventoryByDate(const pof::base::data::datetime_t& dt
 {
 	bool status = wxGetApp().mProductManager.LoadInventoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
 	if (!status) {
-		
+		wxMessageBox("Cannot load inventory by date", "Inventory", wxICON_INFORMATION | wxOK);
 	}
 }
 
@@ -486,7 +494,8 @@ void pof::ProductInfo::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
 {
 	bool status = wxGetApp().mSaleManager.LoadHistoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
 	if (!status) {
-		
+		wxMessageBox("Cannot load history by date", "History", wxICON_INFORMATION | wxOK);
+
 	}
 }
 
@@ -695,6 +704,7 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 
 void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
 {
+	if (!InventoryView->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
 

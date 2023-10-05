@@ -22,7 +22,7 @@ void pof::base::day_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
 	std::uint64_t duration = sqlite3_value_int64(vals[0]);
 	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
 	auto day = std::chrono::duration_cast<date::days>(tt.time_since_epoch());
-
+	//using the duration would be a better Idea but i have already done the timepoint way way from month
 	sqlite3_result_int64(conn, day.count());
 }
 

@@ -427,7 +427,7 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 		case pof::base::data::kind::datetime:
 		{
 			auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(d));
-			v = fmt::format("{:%y-%m-%d}", fmt::localtime(t));
+			v = fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(d));
 			break;
 		}
 		case pof::base::data::kind::text:

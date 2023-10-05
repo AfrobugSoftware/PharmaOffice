@@ -51,7 +51,7 @@ bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::duuid_t& ud,cons
 		if (!mProductHistByDateStmt){
 			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
 					FROM sales s, products p
-					WHERE s.product_uuid = ? AND s.product_uuid = p.uuid AND s.sale_date BETWEEN ? AND ?;)";
+					WHERE s.product_uuid = ? AND s.product_uuid = p.uuid AND Days(s.sale_date) = ?;)";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()){
 				spdlog::error(mLocalDatabase->err_msg());
@@ -59,8 +59,9 @@ bool pof::SaleManager::LoadHistoryByDate(const pof::base::data::duuid_t& ud,cons
 			}
 			mProductHistByDateStmt = *stmt;
 		}
-		auto ddt = dt + date::days(1);
-		bool status = mLocalDatabase->bind(mProductHistByDateStmt, std::make_tuple(ud,dt, ddt));
+		auto dayAhead = date::floor<date::days>(dt);
+		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(mProductHistByDateStmt, std::make_tuple(ud,static_cast<std::uint64_t>(day)));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;

@@ -224,7 +224,7 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud
 		if (!LoadInventoryByDateStmt){
 			constexpr const std::string_view sql = R"(SELECT * 
 				FROM inventory i 
-				WHERE i.uuid = ? AND input_date BETWEEN ? AND ? LIMIT 1000;
+				WHERE i.uuid = ? AND Days(i.input_date) = ? LIMIT 1000;
 			)";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
@@ -233,8 +233,9 @@ bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud
 			}
 			LoadInventoryByDateStmt = *stmt;
 		}
-		auto dttp = dt + date::days(1);
-		bool status = mLocalDatabase->bind(LoadInventoryByDateStmt, std::make_tuple(ud,dt, dttp));
+		auto dayAhead = date::floor<date::days>(dt);
+		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(LoadInventoryByDateStmt, std::make_tuple(ud, static_cast<std::uint64_t>(day)));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
@@ -850,7 +851,7 @@ std::optional<std::uint64_t> pof::ProductManager::GetLastInventoryId(const pof::
 	return std::nullopt;
 }
 
-std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastInventoryDate(const pof::base::data::datetime_t& uid)
+std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastInventoryDate(const pof::base::data::duuid_t& uid)
 {
 	if (mLocalDatabase)
 	{

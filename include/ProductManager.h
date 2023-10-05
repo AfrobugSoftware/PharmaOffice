@@ -114,6 +114,7 @@ namespace pof {
 			CRITICAL,
 		};
 
+		//actions
 		enum :std::uint8_t
 		{
 			STOCK_CHECKED,
@@ -210,7 +211,7 @@ namespace pof {
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
 		bool RemoveInventoryData(pof::base::data::const_iterator iter);
 		std::optional<std::uint64_t> GetLastInventoryId(const pof::base::data::duuid_t& uid);
-		std::optional<pof::base::data::datetime_t> GetLastInventoryDate(const pof::base::data::datetime_t& uid);
+		std::optional<pof::base::data::datetime_t> GetLastInventoryDate(const pof::base::data::duuid_t& uid);
 
 		void AddCategory(const std::string& name);
 		void RemoveCategory(const std::string& name);
