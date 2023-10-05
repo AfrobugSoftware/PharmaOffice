@@ -105,6 +105,24 @@ bool pof::Application::OnInit()
 	mSaleManager.mCurAccount = MainAccount;
 	mSaleManager.mCurPharmacy = MainPharmacy;
 
+	//check if time is increasing, very important that a changed time cause
+	auto today = pof::base::data::clock_t::now();
+	auto checkTime = mProductManager.GetLastCheckedTime();
+	if (!checkTime.has_value()) {
+		wxMessageBox("Database corrupted", "System Checks", wxICON_ERROR | wxOK);
+		return false;
+	}
+	if (checkTime->time_since_epoch().count() == 0){
+		//first time creating
+		mProductManager.AddAction(ProductManager::CHECK_TIME);
+	}
+	else {
+		if (checkTime > today){
+			wxMessageBox("System time is less than last recorded time", "System checks", wxICON_ERROR | wxOK);
+			return false;
+		}
+	}
+	mProductManager.UpdateTimeCheck(today);
 	return CreateMainFrame();
 }
 

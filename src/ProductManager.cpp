@@ -850,6 +850,26 @@ std::optional<std::uint64_t> pof::ProductManager::GetLastInventoryId(const pof::
 	return std::nullopt;
 }
 
+std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastInventoryDate(const pof::base::data::datetime_t& uid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT Min(Months(input_date)) FROM inventory WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+	
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+		}
+	}
+	return std::nullopt;
+}
+
 void pof::ProductManager::AddCategory(const std::string& name)
 {
 	if (name.empty()) return;
@@ -2419,6 +2439,47 @@ bool pof::ProductManager::CheckAction(size_t actionType, pof::base::data::dateti
 		mLocalDatabase->finalise(*stmt);
 		return !rel->empty();
 	
+	}
+	return false;
+}
+
+std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastCheckedTime()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT date FROM actions WHERE action = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(CHECK_TIME)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+		assert(rel);
+
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()){
+			return pof::base::data::datetime_t{};
+		}
+		return std::get<0>(*(rel->begin()));
+	}
+	return std::nullopt;
+}
+
+bool pof::ProductManager::UpdateTimeCheck(pof::base::data::datetime_t time)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE actions SET date = ? WHERE action = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(time, static_cast<std::uint64_t>(CHECK_TIME)));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
+		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	return false;
 }

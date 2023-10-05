@@ -52,6 +52,7 @@ namespace pof
 			wxDatePickerCtrl* mStockCheckMonth;
 			wxChoice* mCategorySelect;
 			wxListCtrl* mStockSelect;
+			wxListItem AddSelectItem;
 			wxPanel* mEmptyPanel;
 			wxSimplebook* mBook;
 			wxAuiToolBarItem* mBackButton;

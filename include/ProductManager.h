@@ -118,7 +118,7 @@ namespace pof {
 		{
 			STOCK_CHECKED,
 			BROUGHT_FORWARD,
-
+			CHECK_TIME,
 		};
 		using relation_t = pof::base::relation <
 			pof::base::data::duuid_t, //UUID
@@ -210,7 +210,7 @@ namespace pof {
 		bool UpdateInventoryData(pof::base::data::const_iterator iter);
 		bool RemoveInventoryData(pof::base::data::const_iterator iter);
 		std::optional<std::uint64_t> GetLastInventoryId(const pof::base::data::duuid_t& uid);
-
+		std::optional<pof::base::data::datetime_t> GetLastInventoryDate(const pof::base::data::datetime_t& uid);
 
 		void AddCategory(const std::string& name);
 		void RemoveCategory(const std::string& name);
@@ -312,7 +312,9 @@ namespace pof {
 		void CreateActionTable();
 		bool AddAction(size_t actionType); //writes an action for the currenct date
 		bool CheckAction(size_t actionType, pof::base::data::datetime_t date);
-
+		
+		std::optional<pof::base::data::datetime_t> GetLastCheckedTime();
+		bool UpdateTimeCheck(pof::base::data::datetime_t time);
 	private:
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 

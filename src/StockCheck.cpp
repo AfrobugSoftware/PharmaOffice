@@ -223,16 +223,13 @@ void pof::StockCheck::CreateEmptyStockCheck()
 
 void pof::StockCheck::CreateStockSelect()
 {
-	mStockSelect = new wxListCtrl(mBook, ID_STOCK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER | wxLC_HRULES | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+
+	mStockSelect = new wxListCtrl(mBook, ID_STOCK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+
 
 	wxImageList* imagelist = new wxImageList(16, 16);
 	imagelist->Add(wxArtProvider::GetBitmap("folder_files"));
 	mStockSelect->AssignImageList(imagelist, wxIMAGE_LIST_SMALL);
-
-	mStockSelect->AppendColumn("Stock date", wxLIST_FORMAT_CENTER, 500);
-	mStockSelect->AppendColumn("Stock date", wxLIST_FORMAT_LEFT, 100);
-	mStockSelect->AppendColumn("Stock date", wxLIST_FORMAT_LEFT, 100);
-
 }
 
 void pof::StockCheck::LoadStockSelect()
@@ -556,8 +553,15 @@ void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 	wxGetApp().mProductManager.LoadStockCheckDate(*tt);
 	
 	wxAuiPaneInfo& tool = m_mgr.GetPane("Tools");
-	wxAuiPaneInfo& summary = m_mgr.GetPane("Summary");
+	wxAuiPaneInfo& summary = m_mgr.GetPane("SummaryPane");
 	
+	if (tool.IsOk() && summary.IsOk()){
+		tool.Show();
+		summary.Show();
+
+		m_mgr.Update();
+	}
+
 	UpdateSummary();
 	mBook->SetSelection(PAGE_STOCK_LIST);
 	mBook->Refresh();
@@ -576,6 +580,15 @@ void pof::StockCheck::OnBack(wxCommandEvent& evt)
 		}
 		else {
 			LoadStockSelect();
+		}
+		wxAuiPaneInfo& tool = m_mgr.GetPane("Tools");
+		wxAuiPaneInfo& summary = m_mgr.GetPane("SummaryPane");
+
+		if (tool.IsOk() && summary.IsOk()) {
+			tool.Hide();
+			summary.Hide();
+
+			m_mgr.Update();
 		}
 	}
 }
