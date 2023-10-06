@@ -29,7 +29,7 @@ int test_main(int argc, char** const argv)
 
 
 pof::Application::Application()
-{
+: gSessionLast(30) {
 	SetAppName("PharmaOffice");
 	SetAppDisplayName("PharmaOffice");
 	SetVendorName("D-GLOPA NIGERIA LIMITED");
@@ -218,35 +218,58 @@ bool pof::Application::SetUpPaths()
 	return true;
 }
 
-bool pof::Application::LoadSettings(const fs::path& fp)
+bool pof::Application::LoadSettings()
 {
-	if (fp.empty() || !fs::exists(fp)) return false;
-	std::fstream inifile(fp, std::ios::in);
-	if (!inifile.is_open()) false;
-	try {
-		boost::property_tree::ini_parser::read_ini(inifile, mSettings);
-		ReadSettingsFlags();
-	}
-	catch (const boost::property_tree::ini_parser_error& error) {
-		//need to find where to log errors
-		//cannot parse ini file,format error
-		return false;
-	}
+	wxConfigBase* config = wxConfigBase::Get();
+
 	return true;
 }
 
-bool pof::Application::SaveSettings(const fs::path& fp)
+bool pof::Application::SaveSettings()
 {
-	if (fp.empty() || !fs::exists(fp)) return false;
-	std::fstream inifile(fp, std::ios::out);
-	if (!inifile.is_open()) false;
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
+	config->Read(wxT("UseLocalDatabase"), &bUsingLocalDatabase);
+	config->Read(wxT("HighlightLowStock"), &bHighlightLowStock);
+	config->Read(wxT("GlobalCostMarkup"), &bGlobalCostMarkup);
+	config->Read(wxT("KeepMeSignedIn"), &bKeepMeSignedIn);
+	config->Read(wxT("UseMinStock"), &bUseMinStock);
+	config->Read(wxT("PharmacistWarnings"), &bPharamcistWarings);
+	config->Read(wxT("CheckExpired"), &bCheckExpired);
+	config->Read(wxT("CheckOutOfStock"), &bCheckOutOfStock);
+	config->Read(wxT("CheckPOM"), &bCheckPOM);
+	config->Read(wxT("CheckExpirePeriodOnIdle"), &bCheckExpirePeiodOnIdle);
+	config->Read(wxT("AlertCriticalWarnings"), &bAlertCriticalWarnings);
+	config->Read(wxT("CheckExpiredOnUpdate"), &bCheckExpiredOnUpdate);
+	config->Read(wxT("CheckOutOfStockOnUpdate", &bCheckOutOfStockOnUpdate));
+	config->Read(wxT("AutomacticBroughtForward"), &bAutomaticBroughtForward);
+	config->Read(wxT("Version"), &gVersion);
+	
+	
+	config->SetPath(wxT("/"));
+	config->SetPath(wxT("/mainframe"));
+	int x, y, w, h;
+	x = y = w = h = -1;
+	config->Read(wxT("PosX"), &x);
+	config->Read(wxT("PosY"), &y);
+	config->Read(wxT("SizeW"), &w);
+	config->Read(wxT("SizeH"), &h);
 
-	try {
-		boost::property_tree::write_ini(inifile, mSettings);
+
+
+	config->SetPath(wxT("/"));
+	config->SetPath(wxT("/pharmacy"));
+
+
+	if (bKeepMeSignedIn) {
+		//read and create pharmacy
+		config->SetPath(wxT("/"));
+		config->SetPath(wxT("/activeuser"));
+		//save user id or session Id that is bound to a user, sessions have expiry dates 
 	}
-	catch (const boost::property_tree::ini_parser_error& error) {
-		return false;
-	}
+
+
+	config->SetPath(wxT("/"));
 	return true;
 }
 
@@ -368,6 +391,7 @@ void pof::Application::CreateTables()
 		return;
 	}
 	mLocalDatabase->finalise(*stmt);
+
 	mAuditManager.CreateAuditTable();
 	mProductManager.CreatePackTable();
 	mProductManager.CreateOrderListTable();
@@ -406,4 +430,8 @@ bool pof::Application::HasPrivilage(pof::Account::Privilage& priv)
 {
 	const int idx = static_cast<int>(priv);
 	return (MainAccount->priv.test(idx));
+}
+
+void pof::Application::CreateSessionTable()
+{
 }

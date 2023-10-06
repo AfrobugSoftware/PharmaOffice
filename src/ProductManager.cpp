@@ -866,7 +866,12 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastInventory
 		if (!rel.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
 		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+
+		return std::get<0>(*(rel->begin()));
 	}
 	return std::nullopt;
 }

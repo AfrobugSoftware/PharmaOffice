@@ -52,8 +52,8 @@ namespace pof {
 		bool LunchWizard();
 		bool OpenLocalDatabase();
 		bool SetUpPaths();
-		bool LoadSettings(const fs::path& fp);
-		bool SaveSettings(const fs::path& fp);
+		bool LoadSettings();
+		bool SaveSettings();
 
 		bool RegisterPharmacy();
 		bool RegisterAccount();
@@ -91,6 +91,7 @@ namespace pof {
 		bool bCheckExpiredOnUpdate = true;
 		bool bCheckOutOfStockOnUpdate = true;
 		bool bAutomaticBroughtForward = true;
+		date::days gSessionLast;
 
 
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
@@ -103,6 +104,9 @@ namespace pof {
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);
 		bool HasPrivilage(pof::Account::Privilage& priv);
+		
+		//a session is a user sign in
+		void CreateSessionTable();
 	private:
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
