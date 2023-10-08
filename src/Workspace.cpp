@@ -28,6 +28,7 @@ pof::Workspace::Workspace( wxWindow* parent, wxWindowID id, const wxPoint& pos, 
 
 pof::Workspace::~Workspace()
 {
+
 }
 
 boost::signals2::connection pof::Workspace::AddNotifSlot(signal_t::slot_type&& slot)

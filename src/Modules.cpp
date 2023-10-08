@@ -163,13 +163,9 @@ void pof::Modules::OnContextRemove(wxCommandEvent& evt)
 
 void pof::Modules::SetupFont()
 {
-	mFonts[FONT_MAIN] = std::move(wxFont(
-			wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased()
-		.FaceName("Bookman").Bold()));
-	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
-	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Monospaced")));
+	mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased().Bold()));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased().Family(wxFONTFAMILY_SWISS)));
 }
 void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
 {
@@ -305,6 +301,21 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mAuditTrails, mFonts[FONT_CHILD]);
 
+}
+
+void pof::Modules::activateModule(wxTreeItemId mod)
+{
+	auto winIter = mModuleViews.find(mod);
+	if (winIter == mModuleViews.end()) {
+		//what to do here, main not pressed check children of main
+		auto found = std::ranges::find(mChildId, mod);
+		if (found != mChildId.end()) {
+			auto string = mModuleTree->GetItemText(mod).ToStdString();
+			mChildSignal(std::move(string));
+		}
+		return;
+	}
+	mSig(winIter, Evt::ACTIVATED);
 }
 
 std::string pof::Modules::GetText(const_iterator item) const

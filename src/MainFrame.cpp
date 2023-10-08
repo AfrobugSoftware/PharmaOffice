@@ -26,7 +26,17 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	SetBackgroundColour(*wxWHITE); //wrap in theme
 	SetupAuiTheme();
 	CreateMenuBar();
+
+	mPager = new wxSimplebook(this, ID_PAGER);
+	CreateWelcomePage();
 	CreateWorkSpace();
+
+	mPager->AddPage(mWelcomePage, "Welcome", true);
+	mPager->AddPage(mWorkspace, "Workspace", false);
+
+	mAuiManager.AddPane(mPager, wxAuiPaneInfo().Name("Pager").CaptionVisible(false).CenterPane().Show());
+
+
 	CreateLogView();
 	CreateViews();
 	CreateModules();
@@ -180,10 +190,8 @@ void pof::MainFrame::CreateModules()
 
 void pof::MainFrame::CreateWorkSpace()
 {
-	mWorkspace = new pof::Workspace(this, ID_WORKSPACE, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
-
-
-	mAuiManager.AddPane(mWorkspace, wxAuiPaneInfo().Name("Workspace").CaptionVisible(false).CenterPane().Show());
+	mWorkspace = new pof::Workspace(mPager, ID_WORKSPACE, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	mWorkspace->AddNotifSlot(std::bind_front(&pof::MainFrame::OnWorkspaceNotif, this));
 }
 
 void pof::MainFrame::CreateImageList()
@@ -195,7 +203,7 @@ void pof::MainFrame::CreateImageList()
 	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
 	mImageList->Add(wxArtProvider::GetBitmap("user"));
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST));
-
+		
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
 }
@@ -216,6 +224,136 @@ void pof::MainFrame::CreateViews()
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
 	mAuditView->Hide();
+}
+
+void pof::MainFrame::CreateWelcomePage()
+{
+	
+
+	mWelcomePage = new wxPanel(mPager, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mWelcomePage->SetBackgroundColour(*wxWHITE);
+	mWelcomePage->SetDoubleBuffered(true);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mWelcomePage, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	auto today = std::chrono::system_clock::now();
+	std::string todayTime = fmt::format("{:%H:%M}", today);
+	auto day = date::floor<date::days>(today);
+	auto month = date::floor<date::months>(today);
+
+	int monthCount = month.time_since_epoch().count() % 12;
+	auto u = static_cast<unsigned>(day.time_since_epoch().count());
+	int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
+
+	std::stringstream os;
+	os << fmt::format("{:%d} {}, {}", today, dayNames[dayCount], monthNames[monthCount]);
+
+
+
+	time1 = new wxStaticText(m7, wxID_ANY, todayTime, wxDefaultPosition, wxDefaultSize, 0);
+	time1->SetFont(wxFontInfo(64).AntiAliased().Family(wxFONTFAMILY_MODERN));
+	time1->Wrap(-1);
+	time1->SetDoubleBuffered(true);
+	bSizer9->Add(time1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	date1 = new wxStaticText(m7, wxID_ANY, os.str(), wxDefaultPosition, wxDefaultSize, 0);
+	date1->SetFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_MODERN));
+	date1->Wrap(-1);
+	date1->SetDoubleBuffered(true);
+	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->AddSpacer(20);
+
+	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, wxSize(400, 400), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	CreateSelectList();
+	bSizer9->Add(mSelectList, 0,  wxALIGN_RIGHT | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mWelcomePage->SetSizer(bSizer6);
+	mWelcomePage->Layout();
+
+
+}
+
+void pof::MainFrame::CreateSelectList()
+{
+	wxImageList* imagelist = new wxImageList(48, 48);
+	imagelist->Add(wxArtProvider::GetBitmap("supplement-bottle"));
+	imagelist->Add(wxArtProvider::GetBitmap("checkout"));
+	imagelist->Add(wxArtProvider::GetBitmap("doctor"));
+	imagelist->Add(wxArtProvider::GetBitmap("prescription"));
+
+	mSelectList->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
+
+	wxListItem item;
+	item.SetId(0);
+	item.SetText("products");
+	item.SetImage(0);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	item.SetId(1);
+	item.SetText("sales");
+	item.SetImage(1);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	
+	item.SetId(2);
+	item.SetText("patients");
+	item.SetImage(2);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	item.SetId(3);
+	item.SetText("prescriptions");
+	item.SetImage(3);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+	mSelectList->Bind(wxEVT_LIST_ITEM_ACTIVATED, std::bind_front(&pof::MainFrame::OnWelcomePageSelect, this));
 }
 
 void pof::MainFrame::SetupAuiTheme()
@@ -367,13 +505,16 @@ void pof::MainFrame::OnNotif(wxCommandEvent& evt)
 {
 	wxWindowID id = evt.GetId();
 	bool checked = evt.IsChecked();
+	wxConfigBase* config = wxConfigBase::Get();
 	switch (id)
 	{
 	case ID_MENU_PRODUCT_NOTIF_OS:
 		wxGetApp().bCheckOutOfStockOnUpdate = checked;
+		config->Write(wxT("CheckOutOfStockOnUpdate"), checked);
 		break;
 	case ID_MENU_PRODUCT_NOTIF_EXPIRE:
 		wxGetApp().bCheckExpiredOnUpdate = checked;
+		config->Write(wxT("CheckExpiredOnUpdate"), checked);
 		break;
 	default:
 		break;
@@ -388,6 +529,55 @@ void pof::MainFrame::OnIdle(wxIdleEvent& evt)
 		if (now >= mExpireWatchTime + std::chrono::minutes(30)){
 			mExpireWatchTime = now;
 		}
+	}
+	int sel = mPager->GetSelection();
+	if (sel == PAGE_WELCOME)
+	{
+		//update the time and date
+		auto today = std::chrono::system_clock::now();
+		std::string todayTime = fmt::format("{:%H:%M}", today);
+		auto day = date::floor<date::days>(today);
+		auto month = date::floor<date::months>(today);
+
+		int monthCount = month.time_since_epoch().count() % 12;
+		auto u = static_cast<unsigned>(day.time_since_epoch().count());
+		int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
+
+		std::stringstream os;
+		os << fmt::format("{:%d} {}, {}", today, dayNames[dayCount], monthNames[monthCount]);
+
+		time1->Freeze();
+		time1->SetLabelText(todayTime);
+		time1->Thaw();
+		time1->Refresh();
+
+		date1->Freeze();
+		date1->SetLabelText(os.str());
+		date1->Thaw();
+		date1->Refresh();
+	}
+}
+
+void pof::MainFrame::OnWelcomePageSelect(wxListEvent& evt)
+{
+	int sel = evt.GetItem().GetId();
+	//how to trigger the module to change page
+	switch (sel)
+	{
+	case 0:
+		mModules->activateModule(mModules->mProducts);
+		break;
+	case 1:
+		mModules->activateModule(mModules->mSales);
+		break;
+	case 2:
+		mModules->activateModule(mModules->mPaitents);
+		break;
+	case 3:
+		mModules->activateModule(mModules->mPrescriptions);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -462,9 +652,16 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)
 {
+	int sel = wxNOT_FOUND;
 	switch (notif) {
 	case Modules::Evt::ACTIVATED:
 		mWorkspace->AddSpace(win->second, mModules->GetText(win), mModules->GetImage(win)); //where are the windows kept and created
+		sel = mPager->GetSelection();
+		if (sel != wxNOT_FOUND && sel == PAGE_WELCOME)
+		{
+			//HAVE YOU MOVED ON ZINO ??
+			mPager->SetSelection(PAGE_WORKSPACE);
+		}
 		break;
 	case Modules::Evt::SEL_CHANGED:
 		break;
@@ -499,5 +696,16 @@ void pof::MainFrame::OnCategoryAdded(const std::string& name)
 
 void pof::MainFrame::OnProductModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif)
 {
+}
+
+void pof::MainFrame::OnWorkspaceNotif(pof::Workspace::Notif notif, size_t page)
+{
+	switch (notif) {
+	case pof::Workspace::Notif::CLOSED:
+		if (mWorkspace->GetPageCount() == 0){
+			mPager->SetSelection(PAGE_WELCOME);
+		}
+		break;
+	}
 }
 

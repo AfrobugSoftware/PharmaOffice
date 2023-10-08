@@ -41,6 +41,16 @@ namespace pof {
 	{
 	public:
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
+		constexpr static const std::array<std::string_view, 12> monthNames = { "Jaunary", "Febuary", "March", "April",
+		"May", "June", "July", "August", "September", "October", "November", "December" };
+
+		constexpr static const std::array<std::string_view, 7> dayNames = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+		"Friday", "Sarturday" };
+		//pages
+		enum : std::uint8_t {
+			PAGE_WELCOME = 0,
+			PAGE_WORKSPACE
+		};
 
 		//menu ID
 		enum
@@ -57,6 +67,7 @@ namespace pof {
 			ID_PRESCRIPTION_VIEW,
 			ID_AUDIT_VIEW,
 			//MENUS
+			ID_PAGER,
 			ID_MENU_VIEW_SHOW_MODULES,
 			ID_MENU_VIEW_LOG,
 			ID_MENU_ACCOUNT_SIGN_OUT,
@@ -88,6 +99,8 @@ namespace pof {
 		void CreateWorkSpace();
 		void CreateImageList();
 		void CreateViews();
+		void CreateWelcomePage();
+		void CreateSelectList();
 
 		void SetupAuiTheme();
 
@@ -108,6 +121,7 @@ namespace pof {
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);
 		void OnIdle(wxIdleEvent& evt);
+		void OnWelcomePageSelect(wxListEvent& evt);
 
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);
@@ -118,10 +132,16 @@ namespace pof {
 		void OnAuiThemeChangeSlot();
 		void OnCategoryAdded(const std::string& name);
 		void OnProductModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);
+		void OnWorkspaceNotif(pof::Workspace::Notif notif, size_t page);
 	private:
+		wxStaticText* time1 = nullptr;
+		wxStaticText* date1 = nullptr;
 		wxAuiManager mAuiManager;
 		pof::Modules* mModules = nullptr;
 		pof::Workspace* mWorkspace = nullptr;
+		wxSimplebook* mPager = nullptr;
+		wxPanel* mWelcomePage = nullptr;
+		wxListCtrl* mSelectList = nullptr;
 		std::unique_ptr<wxImageList> mImageList = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
 

@@ -73,7 +73,7 @@ bool pof::Application::OnInit()
 	if (!fs::exists(path)) {
 		LunchWizard();
 	}
-	LoadSettings(path);
+	LoadSettings();
 	if (bUsingLocalDatabase) {
 		try {
 			OpenLocalDatabase();
@@ -221,6 +221,23 @@ bool pof::Application::SetUpPaths()
 bool pof::Application::LoadSettings()
 {
 	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
+	config->Write(wxT("UseLocalDatabase"), bUsingLocalDatabase);
+	config->Write(wxT("HighlightLowStock"), bHighlightLowStock);
+	config->Write(wxT("GlobalCostMarkup"), bGlobalCostMarkup);
+	config->Write(wxT("KeepMeSignedIn"), bKeepMeSignedIn);
+	config->Write(wxT("UseMinStock"), bUseMinStock);
+	config->Write(wxT("PharmacistWarnings"), bPharamcistWarings);
+	config->Write(wxT("CheckExpired"), bCheckExpired);
+	config->Write(wxT("CheckOutOfStock"), bCheckOutOfStock);
+	config->Write(wxT("CheckPOM"), bCheckPOM);
+	config->Write(wxT("CheckExpirePeriodOnIdle"), bCheckExpirePeiodOnIdle);
+	config->Write(wxT("AlertCriticalWarnings"), bAlertCriticalWarnings);
+	config->Write(wxT("CheckExpiredOnUpdate"), bCheckExpiredOnUpdate);
+	config->Write(wxT("CheckOutOfStockOnUpdate"), bCheckOutOfStockOnUpdate);
+	config->Write(wxT("AutomacticBroughtForward"), bAutomaticBroughtForward);
+	config->Write(wxT("Version"), wxString(gVersion));
+
 
 	return true;
 }
@@ -241,10 +258,11 @@ bool pof::Application::SaveSettings()
 	config->Read(wxT("CheckExpirePeriodOnIdle"), &bCheckExpirePeiodOnIdle);
 	config->Read(wxT("AlertCriticalWarnings"), &bAlertCriticalWarnings);
 	config->Read(wxT("CheckExpiredOnUpdate"), &bCheckExpiredOnUpdate);
-	config->Read(wxT("CheckOutOfStockOnUpdate", &bCheckOutOfStockOnUpdate));
+	config->Read(wxT("CheckOutOfStockOnUpdate"), &bCheckOutOfStockOnUpdate);
 	config->Read(wxT("AutomacticBroughtForward"), &bAutomaticBroughtForward);
-	config->Read(wxT("Version"), &gVersion);
-	
+	wxString version;
+	config->Read(wxT("Version"), &version);
+	gVersion = version;
 	
 	config->SetPath(wxT("/"));
 	config->SetPath(wxT("/mainframe"));

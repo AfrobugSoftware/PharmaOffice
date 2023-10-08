@@ -54,7 +54,6 @@ namespace pof {
 		bool AddSpace(wxWindow* space, const std::string& name = "EMPTY", int img = -1);
 		void Style();
 
-
 	protected:
 		void OnWorkspaceClose(wxAuiNotebookEvent& evt);
 		void OnDroppedTreeITtem(const pof::TreeItemDataObject::data_t& item);

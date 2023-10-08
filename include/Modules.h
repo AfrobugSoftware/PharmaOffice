@@ -79,6 +79,7 @@ namespace pof {
 		void CreateTree();
 		void Style();
 
+		void activateModule(wxTreeItemId mod);
 
 		std::string GetText(const_iterator item) const;
 		int GetImage(const_iterator item) const;
