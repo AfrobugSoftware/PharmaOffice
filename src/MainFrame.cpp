@@ -326,14 +326,14 @@ void pof::MainFrame::CreateSelectList()
 
 	wxListItem item;
 	item.SetId(0);
-	item.SetText("products");
+	item.SetText("Products");
 	item.SetImage(0);
 	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
 
 	mSelectList->InsertItem(item);
 
 	item.SetId(1);
-	item.SetText("sales");
+	item.SetText("Sales");
 	item.SetImage(1);
 	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
 
@@ -341,14 +341,14 @@ void pof::MainFrame::CreateSelectList()
 
 	
 	item.SetId(2);
-	item.SetText("patients");
+	item.SetText("Patients");
 	item.SetImage(2);
 	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
 
 	mSelectList->InsertItem(item);
 
 	item.SetId(3);
-	item.SetText("prescriptions");
+	item.SetText("Prescriptions");
 	item.SetImage(3);
 	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
 
