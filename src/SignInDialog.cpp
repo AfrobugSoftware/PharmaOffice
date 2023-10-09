@@ -145,6 +145,10 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	SetIcon(appIcon);
 }
 
 pof::SignInDialog::~SignInDialog()

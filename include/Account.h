@@ -62,6 +62,13 @@ namespace pof {
 
 		//log out
 
+		//session
+		bool CreateSessionTable();
+		bool InsertSession();
+
+		bool SignInFromSession();
+		bool RemoveSession();
+		bool UpdateSession();
 
 		bool CreateAccountInfoTable();
 		bool CreateAccountInfo();
@@ -79,6 +86,7 @@ namespace pof {
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;
+		datetime_t::duration sessionDuration;
 		std::uint64_t accountID = 0;
 		std::string name;
 		std::string lastname;

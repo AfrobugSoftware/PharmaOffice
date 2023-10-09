@@ -86,16 +86,24 @@ bool pof::Application::OnInit()
 			OnExit();
 			return false;
 		}
-		if (!SignIn()) {
-			//failed signed in from local database
-			OnExit();
-			return false;
+		//check if in active session, if we are asked to keep the signin
+		bool ssin = false;
+		if (bKeepMeSignedIn) {
+			ssin = MainAccount->SignInFromSession();
+		}
+		if (!ssin) {
+			if (!SignIn()) {
+				//failed signed in from local database
+				OnExit();
+				return false;
+			}
 		}
 	}
 	else {
 		if (!SignIn()) {
 			//failed signed in
-			//return false;
+			OnExit();
+			return false;
 		}
 		//test	
 	}
@@ -122,6 +130,8 @@ bool pof::Application::OnInit()
 			return false;
 		}
 	}
+
+	SaveSettings();
 	mProductManager.UpdateTimeCheck(today);
 	return CreateMainFrame();
 }
@@ -132,6 +142,7 @@ int pof::Application::OnExit()
 	if (bUsingLocalDatabase) {
 		sqlite3_shutdown();
 	}
+	SaveSettings();
 	return 0;
 }
 
@@ -218,7 +229,7 @@ bool pof::Application::SetUpPaths()
 	return true;
 }
 
-bool pof::Application::LoadSettings()
+bool pof::Application::SaveSettings()
 {
 	wxConfigBase* config = wxConfigBase::Get();
 	config->SetPath(wxT("/application"));
@@ -242,7 +253,7 @@ bool pof::Application::LoadSettings()
 	return true;
 }
 
-bool pof::Application::SaveSettings()
+bool pof::Application::LoadSettings()
 {
 	wxConfigBase* config = wxConfigBase::Get();
 	config->SetPath(wxT("/application"));
@@ -278,15 +289,6 @@ bool pof::Application::SaveSettings()
 	config->SetPath(wxT("/"));
 	config->SetPath(wxT("/pharmacy"));
 
-
-	if (bKeepMeSignedIn) {
-		//read and create pharmacy
-		config->SetPath(wxT("/"));
-		config->SetPath(wxT("/activeuser"));
-		//save user id or session Id that is bound to a user, sessions have expiry dates 
-	}
-
-
 	config->SetPath(wxT("/"));
 	return true;
 }
@@ -316,6 +318,11 @@ bool pof::Application::SignIn()
 	pof::SignInDialog Dialog(nullptr);
 	while (1) {
 		if (Dialog.ShowModal() == wxID_OK) {
+			//check for keepsignin
+			bKeepMeSignedIn = Dialog.GetKeepSignedIn();
+			if (bKeepMeSignedIn){
+				MainAccount->InsertSession(); //starts new session
+			}
 			return true;
 		}
 		else {
@@ -418,7 +425,9 @@ void pof::Application::CreateTables()
 	mProductManager.CreateExpiredStockTable();
 	mProductManager.CreateActionTable();
 	mSaleManager.CreateSaleTable();
+
 	MainAccount->CreateAccountInfoTable();
+	MainAccount->CreateSessionTable();
 }
 
 void pof::Application::ReadSettingsFlags()

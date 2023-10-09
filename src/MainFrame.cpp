@@ -261,7 +261,7 @@ void pof::MainFrame::CreateWelcomePage()
 	int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
 
 	std::stringstream os;
-	os << fmt::format("{:%d} {}, {}", today, dayNames[dayCount], monthNames[monthCount]);
+	os << fmt::format("{:%d} {}, {} {:%Y}", today, dayNames[dayCount], monthNames[monthCount], today);
 
 
 
@@ -544,7 +544,7 @@ void pof::MainFrame::OnIdle(wxIdleEvent& evt)
 		int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
 
 		std::stringstream os;
-		os << fmt::format("{:%d} {}, {}", today, dayNames[dayCount], monthNames[monthCount]);
+		os << fmt::format("{:%d} {}, {} {:%Y}", today, dayNames[dayCount], monthNames[monthCount], today);
 
 		time1->Freeze();
 		time1->SetLabelText(todayTime);

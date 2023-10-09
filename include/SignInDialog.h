@@ -64,6 +64,7 @@ namespace pof {
 		~SignInDialog();
 	
 		inline constexpr const std::string& GetUserData() const { return mUserData; }
+		inline bool GetKeepSignedIn() const { return mKeepMeSigned->IsChecked(); }
 	protected:
 		void onLogon(wxCommandEvent& evt);
 		void onSignup(wxCommandEvent& evt);
