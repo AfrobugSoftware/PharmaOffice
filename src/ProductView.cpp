@@ -999,6 +999,7 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
 		mActiveCategory = name;
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
+		if (mInfoBar->IsShown()) mInfoBar->Dismiss();
 	}
 	else {
 		if (!mActiveCategory.empty() && name.empty()) {
