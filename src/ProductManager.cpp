@@ -1812,7 +1812,7 @@ bool pof::ProductManager::IsStockCheckComplete(const pof::base::data::datetime_t
 void pof::ProductManager::UpdateStockCheck(const pof::base::data::duuid_t& pid, std::uint64_t stock)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(UPDATE stock_check SET check_stock = ?, status = 1 WHERE prod_uuid = ? AND Months(date) = ?;)";
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET check_stock = ? WHERE prod_uuid = ? AND Months(date) = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt){
 			spdlog::error(mLocalDatabase->err_msg());

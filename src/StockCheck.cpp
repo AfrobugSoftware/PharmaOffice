@@ -227,9 +227,10 @@ void pof::StockCheck::CreateStockSelect()
 	mStockSelect = new wxListCtrl(mBook, ID_STOCK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 
 
-	wxImageList* imagelist = new wxImageList(16, 16);
-	imagelist->Add(wxArtProvider::GetBitmap("folder_files"));
-	mStockSelect->AssignImageList(imagelist, wxIMAGE_LIST_SMALL);
+	wxImageList* imagelist = new wxImageList(40, 40);
+	imagelist->Add(wxArtProvider::GetBitmap("product"));
+	imagelist->Add(wxArtProvider::GetBitmap(wxART_PLUS, wxART_LIST));
+	mStockSelect->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
 }
 
 void pof::StockCheck::LoadStockSelect()
@@ -247,31 +248,26 @@ void pof::StockCheck::LoadStockSelect()
 	for (auto& tup : stockStatus.value()){
 		wxListItem item;
 		item.SetId(i);
-		item.SetText(fmt::format("Stock checked on {:%m/%y}", std::get<0>(tup)));
+
+		int monthCount = date::floor<date::months>(std::get<0>(tup)).time_since_epoch().count() % 12;
+
+		item.SetText(fmt::format("{}, {:%Y}", pof::MainFrame::monthNames[monthCount], std::get<0>(tup)));
 		item.SetImage(0);
 		item.SetData(new pof::base::data::datetime_t(std::get<0>(tup)));
 		item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
-		item.SetColumn(0);
 		mStockSelect->InsertItem(item);
 
-		item.SetId(i);
-		item.SetText(fmt::format("{:d} out of {:d}", std::get<1>(tup), sz));		
-		item.SetMask(wxLIST_MASK_TEXT);
-		item.SetColumn(1);
-		mStockSelect->SetItem(item);
-
-		item.SetId(i);
-		if (std::get<2>(tup)) {
-			item.SetText("COMPLETE");
-		}
-		else {
-			item.SetText("INCOMPLETE");
-		}
-		item.SetMask(wxLIST_MASK_TEXT);
-		item.SetColumn(2);
-		mStockSelect->SetItem(item);
 		i++;
 	}
+
+	wxListItem item;
+	item.SetText("Add Stock Check");
+	item.SetId(i);
+	item.SetImage(1);
+	item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+	mStockSelect->InsertItem(item);
+
+
 	mBook->SetSelection(PAGE_STOCK_SELECT);
 	mBook->Refresh();
 	return;
@@ -291,6 +287,7 @@ void pof::StockCheck::AddSpecialCols()
 
 	checkedStock.second = [&](size_t row, size_t col, const wxVariant& value) -> bool
 	{
+		
 		auto& datum = datastore[row];
 		auto& v = datum.first;
 		std::uint64_t preQuan = boost::variant2::get<std::uint64_t>(v[STOCK_CHECKED_STOCK]);
@@ -306,7 +303,6 @@ void pof::StockCheck::AddSpecialCols()
 
 
 		v[STOCK_CHECKED_STOCK] = quan;
-		v[STOCK_STATUS] = DONE;
 		wxGetApp().mProductManager.UpdateStockCheck(pid, quan);
 		UpdateSummary();
 		return true;
@@ -336,7 +332,7 @@ void pof::StockCheck::AddSpecialCols()
 	{
 		auto& row = datastore[r];
 		pof::base::data::datetime_t& datt = boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]);
-		return fmt::format("{:%d/%m/%y}", datt);
+		return fmt::format("{:%d/%m/%Y}", datt);
 	};
 
 	auto& dm = wxGetApp().mProductManager.GetStockCheckData();
@@ -386,12 +382,9 @@ void pof::StockCheck::UpdateSummary()
 
 void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 {
-	auto date = mStockCheckMonth->GetValue();
-	pof::base::data::datetime_t curTime = pof::base::data::clock_t::from_time_t(date.GetTicks());
 	pof::base::data::datetime_t today = pof::base::data::clock_t::now();
-
-	auto curMonth = std::chrono::duration_cast<date::months>(curTime.time_since_epoch());
-	auto tMonth = std::chrono::duration_cast<date::months>(today.time_since_epoch());
+	auto curMonth = date::floor<date::months>(today);
+	auto tMonth = date::floor<date::months>(*mSelectedMonth);
 	if (curMonth != tMonth){
 		//cannot add product to a different month
 		wxMessageBox("Cannont stock check a product from another month, other than the current one, change to the current month and try again", "STOCK CHECK", wxICON_INFORMATION | wxOK);
@@ -471,14 +464,8 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 	else {
 		
 	}
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Add product(s) for stock check");
 }
-
-//void pof::StockCheck::OnMonthChange(wxDateEvent& evt)
-//{
-//	auto& date = evt.GetDate();
-//	pof::base::data::datetime_t curTime = pof::base::data::clock_t::from_time_t(date.GetTicks());
-//	wxGetApp().mProductManager.LoadStockCheckDate(curTime);	
-//}
 
 void pof::StockCheck::OnDate(wxDateEvent& evt)
 {
@@ -502,6 +489,15 @@ void pof::StockCheck::OnDialogInit(wxInitDialogEvent& evt)
 
 void pof::StockCheck::OnEditingStarted(wxDataViewEvent& evt)
 {
+	pof::base::data::datetime_t today = pof::base::data::clock_t::now();
+	auto curMonth = date::floor<date::months>(today);
+	auto tMonth = date::floor<date::months>(*mSelectedMonth);
+	if (curMonth != tMonth) {
+		//cannot add product to a different month
+		wxMessageBox("Cannont stock check a product from another month, other than the current one, change to the current month and try again", "STOCK CHECK", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	//move this to setup, no need to call every time
 	auto item = evt.GetItem();
 	auto Col = evt.GetDataViewColumn();
@@ -547,19 +543,25 @@ void pof::StockCheck::OnAuiThemeChange()
 void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 {
 	const wxListItem& item = evt.GetItem();
-	pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
-	if (tt == nullptr) return;
-	mSelectedMonth = tt;
-	wxGetApp().mProductManager.LoadStockCheckDate(*tt);
-	
-	wxAuiPaneInfo& tool = m_mgr.GetPane("Tools");
-	wxAuiPaneInfo& summary = m_mgr.GetPane("SummaryPane");
-	
-	if (tool.IsOk() && summary.IsOk()){
-		tool.Show();
-		summary.Show();
+	if (item.GetId() == mStockSelect->GetItemCount())
+	{
+		//adding stock check
+	}
+	else {
+		pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
+		if (tt == nullptr) return;
+		mSelectedMonth = tt;
+		wxGetApp().mProductManager.LoadStockCheckDate(*tt);
 
-		m_mgr.Update();
+		wxAuiPaneInfo& tool = m_mgr.GetPane("Tools");
+		wxAuiPaneInfo& summary = m_mgr.GetPane("SummaryPane");
+
+		if (tool.IsOk() && summary.IsOk()) {
+			tool.Show();
+			summary.Show();
+
+			m_mgr.Update();
+		}
 	}
 
 	UpdateSummary();
@@ -670,4 +672,11 @@ void pof::StockCheck::OnToolUpdateUI(wxUpdateUIEvent& evt)
 
 void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 {
+	auto& stockCheck = wxGetApp().mProductManager.GetStockCheckData();
+	auto& datastore = stockCheck->GetDatastore();
+	 for (auto& row : datastore){
+		 row.first[STOCK_STATUS] = DONE;
+
+	}
+
 }

@@ -266,14 +266,14 @@ void pof::MainFrame::CreateWelcomePage()
 
 
 	time1 = new wxStaticText(m7, wxID_ANY, todayTime, wxDefaultPosition, wxDefaultSize, 0);
-	time1->SetFont(wxFontInfo(64).AntiAliased().Family(wxFONTFAMILY_MODERN));
+	time1->SetFont(wxFontInfo(64).AntiAliased().Family(wxFONTFAMILY_SWISS));
 	time1->Wrap(-1);
 	time1->SetDoubleBuffered(true);
 	bSizer9->Add(time1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 
 	date1 = new wxStaticText(m7, wxID_ANY, os.str(), wxDefaultPosition, wxDefaultSize, 0);
-	date1->SetFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_MODERN));
+	date1->SetFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS));
 	date1->Wrap(-1);
 	date1->SetDoubleBuffered(true);
 	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
@@ -285,9 +285,9 @@ void pof::MainFrame::CreateWelcomePage()
 
 	bSizer9->AddSpacer(20);
 
-	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, wxSize(400, 400), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, wxSize(380, 300), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 	CreateSelectList();
-	bSizer9->Add(mSelectList, 0,  wxALIGN_RIGHT | wxALL, 5);
+	bSizer9->Add(mSelectList, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);

@@ -231,7 +231,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mSaleOutputPane->Layout();
 	bSizer2->Fit( mSaleOutputPane );
 
-	bSizer1->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
+	bSizer1->Add(mTopTools, 0, wxALL, 0);
 	bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
 	bSizer1->Add( mSaleOutputPane, 0, wxEXPAND | wxALL, 0 );
 	this->SetSizer( bSizer1 );
@@ -470,7 +470,20 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
 		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
 	};
-	
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Selling")
+		.Text("Please wait...")
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
+
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
 	//Print receipt

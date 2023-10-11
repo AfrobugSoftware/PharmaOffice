@@ -187,8 +187,22 @@ void pof::Application::SetupDatabaseExt()
 
 bool pof::Application::CreateMainFrame()
 {
-	mMainFrame = new pof::MainFrame(nullptr,
-		wxID_ANY, wxDefaultPosition, wxSize(1122, 762));
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/mainframe"));
+	int x, y, w, h;
+	x = y = w = h = -1;
+	config->Read(wxT("PosX"), &x);
+	config->Read(wxT("PosY"), &y);
+	config->Read(wxT("SizeW"), &w);
+	config->Read(wxT("SizeH"), &h);
+	if (x == -1) {
+		mMainFrame = new pof::MainFrame(nullptr,
+			wxID_ANY, wxDefaultPosition, wxSize(1122, 762));
+	}
+	else {
+		mMainFrame = new pof::MainFrame(nullptr,
+			wxID_ANY, wxPoint(x,y), wxSize(w, h));
+	}
 
 	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
@@ -275,7 +289,6 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Version"), &version);
 	gVersion = version;
 	
-	config->SetPath(wxT("/"));
 	config->SetPath(wxT("/mainframe"));
 	int x, y, w, h;
 	x = y = w = h = -1;

@@ -353,7 +353,20 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
 	if (mPropertyUpdate.has_value()) {
-		wxBusyInfo info("Saving...");
+		wxIcon cop;
+		cop.CopyFromBitmap(wxArtProvider::GetBitmap("supplement-bottle"));
+		wxBusyInfo info
+		(
+			wxBusyInfoFlags()
+			.Parent(this)
+			.Icon(cop)
+			.Title("Saving product")
+			.Text("Please wait...")
+			.Foreground(*wxBLACK)
+			.Background(*wxWHITE)
+			.Transparency(4 * wxALPHA_OPAQUE / 5)
+		);
+
 		mUpdatePropertySignal(mPropertyUpdate.value());
 		mPropertyUpdate = {};
 		RemovePropertyModification();

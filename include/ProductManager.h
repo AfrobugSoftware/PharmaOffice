@@ -273,6 +273,9 @@ namespace pof {
 		bool InsertProductInStockCheck(const pof::base::data::duuid_t& pid);
 		void LoadStockDataByCategory(pof::base::data::datetime_t month, std::uint64_t catID);
 		bool RemoveStockEntry(const pof::base::data::duuid_t& pid, const pof::base::data::datetime_t& date);
+		bool MarKAllAsDone(pof::base::data::datetime_t month);
+		bool MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
+
 		std::optional<pof::base::data::datetime_t> GetFirstStockMonth();
 		std::optional<std::vector<std::tuple<pof::base::data::datetime_t, std::uint64_t, bool>>> GetStockMonthStatus();
 

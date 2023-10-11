@@ -348,15 +348,19 @@ void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 
 void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 {
+	if (!m_dataViewCtrl1->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product", nullptr);
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
-	auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	if (!mActiveCategory.empty()) {
+		auto cat = menu->Append(wxID_ANY, "Move to category", catSub);
 		auto remvcat = menu->Append(ID_REMOVE_FROM_CATEGORY, fmt::format("Remove from \'{}\'", mActiveCategory), nullptr);
 		remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
+	}
+	else {
+		auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	}
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add inventory", nullptr);
 	menu->AppendSeparator();
@@ -996,10 +1000,13 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 	items.shrink_to_fit();
 	if (!items.empty()) {
+		m_dataViewCtrl1->Freeze();
 		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
 		mActiveCategory = name;
-		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Refresh();
 		if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
 	}
 	else {
 		if (!mActiveCategory.empty() && name.empty()) {
@@ -1115,7 +1122,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddTool(ID_PACKS, wxEmptyString, wxArtProvider::GetBitmap(wxART_FOLDER), wxT("Pharamcy Packs"));
 	m_auiToolBar1->Realize();
 
-	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::ProductView::CreateProductInfo()
@@ -1182,6 +1189,7 @@ void pof::ProductView::CreateCategoryMenu(wxMenu* menu)
 	auto& categories = wxGetApp().mProductManager.GetCategories();
 	for (auto& cat : categories) {
 		auto& name = boost::variant2::get<pof::base::data::text_t>(cat.first[pof::ProductManager::CATEGORY_NAME]);
+		if (name == mActiveCategory) continue;
 		size_t range = boost::variant2::get<std::uint64_t>(cat.first[pof::ProductManager::CATEGORY_ID]);
 		menu->Append(range, name, nullptr);
 		menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnAddItemsToCategory, this),range);
