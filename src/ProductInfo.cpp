@@ -44,7 +44,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mShowAddInfo->SetState(bitset.to_ulong());
 
 	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Product Warnings"), wxArtProvider::GetBitmap("action_remove"), "Warnings associated with this product", wxITEM_NORMAL);
-	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Product History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
+	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->AddStretchSpacer();
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	
@@ -326,7 +326,21 @@ void pof::ProductInfo::CreateInventoryView()
 	mBactchNo = InventoryView->AppendTextColumn(wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mExpiryDate = InventoryView->AppendTextColumn(wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockCount = InventoryView->AppendTextColumn(wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	InventoryView->AppendTextColumn(wxT("Entry Stock Cost"), pof::ProductManager::INVENTORY_COST, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mManuFactureName = InventoryView->AppendTextColumn(wxT("Supplier's Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+
+	pof::DataModel::SpeicalColHandler_t costHandler;
+	costHandler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& datastore = wxGetApp().mProductManager.GetInventory()->GetDatastore();
+		const auto& unitCost = datastore[row].first[col];
+		const auto& invenCount = datastore[row].first[pof::ProductManager::INVENTORY_STOCK_COUNT];
+
+		auto cur = boost::variant2::get<pof::base::currency>(unitCost) *
+			static_cast<double>(boost::variant2::get<std::uint64_t>(invenCount));
+		return fmt::format("{:cu}", cur);
+	};
+	wxGetApp().mProductManager.GetInventory()->SetSpecialColumnHandler(pof::ProductManager::INVENTORY_COST, std::move(costHandler));
+
 }
 
 void pof::ProductInfo::CreateHistoryView()

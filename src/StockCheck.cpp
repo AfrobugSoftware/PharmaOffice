@@ -238,7 +238,7 @@ void pof::StockCheck::CreateStockSelect()
 		
 	mStockSelect = new wxListCtrl(selectPanel, ID_STOCK_SELECT, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 
-	bSizer1->Add(mStockSelect, 1, wxALL | wxEXPAND, 0);
+	bSizer1->Add(mStockSelect, 1, wxALL | wxEXPAND, 5);
 
 
 	selectPanel->SetSizer(bSizer1);

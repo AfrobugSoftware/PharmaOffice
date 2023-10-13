@@ -1379,9 +1379,9 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern(pof::b
 		//total amount that left the pharmacy,
 		//total amount spent on the product
 		//use aggregate functions
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, SUM(iv.stock_count), SumCost(ScaleCost(iv.cost, iv.stock_count))
 			FROM inventory iv, products p, stock_check sc
-			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid AND p.uuid = sc.prod_uuid
+			WHERE Months(iv.input_date) = ? AND Months(sc.date) = ? AND p.uuid = iv.uuid AND p.uuid = sc.prod_uuid
 			GROUP BY p.uuid;)";
 		
 		constexpr const std::string_view salesql = R"(SELECT p.uuid, SUM(s.product_quantity), SumCost(s.product_ext_price)
@@ -1400,7 +1400,7 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern(pof::b
 
 		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
 		spdlog::info("month count {:d}", month.count());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month))) 
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month), pof::base::data::datetime_t(month)))
 			 && mLocalDatabase->bind(*stmt2, std::make_tuple(pof::base::data::datetime_t(month)));
 		spdlog::info("month datetime count {:d}", pof::base::data::datetime_t(month).time_since_epoch().count());
 
