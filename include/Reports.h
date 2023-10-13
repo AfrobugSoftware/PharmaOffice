@@ -39,6 +39,7 @@ namespace pof
 		wxStaticText* text = nullptr;
 		wxAuiToolBarItem* textItem = nullptr;
 		wxSimplebook* mBook = nullptr;
+		pof::base::data::datetime_t mSelectedMonth;
 
 	public:
 		//pages
@@ -69,10 +70,10 @@ namespace pof
 
 		constexpr inline wxListCtrl& GetListReport() { return *mListReport; }
 
-		bool LoadReport(ReportType repType);
+		bool LoadReport(ReportType repType, pof::base::data::datetime_t month);
 
 		//different report loading function
-		bool LoadConsumptionPattern();
+		bool LoadConsumptionPattern(pof::base::data::datetime_t month);
 		bool LoadEndOFDay();
 	protected:
 		//EVENTS
@@ -83,7 +84,7 @@ namespace pof
 
 
 		//download for the report type
-		void ConsumptionPatternExcel();
+		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
 
 		ReportType mCurReportType;

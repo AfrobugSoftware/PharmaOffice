@@ -624,13 +624,13 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 		wxMessageBox("Please complete stock check before generating consumption pattern for this month", "Reports", wxICON_INFORMATION | wxOK);
 	}*/
 	pof::ReportsDialog dialog(this, wxID_ANY, wxEmptyString);
-	if(dialog.LoadReport(pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN)) dialog.ShowModal();
+	if(dialog.LoadReport(pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
 	pof::ReportsDialog dialog(this, wxID_ANY, wxEmptyString);
-	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOD)) dialog.ShowModal();
+	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOD, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnPacks(wxCommandEvent& evt)
@@ -1083,6 +1083,8 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1 = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	m_auiToolBar1->SetToolBitmapSize(wxSize(16,16));
 
+	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar1->AddSpacer(2);
 	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("file"), wxT("Store reports"));
 	mReportItem->SetHasDropDown(true);
 	auto mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
@@ -1106,7 +1108,6 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar1->AddStretchSpacer();
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxEmptyString, wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar1->AddSpacer(2);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxEmptyString, wxArtProvider::GetBitmap("action_add"), "Add a new Product");
 	m_auiToolBar1->AddSpacer(2);

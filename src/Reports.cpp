@@ -29,7 +29,6 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
     mTools->AddStretchSpacer();
 	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download"));
 	mTools->AddSpacer(2);
-	mPrint = mTools->AddTool(ID_PRINT, wxT("Print"), wxArtProvider::GetBitmap(wxART_PRINT), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 
 
 	mTools->Realize();
@@ -40,7 +39,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxImageList* imageList = new wxImageList(16, 16);
 	imageList->Add(wxArtProvider::GetBitmap("action_check"));
 	imageList->Add(wxArtProvider::GetBitmap("action_delete"));
-	mListReport->AssignImageList(imageList, wxIMAGE_LIST_SMALL);
+	mListReport->AssignImageList(imageList, wxIMAGE_LIST_NORMAL);
 	
 	bSizer7->Add(mListReport, 1, wxALL | wxEXPAND, 0);
 	m_panel5->SetSizer(bSizer7);
@@ -59,14 +58,14 @@ pof::ReportsDialog::~ReportsDialog()
 {
 }
 
-bool pof::ReportsDialog::LoadReport(ReportType repType)
+bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetime_t month)
 {
 	bool ret = false;
 	mCurReportType = repType;
 	switch (repType)
 	{
 	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:
-		ret = LoadConsumptionPattern();
+		ret = LoadConsumptionPattern(month);
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
 		ret = LoadEndOFDay();
@@ -77,20 +76,21 @@ bool pof::ReportsDialog::LoadReport(ReportType repType)
 	return ret;
 }
 
-bool pof::ReportsDialog::LoadConsumptionPattern()
+bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t month)
 {
-	auto data = wxGetApp().mProductManager.GetConsumptionPattern();
+	auto data = wxGetApp().mProductManager.GetConsumptionPattern(month);
 	if (!data.has_value()) return false;
 
 	if (data->empty()) {
 		wxMessageBox("NO Transaction has occured in your store this month", "CONSUMPTION PATTERN", wxICON_INFORMATION | wxOK);
 		return false;
 	}
+	mSelectedMonth = month;
 	auto& report = *mListReport;
 	wxBusyCursor cursor;
 	//create the columns
 	mTools->Freeze();
-	std::string tt = fmt::format("Consumption pattern for {:%m/%y}", pof::base::data::clock_t::now());
+	std::string tt = fmt::format("Consumption pattern for {:%m/%y}", month);
 	text->SetFont(wxFontInfo().AntiAliased().Bold().Italic());
 	text->SetLabelText(tt);
 	textItem->SetMinSize(text->GetSize());
@@ -101,7 +101,7 @@ bool pof::ReportsDialog::LoadConsumptionPattern()
 	mTools->Refresh();
 
 	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 430);
-	report.AppendColumn("CURRENT STOCK", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("CLOSING STOCK", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("INVENTORY IN", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("AMOUNT IN", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("INVENTORY OUT", wxLIST_FORMAT_LEFT, 150);
@@ -240,7 +240,7 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 	switch (mCurReportType)
 	{
 	case ReportType::COMSUMPTION_PATTARN:
-		ConsumptionPatternExcel();
+		ConsumptionPatternExcel(mSelectedMonth);
 		break;
 	case ReportType::EOD:
 		EODExcel();
@@ -254,7 +254,7 @@ void pof::ReportsDialog::OnReportSelectSelected(wxListEvent& evt)
 {
 }
 
-void pof::ReportsDialog::ConsumptionPatternExcel(){
+void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t month){
 
 	wxFileDialog dialog(this, "Save Consumption pattern Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
@@ -276,7 +276,7 @@ void pof::ReportsDialog::ConsumptionPatternExcel(){
 		return;
 	}
 
-	auto datastore = wxGetApp().mProductManager.GetConsumptionPattern();
+	auto datastore = wxGetApp().mProductManager.GetConsumptionPattern(month);
 	if (!datastore.has_value()){
 		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
 		return;

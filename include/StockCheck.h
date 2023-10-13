@@ -79,6 +79,7 @@ namespace pof
 					ID_REMOVE_STOCK,
 					ID_STOCK_CONSUMPTION_PATTERN,
 					ID_STOCK_MARK_AS_COMPLETE,
+					ID_STOCK_MARK_PROD_AS_COMPLETE,
 			};
 
 			//status
@@ -122,6 +123,7 @@ namespace pof
 			void OnShowSummary(wxCommandEvent& evt);
 			void OnAuiThemeChange();
 			void OnStockActivated(wxListEvent& evt);
+			void OnStockSelected(wxListEvent& evt);
 			void OnBack(wxCommandEvent& evt);
 			void OnRemoveStock(wxCommandEvent& evt);
 			void OnContextMenu(wxDataViewEvent& evt);

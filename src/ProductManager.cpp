@@ -1148,7 +1148,7 @@ void pof::ProductManager::InventoryBroughtForward()
 		auto today = pof::base::data::clock_t::now();
 		for (auto& tup : v) {
 			status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<1>(tup) + 1, std::get<0>(tup),
-				std::get<2>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
+				std::get<3>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
 			assert(status);
 			status = mLocalDatabase->execute(*stmt);
 			assert(status);
@@ -1369,7 +1369,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 }
 
 //customization points to allow consumption pattern for differend months, product formulation
-std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
+std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern(pof::base::data::datetime_t m)
 {
 	if (mLocalDatabase){
 		//product name 
@@ -1379,9 +1379,9 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		//total amount that left the pharmacy,
 		//total amount spent on the product
 		//use aggregate functions
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
-			FROM inventory iv, products p
-			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, SUM(iv.stock_count), SumCost(iv.cost)
+			FROM inventory iv, products p, stock_check sc
+			WHERE Months(iv.input_date) = ? AND p.uuid = iv.uuid AND p.uuid = sc.prod_uuid
 			GROUP BY p.uuid;)";
 		
 		constexpr const std::string_view salesql = R"(SELECT p.uuid, SUM(s.product_quantity), SumCost(s.product_ext_price)
@@ -1398,7 +1398,7 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern()
 		}
 
 
-		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
+		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
 		spdlog::info("month count {:d}", month.count());
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month))) 
 			 && mLocalDatabase->bind(*stmt2, std::make_tuple(pof::base::data::datetime_t(month)));
@@ -1903,6 +1903,65 @@ bool pof::ProductManager::RemoveStockEntry(const pof::base::data::duuid_t& pid, 
 		mLocalDatabase->finalise(*stmt);
 		return status;
 
+	}
+	return false;
+}
+
+bool pof::ProductManager::MarkAllAsDone(pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET status = 1 WHERE Months(date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		//month should be in system_clock duratiion 
+		auto mth = std::chrono::duration_cast<date::months>(month.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(mth)));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET status = 1 WHERE Months(date) = ? AND prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+
+		//month should be in system_clock duratiion 
+		auto mth = std::chrono::duration_cast<date::months>(month.time_since_epoch());
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(mth), pid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::CheckIfMonthStarted(const pof::base::data::datetime_t& month)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT 1 FROM stock_check WHERE Months(date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+
+		auto mth = std::chrono::duration_cast<date::months>(month.time_since_epoch());
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(mth)));
+		assert(status);
+	
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel);
+		mLocalDatabase->finalise(*stmt);
+
+		return !rel->empty();
 	}
 	return false;
 }
