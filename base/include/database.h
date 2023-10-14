@@ -397,7 +397,7 @@ namespace pof {
 		extern void cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals);
 		extern void cost_final_func(sqlite3_context* conn);
 		extern void cost_multi_add(sqlite3_context* conn, int arg, sqlite3_value** vals);
-
+		extern void cost_multi(sqlite3_context* conn, int arg, sqlite3_value** vals);
 
 
 		class database : public boost::noncopyable {

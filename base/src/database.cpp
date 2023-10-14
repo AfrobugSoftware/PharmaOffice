@@ -57,6 +57,17 @@ void pof::base::cost_multi_add(sqlite3_context* conn, int arg, sqlite3_value** v
 	sqlite3_result_blob(conn, (const void*)temp.data().data(),  pof::base::currency::max, SQLITE_TRANSIENT);
 }
 
+void pof::base::cost_multi(sqlite3_context* conn, int arg, sqlite3_value** vals)
+{
+	using currency_ptr = std::add_pointer_t<pof::base::currency>;
+	const currency_ptr cur = (const currency_ptr)(sqlite3_value_blob(vals[0]));
+	const double scale = (sqlite3_value_double(vals[1]));
+	pof::base::currency temp;
+
+	temp = (*(cur) * scale);
+	sqlite3_result_blob(conn, (const void*)temp.data().data(), pof::base::currency::max, SQLITE_TRANSIENT);
+}
+
 
 pof::base::database::database(const std::filesystem::path& path)
 {

@@ -1379,7 +1379,7 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern(pof::b
 		//total amount that left the pharmacy,
 		//total amount spent on the product
 		//use aggregate functions
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, SUM(iv.stock_count), SumCost(ScaleCost(iv.cost, iv.stock_count))
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, SUM(iv.stock_count), SumCost(CostMulti(iv.cost, iv.stock_count))
 			FROM inventory iv, products p, stock_check sc
 			WHERE Months(iv.input_date) = ? AND Months(sc.date) = ? AND p.uuid = iv.uuid AND p.uuid = sc.prod_uuid
 			GROUP BY p.uuid;)";
