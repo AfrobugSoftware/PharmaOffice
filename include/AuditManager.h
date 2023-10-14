@@ -53,7 +53,9 @@ namespace pof
 		void WriteAudit(auditType type, const std::string& message);
 		void Refresh();
 		void CreateAuditTable();
-		std::optional<size_t> GetDataSize() const; 
+		void CreateAuditDataView();
+		std::optional<size_t> GetDataSize(auditType type) const; 
+		std::optional<size_t> GetDataSize() const;
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurrentAccount;

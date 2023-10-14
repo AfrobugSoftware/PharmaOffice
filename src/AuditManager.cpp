@@ -46,7 +46,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 	if (mLocalDatabase) {
 		//select where id is less than or equal to from and limit (to  -  from)
 		if (!mLoadCacheStatement) {
-			constexpr const std::string_view sql = "SELECT * FROM audit WHERE rowid > ? OR rowid = ? LIMIT ? ORDER BY date DESC;";
+			constexpr const std::string_view sql = "SELECT * FROM audit_view WHERE rowid BETWEEN ? AND ? ORDER BY date DESC LIMIT ?;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -55,7 +55,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 			mLoadCacheStatement = *stmt;
 		}
 		size_t limit = to - from;
-		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(from, from, limit));
+		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(from, to, limit));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
@@ -74,9 +74,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 		}
 		auto& relation = rel.value();
 		using tuple_t = std::decay_t<decltype(relation)>;
-		pof::base::data data;
 
-		data.reserve(relation.size());
 		for (size_t i = 0; i < relation.size(); i++) {
 			pof::base::data::row_t row;
 			row.first.resize(std::tuple_size_v<typename tuple_t::tuple_t>);
@@ -92,10 +90,9 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 				std::uint64_t type = std::get<AUDIT_TYPE>(relation[i]);
 				mAuditData->AddAttr(wxDataViewItem{ reinterpret_cast<void*>(i + 1) }, auditAttr[type]);
 			}
-			
-			data.insert(std::move(row));
+
+			mAuditData->EmplaceData(std::move(row));
 		}
-		mAuditData->Emplace(std::move(data));
 	}
 }
 
@@ -139,11 +136,14 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT * FROM audit 
-		WHERE type = :type AND rowid BETWEEN :from AND :to LIMIT 1000;)";
+		WHERE type = :type AND rowid BETWEEN :from AND :to  ORDER BY date DESC LIMIT :limit;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
-
-		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to), { "type", "from", "to" });
+		//assert(stmt);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to, (to - from)), {"type", "from", "to", "limit"});
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -181,7 +181,7 @@ std::optional<size_t> pof::AuditManager::GetDataSize() const
 	size_t size = 0;
 	if (mLocalDatabase) {
 		if (!mDataSizeStatement) {
-			constexpr const std::string_view sql = "SELECT COUNT(id) FROM audit;";
+			constexpr const std::string_view sql = "SELECT COUNT(date) FROM audit;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -257,7 +257,51 @@ void pof::AuditManager::CreateAuditTable()
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
 		}
+		mLocalDatabase->finalise(*stmt);
+		CreateAuditDataView(); //create the view 
 	}
+}
+
+void pof::AuditManager::CreateAuditDataView()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"( CREATE VIEW IF NOT EXISTS audit_view (date, type, user_name, message) AS SELECT * FROM audit ORDER BY date DESC;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		assert(status);
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+std::optional<size_t> pof::AuditManager::GetDataSize(auditType type) const
+{
+
+	size_t size = 0;
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = "SELECT COUNT(date) FROM audit WHERE type = ?;";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(type)));
+		assert(status);
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		if (!rel->empty()) {
+			size = std::get<0>((*rel)[0]);
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+	return size;
 }
 
 void pof::AuditManager::CreateSpeicalCols()

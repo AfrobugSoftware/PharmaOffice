@@ -66,12 +66,13 @@ void pof::AuditView::CreateToolBar()
 	auto text = new wxStaticText(mToolBar, wxID_ANY, "Filter: ");
 	text->SetBackgroundColour(*wxWHITE);
 	mToolBar->AddControl(text);
-	mToolBar->AddSpacer(10);
+	mToolBar->AddSpacer(5);
 	mToolBar->AddControl(mFilterType, "Filter");
-	mToolBar->AddSpacer(10);
-	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("action_check"), "Apply selected filter");
-	mToolBar->AddSpacer(10);
+	mToolBar->AddSpacer(5);
 	mToolBar->AddTool(ID_COLOUR_TYPE, "Type Highlight", wxArtProvider::GetBitmap("pen"), "Highlight different audit types", wxITEM_CHECK);
+	mToolBar->AddSpacer(5);
+	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("action_check"), "Apply selected filter");
+	mToolBar->AddSpacer(5);
 	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download"), "Download Audit as EXCEL worksheet");
 
 	mToolBar->Realize();
@@ -141,13 +142,30 @@ void pof::AuditView::OnNextPage(wxCommandEvent& evt)
 	if (mPageRanges.empty()) return;
 	auto& curTop = mPageRanges.top();
 	range_t newRange = std::make_pair(curTop.second, curTop.second + mDataView->GetCountPerPage());
-	if (newRange.second >= wxGetApp().mAuditManager.GetDataSize()){
-		//last range has all the data
-		return;
+	std::optional<size_t> dataSize;
+	if(mCurType == pof::AuditManager::auditType::ALL)
+		 dataSize = wxGetApp().mAuditManager.GetDataSize();
+	else {
+		 dataSize = wxGetApp().mAuditManager.GetDataSize(mCurType);
 	}
 
+	if (!dataSize.has_value()) return;
+
+	if (newRange.second > dataSize.value()){
+		//last range has all the data
+		newRange.second = dataSize.value();
+	}
+	if (newRange.first == newRange.second) return;
+
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
-	wxGetApp().mAuditManager.LoadCache(newRange.first, newRange.second);
+	if (mCurType == pof::AuditManager::auditType::ALL)
+	{
+		wxGetApp().mAuditManager.LoadCache(newRange.first, newRange.second);
+	}
+	else {
+		wxGetApp().mAuditManager.LoadType(mCurType, newRange.first, newRange.second);
+	}
+
 	mPageRanges.push(std::move(newRange));
 }
 
@@ -165,11 +183,24 @@ void pof::AuditView::OnApplyFilter(wxCommandEvent& evt)
 	mCurType = static_cast<pof::AuditManager::auditType>(sel);
 	bFilterType = true;
 	int count = mDataView->GetCountPerPage();
-	
-
-
+	mPageRanges = {};
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
-	wxGetApp().mAuditManager.LoadType(mCurType, 0, count);
+	if (mCurType == pof::AuditManager::auditType::ALL){
+		auto dataSize = wxGetApp().mAuditManager.GetDataSize();
+		assert(dataSize);
+		//calculate the audit from the back
+		auto s = std::make_pair(dataSize.value(), dataSize.value() - count);
+		mPageRanges.push(s);
+		wxGetApp().mAuditManager.LoadCache(s.first,s.second);
+	}
+	else {
+		auto dataSize = wxGetApp().mAuditManager.GetDataSize(mCurType);
+		assert(dataSize);
+		//calculate the audit from the back
+		auto s = std::make_pair(dataSize.value(), dataSize.value() - count);
+		mPageRanges.push(s);
+		wxGetApp().mAuditManager.LoadType(mCurType, s.first, s.second);
+	}
 }
 
 void pof::AuditView::OnColourAuditType(wxCommandEvent& evt)

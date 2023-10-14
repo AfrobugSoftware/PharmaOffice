@@ -416,9 +416,15 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 
 		//stock
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
-		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
-			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]) 
-				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		if (boost::variant2::holds_alternative<std::uint64_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT]))
+		{
+			boost::variant2::get<std::uint64_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT]) +=
+				boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+		}
+		else {
+			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = 
+				Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT];
+		}
 
 		//cost
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_COST_PRICE);

@@ -918,7 +918,13 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 
 	for (size_t i = 0; i < pof::ProductManager::PRODUCT_MAX; i++) {
 		if (mUpdatedElem.mUpdatedElememts.test(i)) {
-			Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
+			if (i == pof::ProductManager::PRODUCT_STOCK_COUNT){
+				Iter->first[i] = boost::variant2::get<std::uint64_t>(Iter->first[i]) + 
+						boost::variant2::get<std::uint64_t>(mUpdatedElem.mUpdatedElementsValues.first[i]);
+			}
+			else {
+				Iter->first[i] = mUpdatedElem.mUpdatedElementsValues.first[i];
+			}
 			Iter->second.second.set(i); //set the column as modified
 		}
 	}
@@ -931,7 +937,7 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	
 	std::string& name = boost::variant2::get<pof::base::data::text_t>(Iter->first[pof::ProductManager::PRODUCT_NAME]);
 	mInfoBar->ShowMessage(fmt::format("{} is updated sucessfully", name), wxICON_INFORMATION);
-
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated {} product information", name));
 }
 
 //remove this one, use only activated 
