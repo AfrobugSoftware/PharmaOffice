@@ -39,25 +39,23 @@ void pof::AuditManager::Refresh()
 	LoadCache(mCacheRange.first, mCacheRange.second);
 }
 
-void pof::AuditManager::LoadCache(size_t from, size_t to)
+bool pof::AuditManager::LoadCache(size_t from, size_t limit)
 {
-	mCacheRange = { from, to };
 	if (mLocalDatabase) {
 		//select where id is less than or equal to from and limit (to  -  from)
 		if (!mLoadCacheStatement) {
-			constexpr const std::string_view sql = "SELECT * FROM audit WHERE rowid BETWEEN ? AND ? ORDER BY date DESC LIMIT ?;";
+			constexpr const std::string_view sql = "SELECT * FROM audit WHERE rowid BETWEEN 0 AND ? ORDER BY date DESC LIMIT ?;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
-				return;
+				return false;
 			}		
 			mLoadCacheStatement = *stmt;
 		}
-		size_t limit = from - to;
-		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(to, from, limit));
+		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(from, limit));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
-			return;
+			return false;
 		}
 		auto rel = mLocalDatabase->retrive<
 			std::uint64_t,
@@ -69,11 +67,16 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 
 		if (!rel.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
-			return;
+			return false;
 		}
+
 		auto& relation = rel.value();
 		using tuple_t = std::decay_t<decltype(relation)>;
-
+		if (relation.empty()) {
+			//empty
+			return false;
+		}
+		mAuditData->Clear();
 		for (size_t i = 0; i < relation.size(); i++) {
 			pof::base::data::row_t row;
 			row.first.resize(std::tuple_size_v<typename tuple_t::tuple_t>);
@@ -92,6 +95,7 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 
 			mAuditData->EmplaceData(std::move(row));
 		}
+		return true;
 	}
 }
 
@@ -131,18 +135,18 @@ void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t
 	}
 }
 
-void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
+bool pof::AuditManager::LoadType(auditType type, size_t from, size_t limt)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT * FROM audit 
-		WHERE type = :type AND rowid BETWEEN :to AND :from  ORDER BY date DESC LIMIT :limit;)";
+		WHERE type = :type AND rowid BETWEEN 0 AND :from  ORDER BY date DESC LIMIT :limit;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt);
 		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
-			return;
+			return false;
 		}
-		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to, (from - to)), {"type", "from", "to", "limit"});
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, limt), {"type", "from", "limit"});
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -155,8 +159,13 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 		mLocalDatabase->finalise(*stmt);
 		if(!rel.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
-			return;
+			return false;
 		}
+		if (rel.value().empty()){
+			//empty
+			return false;
+		}
+		mAuditData->Clear();
 		size_t i = 0;
 		for (auto& tup : *rel){
 			if (bColourAuditTypes){
@@ -168,6 +177,7 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 			mAuditData->EmplaceData(std::move(row));
 			i++;
 		}
+		return true;
 	}
 }
 

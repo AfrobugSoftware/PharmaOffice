@@ -133,7 +133,6 @@ void pof::AuditView::OnBackPage(wxCommandEvent& evt)
 	mPageRanges.pop(); //remove the added page range
 	auto& top = mPageRanges.top();
 
-	wxGetApp().mAuditManager.GetAuditData()->Clear();
 	if (mCurType == pof::AuditManager::auditType::ALL) {
 		wxGetApp().mAuditManager.LoadCache(top.first, top.second);
 	}
@@ -146,24 +145,20 @@ void pof::AuditView::OnNextPage(wxCommandEvent& evt)
 {
 	if (mPageRanges.empty()) return;
 	auto& curTop = mPageRanges.top();
-	range_t newRange = std::make_pair(curTop.second, curTop.second - mDataView->GetCountPerPage());
+	range_t newRange = std::make_pair(curTop.first - mDataView->GetCountPerPage(), mDataView->GetCountPerPage());
 	
-	if (static_cast<int>(newRange.second) < 0){
-		newRange.second = 0;
-	}
-
-	if (newRange.first == newRange.second) return;
-
-	wxGetApp().mAuditManager.GetAuditData()->Clear();
+	
+	bool loaded = false;
 	if (mCurType == pof::AuditManager::auditType::ALL)
 	{
-		wxGetApp().mAuditManager.LoadCache(newRange.first, newRange.second);
+		loaded = wxGetApp().mAuditManager.LoadCache(newRange.first, newRange.second);
 	}
 	else {
-		wxGetApp().mAuditManager.LoadType(mCurType, newRange.first, newRange.second);
+		loaded = wxGetApp().mAuditManager.LoadType(mCurType, newRange.first, newRange.second);
 	}
-
-	mPageRanges.push(std::move(newRange));
+	if (loaded) {
+		mPageRanges.push(std::move(newRange));
+	}
 }
 
 void pof::AuditView::OnFilterSelected(wxCommandEvent& evt)
@@ -182,20 +177,15 @@ void pof::AuditView::OnApplyFilter(wxCommandEvent& evt)
 	int count = mDataView->GetCountPerPage();
 	mPageRanges = {};
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
+	auto dataSize = wxGetApp().mAuditManager.GetDataSize();
+	assert(dataSize);
+	auto s = std::make_pair(dataSize.value(), count);
+	mPageRanges.push(s);
+
 	if (mCurType == pof::AuditManager::auditType::ALL){
-		auto dataSize = wxGetApp().mAuditManager.GetDataSize();
-		assert(dataSize);
-		//calculate the audit from the back
-		auto s = std::make_pair(dataSize.value(), dataSize.value() - count);
-		mPageRanges.push(s);
 		wxGetApp().mAuditManager.LoadCache(s.first,s.second);
 	}
 	else {
-		auto dataSize = wxGetApp().mAuditManager.GetDataSize(mCurType);
-		assert(dataSize);
-		//calculate the audit from the back
-		auto s = std::make_pair(dataSize.value(), dataSize.value() - count);
-		mPageRanges.push(s);
 		wxGetApp().mAuditManager.LoadType(mCurType, s.first, s.second);
 	}
 }

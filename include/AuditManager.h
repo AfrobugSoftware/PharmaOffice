@@ -46,9 +46,9 @@ namespace pof
 		AuditManager();
 		~AuditManager();
 
-		void LoadCache(size_t from, size_t to);
+		bool LoadCache(size_t from, size_t to);
 		void LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to);
-		void LoadType(auditType type, size_t from, size_t to);
+		bool LoadType(auditType type, size_t from, size_t to);
 		void LoadDate(auditType type, const pof::base::data::datetime_t& date, size_t from, size_t to);
 		void WriteAudit(auditType type, const std::string& message);
 		void Refresh();
