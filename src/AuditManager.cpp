@@ -41,12 +41,11 @@ void pof::AuditManager::Refresh()
 
 void pof::AuditManager::LoadCache(size_t from, size_t to)
 {
-	assert(to > from);
 	mCacheRange = { from, to };
 	if (mLocalDatabase) {
 		//select where id is less than or equal to from and limit (to  -  from)
 		if (!mLoadCacheStatement) {
-			constexpr const std::string_view sql = "SELECT * FROM audit_view WHERE rowid BETWEEN ? AND ? ORDER BY date DESC LIMIT ?;";
+			constexpr const std::string_view sql = "SELECT * FROM audit WHERE rowid BETWEEN ? AND ? ORDER BY date DESC LIMIT ?;";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -54,8 +53,8 @@ void pof::AuditManager::LoadCache(size_t from, size_t to)
 			}		
 			mLoadCacheStatement = *stmt;
 		}
-		size_t limit = to - from;
-		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(from, to, limit));
+		size_t limit = from - to;
+		bool status = mLocalDatabase->bind(mLoadCacheStatement, std::make_tuple(to, from, limit));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
@@ -136,14 +135,14 @@ void pof::AuditManager::LoadType(auditType type, size_t from, size_t to)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT * FROM audit 
-		WHERE type = :type AND rowid BETWEEN :from AND :to  ORDER BY date DESC LIMIT :limit;)";
+		WHERE type = :type AND rowid BETWEEN :to AND :from  ORDER BY date DESC LIMIT :limit;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt);
 		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
 		}
-		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to, (to - from)), {"type", "from", "to", "limit"});
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(type), from, to, (from - to)), {"type", "from", "to", "limit"});
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<

@@ -134,27 +134,24 @@ void pof::AuditView::OnBackPage(wxCommandEvent& evt)
 	auto& top = mPageRanges.top();
 
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
-	wxGetApp().mAuditManager.LoadCache(top.first, top.second);
+	if (mCurType == pof::AuditManager::auditType::ALL) {
+		wxGetApp().mAuditManager.LoadCache(top.first, top.second);
+	}
+	else {
+		wxGetApp().mAuditManager.LoadType(mCurType, top.first, top.second);
+	}
 }
 
 void pof::AuditView::OnNextPage(wxCommandEvent& evt)
 {
 	if (mPageRanges.empty()) return;
 	auto& curTop = mPageRanges.top();
-	range_t newRange = std::make_pair(curTop.second, curTop.second + mDataView->GetCountPerPage());
-	std::optional<size_t> dataSize;
-	if(mCurType == pof::AuditManager::auditType::ALL)
-		 dataSize = wxGetApp().mAuditManager.GetDataSize();
-	else {
-		 dataSize = wxGetApp().mAuditManager.GetDataSize(mCurType);
+	range_t newRange = std::make_pair(curTop.second, curTop.second - mDataView->GetCountPerPage());
+	
+	if (static_cast<int>(newRange.second) < 0){
+		newRange.second = 0;
 	}
 
-	if (!dataSize.has_value()) return;
-
-	if (newRange.second > dataSize.value()){
-		//last range has all the data
-		newRange.second = dataSize.value();
-	}
 	if (newRange.first == newRange.second) return;
 
 	wxGetApp().mAuditManager.GetAuditData()->Clear();
