@@ -85,6 +85,7 @@ namespace pof {
 			ID_MENU_PRODUCT_NOTIF_EXPIRE,
 			ID_MENU_PRODUCT_SALE_ALERTS_CLASS,
 			ID_MENU_PRODUCT_SALE_ALERTS_OS,
+			ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);

@@ -20,6 +20,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_EXPIRE, pof::MainFrame::OnNotif)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_CLASS, pof::MainFrame::OnSaleAlerts)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_OS, pof::MainFrame::OnSaleAlerts)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, pof::MainFrame::OnSaleAlerts)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
@@ -104,8 +105,15 @@ void pof::MainFrame::CreateMenuBar()
 	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
 	
+	auto al1  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_OS, "Alert Out of Stock", "Alert when products out of stock are sold");
+	auto al2  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_CLASS, "Alert product class", "Alert on product class");
+	auto al3  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, "Alert expire", "Alert on product expired");
 	auto it  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_OS, "Notify Out of Stock", "Notify when products go out of stock");
 	auto it2 = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_EXPIRE, "Notify Expire Products", "Notify when products are expired");
+	
+	al1->Check(wxGetApp().bCheckOutOfStock);
+	al2->Check(wxGetApp().bCheckPOM);
+	al3->Check(wxGetApp().bCheckExpired);
 	it->Check(wxGetApp().bCheckOutOfStockOnUpdate);
 	it2->Check(wxGetApp().bCheckExpiredOnUpdate);
 
@@ -508,36 +516,53 @@ void pof::MainFrame::OnNotif(wxCommandEvent& evt)
 	wxWindowID id = evt.GetId();
 	bool checked = evt.IsChecked();
 	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
 	switch (id)
 	{
 	case ID_MENU_PRODUCT_NOTIF_OS:
 		wxGetApp().bCheckOutOfStockOnUpdate = checked;
 		config->Write(wxT("CheckOutOfStockOnUpdate"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of notify out of stock");
 		break;
 	case ID_MENU_PRODUCT_NOTIF_EXPIRE:
 		wxGetApp().bCheckExpiredOnUpdate = checked;
 		config->Write(wxT("CheckExpiredOnUpdate"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of notify on expire");
 		break;
 	default:
 		break;
 	}
+	config->SetPath(wxT("/"));
+
 }
 
 void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
 {
 	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
 	if (!config) return;
 	bool checked = evt.IsChecked();
 	switch (evt.GetId())
 	{
 	case ID_MENU_PRODUCT_SALE_ALERTS_CLASS:
-		
+		wxGetApp().bCheckPOM = checked;
+		config->Write(wxT("CheckPOM"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product class on sale");
 		break;
 	case ID_MENU_PRODUCT_SALE_ALERTS_OS:
+		wxGetApp().bCheckOutOfStock = checked;
+		config->Write(wxT("CheckOutOfStock"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product out of stock on sale");
+		break;
+	case ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE:
+		wxGetApp().bCheckExpired = checked;
+		config->Write(wxT("CheckExpired"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product expired on sale");
 		break;
 	default:
 		break;
 	}
+	config->SetPath(wxT("/"));
 }
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)

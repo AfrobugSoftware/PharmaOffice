@@ -701,14 +701,14 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 				extCur = cur * static_cast<double>(quan);
 				continue; //move to the next pack
 			}
-			bool status = CheckExpired(*iter);
-			if (!status) {
-				wxMessageBox(fmt::format("\'{}\' has expired, please update product inventory",
-					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-				continue;
+			if (CheckExpired(*iter)) {
+				if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+				{
+					continue;
+				}
 			}
-			
-			status = CheckInStock(*iter);
+			bool status = CheckInStock(*iter);
 			if (!status) {
 				wxMessageBox(fmt::format("{} is out of stock",
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
@@ -780,7 +780,13 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
-		CheckExpired(val);
+		if (CheckExpired(val)) {
+			if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+			{
+				return;
+			}
+		}
 		status = CheckProductClass(val);
 		if (status) {
 			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
@@ -843,7 +849,13 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
-		CheckExpired(row);
+		if (CheckExpired(row)){
+			if(wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+			{
+				return;
+			}
+		}
 		status = CheckProductClass(row);
 		if (status) {
 			if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue?",
@@ -919,7 +931,13 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			wxMessageBox("NO SUCH PRODUCT IN STORE", "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
-		CheckExpired(*iter);
+		if (CheckExpired(*iter)) {
+			if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+			{
+				return;
+			}
+		}
 		bool status = CheckProductClass(*iter);
 		if (status) {
 			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
@@ -1045,7 +1063,14 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 	auto& v = product.first;
 	if (!wxGetApp().bCheckExpired) return false;
 	try {
-	
+		auto items = wxGetApp().mProductManager.DoExpiredProducts();
+		if (!items.has_value()) return false;
+		return (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) ->bool {
+			const size_t idx = pof::DataModel::GetIdxFromItem(i);
+			auto& r = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+			return (boost::variant2::get<boost::uuids::uuid>(product.first[pof::ProductManager::PRODUCT_UUID])
+					== boost::variant2::get<boost::uuids::uuid>(r.first[pof::ProductManager::PRODUCT_UUID]));
+		}));
 	}
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
