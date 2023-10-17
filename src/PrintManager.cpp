@@ -74,6 +74,11 @@ void pof::PrintManager::Preview(wxWindow* parent,wxPrintout* previewout, wxPrint
 	wxPreviewFrame* frame = new wxPreviewFrame(preview, parent,
 		wxT("Label Print Preview"), wxDefaultPosition, wxSize(878, 689));
 	frame->Centre(wxBOTH);
+	frame->Bind(wxEVT_CLOSE_WINDOW, [&](wxCloseEvent& evt) {
+		printSig(true, gPrintState);
+		evt.Skip();
+	});
+
 	frame->Initialize();
 	frame->Show();
 }

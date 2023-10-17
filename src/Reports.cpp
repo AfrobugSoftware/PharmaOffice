@@ -185,7 +185,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 
 		//make the columns
-		report.AppendColumn("DATE", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("DATE/TIME", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("QUANTITY", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("AMOUNT", wxLIST_FORMAT_LEFT, 200);
@@ -197,7 +197,9 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(0);
 			item.SetId(i);
-			auto s = fmt::format("{:%d-%m-%y}", boost::variant2::get<pof::base::data::datetime_t>(v[1]));
+			auto s = fmt::format("{:%d-%m-%Y} {:%H:%M:%S}", 
+					boost::variant2::get<pof::base::data::datetime_t>(v[1]),
+					boost::variant2::get<pof::base::data::datetime_t>(v[1]));
 			item.SetText(std::move(s));
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);

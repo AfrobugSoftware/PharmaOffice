@@ -33,9 +33,9 @@ void pof::AuditView::CreateToolBar()
 	mToolBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mToolBar->SetToolBitmapSize(wxSize(16, 16));
 
-	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"));
+	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Backward");
 	mToolBar->AddSpacer(5);
-	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_next"));
+	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_next"), "Forward");
 
 	wxArrayString choices;
 	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));

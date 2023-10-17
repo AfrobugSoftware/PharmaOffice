@@ -25,7 +25,7 @@ namespace pof {
 		using privilage_set_t = std::bitset<8>;
 		constexpr static const size_t max_account_type = 7;
 		constexpr static const std::array<std::string_view, max_account_type> account_type_string = {
-			"PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
+			"SUPERINTENDENT PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
 				"MANAGER"
 		};
 		enum class Privilage: std::uint8_t {

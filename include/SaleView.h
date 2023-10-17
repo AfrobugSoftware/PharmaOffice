@@ -108,6 +108,7 @@ namespace pof
 			ID_PRODUCT_VIEW_PROPERTY,
 			ID_PRINT_LABELS,
 			ID_PACKS,
+			ID_FORM_M,
 		};
 
 
@@ -126,6 +127,7 @@ namespace pof
 
 		void OnClear(wxCommandEvent& evt);
 		void OnCheckout(wxCommandEvent& evt);
+		void OnSaleComplete(bool status, size_t printState);
 		void OnSave(wxCommandEvent& evt);
 		void OnDropPossible(wxDataViewEvent& evt);
 		void OnDrop(wxDataViewEvent& evt);
@@ -137,6 +139,7 @@ namespace pof
 		void OnHideProductViewProperty(wxCommandEvent& evt);
 		void OnPrintAsLabels(wxCommandEvent& evt);
 		void OnShowPacks(wxCommandEvent& evt);
+		void OnFormM(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);

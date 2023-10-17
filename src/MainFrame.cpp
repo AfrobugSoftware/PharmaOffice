@@ -18,6 +18,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_MARKUP_SETTINGS, pof::MainFrame::OnMarkupSettings)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_OS, pof::MainFrame::OnNotif)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_EXPIRE, pof::MainFrame::OnNotif)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_CLASS, pof::MainFrame::OnSaleAlerts)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_OS, pof::MainFrame::OnSaleAlerts)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
@@ -515,6 +517,23 @@ void pof::MainFrame::OnNotif(wxCommandEvent& evt)
 	case ID_MENU_PRODUCT_NOTIF_EXPIRE:
 		wxGetApp().bCheckExpiredOnUpdate = checked;
 		config->Write(wxT("CheckExpiredOnUpdate"), checked);
+		break;
+	default:
+		break;
+	}
+}
+
+void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
+{
+	wxConfigBase* config = wxConfigBase::Get();
+	if (!config) return;
+	bool checked = evt.IsChecked();
+	switch (evt.GetId())
+	{
+	case ID_MENU_PRODUCT_SALE_ALERTS_CLASS:
+		
+		break;
+	case ID_MENU_PRODUCT_SALE_ALERTS_OS:
 		break;
 	default:
 		break;

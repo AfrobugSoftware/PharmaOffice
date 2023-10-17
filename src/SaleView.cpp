@@ -10,6 +10,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_HIDE_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnHideProductViewProperty)
 	EVT_TOOL(pof::SaleView::ID_PRINT_LABELS, pof::SaleView::OnPrintAsLabels)
 	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
+	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -83,6 +84,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"));
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
+	mTopTools->AddTool(ID_FORM_M, wxT("Generate FORM M"), wxArtProvider::GetBitmap("application"));
+	
 	mTopTools->Realize();
 
 	
@@ -244,6 +247,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	CreateSpecialColumnHandlers();
 	CreateSearchPopup();
 	ProductNameKeyEvent(); //experiment
+
+	wxGetApp().mPrintManager->printSig.connect(std::bind_front(&pof::SaleView::OnSaleComplete, this));
 }
 
 pof::SaleView::~SaleView()
@@ -486,21 +491,37 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
+
 	//Print receipt
+	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
 	wxGetApp().mPrintManager->PrintSaleReceipt(this);
+}
 
+void pof::SaleView::OnSaleComplete(bool status, size_t printState)
+{
+	if (!status) {
+		wxMessageBox("Sale could not be completed, please contact admin", "Sale", wxICON_ERROR | wxOK);
+		return;
+	}
 	//to put back when testing is over
-	//model->Clear();
-	//if (mPropertyManager->IsShown()) {
-	//	mPropertyManager->Hide();
-	//	mDataPane->Layout();
-	//	mDataPane->Refresh();
-	//}
-	//ResetSaleDisplay();
-	//mCurSaleuuid = boost::uuids::nil_uuid();
-
-
-	//wxMessageBox("SALE COMPETE", "SALE", wxICON_INFORMATION | wxOK);
+	switch (printState)
+	{
+	case pof::PrintManager::RECEIPT:
+		wxGetApp().mSaleManager.GetSaleData()->Clear();
+		if (mPropertyManager->IsShown()) {
+			mPropertyManager->Hide();
+			mDataPane->Layout();
+			mDataPane->Refresh();
+		}
+		ResetSaleDisplay();
+		mInfoBar->ShowMessage("Sale complete");
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, "Sale completed");
+		break;
+	case pof::PrintManager::REPRINT_RECEIPT:
+		break;
+	default:
+		break;
+	}
 }
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
@@ -713,6 +734,10 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 		}
 		UpdateSaleDisplay();
 	}
+}
+
+void pof::SaleView::OnFormM(wxCommandEvent& evt)
+{
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)

@@ -247,7 +247,7 @@ void pof::PackView::CreateTopTools()
 	mTopTools->AddTool(ID_TOOL_ADD_PACK, "Add Pack", wxArtProvider::GetBitmap("action_add"), "Add a new pack");
 	mTopTools->AddStretchSpacer();
 	if (mShowSale) {
-		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("action_remove"), "Sell pack");
+		mTopTools->AddTool(ID_SALE_PACK, "Sell Pack", wxArtProvider::GetBitmap("application"), "Sell pack");
 	}	
 
 	if (mPackText) {

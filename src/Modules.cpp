@@ -203,13 +203,6 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
-	//add the account type
-	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
-	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
-	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
-	m_staticText3->Wrap(-1);
-	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
-
 	std::string AccountName = wxGetApp().MainAccount->GetName();
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
@@ -217,6 +210,13 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText1->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
+
+	//add the account type
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
+	m_staticText3->Wrap(-1);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
 
 	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
@@ -275,12 +275,12 @@ void pof::Modules::CreateTree()
 	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1, 4);
 	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
-	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
+	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision Book", 1);
 	
 	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 1);
-	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 1);
-	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 1);
 	mAuditTrails   = mModuleTree->AppendItem(mTransactions, "Audit Trails", 1);
+	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 1);
+	mOrders        = mModuleTree->AppendItem(mTransactions, "ADR Reports", 1);
 
 	
 	mModuleTree->Expand(mPharmacy);

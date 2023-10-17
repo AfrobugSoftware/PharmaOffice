@@ -79,7 +79,7 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	fgSizer1->Add( mAccountTypeLabel, 0, wxALL, 5 );
 	
 	//arranged according to the account priv bits
-	wxString mAccountTypeChoices[] = { wxT("PHARMACIST"), 
+	wxString mAccountTypeChoices[] = { wxT("SUPERINTENDENT PHARMACIST"), 
 			wxT("PHARMACY TECH"),
 			wxT("DISPENSER"),
 			wxT("SALES ASSISTANT"), 

@@ -83,6 +83,8 @@ namespace pof {
 			ID_MENU_PRODUCT_MARKUP_SETTINGS,
 			ID_MENU_PRODUCT_NOTIF_OS, //NOTIY OUT OF STOCK
 			ID_MENU_PRODUCT_NOTIF_EXPIRE,
+			ID_MENU_PRODUCT_SALE_ALERTS_CLASS,
+			ID_MENU_PRODUCT_SALE_ALERTS_OS,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -116,7 +118,7 @@ namespace pof {
 		void OnImportExcel(wxCommandEvent& evt);
 		void OnMarkupSettings(wxCommandEvent& evt);
 		void OnNotif(wxCommandEvent& evt);
-
+		void OnSaleAlerts(wxCommandEvent& evt);
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);
