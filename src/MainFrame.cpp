@@ -238,8 +238,6 @@ void pof::MainFrame::CreateViews()
 
 void pof::MainFrame::CreateWelcomePage()
 {
-	
-
 	mWelcomePage = new wxPanel(mPager, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	mWelcomePage->SetBackgroundColour(*wxWHITE);
 	mWelcomePage->SetDoubleBuffered(true);
