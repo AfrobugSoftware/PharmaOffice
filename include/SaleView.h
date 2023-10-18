@@ -40,6 +40,7 @@ namespace pof
 	protected:
 		wxPanel* mMainPane;
 		wxAuiToolBar* mTopTools;
+		wxAuiToolBar* mBottomTools;
 		wxStaticText* mProductNameText;
 		wxSearchCtrl* mProductNameValue;
 		wxStaticText* mScanProduct;
@@ -109,6 +110,7 @@ namespace pof
 			ID_PRINT_LABELS,
 			ID_PACKS,
 			ID_FORM_M,
+			ID_OPEN_SAVE_SALE,
 		};
 
 

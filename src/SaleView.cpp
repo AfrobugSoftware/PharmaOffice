@@ -50,7 +50,10 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
 	mTopTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTopTools->SetMinSize(wxSize(-1, 40));
+	mTopTools->SetMinSize(wxSize(-1, 30));
+
+	mBottomTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mBottomTools->SetMinSize(wxSize(-1, 30));
 
 	mProductNameText = new wxStaticText(mTopTools, wxID_ANY, wxT("Product Name: "), wxDefaultPosition, wxDefaultSize, 0);
 	mProductNameText->SetBackgroundColour(*wxWHITE);
@@ -84,10 +87,14 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"));
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
-	mTopTools->AddTool(ID_FORM_M, wxT("Generate FORM M"), wxArtProvider::GetBitmap("application"));
 	
 	mTopTools->Realize();
 
+	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM M"), wxArtProvider::GetBitmap("application"));
+	mBottomTools->AddSpacer(5);
+	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("action_check"));
+
+	mBottomTools->Realize();
 	
 	mDataPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bSizer6;
@@ -234,7 +241,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mSaleOutputPane->Layout();
 	bSizer2->Fit( mSaleOutputPane );
 
-	bSizer1->Add(mTopTools, 0, wxALL, 0);
+	bSizer1->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
+	bSizer1->Add(mBottomTools, 0, wxEXPAND |wxALL, 0);
 	bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
 	bSizer1->Add( mSaleOutputPane, 0, wxEXPAND | wxALL, 0 );
 	this->SetSizer( bSizer1 );

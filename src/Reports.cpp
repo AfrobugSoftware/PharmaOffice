@@ -79,7 +79,8 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t month)
 {
 	auto data = wxGetApp().mProductManager.GetConsumptionPattern(month);
-	if (!data.has_value()) return false;
+	auto exStock = wxGetApp().mProductManager.GetExpiredProductsStock(month);
+	if (!data.has_value() || !exStock.has_value()) return false;
 
 	if (data->empty()) {
 		wxMessageBox("NO Transaction has occured in your store this month", "CONSUMPTION PATTERN", wxICON_INFORMATION | wxOK);
@@ -102,12 +103,28 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 430);
 	report.AppendColumn("CLOSING STOCK", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("EXPIRED STOCK", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("INVENTORY IN", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("AMOUNT IN", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("INVENTORY OUT", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("AMOUNT OUT", wxLIST_FORMAT_LEFT, 150);
 
+	wxItemAttr attr;
+	attr.SetBackgroundColour(*wxBLACK);
+	attr.SetFont(wxFontInfo().Bold().AntiAliased());
+	report.SetHeaderAttr(attr);
+
 	size_t i = 0;
+	auto expired = [&](const pof::base::data::row_t& row) -> std::uint64_t{
+		if (exStock.value().empty()) return 0;
+		auto iter = std::ranges::find_if(exStock.value(), [&](auto& val) -> bool {
+			return (boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) ==
+				val.first);
+		});
+		if (iter == exStock.value().end()) return 0;
+		else return iter->second;
+	};
+
 	for (auto iter = data->begin(); iter != data->end(); iter++) {
 		auto& v = iter->first;
 		wxListItem item;
@@ -126,26 +143,32 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 		item.SetColumn(2);
 		item.SetId(i);
+		item.SetText(fmt::format("{:d}", expired(*iter)));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		item.SetColumn(3);
+		item.SetId(i);
 		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[3])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 
-		item.SetColumn(3);
+		item.SetColumn(4);
 		item.SetId(i);
 		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[4])));
 		item.SetMask(wxLIST_MASK_TEXT );
 		report.SetItem(item);
 
 
-		item.SetColumn(4);
+		item.SetColumn(5);
 		item.SetId(i);
 		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[5])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 
-		item.SetColumn(5);
+		item.SetColumn(6);
 		item.SetId(i);
 		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[6])));
 		item.SetMask(wxLIST_MASK_TEXT);
