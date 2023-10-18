@@ -48,6 +48,8 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mProductName = mStockData->AppendTextColumn( wxT("Product Name"), STOCK_PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, wxALIGN_CENTER);
 	mCurrenctStock = mStockData->AppendTextColumn( wxT("Currenct Stock"), STOCK_CURRENT_STOCK, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mCheckedStock = mStockData->AppendTextColumn(wxT("Checked Stock"), STOCK_CHECKED_STOCK, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
+	mExpiredStock = mStockData->AppendTextColumn(wxT("Expired Stock"), STOCK_EXPIRED, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
+	
 	mShortage = mStockData->AppendTextColumn( wxT("Shortage"), STOCK_SHORTAGE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mStatus = mStockData->AppendBitmapColumn( wxT("Status"), STOCK_STATUS, wxDATAVIEW_CELL_INERT, 50, wxALIGN_CENTER);
 	mDateAdded = mStockData->AppendTextColumn(wxT("Date Added"), STOCK_DATE_ADDED, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT);
@@ -304,6 +306,7 @@ void pof::StockCheck::AddSpecialCols()
 	pof::DataModel::SpeicalColHandler_t status;
 	pof::DataModel::SpeicalColHandler_t shortage;
 	pof::DataModel::SpeicalColHandler_t dateAdded;
+	pof::DataModel::SpeicalColHandler_t expiredStock;
 
 	checkedStock.second = [&](size_t row, size_t col, const wxVariant& value) -> bool
 	{
@@ -355,11 +358,26 @@ void pof::StockCheck::AddSpecialCols()
 		return fmt::format("{:%d/%m/%Y}", datt);
 	};
 
+	expiredStock.first = [&](size_t r, size_t col) -> wxVariant
+	{
+		if (!mExpiredStockValues.has_value()) return wxVariant{ fmt::to_string(static_cast<std::uint64_t>(0)) };
+		if (mExpiredStockValues.value().empty()) return 0;
+		auto& row = datastore[r];
+		auto iter = std::ranges::find_if(mExpiredStockValues.value(), [&](auto& val) -> bool {
+				return (boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]) == val.first);
+		});
+		
+		if (iter == mExpiredStockValues.value().end()) return 0;
+		else return wxVariant{ fmt::to_string(static_cast<std::uint64_t>(iter->second)) };
+
+	};
+
 	auto& dm = wxGetApp().mProductManager.GetStockCheckData();
 	dm->SetSpecialColumnHandler(STOCK_STATUS, std::move(status));
 	dm->SetSpecialColumnHandler(STOCK_SHORTAGE, std::move(shortage));
 	dm->SetSpecialColumnHandler(STOCK_CHECKED_STOCK, std::move(checkedStock));
 	dm->SetSpecialColumnHandler(STOCK_DATE_ADDED, std::move(dateAdded));
+	dm->SetSpecialColumnHandler(STOCK_EXPIRED, std::move(expiredStock));
 	
 }
 
@@ -604,6 +622,7 @@ void pof::StockCheck::OnStockSelected(wxListEvent& evt)
 	pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
 	if (tt == nullptr) return;
 	mSelectedMonth = tt;
+	mExpiredStockValues = wxGetApp().mProductManager.GetExpiredProductsStock(*tt);
 }
 
 void pof::StockCheck::OnBack(wxCommandEvent& evt)

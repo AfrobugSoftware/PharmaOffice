@@ -39,6 +39,7 @@ namespace pof
 			wxDataViewColumn* mProductName;
 			wxDataViewColumn* mCurrenctStock;
 			wxDataViewColumn* mCheckedStock;
+			wxDataViewColumn* mExpiredStock;
 			wxDataViewColumn* mShortage;
 			wxDataViewColumn* mStatus;
 			wxDataViewColumn* mDateAdded;
@@ -57,7 +58,7 @@ namespace pof
 			wxAuiToolBarItem* mBackButton;
 			wxAuiToolBarItem* mAddButton;
 			pof::base::data::datetime_t* mSelectedMonth = nullptr;
-		
+			std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> mExpiredStockValues;
 		public:
 			enum {
 				PAGE_STOCK_EMPTY,
@@ -97,6 +98,7 @@ namespace pof
 				STOCK_STATUS,
 				STOCK_DATE_ADDED,
 				STOCK_SHORTAGE,
+				STOCK_EXPIRED,
 			};
 
 			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1178,689 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
