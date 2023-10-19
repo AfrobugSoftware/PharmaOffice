@@ -228,4 +228,56 @@ bool pof::SaleManager::StoreSale()
 
 void pof::SaleManager::Finalise()
 {
+	mLocalDatabase->finalise(mStoreSale);
+	mLocalDatabase->finalise(mLoadProductHistory);
+	mLocalDatabase->finalise(mProductHistByDateStmt);
+}
+
+void pof::SaleManager::RestoreSale(const boost::uuids::uuid& saleID)
+{
+}
+
+void pof::SaleManager::CreateSaveSaleTable()
+{
+	if (mLocalDatabase)
+	{
+		//takes the same data as the table sale
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sava_sale (
+		uuid blob,
+		product_uuid blob,
+		product_quantity integer,
+		product_ext_price blob,
+		sale_date integer,
+		sale_payment_type text
+		);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+void pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM save_sale WHERE uuid = ?;)";
+
+	}
+}
+
+void pof::SaleManager::RemoveSaveSale(const boost::uuids::uuid& saleID)
+{
+}
+
+void pof::SaleManager::SaveSale(const boost::uuids::uuid& saleID)
+{
+}
+
+std::optional<std::vector<std::tuple<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>>> pof::SaleManager::GetSavedSales()
+{
+	return std::optional<std::vector<std::tuple<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>>>();
 }

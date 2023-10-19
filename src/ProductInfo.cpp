@@ -402,6 +402,18 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 
 void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 {
+	//check if product has expired inventory
+	auto items = wxGetApp().mProductManager.DoExpiredProducts();
+	if (!items.has_value()) return;
+	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[pof::DataModel::GetIdxFromItem(i)];	
+		return boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID])
+				== boost::variant2::get<boost::uuids::uuid>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+	})) {
+		wxMessageBox("Product has expired inventory, clear inventory before adding new", "Add Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
 	pof::InventoryDialog dialog(nullptr);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();

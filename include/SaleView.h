@@ -76,7 +76,8 @@ namespace pof
 		std::string mCurPack;
 		pof::base::data::duuid_t mCurPackID;
 		wxInfoBar* mInfoBar = nullptr;
-
+		wxStaticText* mActiveSaleId = nullptr;
+		wxAuiToolBarItem* mActiveSaleTextItem = nullptr;
 
 		//product properties
 		wxStringProperty* productName = nullptr;
@@ -159,6 +160,7 @@ namespace pof
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);
 		void OnProductUpdate(pof::base::data::const_iterator iter);
+		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;

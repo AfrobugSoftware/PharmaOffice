@@ -361,13 +361,13 @@ void pof::StockCheck::AddSpecialCols()
 	expiredStock.first = [&](size_t r, size_t col) -> wxVariant
 	{
 		if (!mExpiredStockValues.has_value()) return wxVariant{ fmt::to_string(static_cast<std::uint64_t>(0)) };
-		if (mExpiredStockValues.value().empty()) return 0;
+		if (mExpiredStockValues.value().empty()) return  wxVariant{ fmt::to_string(static_cast<std::uint64_t>(0)) };
 		auto& row = datastore[r];
 		auto iter = std::ranges::find_if(mExpiredStockValues.value(), [&](auto& val) -> bool {
 				return (boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]) == val.first);
 		});
 		
-		if (iter == mExpiredStockValues.value().end()) return 0;
+		if (iter == mExpiredStockValues.value().end()) return  wxVariant{ fmt::to_string(static_cast<std::uint64_t>(0)) };
 		else return wxVariant{ fmt::to_string(static_cast<std::uint64_t>(iter->second)) };
 
 	};

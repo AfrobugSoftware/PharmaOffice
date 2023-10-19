@@ -820,8 +820,12 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			if (!items.has_value()) { }
 			else if (!items->empty()){
 				mInfoBar->ShowMessage(fmt::format("{:d} products in store has expired", items->size()), wxICON_WARNING);
+				this->Layout();
+				this->Refresh();
+
 			}
 			mExpireProductWatchDog = now;
+
 		}
 	}
 	if (wxGetApp().bCheckOutOfStockOnUpdate){
@@ -831,6 +835,8 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			if (!items.has_value()) {}
 			else if (!items->empty()) {
 				mInfoBar->ShowMessage(fmt::format("{:d} products in store are out of stock", items->size()), wxICON_WARNING);
+				this->Layout();
+
 			}
 			mOutOfStockProductWatchDog = now;
 		}

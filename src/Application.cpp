@@ -203,7 +203,7 @@ bool pof::Application::CreateMainFrame()
 	config->Read(wxT("SizeH"), &h);
 	if (x == -1) {
 		mMainFrame = new pof::MainFrame(nullptr,
-			wxID_ANY, wxDefaultPosition, wxSize(1122, 762));
+			wxID_ANY, wxDefaultPosition, wxSize(1422, 762));
 	}
 	else {
 		mMainFrame = new pof::MainFrame(nullptr,

@@ -93,6 +93,12 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM M"), wxArtProvider::GetBitmap("application"));
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("action_check"));
+	mBottomTools->AddStretchSpacer();
+
+	mActiveSaleId = new wxStaticText(mBottomTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
+	mActiveSaleId->SetBackgroundColour(*wxWHITE);
+	mActiveSaleTextItem = mBottomTools->AddControl(mActiveSaleId);
+	SetActiveSaleIdText(mCurSaleuuid);
 
 	mBottomTools->Realize();
 	
@@ -441,6 +447,10 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	}
 	ResetSaleDisplay();
 	mCurSaleuuid = boost::uuids::nil_uuid();
+	SetActiveSaleIdText(mCurSaleuuid);
+	if (mInfoBar->IsShown()){
+		mInfoBar->Dismiss();
+	}
 
 }
 
@@ -522,6 +532,8 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			mDataPane->Refresh();
 		}
 		ResetSaleDisplay();
+		mCurSaleuuid = boost::uuids::nil_uuid();
+		SetActiveSaleIdText(mCurSaleuuid);
 		mInfoBar->ShowMessage("Sale complete");
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, "Sale completed");
 		break;
@@ -534,6 +546,11 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
 {
+	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
+		mInfoBar->ShowMessage("Sale is empty", wxICON_INFORMATION);
+		return;
+	}
+	
 	wxMessageBox("SAVE", "SAVE");
 }
 
@@ -666,6 +683,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 
 		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 			mCurSaleuuid = uuidGen();
+			SetActiveSaleIdText(mCurSaleuuid);
 		}
 
 		for (auto& prod : prods) {
@@ -777,6 +795,7 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 
 	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 		mCurSaleuuid = uuidGen();
+		SetActiveSaleIdText(mCurSaleuuid);
 	}
 
 
@@ -848,6 +867,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 	try {
 		if (mCurSaleuuid == boost::uuids::nil_uuid()){
 			mCurSaleuuid = uuidGen();
+			SetActiveSaleIdText(mCurSaleuuid);
 		}
 
 		auto& v = row.first;
@@ -926,6 +946,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 	}
 	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 		mCurSaleuuid = uuidGen();
+		SetActiveSaleIdText(mCurSaleuuid);
 	}
 
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
@@ -1042,7 +1063,11 @@ bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
 	else warning->SetValue(wxVariant{});
 	if (wxGetApp().bAlertCriticalWarnings && !mCritical.empty()) {
 		auto colorbg = mInfoBar->GetBackgroundColour();
+		mDataPane->Layout();
 		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(mCritical, ",")), wxICON_WARNING);
+		mInfoBar->Layout();
+		mDataPane->Refresh();
+
 	}
 	else {
 		mInfoBar->Dismiss();
@@ -1171,6 +1196,31 @@ void pof::SaleView::OnProductUpdate(pof::base::data::const_iterator prop)
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Refresh();
 	UpdateSaleDisplay();
+}
+
+//the refreshing might be an overkill
+void pof::SaleView::SetActiveSaleIdText(const boost::uuids::uuid& saleId)
+{
+	//TODO: size issues.
+	mBottomTools->Freeze();
+	mActiveSaleId->Freeze();
+	if (saleId == boost::uuids::nil_uuid()){
+		mActiveSaleId->SetLabelText("No Active Sale");
+	}
+	else {
+		std::ostringstream os;
+		os << saleId;
+		mActiveSaleId->SetLabelText(fmt::format("Active Sale - {}", os.str()));
+	}
+	mActiveSaleId->Update();
+	mActiveSaleTextItem->SetMinSize(mActiveSaleId->GetMinSize());
+	mActiveSaleId->Thaw();
+	mActiveSaleId->Refresh();
+	
+	mBottomTools->Thaw();
+	mBottomTools->Realize();
+	mBottomTools->Refresh();
+	this->Layout();
 }
 
 
