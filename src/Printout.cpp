@@ -46,17 +46,19 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	int rightMarginLogical = int(mmToLogical * (pageWidthMM - rightMargin));
 	int border = 5;
 
+	dc->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
 	wxCoord xExtent, yExtent;
 	dc->GetTextExtent(text, &xExtent, &yExtent);
 
 	int xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
 	dc->DrawText(text, xPos, topMarginLogical + border);
 
+	dc->SetFont(mHeaderFont);
 	std::string addy = app.MainPharmacy->GetAddressAsString();
 	int yPos = yExtent + border + topMarginLogical; 
 	dc->GetTextExtent(addy, &xExtent, &yExtent);
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->DrawText(addy, xPos, yPos);
+	dc->DrawText(addy, xPos, yPos + border);
 
 	//print contact
 	std::string contact = app.MainPharmacy->GetContactAsString();
@@ -64,14 +66,13 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	dc->GetTextExtent(contact, &xExtent, &yExtent);
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
 	dc->SetFont(wxFont(wxFontInfo(10)));
-	dc->DrawText(contact, xPos, yPos);
+	dc->DrawText(contact, xPos, yPos + border);
 
 
 
 	dc->SetFont(mBodyFont);
-	
 	//date/time
-	yPos += yExtent + border;
+	yPos += yExtent + border + 5;
 	wxRect rect(leftMarginLogical, yPos, (rightMarginLogical - leftMarginLogical), yExtent);
 	pof::base::data::datetime_t& date = boost::variant2::get<pof::base::data::datetime_t>(
 			(wxGetApp().mSaleManager.GetSaleData()->GetDatastore().begin())->first[pof::SaleManager::SALE_DATE]);
@@ -131,8 +132,18 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	int lineLength = rightMarginLogical - leftMarginLogical;
 	int lineHeight = 18;
 
-	dc->SetFont(mBodyFont);
+	//tite
 	wxRect rect(leftMarginLogical, yPos, lineLength, lineHeight);
+	dc->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+
+	dc->DrawLabel("QUANTITY", rect, wxALIGN_LEFT);
+	dc->DrawLabel("PRODUCT", rect, wxALIGN_CENTER);
+	dc->DrawLabel("SUB-AMOUNT", rect, wxALIGN_RIGHT);
+
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	
+	dc->SetFont(mBodyFont);
 	pof::base::currency totalAmount;
 	for (auto& r : saleData->GetDatastore())
 	{
@@ -224,7 +235,7 @@ bool pof::Printout::DrawSalePrint()
 
 void pof::Printout::SetDefaultFonts()
 {
-	mHeaderFont = std::move(wxFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mBodyFont = std::move(wxFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mFooterFont = std::move(wxFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mHeaderFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mBodyFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFooterFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
 }

@@ -436,7 +436,11 @@ void pof::SaleView::Checkout()
 void pof::SaleView::OnClear(wxCommandEvent& evt)
 {
 	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
-	if (datastore.empty()) return;
+	if (datastore.empty())
+	{
+		mInfoBar->ShowMessage("Sale is empty");
+		return;
+	}
 	if (wxMessageBox("Are you sure you want to clear current sale?", "SALE", wxICON_WARNING | wxYES_NO) == wxNO) return;
 
 	wxGetApp().mSaleManager.GetSaleData()->Clear();
@@ -460,7 +464,10 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	pof::base::data& dataStore = model->GetDatastore();
 	assert(model != nullptr && "failed model dynamic cast, pof::DataModel not a subclass of model");
-	if (dataStore.empty()) return;
+	if (dataStore.empty()) {
+		mInfoBar->ShowMessage("Sale is empty");
+		return;
+	}
 	pof::base::currency totalAmount;
 	try {
 		totalAmount = std::accumulate(dataStore.begin(),
@@ -550,6 +557,7 @@ void pof::SaleView::OnSave(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("Sale is empty", wxICON_INFORMATION);
 		return;
 	}
+
 	
 	wxMessageBox("SAVE", "SAVE");
 }

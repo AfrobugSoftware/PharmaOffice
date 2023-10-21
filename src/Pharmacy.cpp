@@ -16,7 +16,7 @@ std::string pof::Pharmacy::GetAddressAsString() const
 
 std::string pof::Pharmacy::GetContactAsString() const
 {
-	return fmt::format("Phone: {} Email: {}", contact.phoneNumber, contact.email);
+	return fmt::format("Phone: {}     Email: {}", contact.phoneNumber, contact.email);
 }
 
 nl::json pof::Pharmacy::Pack() const

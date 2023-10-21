@@ -379,6 +379,8 @@ void pof::Application::TestAccountAndPharmacy()
 	MainPharmacy->addy.city = "Asaba";
 	MainPharmacy->addy.state = "Delta State";
 	MainPharmacy->addy.country = "Nigeria";
+	MainPharmacy->contact.email = "ferife_zino@yahoo.co.uk";
+	MainPharmacy->contact.phoneNumber = "09131861793";
 }
 
 void pof::Application::CreateTables()
