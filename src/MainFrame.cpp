@@ -51,7 +51,7 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	mExpireWatchTime = std::chrono::system_clock::now();
 
 	wxIcon appIcon;
-	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
 }
 

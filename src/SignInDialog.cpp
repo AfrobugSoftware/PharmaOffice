@@ -147,7 +147,7 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 	this->Centre( wxBOTH );
 
 	wxIcon appIcon;
-	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
 }
 
