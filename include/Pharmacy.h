@@ -35,8 +35,8 @@ namespace pof{
 			std::string postcode;
 
 			struct geolocation {
-				double longitude;
-				double latitude;
+				double longitude = 0.0f;
+				double latitude = 0.0f;
 			};
 			geolocation location;
 		};

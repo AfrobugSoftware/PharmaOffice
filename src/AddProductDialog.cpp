@@ -8,7 +8,8 @@ BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 END_EVENT_TABLE()
 
 
-pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) :
+	wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour( wxColour( 255, 255, 255 ) );

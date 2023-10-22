@@ -8,15 +8,19 @@
 
 #include <fstream>
 
-#include <random>
+//#include <random>
+//
+//#include <data.h>
+//#include <data_tuple.h>
+//#include <packages.h>
 
-#include <data.h>
-#include <data_tuple.h>
-#include <packages.h>
 
-#include "DataModel.h"
 
-#include "datatree.h"
+//#include "DataModel.h"
+//
+//#include "datatree.h"
+
+#include "RegisterPharmacy.h"
 
 IMPLEMENT_APP(pof::Application)
 
@@ -68,12 +72,17 @@ bool pof::Application::OnInit()
 	//where do I lunch set up wizard?? 
 	
 	//load the settings
-	auto path = fs::current_path() / "officeConfig.ini";
-	bool ret = false;
-	if (!fs::exists(path)) {
-		LunchWizard();
-	}
 	LoadSettings();
+	if (MainPharmacy->name.empty()){
+		//lunch register pharmacy
+		bool registerd = RegisterPharmacyLocal();
+		if (!registerd) {
+			wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
+			OnExit();
+			return false;
+		}
+	}
+
 	if (bUsingLocalDatabase) {
 		try {
 			OpenLocalDatabase();
@@ -108,7 +117,7 @@ bool pof::Application::OnInit()
 		//test	
 	}
 
-	TestAccountAndPharmacy();
+	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
 	mSaleManager.mCurAccount = MainAccount;
 	mSaleManager.mCurPharmacy = MainPharmacy;
@@ -138,6 +147,8 @@ bool pof::Application::OnInit()
 
 int pof::Application::OnExit()
 {
+	wxApp::OnExit();
+
 	mNetManager.stop();
 	if (bUsingLocalDatabase) {
 		sqlite3_shutdown();
@@ -229,7 +240,15 @@ bool pof::Application::LunchWizard()
 
 bool pof::Application::OpenLocalDatabase()
 {
-	auto dbPath = std::filesystem::current_path() / "localdatabase.db";
+	//hide database
+	auto dbFolder = std::filesystem::current_path() / ".data";
+	if (!fs::is_directory(dbFolder)) {
+		//have not create the folder yet
+		fs::create_directory(dbFolder);
+	}
+	auto dbPath = dbFolder / "localdatabase.db";
+
+
 	sqlite3_initialize();
 	mLocalDatabase = std::make_shared<pof::base::database>(dbPath);
 	SetupDatabaseExt();
@@ -270,6 +289,24 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("Version"), wxString(gVersion));
 
 
+	//pharmacy
+	config->SetPath(wxT("/pharamcy"));
+	config->Write(wxT("Name"), wxString(MainPharmacy->name));
+
+	//addy
+	config->Write(wxT("Addy.country"), wxString(MainPharmacy->addy.country));
+	config->Write(wxT("Addy.state"), wxString(MainPharmacy->addy.state));
+	config->Write(wxT("Addy.lga"), wxString(MainPharmacy->addy.lga));
+	config->Write(wxT("Addy.city"), wxString(MainPharmacy->addy.city));
+	config->Write(wxT("Addy.street"), wxString(MainPharmacy->addy.street));
+	config->Write(wxT("Addy.number"), wxString(MainPharmacy->addy.number));
+	config->Write(wxT("Addy.postcode"), wxString(MainPharmacy->addy.postcode));
+
+	//contact info
+	config->Write(wxT("Contact.phonenumber"), wxString(MainPharmacy->contact.phoneNumber));
+	config->Write(wxT("Contact.email"), wxString(MainPharmacy->contact.email));
+	config->Write(wxT("Contact.website"), wxString(MainPharmacy->contact.website));
+
 	return true;
 }
 
@@ -305,8 +342,49 @@ bool pof::Application::LoadSettings()
 
 
 
-	config->SetPath(wxT("/"));
-	config->SetPath(wxT("/pharmacy"));
+	//config->SetPath(wxT("/"));
+	config->SetPath(wxT("/pharamcy"));
+
+	//load in the pharamcy data
+	wxString readData;
+	config->Read(wxT("Name"), &readData);
+	MainPharmacy->name = readData;
+
+	//brach ID and pharmacy ID
+
+
+	//addy
+	config->Read(wxT("Addy.country"), &readData);
+	MainPharmacy->addy.country = readData;
+
+	config->Read(wxT("Addy.state"), &readData);
+	MainPharmacy->addy.state = readData;
+
+	config->Read(wxT("Addy.lga"), &readData);
+	MainPharmacy->addy.lga = readData;
+
+	config->Read(wxT("Addy.city"), &readData);
+	MainPharmacy->addy.city = readData;
+
+	config->Read(wxT("Addy.street"), &readData);
+	MainPharmacy->addy.street = readData;
+
+	config->Read(wxT("Addy.number"), &readData);
+	MainPharmacy->addy.number = readData;
+
+	config->Read(wxT("Addy.postcode"), &readData);
+	MainPharmacy->addy.postcode = readData;
+
+
+	//contact info
+	config->Read(wxT("Contact.phonenumber"), &readData);
+	MainPharmacy->contact.phoneNumber = readData;
+
+	config->Read(wxT("Contact.email"), &readData);
+	MainPharmacy->contact.email = readData;
+
+	config->Read(wxT("Contact.website"), &readData);
+	MainPharmacy->contact.website = readData;
 
 	config->SetPath(wxT("/"));
 	return true;
@@ -314,6 +392,7 @@ bool pof::Application::LoadSettings()
 
 bool pof::Application::RegisterPharmacy()
 {
+	
 	return false;
 }
 
@@ -324,7 +403,9 @@ bool pof::Application::RegisterAccount()
 
 bool pof::Application::RegisterPharmacyLocal()
 {
-	return false;
+	pof::PharmacyRegistration pr(nullptr, wxID_ANY);
+	pr.mp = MainPharmacy;
+	return (pr.ShowModal() == wxID_OK);
 }
 
 bool pof::Application::RegisterAccountLocal()
@@ -373,12 +454,7 @@ bool pof::Application::SignOut()
 
 void pof::Application::TestAccountAndPharmacy()
 {
-	MainPharmacy->name = "D-GLOPA NIGERIA LIMITED"s;
-	MainPharmacy->addy.number = "16";
-	MainPharmacy->addy.street = "Peterburg";
-	MainPharmacy->addy.city = "Asaba";
-	MainPharmacy->addy.state = "Delta State";
-	MainPharmacy->addy.country = "Nigeria";
+	MainPharmacy->contact.website = "www.zino.com";
 	MainPharmacy->contact.email = "ferife_zino@yahoo.co.uk";
 	MainPharmacy->contact.phoneNumber = "09131861793";
 }
