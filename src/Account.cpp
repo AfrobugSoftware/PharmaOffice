@@ -2,6 +2,7 @@
 
 pof::Account::Account()
 {
+	sessionDuration = date::days(5); //session lasts for 5 days
 }
 
 pof::Account::~Account()
@@ -144,7 +145,7 @@ bool pof::Account::SignInFromSession()
 		}
 		auto& tup = *rsd->begin();
 		//check if session has expired, TODO: FIX EXPIRE
-		if (std::get<1>(tup) < (std::chrono::system_clock::now() + sessionDuration)){
+		if (std::get<1>(tup) + sessionDuration < (std::chrono::system_clock::now())){
 			wxMessageBox("Session has expired, please sign in again.", "Session", wxICON_INFORMATION | wxOK);
 			RemoveSession();
 
