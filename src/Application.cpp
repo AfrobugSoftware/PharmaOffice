@@ -55,7 +55,11 @@ bool pof::Application::OnInit()
 	// check for updates
 	//lunch mainframe
 	if (!wxApp::OnInit()) return false;
-	gVersion = "0.0.1 pre beta";
+
+	//load the settings
+	LoadSettings();
+
+	gVersion = "1.0.0 pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();
@@ -71,8 +75,6 @@ bool pof::Application::OnInit()
 
 	//where do I lunch set up wizard?? 
 	
-	//load the settings
-	LoadSettings();
 	if (MainPharmacy->name.empty()){
 		//lunch register pharmacy
 		bool registerd = RegisterPharmacyLocal();

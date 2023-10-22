@@ -34,7 +34,7 @@ if(CMAKE_SYSTEM MATCHES Windows)
 	set(wxWidgets_setup_dir ${wxWidgets_libraries_dir}/mswu)
 endif()
 
-add_executable(pharmaoffice ${APP} ${incs} ${srcs})
+add_executable(pharmaoffice ${APP} ${incs} $<$<BOOL:${WIN32}>:pharmaoffice.rc> ${srcs})
 add_definitions(${CONAN_DEFINES})
 ##set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB)
 target_precompile_headers(pharmaoffice PUBLIC ${PROJECT_SOURCE_DIR}/include/PofPch.h)
