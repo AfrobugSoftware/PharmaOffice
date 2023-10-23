@@ -143,6 +143,7 @@ namespace pof
 		void OnPrintAsLabels(wxCommandEvent& evt);
 		void OnShowPacks(wxCommandEvent& evt);
 		void OnFormM(wxCommandEvent& evt);
+		void OnOpenSaveSale(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);

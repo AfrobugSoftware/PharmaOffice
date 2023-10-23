@@ -478,9 +478,8 @@ bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)
 	auto& v = iter->first;
 	if (bUsingLocalDatabase && mLocalDatabase) {
 		if (!productStoreStmt) {
-			static constexpr const std::string_view sql =
-				"INSERT INTO products (uuid, serial_num, name, generic_name, class, formulation, strength, strength_type, usage_info, descrip, health_condition, unit_price, cost_price, package_size, stock_count, side_effect, barcode, category, min_stock_count, expire_period, expire_date )"
-				" VALUES(? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ?, ? , ? , ? ); ";
+			static constexpr const std::string_view sql = R"(INSERT INTO products (uuid, serail_num, name, generic_name, class, formulation, strength, strength_type, usage_info, descrip, health_condition, unit_price, cost_price, package_size, stock_count, side_effects, barcode, category, min_stock_count, expire_period, expire_date )
+				 VALUES(? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ?, ? , ? , ?, ? ); )";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (stmt.has_value()) {
 				productStoreStmt = *stmt;
@@ -513,18 +512,25 @@ bool pof::ProductManager::StrProductData(pof::base::data::const_iterator iter)
 			pof::base::data::text_t, //EXPIRE PERIOD
 			std::uint64_t //EXPIRE DATE
 		>;
-		auto tup = pof::base::make_tuple_from_row<tuple_t>(v);
-		bool status = mLocalDatabase->bind(productStoreStmt, std::move(tup));
-		if (!status) {
-			spdlog::error(mLocalDatabase->err_msg());
-			mLocalDatabase->finalise(productStoreStmt);
-			productStoreStmt = nullptr;
-			return false;
+		try {
+			tuple_t tup;
+			pof::base::build(tup,*iter);
+			bool status = mLocalDatabase->bind(productStoreStmt, std::move(tup));
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				mLocalDatabase->finalise(productStoreStmt);
+				productStoreStmt = nullptr;
+				return false;
+			}
+			status = mLocalDatabase->execute(productStoreStmt);
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+				productStoreStmt = nullptr;
+				return false;
+			}
 		}
-		status = mLocalDatabase->execute(productStoreStmt);
-		if (!status) {
-			spdlog::error(mLocalDatabase->err_msg());
-			productStoreStmt = nullptr;
+		catch (const std::exception& exp){
+			spdlog::error(exp.what());
 			return false;
 		}
 	}

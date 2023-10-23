@@ -69,10 +69,12 @@ namespace pof {
 
 		//SAVE SALE
 		void CreateSaveSaleTable();
-		void RestoreSaveSale(const boost::uuids::uuid& saleID);
-		void RemoveSaveSale(const boost::uuids::uuid& saleID);
-		void SaveSale(const boost::uuids::uuid& saleID); //pushes the current sale in mSaleData; 
-		std::optional<std::vector<std::tuple<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>>> GetSavedSales();
+		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
+		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
+		bool SaveSale(const boost::uuids::uuid& saleID); //pushes the current sale in mSaleData; 
+		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
+		bool CheckIfSaved(const boost::uuids::uuid& saleID);
+
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;

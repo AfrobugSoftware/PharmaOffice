@@ -260,24 +260,151 @@ void pof::SaleManager::CreateSaveSaleTable()
 	}
 }
 
-void pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
+bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
 	{
 		constexpr const std::string_view sql = R"(SELECT * FROM save_sale WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return false;
+		
+		//reset the sale
+		SaleData->Clear();
+		for (auto& tup : *rel){
+			pof::base::data::row_t row;
+			row.first = pof::base::make_row_from_tuple(tup);
+			SaleData->EmplaceData(std::move(row));
+		}
+		return true;
+	}
+	return false;
+}
+
+bool pof::SaleManager::RemoveSaveSale(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM save_sale WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+
+bool pof::SaleManager::SaveSale(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(INSERT INTO save_sale VALUES (?,?,?,?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		pof::base::relation<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t
+		> rel;
+		auto& datastore = SaleData->GetDatastore();
+		rel.reserve(datastore.size());
+
+		try {
+			for (auto& sale : datastore) {
+				auto& v = sale.first;
+				rel.emplace_back(
+					std::make_tuple(
+						boost::variant2::get<pof::base::data::duuid_t>(v[SALE_UUID]),
+						boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]),
+						boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]),
+						boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]),
+						boost::variant2::get<pof::base::data::datetime_t>(v[SALE_DATE]),
+						mCurPaymentType));
+			}
+			bool status = mLocalDatabase->store(*stmt, std::move(rel));
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+			}
+			mLocalDatabase->finalise(*stmt);
+			return status;
+		}
+		catch (const std::exception& exp) {
+			spdlog::critical(exp.what());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
 
 	}
 }
 
-void pof::SaleManager::RemoveSaveSale(const boost::uuids::uuid& saleID)
+std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> pof::SaleManager::GetSavedSales()
 {
+	if (mLocalDatabase){
+		//max date is so we pick on entry in each group
+		constexpr const std::string_view sql = R"(SELECT uuid, Max(sale_date), product_ext_price 
+		FROM save_sale GROUP by uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
 }
 
-void pof::SaleManager::SaveSale(const boost::uuids::uuid& saleID)
+bool pof::SaleManager::CheckIfSaved(const boost::uuids::uuid& saleID)
 {
-}
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT COUNT(uuid) WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
 
-std::optional<std::vector<std::tuple<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>>> pof::SaleManager::GetSavedSales()
-{
-	return std::optional<std::vector<std::tuple<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>>>();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return false;
+		return (std::get<0>(*rel->begin()) != 0); 
+	}
+	return false;
 }

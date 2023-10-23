@@ -11,6 +11,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_PRINT_LABELS, pof::SaleView::OnPrintAsLabels)
 	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
+	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -772,6 +773,19 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 
 void pof::SaleView::OnFormM(wxCommandEvent& evt)
 {
+}
+
+void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
+{
+	auto saveSales = wxGetApp().mSaleManager.GetSavedSales();
+	if (!saveSales.has_value()) {
+		wxMessageBox("Cannot open save sales, critical error, please call admin", "Sales", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (saveSales->empty()){
+		//save the sale
+		wxMessageBox("No sale is save currently");
+	}
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
