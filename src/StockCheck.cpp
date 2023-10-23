@@ -258,7 +258,7 @@ void pof::StockCheck::CreateStockSelect()
 void pof::StockCheck::LoadStockSelect()
 {
 	auto stockStatus = wxGetApp().mProductManager.GetStockMonthStatus();
-	if (!stockStatus.has_value() || stockStatus->empty())
+	if (!stockStatus.has_value())
 	{
 		mBook->SetSelection(PAGE_STOCK_EMPTY);
 		mBook->Refresh();
@@ -286,7 +286,8 @@ void pof::StockCheck::LoadStockSelect()
 	item.SetText("Start S/C");
 	item.SetId(i);
 	item.SetImage(1);
-	item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE);
+	item.SetData(new pof::base::data::datetime_t(pof::base::data::clock_t::now()));
+	item.SetMask(wxLIST_MASK_TEXT | wxLIST_MASK_DATA | wxLIST_MASK_IMAGE);
 	mStockSelect->InsertItem(item);
 
 
@@ -591,6 +592,8 @@ void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 				pof::MainFrame::monthNames[monthCount], today), "Stock check", wxICON_INFORMATION | wxOK);
 			return;
 		}
+		mSelectedMonth = (pof::base::data::datetime_t*)(item.GetData());
+		
 	}
 	else {
 		pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
@@ -619,10 +622,15 @@ void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 void pof::StockCheck::OnStockSelected(wxListEvent& evt)
 {
 	const wxListItem& item = evt.GetItem();
-	pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
-	if (tt == nullptr) return;
-	mSelectedMonth = tt;
-	mExpiredStockValues = wxGetApp().mProductManager.GetExpiredProductsStock(*tt);
+	if (item.GetId() == mStockSelect->GetItemCount() - 1){
+		return;
+	}
+	else{
+		pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
+		if (tt == nullptr) return;
+		mSelectedMonth = tt;
+		mExpiredStockValues = wxGetApp().mProductManager.GetExpiredProductsStock(*tt);
+	}
 }
 
 void pof::StockCheck::OnBack(wxCommandEvent& evt)
