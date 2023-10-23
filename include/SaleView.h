@@ -112,6 +112,7 @@ namespace pof
 			ID_PACKS,
 			ID_FORM_M,
 			ID_OPEN_SAVE_SALE,
+			ID_ACTIVE_UI_TEXT,
 		};
 
 
@@ -148,6 +149,7 @@ namespace pof
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void OnEditingDone(wxDataViewEvent& evt);
+		void OnSaleUuidTextUI(wxUpdateUIEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);

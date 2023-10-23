@@ -22,6 +22,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
 	EVT_SEARCH(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
+	//EVT_UPDATE_UI(pof::SaleView::ID_ACTIVE_UI_TEXT, pof::SaleView::OnSaleUuidTextUI)
 END_EVENT_TABLE()
 
 static wxArrayString SplitIntoArrayString(const std::string& string)
@@ -55,6 +56,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mBottomTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mBottomTools->SetMinSize(wxSize(-1, 30));
+	mBottomTools->SetDoubleBuffered(true);
 
 	mProductNameText = new wxStaticText(mTopTools, wxID_ANY, wxT("Product Name: "), wxDefaultPosition, wxDefaultSize, 0);
 	mProductNameText->SetBackgroundColour(*wxWHITE);
@@ -96,8 +98,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
 	mBottomTools->AddStretchSpacer();
 
-	mActiveSaleId = new wxStaticText(mBottomTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
+	mActiveSaleId = new wxStaticText(mBottomTools, ID_ACTIVE_UI_TEXT, wxEmptyString, wxDefaultPosition, wxDefaultSize);
 	mActiveSaleId->SetBackgroundColour(*wxWHITE);
+	mActiveSaleId->SetDoubleBuffered(true);
 	mActiveSaleTextItem = mBottomTools->AddControl(mActiveSaleId);
 	SetActiveSaleIdText(mCurSaleuuid);
 
@@ -840,16 +843,19 @@ void pof::SaleView::OnEditingDone(wxDataViewEvent& evt)
 {
 }
 
+void pof::SaleView::OnSaleUuidTextUI(wxUpdateUIEvent& evt)
+{
+	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+	if (datastore.empty()){
+		mCurSaleuuid = boost::uuids::nil_uuid();
+		SetActiveSaleIdText(mCurSaleuuid);
+	}
+}
+
 void pof::SaleView::DropData(const pof::DataObject& dat)
 {
 	auto& meta = dat.GetMeta();
 	auto& row = dat.GetSetData();
-
-	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
-		mCurSaleuuid = uuidGen();
-		SetActiveSaleIdText(mCurSaleuuid);
-	}
-
 
 	if (row.has_value()) {
 		auto& val = row.value();
@@ -892,6 +898,10 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			}
 		}
 		else {
+			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+				mCurSaleuuid = uuidGen();
+				SetActiveSaleIdText(mCurSaleuuid);
+			}
 
 			auto row = pof::base::data::row_t();
 			row.first.resize(pof::SaleManager::MAX);
@@ -917,11 +927,6 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 {
 	try {
-		if (mCurSaleuuid == boost::uuids::nil_uuid()){
-			mCurSaleuuid = uuidGen();
-			SetActiveSaleIdText(mCurSaleuuid);
-		}
-
 		auto& v = row.first;
 		bool status = CheckInStock(row);
 		if (!status) {
@@ -963,6 +968,11 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		}
 		else {
 
+			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+				mCurSaleuuid = uuidGen();
+				SetActiveSaleIdText(mCurSaleuuid);
+			}
+
 			pof::base::data::row_t rowSale;
 			auto& vS = rowSale.first;
 			vS.resize(pof::SaleManager::MAX);
@@ -996,11 +1006,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		wxMessageBox("Unrecongised character in barcode", "SALE", wxICON_WARNING | wxOK);
 		return;
 	}
-	if (mCurSaleuuid == boost::uuids::nil_uuid()) {
-		mCurSaleuuid = uuidGen();
-		SetActiveSaleIdText(mCurSaleuuid);
-	}
-
+	
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	try {
 		auto iter = std::ranges::find_if(datastore, [&](const pof::base::data::row_t& row) -> bool {
@@ -1045,6 +1051,11 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			}
 		}
 		else {
+			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+				mCurSaleuuid = uuidGen();
+				SetActiveSaleIdText(mCurSaleuuid);
+			}
+
 			auto& v = iter->first;
 			pof::base::data::row_t rowSale;
 
