@@ -91,9 +91,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	
 	mTopTools->Realize();
 
-	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM M"), wxArtProvider::GetBitmap("application"));
+	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"));
 	mBottomTools->AddSpacer(5);
-	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("action_check"));
+	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
 	mBottomTools->AddStretchSpacer();
 
 	mActiveSaleId = new wxStaticText(mBottomTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
@@ -540,6 +540,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			mDataPane->Refresh();
 		}
 		ResetSaleDisplay();
+		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		mCurSaleuuid = boost::uuids::nil_uuid();
 		SetActiveSaleIdText(mCurSaleuuid);
 		mInfoBar->ShowMessage("Sale complete");
@@ -554,13 +555,19 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
 {
+	std::ostringstream str;
+	str << mCurSaleuuid;
 	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
 		mInfoBar->ShowMessage("Sale is empty", wxICON_INFORMATION);
 		return;
 	}
-
-	
-	wxMessageBox("SAVE", "SAVE");
+	if (wxGetApp().mSaleManager.CheckIfSaved(mCurSaleuuid)){
+		mInfoBar->ShowMessage(fmt::format("Sale {} already saved", str.str()), wxICON_INFORMATION);
+		return;
+	}
+	wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Saved Sale: {}", str.str()));
+	mInfoBar->ShowMessage(fmt::format("{} saved successfully", str.str()), wxICON_INFORMATION);
 }
 
 void pof::SaleView::OnDropPossible(wxDataViewEvent& evt)
@@ -782,9 +789,32 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 		wxMessageBox("Cannot open save sales, critical error, please call admin", "Sales", wxICON_ERROR | wxOK);
 		return;
 	}
-	if (saveSales->empty()){
-		//save the sale
-		wxMessageBox("No sale is save currently");
+	pof::SaveSaleDialog dialog(this, wxID_ANY);
+	bool status = dialog.LoadSaveSales(saveSales.value());
+	if(!status){
+		wxMessageBox("No sale is saved", "Sale", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	if (dialog.ShowModal() == wxID_OK){
+		if (mCurSaleuuid == dialog.GetSaveSaleId()){
+			wxMessageBox("Selected the current sale", "Sale", wxICON_INFORMATION | wxOK);
+			return;
+		}
+		status = wxGetApp().mSaleManager.RestoreSaveSale(dialog.GetSaveSaleId());
+		if (status) {
+			std::ostringstream str;
+			mCurSaleuuid = dialog.GetSaveSaleId();
+			str << mCurSaleuuid;
+			//remove from save
+			wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
+			UpdateSaleDisplay();
+			SetActiveSaleIdText(mCurSaleuuid);
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Restored Sale: {}", str.str()));
+			mInfoBar->ShowMessage(fmt::format("Restored {} sale sucessfully", str.str()), wxICON_INFORMATION | wxOK);
+		}
+		else {
+			wxMessageBox("Failed to restore sale", "Sale", wxICON_INFORMATION | wxOK);
+		}
 	}
 }
 

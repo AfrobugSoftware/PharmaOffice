@@ -242,7 +242,7 @@ void pof::SaleManager::CreateSaveSaleTable()
 	if (mLocalDatabase)
 	{
 		//takes the same data as the table sale
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sava_sale (
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS save_sale (
 		uuid blob,
 		product_uuid blob,
 		product_quantity integer,
@@ -264,20 +264,26 @@ bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT * FROM save_sale WHERE uuid = ?;)";
+		constexpr const std::string_view sql = R"(SELECT s.uuid, s.product_uuid, p.name, p.unit_price, 
+		s.product_quantity, s.product_ext_price, s.sale_date 
+		FROM save_sale s, products p WHERE s.uuid = ? AND s.product_uuid = p.uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
-
+		//assert(stmt);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,
 			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::currency_t,
 			std::uint64_t,
 			pof::base::data::currency_t,
-			pof::base::data::datetime_t,
-			pof::base::data::text_t
+			pof::base::data::datetime_t
 		>(*stmt);
 		if (!rel.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
@@ -324,10 +330,18 @@ bool pof::SaleManager::SaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(INSERT INTO save_sale VALUES (?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO save_sale (uuid,
+		product_uuid,
+		product_quantity,
+		product_ext_price,
+		sale_date,
+		sale_payment_type) VALUES (?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
-
+		//assert(stmt);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
 		pof::base::relation<
 			pof::base::data::duuid_t,
 			pof::base::data::duuid_t,
@@ -348,7 +362,7 @@ bool pof::SaleManager::SaveSale(const boost::uuids::uuid& saleID)
 						boost::variant2::get<pof::base::data::duuid_t>(v[PRODUCT_UUID]),
 						boost::variant2::get<std::uint64_t>(v[PRODUCT_QUANTITY]),
 						boost::variant2::get<pof::base::data::currency_t>(v[PRODUCT_EXT_PRICE]),
-						boost::variant2::get<pof::base::data::datetime_t>(v[SALE_DATE]),
+						pof::base::data::clock_t::now(),
 						mCurPaymentType));
 			}
 			bool status = mLocalDatabase->store(*stmt, std::move(rel));
@@ -371,10 +385,13 @@ std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uui
 {
 	if (mLocalDatabase){
 		//max date is so we pick on entry in each group
-		constexpr const std::string_view sql = R"(SELECT uuid, Max(sale_date), product_ext_price 
-		FROM save_sale GROUP by uuid;)";
+		constexpr const std::string_view sql = R"(SELECT sale_date, uuid, SumCost(product_ext_price) 
+		FROM save_sale WHERE 1 GROUP BY uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
 
 		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>(*stmt);
 		if (!rel.has_value()){
@@ -390,7 +407,7 @@ bool pof::SaleManager::CheckIfSaved(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT COUNT(uuid) WHERE uuid = ?;)";
+		constexpr const std::string_view sql = R"(SELECT COUNT(uuid) FROM save_sale WHERE uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 

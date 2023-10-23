@@ -318,7 +318,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mSuplierNameValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	fgSizer21->Add(mSuplierNameValue, 0, wxALL | wxEXPAND, 5);
 
-	mCostPerUnitName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Cost per unit"), wxDefaultPosition, wxDefaultSize, 0);
+	mCostPerUnitName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Cost Price Per Unit(N)"), wxDefaultPosition, wxDefaultSize, 0);
 	mSupplierName->Wrap(-1);
 	fgSizer21->Add(mCostPerUnitName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 

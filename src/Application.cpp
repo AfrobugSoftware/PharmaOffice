@@ -79,7 +79,7 @@ bool pof::Application::OnInit()
 		//lunch register pharmacy
 		bool registerd = RegisterPharmacyLocal();
 		if (!registerd) {
-			wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
+			//wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
 			OnExit();
 			return false;
 		}
@@ -524,6 +524,7 @@ void pof::Application::CreateTables()
 	mProductManager.CreateExpiredStockTable();
 	mProductManager.CreateActionTable();
 	mSaleManager.CreateSaleTable();
+	mSaleManager.CreateSaveSaleTable();
 
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();

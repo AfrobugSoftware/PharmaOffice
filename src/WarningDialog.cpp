@@ -158,6 +158,7 @@ void pof::Warning::OnRemove(wxCommandEvent& evt)
 	mWarningView->DeleteItem(mItem);
 	mWarningView->Thaw();
 	mWarningView->Refresh();
+	mItem = wxListItem{};
 }
 
 void pof::Warning::OnChangeLevel(wxCommandEvent& evt)

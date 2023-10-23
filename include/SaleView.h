@@ -24,7 +24,7 @@
 #include "SaleManager.h"
 #include "DropTarget.h"
 #include "SearchPopup.h"
-
+#include "SaveSaleDialog.h"
 #include "database.h"
 
 #include <ranges>
