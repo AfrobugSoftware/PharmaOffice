@@ -68,7 +68,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
 	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
-	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS ); 
+	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
 	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product Details"), wxT("Product Details") ) ); 
@@ -445,7 +445,8 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		mCostPrice->SetValue(wxVariant(static_cast<float>(boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]))));
 
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
-		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory to {}",
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory with batch {} to {}",
+			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	}
 	else {
@@ -741,7 +742,8 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		- boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
 
 	
-	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory from {}", 
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory with batch {} from {}", 
+			boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	productManager.RemoveInventoryData(iter);
 	productManager.GetInventory()->RemoveData(item);

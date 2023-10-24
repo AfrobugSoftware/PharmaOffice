@@ -294,6 +294,7 @@ bool pof::Application::SaveSettings()
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
+	config->Write(wxT("Type"), MainPharmacy->GetPharmacyType().to_ullong());
 
 	//addy
 	config->Write(wxT("Addy.country"), wxString(MainPharmacy->addy.country));
@@ -352,6 +353,9 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Name"), &readData);
 	MainPharmacy->name = readData;
 
+	std::uint64_t type;
+	config->Read(wxT("Type"), &type);
+	MainPharmacy->SetPharmacyType({ type });
 	//brach ID and pharmacy ID
 
 
@@ -553,12 +557,192 @@ pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDat
 	return clock_t::from_time_t(dt.GetTicks());
 }
 
-bool pof::Application::HasPrivilage(pof::Account::Privilage& priv)
+bool pof::Application::HasPrivilage(pof::Account::Privilage priv)
 {
 	const int idx = static_cast<int>(priv);
 	return (MainAccount->priv.test(idx));
 }
 
-void pof::Application::CreateSessionTable()
+void pof::Application::ShowSettings()
 {
+	wxPropertySheetDialog sd;
+	sd.SetSheetStyle(wxPROPSHEET_LISTBOOK);
+	sd.Create(mMainFrame, wxID_ANY, "Settings", wxDefaultPosition, wxSize(980, 659));
+	sd.Center(wxBOTH);
+	sd.CreateButtons(wxOK | wxCANCEL);
+	sd.SetBackgroundColour(wxColour(255, 255, 255));
+	sd.GetBookCtrl()->SetInternalBorder(10);
+	sd.SetSizeHints(wxSize(980, 659), wxSize(980, 659));
+
+	//application 
+	wxPanel* gpanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
+	wxPanel* ppanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
+	wxPanel* apanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
+	wxPanel* spanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
+
+	//General
+	sd.GetBookCtrl()->AddPage(gpanel, "General");
+	sd.GetBookCtrl()->AddPage(ppanel, "Pharmacy");
+	sd.GetBookCtrl()->AddPage(apanel, "Account");
+	sd.GetBookCtrl()->AddPage(spanel, "Sale");
+	
+	
+	ShowGeneralSettings(sd);
+	ShowPharmacySettings(sd);
+	ShowAccountSettings(sd);
+	ShowSaleSettings(sd);
+
+	//sd.LayoutDialog();
+	if (sd.ShowModal() == wxID_OK){
+
+	}
+
+}
+
+void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
+{
+	auto panel = sd.GetBookCtrl()->GetPage(0);
+	if (!panel) return;
+	mSettingProperties[0] = new wxPropertyGridManager(panel, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER |
+		wxPG_TOOLBAR |
+		wxPG_DESCRIPTION |
+		wxPG_SPLITTER_AUTO_CENTER |
+		wxNO_BORDER |
+		wxPGMAN_DEFAULT_STYLE);
+	mSettingProperties[0]->SetBackgroundColour(*wxWHITE);
+	mSettingProperties[0]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
+	auto grid = mSettingProperties[0]->AddPage("General", wxNullBitmap);
+
+	//the grid settings
+	auto pp0 = grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
+	grid->SetPropertyHelpString(pp0, "This is a help test string");
+	pp0->SetBackgroundColour(*wxWHITE);
+
+
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer(wxVERTICAL);
+
+	bSizer5->Add(mSettingProperties[0], wxSizerFlags().Expand().Proportion(1).Border(wxALL, 3));
+	bSizer5->Fit(mSettingProperties[0]);
+	panel->SetSizer(bSizer5);
+	panel->Layout();
+}
+
+void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
+{
+	auto panel = sd.GetBookCtrl()->GetPage(1);
+	if (!panel) return;
+	mSettingProperties[1] = new wxPropertyGridManager(panel, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER |
+		wxPG_TOOLBAR |
+		wxPG_DESCRIPTION |
+		wxPGMAN_DEFAULT_STYLE);
+	mSettingProperties[1]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
+	mSettingProperties[1]->SetBackgroundColour(*wxWHITE);
+
+	auto grid = mSettingProperties[1]->AddPage("General", wxNullBitmap);
+	//the grid settings
+	auto ct0 = grid->Append(new wxPropertyCategory("Pharmacy details"));
+	wxString mPharamcyTypeValueChoices[] = { wxT("COMMUNITY"), wxT("HOSPITAL"), wxT("INDUSTRY"), wxT("WHOLESALE"), wxT("EDUCATIONAL") };
+	wxPGChoices ptypes;
+	ptypes.Add(5, mPharamcyTypeValueChoices);
+	auto pp0 = grid->Append(new wxEnumProperty("Type", "ptypes" , ptypes));
+	auto pp1 = grid->Append(new wxStringProperty("Name", "pname", MainPharmacy->name));
+	auto pType = MainPharmacy->GetPharmacyType();
+	size_t idx = pType.to_ullong() % (1ull << 5);
+	if (idx >= 5) idx = 0;
+	pp0->SetValue(wxVariant(mPharamcyTypeValueChoices[idx]));
+
+
+	auto pp2 = grid->Append(new wxStringProperty("Phone Number", "pnum", MainPharmacy->contact.phoneNumber));
+	auto pp3 = grid->Append(new wxStringProperty("Email", "pemail", MainPharmacy->contact.email));
+	auto pp4 = grid->Append(new wxStringProperty("Website", "pwebsite", MainPharmacy->contact.website));
+
+	auto ct1 = grid->Append(new wxPropertyCategory("Pharmacy Address"));
+
+	auto pp5 = grid->Append(new wxStringProperty("No", "no", MainPharmacy->addy.number));
+	auto pp6 = grid->Append(new wxStringProperty("Street", "street", MainPharmacy->addy.street));
+	auto pp7 = grid->Append(new wxStringProperty("City", "city", MainPharmacy->addy.city));
+	auto pp8 = grid->Append(new wxStringProperty("L.G.A", "lga", MainPharmacy->addy.lga));
+	auto pp9 = grid->Append(new wxStringProperty("State", "state", MainPharmacy->addy.state));
+	auto pp10 = grid->Append(new wxStringProperty("Country", "country", MainPharmacy->addy.country));
+
+
+	grid->SetPropertyHelpString(pp0, "Change the Type of the pharmacy");
+	grid->SetPropertyHelpString(pp1, "Change the Name of The pharmacy");
+	grid->SetPropertyHelpString(pp2, "Change the Phone Number of the pharmacy");
+	grid->SetPropertyHelpString(pp3, "Change the Email of the pharmacy");
+	grid->SetPropertyHelpString(pp4, "Change the Website of the pharmacy");
+	
+	grid->SetPropertyHelpString(pp5, "Change the House no address of the pharmacy");
+	grid->SetPropertyHelpString(pp6, "Change the Street address of the pharmacy");
+	grid->SetPropertyHelpString(pp7, "Change the City address of the pharmacy");
+	grid->SetPropertyHelpString(pp8, "Change the L.G.A address of the pharmacy");
+	grid->SetPropertyHelpString(pp9, "Change the State address of the pharmacy");
+	grid->SetPropertyHelpString(pp10, "Change the Country address of the pharmacy");
+
+
+	
+	grid->SetPropertyBackgroundColour("ptypes", *wxWHITE);
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer(wxVERTICAL);
+
+	bSizer5->Add(mSettingProperties[1], wxSizerFlags().Expand().Proportion(1).Border(wxALL, 3));
+
+	bSizer5->Fit(mSettingProperties[1]);
+	panel->SetSizer(bSizer5);
+	panel->Layout();
+}
+
+void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
+{
+	auto panel = sd.GetBookCtrl()->GetPage(2);
+	if (!panel) return;
+	mSettingProperties[2] = new wxPropertyGridManager(panel, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER |
+		wxPG_TOOLBAR |
+		wxPG_DESCRIPTION |
+		wxPGMAN_DEFAULT_STYLE);
+	mSettingProperties[2]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
+
+	auto grid = mSettingProperties[2]->AddPage("General", wxNullBitmap);
+
+	//the grid settings
+	grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
+
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer(wxVERTICAL);
+
+	bSizer5->Add(mSettingProperties[2], wxSizerFlags().Expand().Proportion(1).Border(wxALL, 3));
+
+	bSizer5->Fit(mSettingProperties[2]);
+	panel->SetSizer(bSizer5);
+	panel->Layout();
+}
+
+void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
+{
+	auto panel = sd.GetBookCtrl()->GetPage(3);
+	if (!panel) return;
+	mSettingProperties[3] = new wxPropertyGridManager(panel, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER |
+		wxPG_TOOLBAR |
+		wxPG_DESCRIPTION |
+		wxPGMAN_DEFAULT_STYLE);
+	mSettingProperties[3]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
+
+	auto grid = mSettingProperties[3]->AddPage("Sale", wxNullBitmap);
+
+	//the grid settings
+	grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
+
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer(wxVERTICAL);
+
+	bSizer5->Add(mSettingProperties[3], wxSizerFlags().Expand().Proportion(1).Border(wxALL, 3));
+
+	bSizer5->Fit(mSettingProperties[3]);
+	panel->SetSizer(bSizer5);
+	panel->Layout();
 }

@@ -74,6 +74,7 @@ namespace pof {
 			ID_MENU_PRODUCT_IMPORT_JSON,
 			ID_MENU_PRODUCT_IMPORT_EXCEL,
 			ID_MENU_HELP_ABOUT,
+			ID_MENU_HELP_SETTINGS,
 			ID_MENU_PRODUCT_EXPORT,
 			ID_MENU_EXPORT_JSON,
 			ID_MENU_EXPORT_EXCEL,
@@ -120,6 +121,7 @@ namespace pof {
 		void OnMarkupSettings(wxCommandEvent& evt);
 		void OnNotif(wxCommandEvent& evt);
 		void OnSaleAlerts(wxCommandEvent& evt);
+		void OnShowSettings(wxCommandEvent& evt);
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);

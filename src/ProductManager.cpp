@@ -1896,6 +1896,7 @@ bool pof::ProductManager::RemoveStockEntry(const pof::base::data::duuid_t& pid, 
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(DELETE FROM stock_check 
 		WHERE prod_uuid = ? AND date = ?;)";
+		
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -1968,6 +1969,31 @@ bool pof::ProductManager::CheckIfMonthStarted(const pof::base::data::datetime_t&
 		mLocalDatabase->finalise(*stmt);
 
 		return !rel->empty();
+	}
+	return false;
+}
+
+bool pof::ProductManager::CheckIfDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view checksql = R"(SELECT 1 
+		FROM stock_check 
+		WHERE prod_uuid = ? AND date = ? AND status = 1;)";
+
+		auto cstmt = mLocalDatabase->prepare(checksql);
+		if (!cstmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*cstmt, std::make_tuple(pid, month));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*cstmt);
+		assert(rel);
+
+		mLocalDatabase->finalise(*cstmt);
+		return !rel->empty();
+
 	}
 	return false;
 }

@@ -5,6 +5,7 @@
 #include <wx/sysopt.h>
 #include <wx/config.h>
 #include <wx/stdpaths.h>
+#include <wx/propdlg.h>
 
 #include <filesystem>
 #include <netmanager.h>
@@ -103,11 +104,15 @@ namespace pof {
 
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);
-		bool HasPrivilage(pof::Account::Privilage& priv);
-		
-		//a session is a user sign in
-		void CreateSessionTable();
+		bool HasPrivilage(pof::Account::Privilage priv);
+		void ShowSettings();
+		void ShowGeneralSettings(wxPropertySheetDialog& sd);
+		void ShowPharmacySettings(wxPropertySheetDialog& sd);
+		void ShowAccountSettings(wxPropertySheetDialog& sd);
+		void ShowSaleSettings(wxPropertySheetDialog& sd);
+	
 	private:
+		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
 		fs::path mAsserts;

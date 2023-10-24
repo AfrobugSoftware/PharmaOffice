@@ -168,8 +168,15 @@ namespace pof {
 
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
-		bool RemoveProductData(pof::base::data::const_iterator iter);
 		
+		//do remove product
+		bool RemoveProductData(pof::base::data::const_iterator iter);
+		bool RemoveProductInOrderListData(pof::base::data::const_iterator iter);
+		bool RemoveProductInWarningsData(pof::base::data::const_iterator iter);
+		bool RemoveProductInventoryData(pof::base::data::const_iterator iter);
+		bool RemoveProductInStockCheckData(pof::base::data::const_iterator iter);
+		bool RemoveProductInPacks(pof::base::data::const_iterator iter);
+
 		//the first arg is the uuid
 		template<typename... Args>
 		bool UpdatePD(const std::tuple<Args...>& args, std::array<std::string_view, sizeof...(Args)>&& names) {
@@ -276,6 +283,7 @@ namespace pof {
 		bool MarkAllAsDone(pof::base::data::datetime_t month);
 		bool MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
 		bool CheckIfMonthStarted(const pof::base::data::datetime_t& month);
+		bool CheckIfDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
 
 
 		std::optional<pof::base::data::datetime_t> GetFirstStockMonth();

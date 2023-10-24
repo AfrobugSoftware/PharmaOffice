@@ -58,7 +58,12 @@ pof::PharmacyRegistration::PharmacyRegistration( wxWindow* parent, wxWindowID id
 	wxString mPharamcyTypeValueChoices[] = { wxT("COMMUNITY"), wxT("HOSPITAL"), wxT("INDUSTRY"), wxT("DRF"), wxT("EDUCATIONAL") };
 	int mPharamcyTypeValueNChoices = sizeof( mPharamcyTypeValueChoices ) / sizeof( wxString );
 	mPharamcyTypeValue = new wxChoice( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, mPharamcyTypeValueNChoices, mPharamcyTypeValueChoices, 0 );
-	mPharamcyTypeValue->SetSelection( 3 );
+	mPharamcyTypeValue->SetSelection( 0 );
+	mPharamcyTypeValue->Bind(wxEVT_CHOICE, [&](wxCommandEvent& evt) {
+		int sel = evt.GetSelection();
+		if (sel == wxNOT_FOUND) return;
+
+	});
 	fgSizer1->Add( mPharamcyTypeValue, 1, wxALL|wxEXPAND, 5 );
 	
 	mPharamcyName = new wxStaticText( m_panel3, wxID_ANY, wxT("Name"), wxDefaultPosition, wxDefaultSize, 0 );

@@ -6,6 +6,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
+	EVT_MENU(pof::MainFrame::ID_MENU_HELP_SETTINGS, pof::MainFrame::OnShowSettings)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_LOG, pof::MainFrame::OnShowLog)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_JSON, pof::MainFrame::OnExportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_EXCEL, pof::MainFrame::OnExportExcel)
@@ -136,6 +137,7 @@ void pof::MainFrame::CreateMenuBar()
 
 
 	//about
+	Menus[7]->Append(ID_MENU_HELP_SETTINGS, "Settings", nullptr);
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
@@ -561,6 +563,11 @@ void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
 		break;
 	}
 	config->SetPath(wxT("/"));
+}
+
+void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
+{
+	wxGetApp().ShowSettings();
 }
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)

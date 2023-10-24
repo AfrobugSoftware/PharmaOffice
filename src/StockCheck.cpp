@@ -667,6 +667,11 @@ void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
 	const auto& row = datastore[idx];
+	if (wxGetApp().mProductManager.CheckIfDone(
+		boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
+		wxMessageBox("Cannot remove entry, already marked as Completed", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
 
 	if (wxGetApp().mProductManager.RemoveStockEntry(
 		boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))){
@@ -728,6 +733,10 @@ void pof::StockCheck::OnToolUpdateUI(wxUpdateUIEvent& evt)
 
 void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	auto& stockCheck = wxGetApp().mProductManager.GetStockCheckData();
 	auto& datastore = stockCheck->GetDatastore();
 	

@@ -384,11 +384,15 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 {
 	//check privilage
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Remove product", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
 
 	if (wxMessageBox("Deleteing a product deletes all the data associated with the product, Do you wish to continue?", "REMOVE PRODUCT", wxICON_WARNING | wxYES_NO) == wxYES) {
-		
+				
 
 	}
 }
