@@ -203,7 +203,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
-	std::string AccountName = wxGetApp().MainAccount->GetName();
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
@@ -340,7 +340,7 @@ pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemI
 void pof::Modules::ReloadAccountDetails()
 {
 	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
-	std::string AccountName = wxGetApp().MainAccount->GetName();
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
@@ -356,7 +356,6 @@ void pof::Modules::ReloadAccountDetails()
 	m_panel1->Layout();
 	m_panel1->Thaw();
 	m_panel1->Refresh();
-
 
 }
 

@@ -84,6 +84,10 @@ bool pof::Application::OnInit()
 			return false;
 		}
 	}
+	//TestAccountAndPharmacy();
+	mAuditManager.mCurrentAccount = MainAccount;
+	mSaleManager.mCurAccount = MainAccount;
+	mSaleManager.mCurPharmacy = MainPharmacy;
 
 	if (bUsingLocalDatabase) {
 		try {
@@ -118,11 +122,6 @@ bool pof::Application::OnInit()
 		}
 		//test	
 	}
-
-	//TestAccountAndPharmacy();
-	mAuditManager.mCurrentAccount = MainAccount;
-	mSaleManager.mCurAccount = MainAccount;
-	mSaleManager.mCurPharmacy = MainPharmacy;
 
 	//check if time is increasing, very important that a changed time cause
 	auto today = pof::base::data::clock_t::now();
@@ -289,6 +288,7 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("CheckExpiredOnUpdate"), bCheckExpiredOnUpdate);
 	config->Write(wxT("CheckOutOfStockOnUpdate"), bCheckOutOfStockOnUpdate);
 	config->Write(wxT("AutomacticBroughtForward"), bAutomaticBroughtForward);
+	config->Write(wxT("AllowOtherUsersInventoryPermission"), bAllowOtherUsersInventoryPermission);
 	config->Write(wxT("Version"), wxString(gVersion));
 
 
@@ -332,6 +332,7 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("CheckExpiredOnUpdate"), &bCheckExpiredOnUpdate);
 	config->Read(wxT("CheckOutOfStockOnUpdate"), &bCheckOutOfStockOnUpdate);
 	config->Read(wxT("AutomacticBroughtForward"), &bAutomaticBroughtForward);
+	config->Read(wxT("AllowOtherUsersInventoryPermission"), &bAllowOtherUsersInventoryPermission);
 	wxString version;
 	config->Read(wxT("Version"), &version);
 	gVersion = version;
@@ -430,6 +431,7 @@ bool pof::Application::SignIn()
 			if (bKeepMeSignedIn){
 				MainAccount->InsertSession(); //starts new session
 			}
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed in at {:%d/%M/%Y %H:%M:%S}", MainAccount->username, MainAccount->signintime));
 			return true;
 		}
 		else {
@@ -448,6 +450,7 @@ bool pof::Application::SignOut()
 		if (Dialog.ShowModal() == wxID_OK) {
 			mMainFrame->ReloadFrame();
 			mMainFrame->Show();
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed in at {:%d/%M/%Y %H:%M:%S}", MainAccount->username, MainAccount->signintime));
 			return true;
 		}
 		else {
@@ -614,10 +617,37 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	mSettingProperties[0]->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
 	auto grid = mSettingProperties[0]->AddPage("General", wxNullBitmap);
+	grid->GetGrid()->SetBackgroundColour(*wxWHITE);
+	grid->GetGrid()->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->GetGrid()->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
+
+	auto tool = mSettingProperties[0]->GetToolBar();
+	if (tool) {
+		tool->SetBackgroundColour(*wxWHITE);
+	}
 
 	//the grid settings
-	auto pp0 = grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
-	grid->SetPropertyHelpString(pp0, "This is a help test string");
+	auto ct0 = grid->Append(new wxPropertyCategory("Application settings"));
+	auto pp0 = grid->Append(new wxBoolProperty("Use Local Database", "0", bUsingLocalDatabase));
+	auto pp1 = grid->Append(new wxBoolProperty("Highlight Low Stock", "1", bHighlightLowStock));
+	auto pp2 = grid->Append(new wxBoolProperty("Use Minimum Stock Count", "2", bUseMinStock));
+	auto pp3 = grid->Append(new wxBoolProperty("Show Product Warnings", "3", bPharamcistWarings));
+	auto pp4 = grid->Append(new wxBoolProperty("Check Expired On Sale", "4", bCheckExpired));
+	auto pp5 = grid->Append(new wxBoolProperty("Check Out Of Stock On Sale", "5", bCheckOutOfStock));
+	auto pp6 = grid->Append(new wxBoolProperty("Check Product Class On Sale", "6", bCheckPOM));
+	auto pp7 = grid->Append(new wxBoolProperty("Allow other users to Add inventory", "7", bAllowOtherUsersInventoryPermission));
+	if (mLocalDatabase){
+		pp0->Enable(false);
+	}
+	grid->SetPropertyHelpString(pp0, "Use localdatabase for data storage");
+	grid->SetPropertyHelpString(pp1, "Highlight low stock count on products");
+	grid->SetPropertyHelpString(pp2, "Use minimum stock count as an indication of low stock");
+	grid->SetPropertyHelpString(pp3, "Show Product warnings on sale");
+	grid->SetPropertyHelpString(pp4, "Alert if product as expired on sale");
+	grid->SetPropertyHelpString(pp5, "Alert if product is out of stock on sale");
+	grid->SetPropertyHelpString(pp6, "Check product class on sale");
+	grid->SetPropertyHelpString(pp7, "Allow other users than the sperindent pharmacist to add inventory to stock");
 	pp0->SetBackgroundColour(*wxWHITE);
 
 
@@ -642,7 +672,16 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 	mSettingProperties[1]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
 	mSettingProperties[1]->SetBackgroundColour(*wxWHITE);
 
-	auto grid = mSettingProperties[1]->AddPage("General", wxNullBitmap);
+	auto grid = mSettingProperties[1]->AddPage("Pharmacy", wxNullBitmap);
+	grid->GetGrid()->SetBackgroundColour(*wxWHITE);
+	grid->GetGrid()->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->GetGrid()->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
+
+	auto tool = mSettingProperties[1]->GetToolBar();
+	if (tool){
+		tool->SetBackgroundColour(*wxWHITE);
+	}
 	//the grid settings
 	auto ct0 = grid->Append(new wxPropertyCategory("Pharmacy details"));
 	wxString mPharamcyTypeValueChoices[] = { wxT("COMMUNITY"), wxT("HOSPITAL"), wxT("INDUSTRY"), wxT("WHOLESALE"), wxT("EDUCATIONAL") };
@@ -707,11 +746,49 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 		wxPGMAN_DEFAULT_STYLE);
 	mSettingProperties[2]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
 
-	auto grid = mSettingProperties[2]->AddPage("General", wxNullBitmap);
+	auto grid = mSettingProperties[2]->AddPage("Account", wxNullBitmap);
+	grid->GetGrid()->SetBackgroundColour(*wxWHITE);
+	grid->GetGrid()->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->GetGrid()->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
 
+	//create tool bar
+	auto tool = mSettingProperties[2]->GetToolBar();
+	if (tool) {
+		tool->SetBackgroundColour(*wxWHITE);
+		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
+		tool->AddStretchableSpace();
+		tool->AddSeparator();
+		tool->AddTool(wxID_ANY, "Reset password", wxArtProvider::GetBitmap("application"));
+		tool->AddTool(wxID_ANY, "Delete Account", wxArtProvider::GetBitmap("action_delete"));
+		tool->Realize();
+		mSettingProperties[2]->Update();
+	}
 	//the grid settings
-	grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
+	auto ct0 = grid->Append(new wxPropertyCategory("User account details"));
+	auto tt0 = grid->Append(new wxStringProperty("Account Type", "at", MainAccount->GetAccountTypeString()));
+	auto pp0 = grid->Append(new wxStringProperty("Name", "0", MainAccount->name));
+	auto pp1 = grid->Append(new wxStringProperty("Last Name", "2", MainAccount->lastname));
+	auto pp2 = grid->Append(new wxStringProperty("Username", "3", MainAccount->username));
+	auto pp3 = grid->Append(new wxStringProperty("Email", "4", MainAccount->email));
+	auto pp4 = grid->Append(new wxStringProperty("Phone Number", "5", MainAccount->phonenumber));
+	auto pp5 = grid->Append(new wxStringProperty("Reg Number", "6", MainAccount->regnumber));
 
+	tt0->Enable(false);
+	pp2->Enable(false);
+
+	grid->SetPropertyHelpString(tt0, "Account type. This cannot be changed");
+	grid->SetPropertyHelpString(pp0, "Change account Name");
+	grid->SetPropertyHelpString(pp1, "Change account Last Name");
+	grid->SetPropertyHelpString(pp1, "Account Username. This cannot be changed");
+	grid->SetPropertyHelpString(pp3, "Change account email");
+	grid->SetPropertyHelpString(pp4, "Change phone number");
+	grid->SetPropertyHelpString(pp5, "Change reg number");
+
+	mSettingProperties[2]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
+	
+
+	});
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);
 
@@ -734,8 +811,16 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	mSettingProperties[3]->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
 
 	auto grid = mSettingProperties[3]->AddPage("Sale", wxNullBitmap);
-
+	grid->GetGrid()->SetBackgroundColour(*wxWHITE);
+	grid->GetGrid()->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->GetGrid()->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
 	//the grid settings
+	auto tool = mSettingProperties[3]->GetToolBar();
+	if (tool) {
+		tool->SetBackgroundColour(*wxWHITE);
+	}
+
 	grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
 
 	wxBoxSizer* bSizer5;

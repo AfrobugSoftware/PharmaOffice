@@ -92,6 +92,7 @@ namespace pof {
 		bool bCheckExpiredOnUpdate = true;
 		bool bCheckOutOfStockOnUpdate = true;
 		bool bAutomaticBroughtForward = true;
+		bool bAllowOtherUsersInventoryPermission = false;
 		date::days gSessionLast;
 
 

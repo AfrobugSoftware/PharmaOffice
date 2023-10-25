@@ -403,6 +403,10 @@ void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 {
 	//check if product has expired inventory
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission){
+		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	auto items = wxGetApp().mProductManager.DoExpiredProducts();
 	if (!items.has_value()) return;
 	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {
@@ -643,6 +647,11 @@ void pof::ProductInfo::StyleSheet()
 	grid->SetBackgroundColour(*wxWHITE);
 	grid->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
 	grid->SetCaptionTextColour(*wxBLACK);
+	grid->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
+	auto tool = m_propertyGridManager1->GetToolBar();
+	if (tool){
+		tool->SetBackgroundColour(*wxWHITE);
+	}
 }
 
 void pof::ProductInfo::OnSashDoubleClick(wxSplitterEvent& evt)

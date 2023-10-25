@@ -206,6 +206,7 @@ void pof::DispensaryView::CreatePropertyGridToolBar()
 {
 	auto tool = mPropertyManager->GetToolBar();
 	if (tool) {
+		tool->SetBackgroundColour(*wxWHITE);
 		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
 		tool->Realize();
 		Update();
@@ -219,6 +220,7 @@ void pof::DispensaryView::CreatePropertyGridArt()
 	grid->SetBackgroundColour(*wxWHITE);
 	grid->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
 	grid->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
 
 }
 

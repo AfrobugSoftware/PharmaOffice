@@ -181,11 +181,13 @@ bool pof::Account::SignInFromSession()
 		signintime = pof::Account::clock_t::now();
 		accountID = std::get<0>(v);
 		priv = pof::Account::privilage_set_t(std::get<1>(v));
-		name = fmt::format("{} {}", std::get<2>(v), std::get<3>(v));
+		name = std::get<2>(v);
+		lastname = std::get<3>(v);
 		email = std::get<4>(v);
 		phonenumber = std::get<5>(v);
 		regnumber = std::get<6>(v);
-		passhash = std::get<7>(v);
+		username = std::get<7>(v);
+		passhash = std::get<8>(v);
 		SetSignInTime();
 		
 		mLocalDatabase->finalise(*stmt);
@@ -382,6 +384,7 @@ void pof::Account::DoSignOut()
 
 		mLocalDatabase->finalise(*stmt);
 	}
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed out at {:%d/%M/%Y %H:%M:%S}", username, signintime));
 	wxGetApp().bKeepMeSignedIn = false;
 	RemoveSession();
 	signOutSig(*this);
