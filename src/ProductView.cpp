@@ -397,7 +397,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 	auto next = std::next(iter, idx);
 	std::string name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
 
-	wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH );
+	wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE );
 	bool status = false;
 	bool stop = false;
 	auto showFailedStatus = [&]() {

@@ -153,6 +153,7 @@ int pof::Application::OnExit()
 
 	mNetManager.stop();
 	if (bUsingLocalDatabase) {
+		mLocalDatabase->flush_db();
 		sqlite3_shutdown();
 	}
 	SaveSettings();
