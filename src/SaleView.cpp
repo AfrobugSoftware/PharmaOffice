@@ -47,6 +47,7 @@ static wxArrayString SplitIntoArrayString(const std::string& string)
 
 pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
 {
+	this->SetDoubleBuffered(true);
 	mCurSaleuuid = boost::uuids::nil_uuid();
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
@@ -145,6 +146,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer6->Fit(mDataPane);
 	
 	mSaleOutputPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mSaleOutputPane->SetDoubleBuffered(true);
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
@@ -267,6 +269,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	ProductNameKeyEvent(); //experiment
 
 	wxGetApp().mPrintManager->printSig.connect(std::bind_front(&pof::SaleView::OnSaleComplete, this));
+	/*this->Bind(wxEVT_UPDATE_UI, [&](wxUpdateUIEvent& evt) {
+		UpdateSaleDisplay();
+	});*/
 }
 
 pof::SaleView::~SaleView()
@@ -294,8 +299,9 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 		auto& datum = dataStore[row];
 		auto& v = datum.first;
 		auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
+		auto& extPrice = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_EXT_PRICE]);
 		auto& quantiy = boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
-		pof::base::currency extPrice = price * static_cast<double>(quantiy);
+		extPrice = price * static_cast<double>(quantiy);
 		return wxVariant(fmt::format("{:cu}", extPrice));
 	};
 
@@ -392,6 +398,7 @@ void pof::SaleView::UpdateSaleDisplay()
 	try {
 		totalAmount = std::accumulate(dataStore.begin(),
 			dataStore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
+				spdlog::info("{:cu}", boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_PRICE]));
 				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
 				
 			});
@@ -718,12 +725,6 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 
 		for (auto& prod : prods) {
 
-			pof::base::data::row_t rowSale;
-			auto& vS = rowSale.first;
-			vS.resize(pof::SaleManager::MAX);
-			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
-			vS[pof::SaleManager::PRODUCT_UUID] = std::get<1>(prod);
-
 			//find row
 			auto iter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
 				[&](const pof::base::data::row_t& row) -> bool {
@@ -779,11 +780,15 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 				}else continue;
 			}
 
-			
+			pof::base::data::row_t rowSale;
+			auto& vS = rowSale.first;
+			vS.resize(pof::SaleManager::MAX);
+			vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+			vS[pof::SaleManager::PRODUCT_UUID] = std::get<1>(prod);
 			vS[pof::SaleManager::PRODUCT_NAME] = std::move(std::get<2>(prod));
 			vS[pof::SaleManager::PRODUCT_QUANTITY] = std::get<3>(prod);
 			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
-			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<6>(prod);
+			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<5>(prod) * static_cast<double>(std::get<3>(prod));
 
 			CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::PRODUCT_UUID]));
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
@@ -922,8 +927,9 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			v[pof::SaleManager::PRODUCT_UUID] = val.first[pof::ProductManager::PRODUCT_UUID];
 			v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
 			v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
-			v[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
-			v[pof::SaleManager::PRODUCT_EXT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			v[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(val.first[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
+			v[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(val.first[pof::ProductManager::PRODUCT_UNIT_PRICE]) *
+				static_cast<double>(boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]));
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
 		}
@@ -992,8 +998,9 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
 			vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
 			vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
-			vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
-			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
+			vS[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
+			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]) * 
+					static_cast<double>(boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]));
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));

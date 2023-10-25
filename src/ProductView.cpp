@@ -396,6 +396,15 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 	auto iter = wxGetApp().mProductManager.GetProductData()->GetDatastore().begin();
 	auto next = std::next(iter, idx);
 	std::string name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
+	
+	//check if the product is currently in the sale view
+	if (std::ranges::any_of(wxGetApp().mSaleManager.GetSaleData()->GetDatastore(), [&row](auto& v) -> bool {
+		return row.first[pof::ProductManager::PRODUCT_UUID] == v.first[pof::SaleManager::PRODUCT_UUID];
+	})){
+		wxMessageBox("Cannot remove product that is currently in the sale, please complete or clear product from sale before removing product", "Remove product", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 
 	wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE );
 	bool status = false;
