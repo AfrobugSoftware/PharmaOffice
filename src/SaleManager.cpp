@@ -425,3 +425,43 @@ bool pof::SaleManager::CheckIfSaved(const boost::uuids::uuid& saleID)
 	}
 	return false;
 }
+
+bool pof::SaleManager::RemoveProductSaleHistory(pof::base::data::const_iterator iterator)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM sales WHERE product_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(boost::variant2::get<boost::uuids::uuid>(iterator->first[pof::ProductManager::PRODUCT_UUID])));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::SaleManager::RemoveProductSaveSale(pof::base::data::const_iterator iterator)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM save_sale WHERE product_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(boost::variant2::get<boost::uuids::uuid>(iterator->first[pof::ProductManager::PRODUCT_UUID])));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}

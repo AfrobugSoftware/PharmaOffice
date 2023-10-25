@@ -75,6 +75,8 @@ namespace pof {
 		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
 		bool CheckIfSaved(const boost::uuids::uuid& saleID);
 
+		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
+		bool RemoveProductSaveSale(pof::base::data::const_iterator iterator);
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;

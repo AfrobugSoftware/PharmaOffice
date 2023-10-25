@@ -551,6 +551,10 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Product Information", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	spdlog::info("{}", evt.GetPropertyName().ToStdString());
 	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
 	if (PropIter == mNameToProductElem.end()) return;

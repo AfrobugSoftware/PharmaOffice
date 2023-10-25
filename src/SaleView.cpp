@@ -642,8 +642,19 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		}
 	}
 
+
+	m_dataViewCtrl1->Freeze();
+	if (mInfoBar->IsShown()) mInfoBar->Dismiss();
 	wxGetApp().mSaleManager.GetSaleData()->RemoveData(item);
+	m_dataViewCtrl1->Thaw();
+	m_dataViewCtrl1->Refresh();
 	UpdateSaleDisplay();
+
+	//reset the sale if we removed all of the items 
+	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
+		mCurSaleuuid = boost::uuids::nil_uuid();
+		SetActiveSaleIdText(mCurSaleuuid);
+	}
 }
 
 void pof::SaleView::OnSelected(wxDataViewEvent& evt)
