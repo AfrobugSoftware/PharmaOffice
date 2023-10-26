@@ -173,6 +173,7 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
 	pof::RegistrationDialog regDialog(nullptr);
+	regDialog.mAccount.mLocalDatabase = wxGetApp().mLocalDatabase;
 	//Hide();
 	int ret = regDialog.ShowModal();
 	bool status = false;

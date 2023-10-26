@@ -201,6 +201,22 @@ pof::PharmacyRegistration::~PharmacyRegistration()
 {
 }
 
+bool pof::PharmacyRegistration::ValidateEmail(const std::string email)
+{
+	try {
+		const std::regex rex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)");
+		if (!std::regex_match(email, rex)) {
+			wxMessageBox("Invalid Email Address", "Registration", wxICON_WARNING | wxOK);
+			return false;
+		}
+	}
+	catch (const std::exception& exp) {
+		auto what = exp.what();
+		spdlog::error(what);
+	}
+	return true;
+}
+
 bool pof::PharmacyRegistration::TransferDataFromWindow()
 {
 	if (!mp){
@@ -216,7 +232,17 @@ bool pof::PharmacyRegistration::TransferDataFromWindow()
 	mp->addy.state = mStateValue->GetValue();
 	mp->addy.street = mStreetValue->GetValue();
 	
+	const auto phone = mPhoneNoValue->GetValue().ToStdString();
+	if (phone.size() != 11) {
+		//cannot properly validate number just the count
+		wxMessageBox("Phone number is not complete, please enter valid phone number", "Registration", wxICON_WARNING | wxOK);
+		return false;
+	}
 	mp->contact.phoneNumber = mPhoneNoValue->GetValue();
+	const auto email = mEmailValue->GetValue().ToStdString();
+	if (!ValidateEmail(email)) {
+		return false;
+	}
 	mp->contact.email = mEmailValue->GetValue();
 	mp->contact.website = mWebsiteValue->GetValue();
 

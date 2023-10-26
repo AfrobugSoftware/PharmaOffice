@@ -12,6 +12,7 @@
 #include <database.h>
 #include <chrono>
 #include <sstream>
+#include <random>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -33,6 +34,16 @@ namespace js = nlohmann;
 namespace fs = std::filesystem;
 using namespace std::literals::string_literals;
 namespace pof {
+	template<typename T = std::uint64_t, std::enable_if_t<std::is_integral_v<T>, int> = 0>
+	auto GenRandomId() -> T
+	{
+		static std::mt19937_64 engine(std::random_device{}());
+		static std::uniform_int_distribution<T> dist(1000000, 100000000);
+		static auto random = std::bind(dist, engine);
+
+		return random();
+	}
+
 	class Application : public wxApp
 	{
 	public:
@@ -93,6 +104,10 @@ namespace pof {
 		bool bCheckOutOfStockOnUpdate = true;
 		bool bAutomaticBroughtForward = true;
 		bool bAllowOtherUsersInventoryPermission = false;
+		bool bMaximizeOnLoad = true;
+		bool bShowPreviewOnSale = false;
+
+		wxPaperSize sPaperSize;
 		date::days gSessionLast;
 
 

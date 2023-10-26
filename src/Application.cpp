@@ -223,9 +223,22 @@ bool pof::Application::CreateMainFrame()
 			wxID_ANY, wxPoint(x,y), wxSize(w, h));
 	}
 
+
+
 	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
+	if (bMaximizeOnLoad) mMainFrame->Maximize();
 	mMainFrame->Show();
+	
+	config->SetPath("/pharmacy");
+	wxPoint pos = mMainFrame->GetPosition();
+	wxSize size = mMainFrame->GetSize();
+
+	config->Write(wxT("PosX"), pos.x);
+	config->Write(wxT("PosY"), pos.y);
+	config->Write(wxT("SizeW"), size.x);
+	config->Write(wxT("SizeH"), size.y);
+	
 	return true;
 }
 
@@ -289,6 +302,7 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("CheckOutOfStockOnUpdate"), bCheckOutOfStockOnUpdate);
 	config->Write(wxT("AutomacticBroughtForward"), bAutomaticBroughtForward);
 	config->Write(wxT("AllowOtherUsersInventoryPermission"), bAllowOtherUsersInventoryPermission);
+	config->Write(wxT("MaximizeOnLoad"), bMaximizeOnLoad);
 	config->Write(wxT("Version"), wxString(gVersion));
 
 
@@ -310,6 +324,8 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("Contact.phonenumber"), wxString(MainPharmacy->contact.phoneNumber));
 	config->Write(wxT("Contact.email"), wxString(MainPharmacy->contact.email));
 	config->Write(wxT("Contact.website"), wxString(MainPharmacy->contact.website));
+
+	
 
 	return true;
 }
@@ -337,17 +353,6 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Version"), &version);
 	gVersion = version;
 	
-	config->SetPath(wxT("/mainframe"));
-	int x, y, w, h;
-	x = y = w = h = -1;
-	config->Read(wxT("PosX"), &x);
-	config->Read(wxT("PosY"), &y);
-	config->Read(wxT("SizeW"), &w);
-	config->Read(wxT("SizeH"), &h);
-
-
-
-	//config->SetPath(wxT("/"));
 	config->SetPath(wxT("/pharamcy"));
 
 	//load in the pharamcy data
@@ -637,6 +642,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp5 = grid->Append(new wxBoolProperty("Check Out Of Stock On Sale", "5", bCheckOutOfStock));
 	auto pp6 = grid->Append(new wxBoolProperty("Check Product Class On Sale", "6", bCheckPOM));
 	auto pp7 = grid->Append(new wxBoolProperty("Allow other users to Add inventory", "7", bAllowOtherUsersInventoryPermission));
+	auto pp8 = grid->Append(new wxBoolProperty("Maximise application", "8", bMaximizeOnLoad));
 	if (mLocalDatabase){
 		pp0->Enable(false);
 	}
@@ -648,6 +654,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp5, "Alert if product is out of stock on sale");
 	grid->SetPropertyHelpString(pp6, "Check product class on sale");
 	grid->SetPropertyHelpString(pp7, "Allow other users than the sperindent pharmacist to add inventory to stock");
+	grid->SetPropertyHelpString(pp8, "Maximize the application on load");
 	pp0->SetBackgroundColour(*wxWHITE);
 
 
@@ -821,7 +828,13 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 		tool->SetBackgroundColour(*wxWHITE);
 	}
 
-	grid->Append(new wxBoolProperty("Test Settings", "Test Settings", true));
+	auto pp0 = grid->Append(new wxBoolProperty("Show Preview on Sale", "0", bShowPreviewOnSale));
+
+	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
+	mSettingProperties[3]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
+
+
+	});
 
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);

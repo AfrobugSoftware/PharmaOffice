@@ -640,12 +640,12 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		if (filename.empty()) return;
 		std::filesystem::path fp(filename);
 		if (fp.extension().string() != ".json") {
-			wxMessageBox("File is not a JSON file, with proper extension", "JSON IMPORT");
+			wxMessageBox("File is not a JSON file, with proper extension", "Json Import");
 			return;
 		}
 		std::fstream fs(fp, std::ios::in);
 		if (!fs.is_open()) {
-			wxMessageBox("Cannot Open JSON FILE, file corrrupted", "JSON IMPORT", wxICON_ERROR | wxOK);
+			wxMessageBox("Cannot Open JSON FILE, file corrrupted", "Json Import", wxICON_ERROR | wxOK);
 			return;
 		}
 		try {
@@ -654,32 +654,37 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 			nlohmann::json js;
 			fs >> js;
 			if (js.empty()) {
-				wxMessageBox("JSON READ ERROR, FILE CORRUPTED", "JSON IMPORT", wxICON_ERROR | wxOK);
+				wxMessageBox("JSON READ ERROR, FILE CORRUPTED", "Json Import", wxICON_ERROR | wxOK);
 				return;
 			}
 
-			wxProgressDialog progress("Importing json", "Reading file...", js.size(), this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
+			wxProgressDialog progress("Importing json", "Reading file...", js.size(), this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 			size_t value = 0;
+			auto& pds = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 			for (auto iter = js.begin(); iter != js.end(); iter++) {
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
+				//check if name already exsit in store
+				if (std::ranges::any_of(pds, [&](const auto& r) -> bool {
+					return boost::variant2::get<pof::base::data::text_t>(r.first[pof::ProductManager::PRODUCT_NAME])
+					== static_cast<std::string>(tempjs["Name"]);
+				})) {
+					wxMessageBox(fmt::format("{} already exist in store, skipping", static_cast<std::string>(tempjs["Name"])), "Json Import", wxICON_INFORMATION | wxOK);
+					continue;
+				}
+				
 				row.first.resize(pof::ProductManager::PRODUCT_MAX);
 				row.first[pof::ProductManager::PRODUCT_UUID] = wxGetApp().mProductManager.UuidGen();
-				/*row.first[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::string();
-				row.first[pof::ProductManager::PRODUCT_CLASS] = std::string();
-				row.first[pof::ProductManager::PRODUCT_BARCODE] = std::string();*/
-
-
-				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Serial number"]));
+				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
 				row.first[pof::ProductManager::PRODUCT_NAME] = pof::base::data::data_t(static_cast<std::string>(tempjs["Name"])); //name
 				row.first[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Package size"]));
-				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Stock count"]));
+				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(pof::base::data::currency_t(static_cast<std::string>(tempjs["Unit price"])));
-				row.first[pof::ProductManager::PRODUCT_CATEGORY] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Category id"]));
+				row.first[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 
 				datastore.insert(std::move(row));
 				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {
-					wxMessageBox("IMPORT CANCELED", "JSON IMPORT");
+					wxMessageBox("Import Cancelled", "Json Import");
 					return;
 				}
 				spdlog::info("{}", iter.key());

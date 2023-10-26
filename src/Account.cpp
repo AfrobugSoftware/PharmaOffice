@@ -108,7 +108,7 @@ bool pof::Account::CheckForUsername(const std::string& usersname)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT 1 FROM users WHERE username = ?)";
+		constexpr const std::string_view sql = R"(SELECT 1 FROM users WHERE username = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 

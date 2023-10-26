@@ -55,9 +55,9 @@ namespace pof {
 		wxButton* m_sdbSizer3Save;
 		wxButton* m_sdbSizer3Cancel;
 
-		Account mAccount;
 
 	public:
+		Account mAccount;
 		//window ids
 		enum {
 			ID_SHOW_PASSWORD = wxID_HIGHEST + 4500,

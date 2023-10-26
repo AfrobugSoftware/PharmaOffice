@@ -351,7 +351,6 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	if (!m_dataViewCtrl1->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
-	auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product", nullptr);
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
 	if (!mActiveCategory.empty()) {
@@ -366,10 +365,13 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	menu->AppendSeparator();
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
 
+	menu->AppendSeparator();
 	if (mSelections.empty()) {
+		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 	}
 	else {
+		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
 	}
 
@@ -389,86 +391,185 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 		return;
 	}
 	if (wxMessageBox("Deleteing a product deletes all the data associated with the product, Do you wish to continue?", "REMOVE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
-	auto item = m_dataViewCtrl1->GetSelection();
-	if (!item.IsOk()) return;
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
-	auto iter = wxGetApp().mProductManager.GetProductData()->GetDatastore().begin();
-	auto next = std::next(iter, idx);
-	std::string name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
-	
-	//check if the product is currently in the sale view
-	if (std::ranges::any_of(wxGetApp().mSaleManager.GetSaleData()->GetDatastore(), [&row](auto& v) -> bool {
-		return row.first[pof::ProductManager::PRODUCT_UUID] == v.first[pof::SaleManager::PRODUCT_UUID];
-	})){
-		wxMessageBox("Cannot remove product that is currently in the sale, please complete or clear product from sale before removing product", "Remove product", wxICON_INFORMATION | wxOK);
-		return;
-	}
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+		auto iter = wxGetApp().mProductManager.GetProductData()->GetDatastore().begin();
+		auto next = std::next(iter, idx);
+		std::string name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
+
+		//check if the product is currently in the sale view
+		if (std::ranges::any_of(wxGetApp().mSaleManager.GetSaleData()->GetDatastore(), [&row](auto& v) -> bool {
+			return row.first[pof::ProductManager::PRODUCT_UUID] == v.first[pof::SaleManager::PRODUCT_UUID];
+			})) {
+			wxMessageBox("Cannot remove product that is currently in the sale, please complete or clear product from sale before removing product", "Remove product", wxICON_INFORMATION | wxOK);
+			return;
+		}
 
 
-	wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE );
-	bool status = false;
-	bool stop = false;
-	auto showFailedStatus = [&]() {
-		mInfoBar->ShowMessage(fmt::format("Failed to Removed {} from store", name), wxICON_INFORMATION);
-		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Failed Remove {} product from store", name));
-	};
+		wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		bool status = false;
+		bool stop = false;
+		auto showFailedStatus = [&]() {
+			mInfoBar->ShowMessage(fmt::format("Failed to Removed {} from store", name), wxICON_INFORMATION);
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Failed Remove {} product from store", name));
+		};
 
-	stop = dlg.Update(10, "Removing product from packs");
-	status = wxGetApp().mProductManager.RemoveProductInPacks(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
-	
-	stop = dlg.Update(20, "Removing product from order list");
-	status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(10, "Removing product from packs");
+		status = wxGetApp().mProductManager.RemoveProductInPacks(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	stop = dlg.Update(30, "Removing product from stock checks");
-	status = wxGetApp().mProductManager.RemoveProductInStockCheckData(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(20, "Removing product from order list");
+		status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	stop = dlg.Update(40, "Removing product warnings");
-	status = wxGetApp().mProductManager.RemoveProductInWarningsData(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(30, "Removing product from stock checks");
+		status = wxGetApp().mProductManager.RemoveProductInStockCheckData(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	stop = dlg.Update(50, "Removing product inventory data");
-	status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(40, "Removing product warnings");
+		status = wxGetApp().mProductManager.RemoveProductInWarningsData(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	stop = dlg.Update(60, "Removing product from expired");
-	status = wxGetApp().mProductManager.RemoveProductInExpiredStock(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
-	
-	stop = dlg.Update(70, "Removing product sale history");
-	status = wxGetApp().mSaleManager.RemoveProductSaleHistory(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(50, "Removing product inventory data");
+		status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	stop = dlg.Update(80, "Removing product from saved sale");
-	status = wxGetApp().mSaleManager.RemoveProductSaveSale(next);
-	if (!stop || !status) {
-		showFailedStatus(); return;
-	}
+		stop = dlg.Update(60, "Removing product from expired");
+		status = wxGetApp().mProductManager.RemoveProductInExpiredStock(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
 
-	dlg.Update(100, "Finishing...");
-	m_dataViewCtrl1->Freeze();
-	wxGetApp().mProductManager.GetProductData()->RemoveData(item);
-	m_dataViewCtrl1->Thaw();
-	m_dataViewCtrl1->Refresh();
-	mInfoBar->ShowMessage(fmt::format("Removed {} from store successfully", name), wxICON_INFORMATION);
-	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
+		stop = dlg.Update(70, "Removing product sale history");
+		status = wxGetApp().mSaleManager.RemoveProductSaleHistory(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
+
+		stop = dlg.Update(80, "Removing product from saved sale");
+		status = wxGetApp().mSaleManager.RemoveProductSaveSale(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
+
+		dlg.Update(100, "Finishing...");
+		m_dataViewCtrl1->Freeze();
+		wxGetApp().mProductManager.GetProductData()->RemoveData(item);
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Refresh();
+		mInfoBar->ShowMessage(fmt::format("Removed {} from store successfully", name), wxICON_INFORMATION);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
+	}
+	else {
+		wxProgressDialog dlg("Removing product", "Deleting from database...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		bool status = false;
+		bool stop = false;
+		size_t count = 0;
+		size_t failedCount = 0;
+		auto up = [&](size_t c) -> size_t {
+			return ((float)c / (float)mSelections.size()) * 80.0f;
+		};
+		auto showFailedStatus = [&](std::string_view name) {
+			failedCount++;
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Failed Remove {} product from store", name));
+		};
+		wxDataViewItemArray items;
+		m_dataViewCtrl1->Freeze();
+		try {
+			for (auto& item : mSelections) {
+				if (!item.IsOk()) continue;
+				size_t idx = pof::DataModel::GetIdxFromItem(item);
+				auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+				auto iter = wxGetApp().mProductManager.GetProductData()->GetDatastore().begin();
+				auto next = std::next(iter, idx);
+				std::string name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
+
+				//check if the product is currently in the sale view
+				if (std::ranges::any_of(wxGetApp().mSaleManager.GetSaleData()->GetDatastore(), [&row](auto& v) -> bool {
+					return row.first[pof::ProductManager::PRODUCT_UUID] == v.first[pof::SaleManager::PRODUCT_UUID];
+					})) {
+					wxMessageBox("Cannot remove product that is currently in the sale, please complete or clear product from sale before removing product", "Remove product", wxICON_INFORMATION | wxOK);
+					continue;
+				}
+				stop = dlg.Update(up(count), fmt::format("Removing {}", name));
+				if (!stop) {
+					return; //topped removed
+				}
+				status = wxGetApp().mProductManager.RemoveProductInPacks(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInStockCheckData(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInWarningsData(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInOrderListData(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInExpiredStock(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mSaleManager.RemoveProductSaleHistory(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mSaleManager.RemoveProductSaveSale(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				items.push_back(item);
+				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
+				count++;
+			}
+			dlg.Update(90, "Finishing...");
+			wxGetApp().mProductManager.GetProductData()->RemoveData(items);
+			dlg.Update(100);
+			m_dataViewCtrl1->Thaw();
+			m_dataViewCtrl1->Refresh();
+			mInfoBar->ShowMessage(fmt::format("Removed {:d} products from store successfully", count), wxICON_INFORMATION);
+
+			if (failedCount != 0) {
+				//display the failed set
+				wxMessageBox(fmt::format("Could not remove {:d} from store", failedCount), "Remove Product", wxICON_INFORMATION | wxOK);
+			}
+			mSelections.clear();
+		}
+		catch (std::exception& exp){
+			spdlog::critical(exp.what());
+			wxMessageBox("Critial error in remove multiple products", "Critical error", wxICON_INFORMATION | wxOK);
+		}
+	}
 }
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)

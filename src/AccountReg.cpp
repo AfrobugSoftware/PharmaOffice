@@ -189,8 +189,12 @@ pof::RegistrationDialog::~RegistrationDialog()
 
 bool pof::RegistrationDialog::TransferDataFromWindow()
 {
+	if (mAccount.CheckForUsername(mUserNameValue->GetValue().ToStdString())){
+		wxMessageBox("Username already exist, try another name", "Registration", wxICON_INFORMATION | wxOK);
+		return false;
+	}
 	if (mPasswordValue->GetValue() != mConfirmPasswordValue->GetValue()) {
-		wxMessageBox("Password and Confirm password mismatch", "REGISTRATION", wxICON_WARNING | wxOK);
+		wxMessageBox("Password and Confirm password mismatch", "Registration", wxICON_WARNING | wxOK);
 		return false;
 	}
 	const auto pass = mPasswordValue->GetValue().ToStdString();
@@ -201,14 +205,14 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	}
 	int sel = mAccountType->GetSelection();
 	if (sel == wxNOT_FOUND) {
-		wxMessageBox("Please select an account type for your account", "REGISTRATION", wxICON_WARNING | wxOK);
+		wxMessageBox("Please select an account type for your account", "Registration", wxICON_WARNING | wxOK);
 		return false;
 	}
 	mAccount.priv.set(sel);
 	const auto phone = mPhoneNoValue->GetValue().ToStdString();
 	if (phone.size() != 11) {
 		//cannot properly validate number just the count
-		wxMessageBox("Phone number is not complete, please enter valid phone number", "REGISTRATION", wxICON_WARNING | wxOK);
+		wxMessageBox("Phone number is not complete, please enter valid phone number", "Registation", wxICON_WARNING | wxOK);
 		return false;
 	}
 
@@ -216,7 +220,7 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.name = mFirstNameValue->GetValue().ToStdString();
 	mAccount.lastname = mLastNameValue->GetValue().ToStdString();
 	mAccount.passhash = hash;
-	mAccount.username = mUserNameValue->GetValue().ToStdString();
+	mAccount.username =	mUserNameValue->GetValue().ToStdString();
 	mAccount.email = email;
 	mAccount.phonenumber = phone;
 	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 

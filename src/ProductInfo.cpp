@@ -448,10 +448,10 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 			Inven.first[pof::ProductManager::INVENTORY_COST];
 		mCostPrice->SetValue(wxVariant(static_cast<float>(boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]))));
 
-		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory with batch {} to {}",
 			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
+		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 	}
 	else {
 		//rejected

@@ -534,11 +534,31 @@ bool pof::DataModel::RemoveData(const wxDataViewItem& item)
 bool pof::DataModel::RemoveData(const wxDataViewItemArray& items)
 {
 	//figure out how to do remove-erase here
-	bool ret = false;
-	for (auto& item : items){
-		ret = RemoveData(item);
+	//items is sorted in acceding order
+	if (items.IsEmpty()) return false;
+	size_t count = 0;
+	auto remv = std::remove_if(datastore->begin(), datastore->end(), [&](auto& row) {
+		bool ret = std::any_of(items.begin(), items.end(), [&](auto& item) {
+			bool yes =  (count == GetIdxFromItem(item));
+			if (yes) {
+				auto iter = std::next(datastore->begin(), count);
+				mSignals[static_cast<size_t>(Signals::REMOVED)](iter);
+			}
+			return yes;
+		});
+		count++;
+		return ret;
+	});
+	auto& tab = datastore->tab();
+	tab.erase(remv, std::end(tab));
+	count = 0;
+	while (count != items.size()){
+		ItemDeleted(wxDataViewItem(0), mItems.back());
+		mItems.pop_back();
+		count++;
 	}
-	return ret;
+	return true;
+		
 }
 
 void pof::DataModel::Reload()

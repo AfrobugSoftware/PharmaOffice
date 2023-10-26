@@ -63,7 +63,7 @@ namespace pof {
 		std::shared_ptr<pof::Pharmacy> mp;
 		PharmacyRegistration(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(939, 657), long style = wxTAB_TRAVERSAL);
 		~PharmacyRegistration();
-
+		bool ValidateEmail(const std::string email);
 		virtual bool TransferDataFromWindow() override;
 	};
 };

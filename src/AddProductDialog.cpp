@@ -391,7 +391,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	}
 
 	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
-	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = static_cast<std::uint64_t>(9099090); //change this 
+	v[pof::ProductManager::PRODUCT_SERIAL_NUM] =  pof::GenRandomId(); //change this 
 	v[pof::ProductManager::PRODUCT_NAME] = std::move(mProductNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(mGenericNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[mFormulationValue->GetSelection()].ToStdString());

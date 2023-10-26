@@ -23,7 +23,7 @@ namespace pof {
 		~PrintManager();
 		void PrinterSetup();
 		void PrintSaleReceipt(wxWindow* parent);
-		void PrintJob(wxWindow* parent, std::unique_ptr<wxPrintout> printjob);
+		void PrintJob(wxWindow* parent, wxPrintout* printjob);
 		void Preview(wxWindow* parent, wxPrintout* previeout, wxPrintout* printout);
 
 		size_t gPrintState; 
