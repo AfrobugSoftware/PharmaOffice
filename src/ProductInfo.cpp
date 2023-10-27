@@ -36,8 +36,8 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Back", wxITEM_NORMAL);
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
-	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
+	//m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
 	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information", wxITEM_CHECK);
 	std::bitset<32> bitset(mShowAddInfo->GetState());
 	bitset.set(5);

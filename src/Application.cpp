@@ -59,7 +59,7 @@ bool pof::Application::OnInit()
 	//load the settings
 	LoadSettings();
 
-	gVersion = "1.0.0 pre beta";
+	gVersion = "1.0.1 pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();
@@ -603,7 +603,8 @@ void pof::Application::ShowSettings()
 
 	//sd.LayoutDialog();
 	if (sd.ShowModal() == wxID_OK){
-
+		
+		SaveSettings();
 	}
 
 }
@@ -657,6 +658,12 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp8, "Maximize the application on load");
 	pp0->SetBackgroundColour(*wxWHITE);
 
+
+	mSettingProperties[0]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
+
+
+
+	});
 
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);

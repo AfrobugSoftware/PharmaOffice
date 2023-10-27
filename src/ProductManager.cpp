@@ -1359,6 +1359,7 @@ bool pof::ProductManager::MoveStockToExpire(const pof::base::data::duuid_t& pid,
 		mLocalDatabase->finalise(*stmt);
 		return status;
 	}
+	return false;
 }
 
 std::optional<std::uint64_t> pof::ProductManager::GetTotalExpired(const pof::base::data::duuid_t& pid, pof::base::data::datetime_t date)
@@ -1420,12 +1421,12 @@ std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> p
 	return std::nullopt;
 }
 
-std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
+std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data::datetime_t dt)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price
 		FROM sales s, products p
-		WHERE s.product_uuid = p.uuid AND s.sale_date BETWEEN ? AND ?;  )";
+		WHERE s.product_uuid = p.uuid AND Days(s.sale_date) = ? ORDER BY s.sale_date;  )";
 		
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()){
@@ -1433,14 +1434,9 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 			return std::nullopt;
 		}
 
-		auto todayClockDur = pof::base::data::clock_t::now();
-		auto qq = std::chrono::duration_cast<date::days>(todayClockDur.time_since_epoch());
-		auto ff = std::chrono::duration_cast<pof::base::data::clock_t::duration>(qq);
-
-		pof::base::data::clock_t::time_point today(ff);
-		auto nextDay = today + date::days(1);
-
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(today, nextDay));
+		auto dayAhead = date::floor<date::days>(dt);
+		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(day)));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
@@ -1458,6 +1454,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 			mLocalDatabase->finalise(*stmt);
 			return std::nullopt;
 		}
+		mLocalDatabase->finalise(*stmt);
 		
 		pof::base::data data;
 		data.set_metadata({
@@ -1467,28 +1464,12 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay()
 			pof::base::data::kind::uint64,
 			pof::base::data::kind::currency
 		});
-		std::unordered_map<pof::base::data::duuid_t, size_t> mSumMap;
 		auto& v = rel.value();
 		data.reserve(v.size());
-		for (size_t i = 0; i < v.size(); i++)
-		{
-			auto& tup = v[i];
-			pof::base::data::duuid_t& uid = std::get<0>(tup);
-			auto [iter, inserted] = mSumMap.insert({ uid, i });
-			if (!inserted) {
-				std::uint64_t quan = std::get<3>(tup);
-				pof::base::data::currency_t& curn = std::get<4>(tup);
-				auto& row = data[iter->second];
-
-				boost::variant2::get<std::uint64_t>(row.first[3]) += quan;
-				boost::variant2::get<pof::base::currency>(row.first[4]) += curn;
-			}
-			else {
-				data.insert(pof::base::make_row_from_tuple(tup));
-			}
+		for (auto& tup : v) {
+			data.insert(pof::base::make_row_from_tuple(tup));
 		}
 		data.shrink_to_fit();
-		mLocalDatabase->finalise(*stmt);
 		return data;
 	}
 	return std::nullopt;
@@ -1694,6 +1675,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 		items.shrink_to_fit();
 		return items;
 	}
+	return std::nullopt;
 }
 
 std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoOutOfStock()
@@ -1725,6 +1707,7 @@ std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoOutOfStock()
 		return items;
 
 	}
+	return std::nullopt;
 }
 
 std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpireDate(const pof::base::data::duuid_t& prod)
@@ -1903,6 +1886,7 @@ bool pof::ProductManager::IsStockCheckComplete()
 		return (mProductData->GetDatastore().size() == std::get<0>(*(rel->begin())));
 
 	}
+	return false;
 }
 
 bool pof::ProductManager::IsStockCheckComplete(const pof::base::data::datetime_t& month)

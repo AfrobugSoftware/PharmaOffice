@@ -31,7 +31,7 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 	mInventoryData.first[pof::ProductManager::INVENTORY_COST] = pof::base::currency(static_cast<float>(mCostControl->GetValue()));
 	auto expDate = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
 	if (date::floor<date::days>(expDate) == date::floor<date::days>(pof::base::data::clock_t::now())){
-		wxMessageBox("Expiry date cannot be today, check and try again", "Add Inventory", wxICON_INFORMATION | wxOK);
+		wxMessageBox("Expiry date cannot be today's date, check and try again", "Add Stock", wxICON_INFORMATION | wxOK);
 		return false;
 	}
 	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = expDate;
@@ -56,13 +56,13 @@ void pof::InventoryDialog::CreateDialog()
 	texts[5] = new wxStaticText;
 	texts[6] = new wxStaticText;
 
-	texts[0]->Create(this, wxID_ANY, "ENTER INVENTORY", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
-	texts[0]->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	texts[0]->Create(this, wxID_ANY, "Enter new stock for product", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[0]->SetFont(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS).Bold()));
 
 	texts[1]->Create(this, wxID_ANY, "Batch Number: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
 	texts[2]->Create(this, wxID_ANY, "Quantity In: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
 	texts[3]->Create(this, wxID_ANY, "Expiry Date: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
-	texts[4]->Create(this, wxID_ANY, "Please Enter Inventory For Product", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+	texts[4]->Create(this, wxID_ANY, "Please fill in the form to enter stock for product", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
 	texts[5]->Create(this, wxID_ANY, fmt::format("Cost Price per unit ({}): ", pof::base::data::currency_t::cur_type), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
 	texts[6]->Create(this, wxID_ANY, "Supplier's Name: ", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
 	
@@ -77,6 +77,7 @@ void pof::InventoryDialog::CreateDialog()
 	mCostControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
 		999999999);
 	mExpiryDate = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mExpiryDate->SetRange(wxDateTime::Now(), wxDateTime{});
 	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
 	mBatchNumber->SetValidator(wxTextValidator{ wxFILTER_DIGITS  | wxFILTER_EMPTY});
 	mManufactureName = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
@@ -141,7 +142,7 @@ void pof::InventoryDialog::OnOk(wxCommandEvent& evt)
 
 void pof::InventoryDialog::OnCancel(wxCommandEvent& evt)
 {
-	if (wxMessageBox(wxT("Are you sure you want to cancel Inventory entry"), wxT("Inventory entry"), wxYES | wxNO) == wxYES)
+	if (wxMessageBox(wxT("Are you sure you want to cancel stock entry"), wxT("Stock entry"), wxYES | wxNO) == wxYES)
 	{
 		if (IsModal()) EndModal(wxID_CANCEL);
 		else

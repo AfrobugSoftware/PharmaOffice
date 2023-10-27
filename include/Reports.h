@@ -39,18 +39,22 @@ namespace pof
 		wxStaticText* text = nullptr;
 		wxAuiToolBarItem* textItem = nullptr;
 		wxSimplebook* mBook = nullptr;
+		wxDatePickerCtrl* mEodDate = nullptr;
+		wxPanel* mEmptyEod = nullptr;
 		pof::base::data::datetime_t mSelectedMonth;
-
+		pof::base::data::datetime_t mSelectDay;
 	public:
 		//pages
 		enum {
-			REPORT_SELECT,
 			REPORT_VIEW,
+			REPORT_EMPTY_EOD,
 		};
 
 		enum {
 			ID_PRINT = 4567,
 			ID_EXCEL,
+			ID_EOD_DATE,
+			ID_BOOK,
 
 		};
 
@@ -80,7 +84,13 @@ namespace pof
 		void OnPrint(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
 		void OnReportSelectSelected(wxListEvent& evt);
+		void OnDateChange(wxDateEvent& evt);
 
+
+		void CreateToolBar();
+		void CreateComsumptionPatternToolBar();
+		void CreateEODToolBar();
+		void CreateEmptyEodPage();
 
 
 		//download for the report type

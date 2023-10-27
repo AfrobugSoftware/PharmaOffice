@@ -107,7 +107,7 @@ namespace pof {
 		bool bMaximizeOnLoad = true;
 		bool bShowPreviewOnSale = false;
 
-		wxPaperSize sPaperSize;
+		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;
 
 

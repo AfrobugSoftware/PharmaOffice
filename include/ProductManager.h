@@ -259,7 +259,7 @@ namespace pof {
 
 
 		//reports
-		std::optional<pof::base::data> GetEndOfDay();
+		std::optional<pof::base::data> GetEndOfDay(pof::base::data::datetime_t day);
 		std::optional<pof::base::data> GetConsumptionPattern(pof::base::data::datetime_t month);
 
 		//data functions

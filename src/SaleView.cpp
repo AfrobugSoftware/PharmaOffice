@@ -237,11 +237,11 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTotalAmountLabel = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, wxT("TOTAL AMOUNT: "), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountLabel->SetFont(wxFont(wxFontInfo(24).Bold().AntiAliased()));
-	bSizer4->Add(mTotalAmountLabel, 0, wxALIGN_CENTER | wxALL, 5);
+	bSizer4->Add(mTotalAmountLabel, 0, wxALIGN_BOTTOM | wxALL, 5);
 
 	mTotalAmount = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmount->SetFont(wxFont(wxFontInfo(24).Bold().AntiAliased()));
-	bSizer4->Add(mTotalAmount, 0, wxALIGN_CENTER | wxALL, 5);
+	bSizer4->Add(mTotalAmount, 0, wxALIGN_BOTTOM | wxALL, 5);
 	
 	mSalePaymentButtonsPane->SetSizer( bSizer4 );
 	mSalePaymentButtonsPane->Layout();

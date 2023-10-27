@@ -5,6 +5,7 @@
 BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
 EVT_TOOL(pof::ReportsDialog::ID_EXCEL, pof::ReportsDialog::OnDownloadExcel)
+EVT_DATE_CHANGED(pof::ReportsDialog::ID_EOD_DATE, pof::ReportsDialog::OnDateChange)
 END_EVENT_TABLE()
 
 pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
@@ -23,25 +24,22 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mTools->SetMaxSize(wxSize(-1, 30));
-	text = new wxStaticText(mTools, wxID_ANY, "testing the main stuff");
-	text->SetBackgroundColour(*wxWHITE);
-	textItem = mTools->AddControl(text, wxEmptyString);
-    mTools->AddStretchSpacer();
-	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download"));
-	mTools->AddSpacer(2);
+	
+	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, 2);
+	mBook = new wxSimplebook(m_panel5, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 
-
-	mTools->Realize();
-
-	bSizer7->Add(mTools, 0, wxALL | wxEXPAND, 2);
-
-	mListReport = new wxListCtrl(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
+	mListReport = new wxListCtrl(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
 	wxImageList* imageList = new wxImageList(16, 16);
 	imageList->Add(wxArtProvider::GetBitmap("action_check"));
 	imageList->Add(wxArtProvider::GetBitmap("action_delete"));
 	mListReport->AssignImageList(imageList, wxIMAGE_LIST_NORMAL);
-	
-	bSizer7->Add(mListReport, 1, wxALL | wxEXPAND, 0);
+	CreateEmptyEodPage();
+
+
+	mBook->AddPage(mListReport, "Report", true);
+	mBook->AddPage(mEmptyEod, "Empty", false);
+
+	bSizer7->Add(mBook, 1, wxALL | wxEXPAND, 0);
 	m_panel5->SetSizer(bSizer7);
 	m_panel5->Layout();
 	bSizer7->Fit(m_panel5);
@@ -62,6 +60,7 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 {
 	bool ret = false;
 	mCurReportType = repType;
+	CreateToolBar();
 	switch (repType)
 	{
 	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:
@@ -83,8 +82,9 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 	if (!data.has_value() || !exStock.has_value()) return false;
 
 	if (data->empty()) {
-		wxMessageBox("NO Transaction has occured in your store this month", "CONSUMPTION PATTERN", wxICON_INFORMATION | wxOK);
-		return false;
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		//wxMessageBox("NO Transaction has occured in your store this month", "CONSUMPTION PATTERN", wxICON_INFORMATION | wxOK);
+		return true;
 	}
 	mSelectedMonth = month;
 	auto& report = *mListReport;
@@ -181,12 +181,16 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 bool pof::ReportsDialog::LoadEndOFDay()
 {
-	auto data = wxGetApp().mProductManager.GetEndOfDay();
+	auto data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
 	if (!data.has_value()) return false;
 
 	if (data->empty()) {
-		wxMessageBox("No end of day, No sale has happened yet.", "END OF DAY", wxICON_INFORMATION | wxOK);
-		return false;
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		text->SetLabelText(wxEmptyString);
+		textItem->SetMinSize(text->GetSize());
+
+		//wxMessageBox("No end of day, No sale has happened yet.", "END OF DAY", wxICON_INFORMATION | wxOK);
+		return true;
 	}
 	auto& report = *mListReport;
 	{
@@ -196,19 +200,19 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		std::uint64_t totalQuan = 0;
 
 		mTools->Freeze();
-		std::string tt = fmt::format("End of day for {:%d/%m/%y}", pof::base::data::clock_t::now());
+		std::string tt = fmt::format("End of day for {:%d/%m/%Y}", mSelectDay);
 		text->SetFont(wxFontInfo().AntiAliased().Bold().Italic());
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
-		//text->Layout();
 		text->Update();
 		mTools->Thaw();
 		mTools->Realize();
 		mTools->Refresh();
+		m_panel5->Layout();
 
 
 		//make the columns
-		report.AppendColumn("DATE/TIME", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("TIME", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("QUANTITY", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("AMOUNT", wxLIST_FORMAT_LEFT, 200);
@@ -220,10 +224,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(0);
 			item.SetId(i);
-			auto s = fmt::format("{:%d-%m-%Y} {:%H:%M:%S}", 
-					boost::variant2::get<pof::base::data::datetime_t>(v[1]),
-					boost::variant2::get<pof::base::data::datetime_t>(v[1]));
-			item.SetText(std::move(s));
+			item.SetText(fmt::format("{:%H:%M:%S}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);
 
@@ -253,6 +254,9 @@ bool pof::ReportsDialog::LoadEndOFDay()
 			i++;
 		}
 	}
+	if (mBook->GetSelection() == REPORT_EMPTY_EOD){
+		mBook->SetSelection(REPORT_VIEW);
+	}
 	return true;
 }
 
@@ -279,8 +283,116 @@ void pof::ReportsDialog::OnReportSelectSelected(wxListEvent& evt)
 {
 }
 
+void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
+{
+	mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
+	m_panel5->Freeze();
+	mListReport->Freeze();
+	mListReport->ClearAll();
+	LoadEndOFDay();
+	mListReport->Thaw();
+	mListReport->Refresh();
+	m_panel5->Thaw();
+	m_panel5->Refresh();
+}
+
+void pof::ReportsDialog::CreateToolBar()
+{
+	text = new wxStaticText(mTools, wxID_ANY, wxEmptyString);
+	text->SetBackgroundColour(*wxWHITE);
+	textItem = mTools->AddControl(text, wxEmptyString);
+	mTools->AddStretchSpacer();
+	switch (mCurReportType)
+	{
+	case ReportType::COMSUMPTION_PATTARN:
+		CreateComsumptionPatternToolBar();
+		break;
+	case ReportType::EOD:
+		CreateEODToolBar();
+		break;
+	default:
+		break;
+	}
+	mTools->AddSpacer(10);
+	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download"));
+	mTools->AddSpacer(2);
+	mTools->Realize();
+}
+
+void pof::ReportsDialog::CreateComsumptionPatternToolBar()
+{
+	
+}
+
+void pof::ReportsDialog::CreateEODToolBar()
+{
+	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
+	mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
+	mTools->AddControl(mEodDate);
+}
+
+void pof::ReportsDialog::CreateEmptyEodPage()
+{
+	mEmptyEod = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmptyEod, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No transaction available"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmptyEod->SetSizer(bSizer6);
+	mEmptyEod->Layout();
+}
+
 void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t month){
 
+	auto datastore = wxGetApp().mProductManager.GetConsumptionPattern(month);
+	if (!datastore.has_value()){
+		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (datastore->empty()){
+		wxMessageBox("No transaction to save to excel file", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	wxFileDialog dialog(this, "Save Consumption pattern Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_CANCEL) return;
@@ -301,11 +413,6 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 		return;
 	}
 
-	auto datastore = wxGetApp().mProductManager.GetConsumptionPattern(month);
-	if (!datastore.has_value()){
-		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
-		return;
-	}
 	auto wks = doc.workbook().worksheet("Sheet1");
 	wks.setName("Consumption pattern");
 	const size_t colSize = mListReport->GetColumnCount();
@@ -356,6 +463,75 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 
 void pof::ReportsDialog::EODExcel()
 {
+	auto datastore = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+	if (!datastore.has_value()) {
+		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (datastore->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save End of day excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
+	const size_t colSize = mListReport->GetColumnCount();
+	const size_t rowSize = datastore.value().size();
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+
+	writeHeader("DATE/TIME");
+	writeHeader("PRODUCT NAME");
+	writeHeader("QUANTITY");
+	writeHeader("AMOUNT");
+
+
+	auto& v = datastore.value();
+	for (auto it = v.begin(); it != v.end() && iter != range.end(); it++) {
+		auto& row = it->first;
+		iter->value().set(fmt::format("{:%d/%m/%Y %H:%M:%S}", boost::variant2::get<pof::base::data::datetime_t>(row[1])));
+		iter++;
+
+		iter->value().set(boost::variant2::get<pof::base::data::text_t>(row[2]));
+		iter++;
+
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[3]));
+		iter++;
+
+		iter->value().set(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(row[4])));
+		iter++;
+	}
+
+	doc.save();
+	doc.close();
 }
 
 

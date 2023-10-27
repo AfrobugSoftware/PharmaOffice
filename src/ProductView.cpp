@@ -361,7 +361,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	else {
 		auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	}
-	auto inven = menu->Append(ID_ADD_INVENTORY, "Add inventory", nullptr);
+	auto inven = menu->Append(ID_ADD_INVENTORY, "Add stock", nullptr);
 	menu->AppendSeparator();
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
 
