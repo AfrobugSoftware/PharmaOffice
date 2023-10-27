@@ -56,6 +56,8 @@ namespace pof {
 				REMOVED,
 				UPDATE,
 				LOADED,
+				STORE,
+				STORE_LOAD,
 				SEARCHED,
 				MAX
 		};
@@ -79,10 +81,18 @@ namespace pof {
 		void Unpack(const pof::base::pack_t& package);
 		void Emplace(pof::base::data&& d);
 		void EmplaceData(pof::base::data::row_t&& r); //no checking for column to metadata match
+		void Clear();
+
+		//emplace but also writes to the database
+		void Store(pof::base::data&& d); 
+		void StoreData(pof::base::data::row_t&& r);
+
 		void Reload(const std::vector<wxDataViewItem>& items);
 		void StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
+		void StringSearchAndReloadSet(size_t col, const std::string& searchFor); //only searches the current items in mItems;
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);
+		static wxDataViewItem GetItemFromIdx(size_t idx);
 
 
 		bool AddAttr(const wxDataViewItem& item, std::shared_ptr<wxDataViewItemAttr> attr);
@@ -117,11 +127,13 @@ namespace pof {
 
 		//inline std::shared_mutex& GetDatastoreMutex() { return datastoremutex; }
 		inline pof::base::data& GetDatastore() { return *datastore; }
+		inline std::shared_ptr<pof::base::data> ShareDatastore() const { return datastore; }
 
 		bool RemoveData(const wxDataViewItem& item);
 		bool RemoveData(const wxDataViewItemArray& items);
 
 		void Reload();
+		void ReloadSet(); //reloads but only from mItems
 		void Signal(Signals sig, size_t i) const;
 		boost::signals2::connection ConnectSlot(signal_t::slot_type&& slot, Signals signal);
 

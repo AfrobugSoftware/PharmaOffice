@@ -1,6 +1,6 @@
 #include "ArtProvider.h"
-#include "Application.h"
-
+//#include "Application.h"
+#include "PofPch.h"
 
 
 pof::ArtProvider::ArtProvider() {

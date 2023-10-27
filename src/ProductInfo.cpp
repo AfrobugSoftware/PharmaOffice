@@ -1,49 +1,64 @@
 
 #include "ProductInfo.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
+	EVT_TOOL(pof::ProductInfo::ID_SHOW_PRODUCT_SALE_HISTORY, pof::ProductInfo::OnShowProducSaleHistory)
 	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
+	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
+	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
+	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
+	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
+	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
+	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
 END_EVENT_TABLE()
-
 
 pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
 {
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
-	m_splitter1 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
+	m_splitter1 = new wxSplitterWindow( this, ID_SPLIT_WINDOW, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_LIVE_UPDATE|wxSP_NOBORDER | wxNO_BORDER );
+	m_splitter1->SetExtraStyle(wxWS_EX_PROCESS_IDLE);
 	m_splitter1->Connect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 	
 	m_panel1 = new wxPanel( m_splitter1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	m_auiToolBar1 = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
+	m_auiToolBar1 = new wxAuiToolBar( this , wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
 	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
 	
-	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap(wxART_GO_BACK, wxART_TOOLBAR), "Back", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Back", wxITEM_NORMAL);
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Inventory"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Add Inventory", wxITEM_NORMAL);
-	m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR), "Remove all expired batches", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
+	//m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
+	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information", wxITEM_CHECK);
+	std::bitset<32> bitset(mShowAddInfo->GetState());
+	bitset.set(5);
+	mShowAddInfo->SetState(bitset.to_ulong());
 
+	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Product Warnings"), wxArtProvider::GetBitmap("action_remove"), "Warnings associated with this product", wxITEM_NORMAL);
+	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
+	m_auiToolBar1->AddStretchSpacer();
+	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	
+	m_auiToolBar1->AddControl(mInventoryDate);
 	m_auiToolBar1->Realize(); 
 	
-	bSizer2->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
-	
-	InventoryView = new wxDataViewCtrl( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER );
-	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
-
-	
-	mInputDate = InventoryView->AppendTextColumn( wxT("Input Date"), pof::ProductManager::INVENTORY_INPUT_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mBactchNo = InventoryView->AppendTextColumn( wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mExpiryDate = InventoryView->AppendTextColumn( wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mStockCount = InventoryView->AppendTextColumn( wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mManuFactureName = InventoryView->AppendTextColumn( wxT("Manufactural Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, -1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	bSizer2->Add( InventoryView, 1, wxALL|wxEXPAND, 0 );
+	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
+	InventoryView = new wxDataViewCtrl( mBook, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES);
+	mHistView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
+	mBook->AddPage(InventoryView, wxEmptyString, true);
+	mBook->AddPage(mHistView, wxEmptyString, false);
+	CreateInventoryView();
+	CreateHistoryView();
+	bSizer2->Add( mBook , wxSizerFlags().Expand().Proportion(1));
 	
 	m_panel1->SetSizer( bSizer2 );
 	m_panel1->Layout();
@@ -53,7 +68,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
 	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
-	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS ); 
+	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
 	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product Details"), wxT("Product Details") ) ); 
@@ -77,6 +92,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
 	
@@ -101,26 +117,26 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 	StrengthChoices.Add("L");
 	StrengthChoices.Add("ml");
-	StrengthChoices.Add("ml");
 
 	StrengthChoices.Add("%v/v");
 	StrengthChoices.Add("%w/v");
 
 	StrengthChoices.Add("mol");
 	StrengthChoices.Add("mmol");
+	StrengthChoices.Add("NOT SPECIFIED");
 
 	mStrengthTypeItem = m_propertyGridPage1->Append(new wxEnumProperty(wxT("STRENGTH TYPE"), wxPG_LABEL, StrengthChoices));
 	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings"))); 
 	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("MINIMUM STOCK COUNT"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mMinStockCount, wxT("The amount of stock that should indicate stock level is low. ") );
-	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("EXPIRE ALERT"), wxPG_LABEL ) );
+	mExpDateCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("EXPIRE PERIOD COUNT"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDateCount, wxT("Number of (Days, Weeks, Months) before expiry date that an alert should be sent") );
 	
 	ExpChoices.Add("DAY");
 	ExpChoices.Add("WEEK");
 	ExpChoices.Add("MONTH");
 
-	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE ALERT PERIOD"), wxPG_LABEL, ExpChoices) );
+	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE PERIOD"), wxPG_LABEL, ExpChoices) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
 	
 	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("SALE"), wxT("Sale") )); 
@@ -134,14 +150,16 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
 
-
+	
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
-	
-	
+	m_panel2->SetSize(wxSize(400, -1));
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
-	m_splitter1->SplitVertically( m_panel1, m_panel2, 400); //splitter posistion
+	m_splitter1->SplitVertically( m_panel1, m_panel2, 0); //splitter posistion
+	m_splitter1->SetSashGravity(1.0);
+	
+	bSizer1->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
 	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
 	
 	
@@ -149,6 +167,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	this->Layout();
 	CreateNameToProductElemTable();
 	StyleProductPropertyManager();
+	StyleSheet();
 }
 
 pof::ProductInfo::~ProductInfo()
@@ -178,6 +197,13 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		m_auiToolBar1->Update();
 		mProductData = row;
 		LoadProductProperty(row);
+
+		auto firstMonth = wxGetApp().mProductManager.GetLastInventoryDate(boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+		if (!firstMonth.has_value()) {
+			firstMonth.emplace();
+		}
+		mInventoryDate->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
+
  	}
 	catch (const std::exception& exp) {
 		spdlog::critical(exp.what());
@@ -185,7 +211,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 
 }
 
-wxArrayString SplitIntoArrayString(const std::string& string)
+static wxArrayString SplitIntoArrayString(const std::string& string)
 {
 	wxArrayString Split;
 	auto pos = string.find_first_of(",");
@@ -207,155 +233,53 @@ wxArrayString SplitIntoArrayString(const std::string& string)
 
 void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 {
-	auto& d = row.first;
-	for (int i = 0; i < d.size(); i++) {
-		auto& datum = d[i];
-		switch (i)
-		{
-		case pof::ProductManager::PRODUCT_NAME:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mNameItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mNameItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_GENERIC_NAME:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mGenericNameItem->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mGenericNameItem->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_CLASS:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				const auto Ar = std::move(ProductClassChoices.GetLabels());
-				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((Iter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), Iter);
-					mProductClass->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mProductClass->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_PACKAGE_SIZE:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::uint64))
-			{
-				mPackageSizeItem->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(datum))));
-			}
-			else {
-				mPackageSizeItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_UNIT_PRICE:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
-				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
-				mUnitPrice->SetValue(wxVariant(d));
-			}
-			else {
-				mUnitPrice->SetValue(wxVariant{0.00});
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_COST_PRICE:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::currency)) {
-				double d = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(datum));
-				mCostPrice->SetValue(wxVariant(d));
-			}
-			else {
-				mCostPrice->SetValue(wxVariant{ 0.00 });
-			}
-			break;
-		case pof::ProductManager::PRODUCT_MIN_STOCK_COUNT:
-			break;
-		case pof::ProductManager::PRODUCT_USAGE_INFO:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mDirForUse->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mDirForUse->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		case pof::ProductManager::PRODUCT_HEALTH_CONDITIONS:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mHealthCond->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mHealthCond->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		case pof::ProductManager::PRODUCT_DESCRIP:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mProductDescription->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mProductDescription->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
-		case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
-			break;
-		case pof::ProductManager::PRODUCT_SIDEEFFECTS:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mSideEffects->SetValue(wxVariant(SplitIntoArrayString(boost::variant2::get<pof::base::data::text_t>(d[i]))));
-			}
-			else {
-				mSideEffects->SetValue(wxVariant(wxArrayString()));
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_FORMULATION:
-		{
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				auto Ar = std::move(FormulationChoices.GetLabels());
-				auto FormIter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((FormIter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), FormIter);
-					mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mFormulationItem->SetValue(wxVariant());
-			}
-			break;
-		}
-		case pof::ProductManager::PRODUCT_STRENGTH:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				mStrengthValueItem->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(d[i])));
-			}
-			else {
-				mStrengthValueItem->SetValue(wxVariant());
-			}
-			break;
-		case pof::ProductManager::PRODUCT_STRENGTH_TYPE:
-			if (datum.index() == static_cast<std::underlying_type_t<pof::base::data::kind>>(pof::base::data::kind::text)) {
-				auto Ar = std::move(StrengthChoices.GetLabels());
-				auto Iter = std::find(Ar.begin(), Ar.end(), boost::variant2::get<std::string>(d[i]));
-				if ((Iter != Ar.end())) {
-					auto idx = std::distance(Ar.begin(), Iter);
-					mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
-				}
-			}
-			else {
-				mStrengthTypeItem->SetValue(wxVariant());
-			}
-			break;
-		default:
-			break;
-		}
+	pof::ProductManager::relation_t::tuple_t tup;
+	bool status = pof::base::build(tup, row);
+	if (!status) {
+		spdlog::error("Cannot build tuple from row");
+		return;
 	}
-	//
+	mNameItem->SetValue(std::get<pof::ProductManager::PRODUCT_NAME>(tup));
+	mGenericNameItem->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_GENERIC_NAME>(tup)));
+	mProductClass->SetValue(std::get<pof::ProductManager::PRODUCT_CLASS>(tup));
+	mPackageSizeItem->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_PACKAGE_SIZE>(tup)));
+	mUnitPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_UNIT_PRICE>(tup)));
+	mCostPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_COST_PRICE>(tup)));
+	mMinStockCount->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_MIN_STOCK_COUNT>(tup)));
+	mDirForUse->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_USAGE_INFO>(tup)));
+	mHealthCond->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_HEALTH_CONDITIONS>(tup))));
+	mProductDescription->SetValue(std::get<pof::ProductManager::PRODUCT_DESCRIP>(tup));
+	mSideEffects->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_SIDEEFFECTS>(tup))));
+
+	wxArrayString Ar = std::move(FormulationChoices.GetLabels());
+	auto FormIter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_FORMULATION>(tup));
+	if ((FormIter != Ar.end())) {
+		auto idx = std::distance(Ar.begin(), FormIter);
+		mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
+	}
+	else {
+		mFormulationItem->SetValue(static_cast<int>(Ar.size() - 1));
+	}
+
+	mStrengthValueItem->SetValue(wxVariant(std::get<pof::ProductManager::PRODUCT_STRENGTH>(tup)));
+
+	Ar = std::move(StrengthChoices.GetLabels());
+	auto Iter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_STRENGTH_TYPE>(tup));
+	if ((Iter != Ar.end())) {
+		auto idx = std::distance(Ar.begin(), Iter);
+		mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
+	}
+	else {
+		mStrengthTypeItem->SetValue(static_cast<int>(Ar.size() - 1));
+	}
+	//load the inventory data
+	wxGetApp().mProductManager.GetInventory()->Clear();
+	wxGetApp().mProductManager.LoadInventoryData(std::get<pof::ProductManager::PRODUCT_UUID>(tup));
+
+
+	//expire peroid 
+	//expire date
+	SplitPeriodString(tup);
 }
 
 boost::signals2::connection pof::ProductInfo::AttachBackSlot(back_signal_t::slot_type&& slot)
@@ -368,57 +292,166 @@ boost::signals2::connection pof::ProductInfo::AttachPropertyUpdateSlot(update_si
 	return mUpdatePropertySignal.connect(std::forward<pof::ProductInfo::update_signal_t::slot_type>(slot));
 }
 
+void pof::ProductInfo::SignalUpdate(const PropertyUpdate& update)
+{
+	mUpdatePropertySignal(update);
+}
+
 void pof::ProductInfo::CreateNameToProductElemTable()
 {
 	mNameToProductElem.insert({ "CLASS", pof::ProductManager::PRODUCT_CLASS });
 	mNameToProductElem.insert({ "NAME", pof::ProductManager::PRODUCT_NAME });
 	mNameToProductElem.insert({ "GENERIC NAME", pof::ProductManager::PRODUCT_GENERIC_NAME });
-	mNameToProductElem.insert({ "PACKAGE SZIE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
+	mNameToProductElem.insert({ "PACKAGE SIZE", pof::ProductManager::PRODUCT_PACKAGE_SIZE });
 	mNameToProductElem.insert({ "UNIT PRICE", pof::ProductManager::PRODUCT_UNIT_PRICE });
 	mNameToProductElem.insert({ "COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE });
 	mNameToProductElem.insert({ "MINIMUM STOCK COUNT", pof::ProductManager::PRODUCT_MIN_STOCK_COUNT });
 	mNameToProductElem.insert({ "DIRECTION FOR USE", pof::ProductManager::PRODUCT_USAGE_INFO });
 	mNameToProductElem.insert({ "HEALTH CONDITIONS", pof::ProductManager::PRODUCT_HEALTH_CONDITIONS });
 	mNameToProductElem.insert({ "DESCRIPTION", pof::ProductManager::PRODUCT_DESCRIP });
-	mNameToProductElem.insert({ "STRENGTH/CONC. ", pof::ProductManager::PRODUCT_STRENGTH });
+	mNameToProductElem.insert({ "STRENGTH/CONC.", pof::ProductManager::PRODUCT_STRENGTH });
 	mNameToProductElem.insert({ "STRENGTH TYPE", pof::ProductManager::PRODUCT_STRENGTH_TYPE });
 	mNameToProductElem.insert({ "SIDE EFFECTS", pof::ProductManager::PRODUCT_SIDEEFFECTS});
-	mNameToProductElem.insert({ "EXPIRE ALERT PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
-	mNameToProductElem.insert({ "EXPIRE ALERT", pof::ProductManager::PRODUCT_TO_EXPIRE_DATE });
+	mNameToProductElem.insert({ "EXPIRE PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
+	mNameToProductElem.insert({ "EXPIRE PERIOD COUNT", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
+}
+
+void pof::ProductInfo::CreateInventoryView()
+{
+	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
+	
+
+	mInputDate = InventoryView->AppendTextColumn(wxT("Input Date"), pof::ProductManager::INVENTORY_INPUT_DATE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mBactchNo = InventoryView->AppendTextColumn(wxT("Batch No"), pof::ProductManager::INVENTORY_LOT_NUMBER, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mExpiryDate = InventoryView->AppendTextColumn(wxT("Expiry Date"), pof::ProductManager::INVENTORY_EXPIRE_DATE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mStockCount = InventoryView->AppendTextColumn(wxT("Entry Stock Amount"), pof::ProductManager::INVENTORY_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	InventoryView->AppendTextColumn(wxT("Entry Stock Cost"), pof::ProductManager::INVENTORY_COST, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mManuFactureName = InventoryView->AppendTextColumn(wxT("Supplier's Name"), pof::ProductManager::INVENTORY_MANUFACTURER_NAME, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+
+	pof::DataModel::SpeicalColHandler_t costHandler;
+	costHandler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& datastore = wxGetApp().mProductManager.GetInventory()->GetDatastore();
+		const auto& unitCost = datastore[row].first[col];
+		const auto& invenCount = datastore[row].first[pof::ProductManager::INVENTORY_STOCK_COUNT];
+
+		auto cur = boost::variant2::get<pof::base::currency>(unitCost) *
+			static_cast<double>(boost::variant2::get<std::uint64_t>(invenCount));
+		return fmt::format("{:cu}", cur);
+	};
+	wxGetApp().mProductManager.GetInventory()->SetSpecialColumnHandler(pof::ProductManager::INVENTORY_COST, std::move(costHandler));
+
+}
+
+void pof::ProductInfo::CreateHistoryView()
+{
+	mHistView->AssociateModel(wxGetApp().mSaleManager.GetProductHistory().get());
+	
+	mHistView->AppendTextColumn(wxT("Date"), pof::SaleManager::HIST_DATE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mHistView->AppendTextColumn(wxT("Quantity Sold"), pof::SaleManager::HIST_QUANTITY, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mHistView->AppendTextColumn(wxT("Price"), pof::SaleManager::HIST_EXTPRICE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+}
+
+void pof::ProductInfo::RemoveCheckedState(wxAuiToolBarItem* item)
+{
+	if (!item) return;
+	m_auiToolBar1->Freeze();
+	std::bitset<32> bitset(item->GetState());
+	if (bitset.test(5)) bitset.flip(5);
+	item->SetState(bitset.to_ulong());
+	m_auiToolBar1->Thaw();
+	m_auiToolBar1->Refresh();
 }
 
 void pof::ProductInfo::OnGoBack(wxCommandEvent& evt)
 {
 	mBackSignal();
 	if (mPropertyUpdate.has_value()) {
-		wxBusyInfo info("Saving...");
+		wxIcon cop;
+		cop.CopyFromBitmap(wxArtProvider::GetBitmap("supplement-bottle"));
+		wxBusyInfo info
+		(
+			wxBusyInfoFlags()
+			.Parent(this)
+			.Icon(cop)
+			.Title("Saving product")
+			.Text("Please wait...")
+			.Foreground(*wxBLACK)
+			.Background(*wxWHITE)
+			.Transparency(4 * wxALPHA_OPAQUE / 5)
+		);
+
 		mUpdatePropertySignal(mPropertyUpdate.value());
 		mPropertyUpdate = {};
 		RemovePropertyModification();
 	}
+
+	if (mBook->GetSelection() == PAGE_SALE_HIST)
+	{
+		wxGetApp().mSaleManager.GetProductHistory()->Clear();
+
+		std::bitset<32> bitset(mProductHist->GetState());
+		if (bitset.test(5)) {
+			bitset.flip(5);
+			mProductHist->SetState(bitset.to_ulong());
+		}
+		mBook->SetSelection(PAGE_INVENTORY);
+	}
+	wxGetApp().mProductManager.GetInventory()->Clear();
 }
 
 void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 {
+	//check if product has expired inventory
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission){
+		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	auto items = wxGetApp().mProductManager.DoExpiredProducts();
+	if (!items.has_value()) return;
+	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[pof::DataModel::GetIdxFromItem(i)];	
+		return boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID])
+				== boost::variant2::get<boost::uuids::uuid>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+	})) {
+		wxMessageBox("Product has expired inventory, clear inventory before adding new", "Add Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
 	pof::InventoryDialog dialog(nullptr);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
-		Inven.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA PHARMACEUTICALS";
+		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
 
 		if (!mPropertyUpdate.has_value()) {
 			mPropertyUpdate.emplace();
 			mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
-			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
-				mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+				mProductData.first[pof::ProductManager::PRODUCT_UUID];
 		}
 
+		//stock
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
-		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
-			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]) 
-				+ boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		if (boost::variant2::holds_alternative<std::uint64_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT]))
+		{
+			boost::variant2::get<std::uint64_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT]) +=
+				boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+		}
+		else {
+			mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = 
+				Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT];
+		}
 
-		wxGetApp().mProductManager.GetInventory()->EmplaceData(std::move(Inven));
+		//cost
+		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_COST_PRICE);
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_COST_PRICE] =
+			Inven.first[pof::ProductManager::INVENTORY_COST];
+		mCostPrice->SetValue(wxVariant(static_cast<float>(boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]))));
+
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory with batch {} to {}",
+			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
+			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
+		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 	}
 	else {
 		//rejected
@@ -435,18 +468,105 @@ static std::string JoinArrayList(const wxVariant& Value) {
 	return fmt::format("{}", fmt::join(arrayString, ","));
 }
 
+std::uint64_t pof::ProductInfo::PeriodTime(int periodCount) const
+{
+	int idx = mExpDatePeriod->GetChoiceSelection();
+	if (idx == wxNOT_FOUND) {
+		idx = 0; //if no selection use days
+	}
+	pof::base::data::datetime_t::duration expireDuration = {};
+	switch (idx) {
+	case 0: //day
+	{
+		date::days point(periodCount);
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
+	}
+		break;
+	case 1: //week
+	{
+		date::weeks point(periodCount * 7);
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
+	}
+		break;
+	case 2: //month
+	{
+		date::months point(periodCount);
+		expireDuration = pof::base::data::datetime_t(point).time_since_epoch();
+	}
+		break;
+	}
+	return expireDuration.count();
+}
+
+pof::base::data::text_t pof::ProductInfo::CreatePeriodString()
+{
+	//do also for count 
+	if (mExpDateCount->GetValue().IsNull()) {
+		wxMessageBox("Expired Period count not specified", "PRODUCT INFO", wxICON_WARNING | wxOK);
+		return {};
+	}
+	std::string val;
+	if (!mExpDatePeriod->GetValue().IsNull())
+		val = mExpDatePeriod->GetValueAsString().ToStdString();
+	else val = "DAY";
+	int count = mExpDateCount->GetValue().GetInteger();
+	return fmt::format("{:d},{}", count, val);
+}
+
+void pof::ProductInfo::SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup)
+{
+	mExpDateCount->SetValue(wxVariant());
+	mExpDatePeriod->SetValue(wxVariant());
+
+	auto string = std::get<pof::ProductManager::PRODUCT_EXPIRE_PERIOD>(tup);
+	if (string.empty()) return;
+
+	size_t n = string.find_first_of(",");
+	if (n == std::string::npos) return;
+
+	mExpDateCount->SetValue(wxVariant(atoi(string.substr(0, n).c_str())));
+	auto stringArray = ExpChoices.GetLabels();
+	auto iter = std::ranges::find(stringArray, string.substr(n + 1, string.size()));
+	if (iter == stringArray.end()) return;
+
+	mExpDatePeriod->SetValue(wxVariant((int)std::distance(stringArray.begin(), iter)));
+}
+
+void pof::ProductInfo::LoadInventoryByDate(const pof::base::data::datetime_t& dt)
+{
+	bool status = wxGetApp().mProductManager.LoadInventoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
+	if (!status) {
+		wxMessageBox("Cannot load inventory by date", "Inventory", wxICON_INFORMATION | wxOK);
+	}
+}
+
+void pof::ProductInfo::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
+{
+	bool status = wxGetApp().mSaleManager.LoadHistoryByDate(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]),dt);
+	if (!status) {
+		wxMessageBox("Cannot load history by date", "History", wxICON_INFORMATION | wxOK);
+
+	}
+}
+
+
 void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 {
+	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Product Information", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	spdlog::info("{}", evt.GetPropertyName().ToStdString());
 	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
 	if (PropIter == mNameToProductElem.end()) return;
 	if (!mPropertyUpdate.has_value()) {
 		mPropertyUpdate.emplace();
 		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
-		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_SERIAL_NUM] =
-			mProductData.first[pof::ProductManager::PRODUCT_SERIAL_NUM];
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+			mProductData.first[pof::ProductManager::PRODUCT_UUID];
 	}
 	int ProductElemIdx = PropIter->second;
 	mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx);
@@ -486,8 +606,19 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_DESCRIP] = std::move(PropertyValue.GetString().ToStdString());
 		break;
 	case pof::ProductManager::PRODUCT_EXPIRE_PERIOD:
-	case pof::ProductManager::PRODUCT_TO_EXPIRE_DATE:
-		//v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = std::move("");
+	{
+		size_t count = 0;
+		if(!mExpDateCount->GetValue().IsNull()) count = mExpDateCount->GetValue().GetInteger();
+		auto periodString = CreatePeriodString();
+		if (periodString.empty()) {
+			mPropertyUpdate->mUpdatedElememts.set(ProductElemIdx, false);
+			break;
+		}
+		
+		v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = periodString;
+		v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = PeriodTime(count);
+		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_TO_EXPIRE_DATE, true);
+	}
 		break;
 	case pof::ProductManager::PRODUCT_SIDEEFFECTS:
 		v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(JoinArrayList(PropertyValue));
@@ -508,6 +639,143 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	
 	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	evt.Veto(); //might not be necessary
+}
+
+void pof::ProductInfo::StyleSheet()
+{
+	auto grid = m_propertyGridPage1->GetGrid();
+	grid->SetBackgroundColour(*wxWHITE);
+	grid->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->SetCaptionTextColour(*wxBLACK);
+	grid->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
+	auto tool = m_propertyGridManager1->GetToolBar();
+	if (tool){
+		tool->SetBackgroundColour(*wxWHITE);
+	}
+}
+
+void pof::ProductInfo::OnSashDoubleClick(wxSplitterEvent& evt)
+{
+	std::bitset<32> set(mShowAddInfo->GetState());
+	set.set(5, false);
+	mShowAddInfo->SetState(set.to_ulong());
+	evt.Skip();
+}
+
+void pof::ProductInfo::OnUnspilt(wxSplitterEvent& evt)
+{
+	m_panel1->Layout();
+}
+
+void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
+{
+	if(evt.IsChecked() && !m_splitter1->IsSplit()){
+		//m_panel2->SetSize(wxSize(400, -1));
+		m_panel2->Layout();
+		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
+		m_splitter1->SetSashGravity(1.0);
+		m_splitter1->Update();
+		//m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+	}
+	else {
+		m_splitter1->Unsplit();
+	}
+}
+
+void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
+{
+	InventoryView->Freeze();
+	if (evt.IsChecked()) {
+		pof::base::data::duuid_t& puid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+		if (wxGetApp().mSaleManager.GetProductHistory()->GetDatastore().empty()) {
+			wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
+		}
+		wxGetApp().mSaleManager.GetProductHistory()->Reload();
+		mBook->SetSelection(PAGE_SALE_HIST);
+	}
+	else {
+		wxGetApp().mProductManager.GetInventory()->Reload();
+		mBook->SetSelection(PAGE_INVENTORY);
+	}
+	InventoryView->Thaw();
+	InventoryView->Refresh();
+	InventoryView->Update();
+}
+
+void pof::ProductInfo::OnDateChange(wxDateEvent& evt)
+{
+	auto& dt = evt.GetDate();
+	pof::base::data::datetime_t dtt = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+	const int sel = mBook->GetSelection();
+	switch (sel)
+	{
+	case 0:
+		LoadInventoryByDate(dtt);
+		break;
+	case 1:
+		LoadHistoryByDate(dtt);
+		break;
+	default:
+		break;
+	}
+}
+
+void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
+{
+	//only pharmacist or manager can alter inventroy entries
+	constexpr const int p = static_cast<int>(pof::Account::Privilage::PHARMACIST);
+	constexpr const int m = static_cast<int>(pof::Account::Privilage::MANAGER);
+	auto accountPriv = wxGetApp().MainAccount->priv;
+	auto& productManager = wxGetApp().mProductManager;
+	if (!accountPriv.test(p) && !accountPriv.test(m)) {
+		wxMessageBox("This account do not have the privilage to remove an inventory entry", "INVENTORY", wxICON_WARNING | wxOK);
+		return;
+	}
+	auto item = InventoryView->GetSelection();
+	if (!item.IsOk()) return;
+	auto& datastore = productManager.GetInventory()->GetDatastore();
+	auto iter = std::next(datastore.begin(), pof::DataModel::GetIdxFromItem(item));
+	pof::base::data::duuid_t& uid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::INVENTORY_PRODUCT_UUID]);
+	std::uint64_t& id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
+	
+	if (id != productManager.GetLastInventoryId(uid)){
+		wxMessageBox("Can only remove the most recently entered inventory", "INVENTORY", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	if (!mPropertyUpdate.has_value()) {
+		mPropertyUpdate.emplace();
+		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
+		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
+			mProductData.first[pof::ProductManager::PRODUCT_UUID];
+	}
+	mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+	mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+		boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
+		- boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+
+	
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory with batch {} from {}", 
+			boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
+			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
+	productManager.RemoveInventoryData(iter);
+	productManager.GetInventory()->RemoveData(item);
+}
+
+void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
+{
+	if (!InventoryView->GetSelection().IsOk()) return;
+	wxMenu* menu = new wxMenu;
+	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
+
+	PopupMenu(menu);
+}
+
+void pof::ProductInfo::OnWarnings(wxCommandEvent& evt)
+{
+	pof::Warning warn(this);
+	warn.LoadWarnings(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
+	warn.ShowModal();
 }
 
 void pof::ProductInfo::RemovePropertyModification()

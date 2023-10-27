@@ -79,10 +79,12 @@ namespace pof {
 		void CreateTree();
 		void Style();
 
+		void activateModule(wxTreeItemId mod);
 
 		std::string GetText(const_iterator item) const;
 		int GetImage(const_iterator item) const;
 		const_iterator::value_type GetModuleItem(wxTreeItemId item) const;
+		void ReloadAccountDetails();
 
 		bool CheckPrivilage();
 		inline void SetImageList(wxImageList* imglist) { mModuleTree->SetImageList(imglist); }
@@ -115,8 +117,6 @@ namespace pof {
 		//std::array<wxWindow*, 6> mModuleWindows;
 		wxTreeItemId mPharmacy;
 		wxTreeItemId mTransactions;
-		wxTreeItemId mWarehouse;
-		wxTreeItemId mReports;
 
 		wxTreeItemId mPrescriptions;
 		wxTreeItemId mPaitents;
@@ -126,8 +126,6 @@ namespace pof {
 		wxTreeItemId mOrders;
 		wxTreeItemId mRequisitions;
 		wxTreeItemId mAuditTrails;
-		wxTreeItemId mConsumptionPattern;
-		wxTreeItemId mSupply;
 
 
 
@@ -135,7 +133,9 @@ namespace pof {
 		wxStaticBitmap* m_bitmap1;
 		wxPanel* m_panel2;
 		wxTreeCtrl* mModuleTree;
-
+		wxStaticText* m_staticText3;
+		wxStaticText* m_staticText1;
+		wxStaticText* m_staticText2;
 		signal_t mSig;
 		childtree_signal_t mChildSignal;
 		childtree_signal_t mChildRemoveSignal;

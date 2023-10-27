@@ -76,9 +76,9 @@ void pof::PrescriptionView::LoadPrescriptions()
 
 void pof::PrescriptionView::CreateDispensaryView()
 {
-	/*mDispensaryView = new DispensaryView(this, ID_DISPENSARY);
+	mDispensaryView = new pof::DispensaryView(this, ID_DISPENSARY);
 	mPanelManager->AddPane(mDispensaryView, wxAuiPaneInfo().Name("DispensaryView").Caption("Dispensary").CenterPane().Hide());
-	mPanelManager->Update();*/
+	mPanelManager->Update();
 }
 
 void pof::PrescriptionView::CreateDispensaryToolBar()
@@ -89,7 +89,7 @@ void pof::PrescriptionView::CreateDispensaryToolBar()
 	bar->AddStretchSpacer();
 	bar->AddTool(ID_ADD_DRUG_TO_PRESCRIPTION, "Add Drug To Prescription", wxArtProvider::GetBitmap("action_add"));
 	bar->AddTool(ID_SHOW_PATIENT_FILE, "Show Patient File", wxArtProvider::GetBitmap("folder"));
-	bar->AddTool(ID_MAKE_INTERVENTION, "Add Drug Intervention", wxArtProvider::GetBitmap("reply"));
+	bar->AddTool(ID_MAKE_INTERVENTION, "Add Drug Intervention", wxArtProvider::GetBitmap("pen"));
 	bar->AddTool(ID_REPORT_INTERACTION, "Report Drug Interaction", wxArtProvider::GetBitmap("comments"));
 	bar->AddTool(ID_PREVIEW, "Preiew Label", wxArtProvider::GetBitmap("file"));
 	bar->AddTool(ID_DISPENSE, "Dispense", wxArtProvider::GetBitmap("download"));
@@ -115,10 +115,11 @@ void pof::PrescriptionView::InitDataView()
 		std::uint64_t,
 		pof::base::data::duuid_t,
 		pof::base::data::datetime_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
-		pof::base::data::text_t,
+		pof::base::data::text_t, //medication
+		pof::base::data::text_t, //patient_name
+		pof::base::data::text_t, //patient address
+		pof::base::data::text_t, //patient age
+		pof::base::data::text_t, // patient weight
 
 		pof::base::data::text_t,
 		pof::base::data::text_t,
@@ -158,12 +159,13 @@ pof::PrescriptionView::~PrescriptionView()
 
 void pof::PrescriptionView::GenerateFakePrescription()
 {
-	pof::base::data::duuid_t id;
+	pof::base::data::duuid_t id = boost::uuids::random_generator_mt19937{}();
 
 	js::json med1 = {
 		{"medication_name", "Paracetamol"},
 		{"dosage_form", "Tablet"},
-		{"strength", "500mg"},
+		{"strength", "500"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -172,7 +174,8 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	js::json med2 = {
 		{"medication_name", "Vitamin C"},
 		{"dosage_form", "Tablet"},
-		{"strength", "500mg"},
+		{"strength", "500"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -181,7 +184,8 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	js::json med3 = {
 		{"medication_name", "Aspirin"},
 		{"dosage_form", "Tablet"},
-		{"strength", "75mg"},
+		{"strength", "75"},
+		{"strength_type", "mg"},
 		{"dir_for_use", "Take 2 tablets when required"},
 		{"quantity", 30},
 		{"status", "pending"}
@@ -200,6 +204,7 @@ void pof::PrescriptionView::GenerateFakePrescription()
 	v[PRESCRIPTION_PATIENT_NAME] = "Zino Ferife";
 	v[PRESCRIPTION_PATIENT_ADDRESS] = "433 DBS ROAD, ASABA, DELTA STATE";
 	v[PRESCRIPTION_PATIENT_AGE] = "26";
+	v[PRESCRIPTION_PATIENT_WEIGHT] = "63KG";
 	v[PRESCRIPTION_PRESCRIBER_NAME] = "Enife";
 	v[PRESCRIPTION_PRESCRIBER_ADDRESS] = "Federal Medical Center, Asaba, Delta state";
 	v[PRESCRIPTION_STATE] = static_cast<std::uint32_t>(PrescriptionState::PENDING);
@@ -266,12 +271,12 @@ void pof::PrescriptionView::OnPrescriptionActivated(wxDataViewEvent& evt)
 	auto item = evt.GetItem();
 	if (item.IsOk()) {
 		int index = pof::DataModel::GetIdxFromItem(item);
-		if (index == -1) return;
 		auto& disPane = mPanelManager->GetPane("DispensaryView");
 		if (disPane.IsOk()) {
+			auto& prescrip = mModel->GetDatastore()[index];
 			mPanelManager->GetPane("DataView").Hide();
 			mPanelManager->GetPane("Tool").Hide();
-			//mDispensaryView->Load(PrescriptionInstance::instance().get_iterator(index));
+			mDispensaryView->Load(prescrip);
 			disPane.Show();
 			mPanelManager->GetPane("DispensaryToolBar").Show();
 			mPanelManager->Update();
@@ -282,7 +287,7 @@ void pof::PrescriptionView::OnPrescriptionActivated(wxDataViewEvent& evt)
 void pof::PrescriptionView::OnBack(wxCommandEvent& evt)
 {
 	if (!mPanelManager->GetPane("DataView").IsShown()) {
-		//mDispensaryView->ResetViewData();
+		mDispensaryView->ResetViewData();
 		mPanelManager->GetPane("DispensaryView").Hide();
 		mPanelManager->GetPane("DispensaryToolBar").Hide();
 		mPanelManager->GetPane("DataView").Show();
@@ -307,4 +312,8 @@ void pof::PrescriptionView::OnPrscriptionSource()
 void pof::PrescriptionView::OnError(const std::string& what)
 {
 
+}
+
+void pof::PrescriptionView::TestPrescription()
+{
 }

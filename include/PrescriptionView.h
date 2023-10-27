@@ -14,6 +14,7 @@
 #include "DataModel.h"
 #include "net.h"
 #include "AuiTheme.h"
+#include "DispensaryView.h"
 
 
 namespace js = nlohmann;
@@ -38,6 +39,7 @@ namespace pof {
 			PRESCRIPTION_PATIENT_NAME,
 			PRESCRIPTION_PATIENT_ADDRESS,
 			PRESCRIPTION_PATIENT_AGE,
+			PRESCRIPTION_PATIENT_WEIGHT,
 
 			PRESCRIPTION_PRESCRIBER_NAME,
 			PRESCRIPTION_PRESCRIBER_ADDRESS,
@@ -105,12 +107,15 @@ namespace pof {
 		void OnError(const std::string& what);
 
 	private:
+		//test
+		void TestPrescription();
+
 		std::unique_ptr<wxAuiManager> mPanelManager;
 		wxDatePickerCtrl* mPrescriptionDate;
 
 
 		wxDataViewCtrl* mDataView;
-		//pof::DispensaryView* mDispensaryView;
+		pof::DispensaryView* mDispensaryView;
 		std::unique_ptr<pof::DataModel> mModel;
 
 
@@ -118,6 +123,8 @@ namespace pof {
 
 		//holds the source target name for the prescriptions 
 		std::string mPrescriptionSource;
+
+
 
 		//
 		DECLARE_EVENT_TABLE()

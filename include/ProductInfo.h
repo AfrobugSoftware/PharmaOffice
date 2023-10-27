@@ -14,19 +14,25 @@
 #include <wx/dataview.h>
 #include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/simplebook.h>
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
 #include <wx/splitter.h>
+#include <wx/datectrl.h>
 #include <Data.h>
 
 #include <bitset>
 #include <unordered_map>
 #include <optional>
+#include <random>
+#include <date/date.h>
+
 
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"
 #include "InventoryDialog.h"
+#include "WarningViewDialog.h"
 
 namespace pof
 {
@@ -40,8 +46,12 @@ namespace pof
 			wxPanel* m_panel1;
 			wxAuiToolBar* m_auiToolBar1;
 			wxAuiToolBarItem* m_tool1;
+			wxAuiToolBarItem* mProductHist;
 			wxAuiToolBarItem* mProductNameText;
+			wxAuiToolBarItem* mShowAddInfo;
 			wxDataViewCtrl* InventoryView;
+			wxSimplebook* mBook;
+			wxDataViewCtrl* mHistView;
 			wxDataViewColumn* mInputDate;
 			wxDataViewColumn* mBactchNo;
 			wxDataViewColumn* mExpiryDate;
@@ -70,6 +80,7 @@ namespace pof
 			wxPGProperty* mSaleSettings;
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
+			wxDatePickerCtrl* mInventoryDate;
 			double mStubPrice;
 			wxPGChoices ProductClassChoices;
 			wxPGChoices FormulationChoices;
@@ -86,15 +97,28 @@ namespace pof
 				pof::base::data::row_t mUpdatedElementsValues;
 			};
 			
+			//pages
+			enum {
+				PAGE_INVENTORY = 0,
+				PAGE_SALE_HIST
+			};
+
 			using back_signal_t = boost::signals2::signal<void(void)>;
 			using update_signal_t = boost::signals2::signal<void(const PropertyUpdate&)>;
 
 
 			enum {
+				ID_DATA_VIEW,
 				ID_TOOL_GO_BACK = wxID_HIGHEST + 2000,
 				ID_TOOL_ADD_INVENTORY,
 				ID_TOOL_REMV_EXPIRE_BATCH,
+				ID_TOOL_SHOW_PRODUCT_INFO,
 				ID_PROPERTY_GRID,
+				ID_SPLIT_WINDOW,
+				ID_SHOW_PRODUCT_SALE_HISTORY,
+				ID_DATE,
+				ID_INVEN_MENU_REMOVE,
+				ID_WARNINGS = 9000,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -105,21 +129,42 @@ namespace pof
 			void LoadProductProperty(const pof::base::data::row_t& row);
 			boost::signals2::connection AttachBackSlot(back_signal_t::slot_type&& slot);
 			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
+			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
 
 
 			void m_splitter1OnIdle( wxIdleEvent& )
 			{
-				m_splitter1->SetSashPosition( 700 );
+				m_splitter1->SetSashPosition( 450 );
 				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
 			}
 	protected:
+		void CreateInventoryView();
+		void CreateHistoryView();
+
+		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
+		void StyleSheet();
+
+		void OnSashDoubleClick(wxSplitterEvent& evt);
+		void OnUnspilt(wxSplitterEvent& evt);
+		void OnShowProductInfo(wxCommandEvent& evt);
+		void OnShowProducSaleHistory(wxCommandEvent& evt);
+		void OnDateChange(wxDateEvent& evt);
+		void OnRemoveInventory(wxCommandEvent& evt);
+		void OnInvenContextMenu(wxDataViewEvent& evt);
+		void OnWarnings(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
+		std::uint64_t PeriodTime(int periodCount) const;
+		pof::base::data::text_t CreatePeriodString();
+		void SplitPeriodString(const pof::ProductManager::relation_t::tuple_t& tup);
 
+		void LoadInventoryByDate(const pof::base::data::datetime_t& dt);
+		void LoadHistoryByDate(const pof::base::data::datetime_t& dt);
+		void UpdateWarnings();
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;

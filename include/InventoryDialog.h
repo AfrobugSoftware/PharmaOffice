@@ -9,6 +9,7 @@
 
 #include "ArtProvider.h"
 #include <Data.h>
+#include <random>
 
 namespace pof {
 	class InventoryDialog : public wxDialog
@@ -31,10 +32,12 @@ namespace pof {
 		void CreateDialog();
 		void SizeDialog();
 
-		wxStaticText* texts[5];
+		wxStaticText* texts[8];
 		wxSpinCtrl* mQuantityInControl;
+		wxSpinCtrl* mCostControl;
 		wxDatePickerCtrl* mExpiryDate;
 		wxTextCtrl* mBatchNumber;
+		wxTextCtrl* mManufactureName;
 		wxBitmapButton* mCalenderButton;
 		wxButton* mOkCancel[2];
 		pof::base::data::row_t mInventoryData;

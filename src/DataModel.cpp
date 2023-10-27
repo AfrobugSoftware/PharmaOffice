@@ -97,7 +97,8 @@ void pof::DataModel::Emplace(pof::base::data&& d)
 	Cleared();
 	mItems.clear();
 	attributes.clear();
-	datastore = std::make_shared<pof::base::data>(std::forward<pof::base::data>(d));
+	//problem with this emplace
+	*datastore = (std::forward<pof::base::data>(d));
 	mItems.resize(datastore->size());
 	size_t i = 0;
 	std::generate(mItems.begin(), mItems.end(), 
@@ -114,6 +115,39 @@ void pof::DataModel::EmplaceData(pof::base::data::row_t&& r)
 	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
 	mSignals[static_cast<size_t>(Signals::ADDED)](datastore->end() - 1);
 
+}
+
+void pof::DataModel::Clear()
+{
+	Cleared();
+	mItems.clear();
+	attributes.clear();
+	datastore->clear();
+
+}
+
+void pof::DataModel::Store(pof::base::data&& d)
+{
+	Cleared();
+	mItems.clear();
+	attributes.clear();
+	//problem with this emplace
+	*datastore = (std::forward<pof::base::data>(d));
+	mItems.resize(datastore->size());
+	size_t i = 0;
+	std::generate(mItems.begin(), mItems.end(),
+		[&]() { return wxDataViewItem(reinterpret_cast<void*>(++i)); });
+	ItemsAdded(wxDataViewItem{ 0 }, mItems);
+	mSignals[static_cast<size_t>(Signals::STORE_LOAD)](datastore->begin());
+}
+
+void pof::DataModel::StoreData(pof::base::data::row_t&& r)
+{
+	datastore->insert(std::forward<pof::base::data::row_t>(r));
+	const size_t count = datastore->size();
+	mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(count) });
+	ItemAdded(wxDataViewItem{ 0 }, mItems.back());
+	mSignals[static_cast<size_t>(Signals::STORE)](std::next(datastore->begin(), count - 1));
 }
 
 void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
@@ -159,6 +193,40 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
 }
 
+void pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
+{
+	if (mItems.empty() || col > datastore->get_metadata().size()
+		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return;
+
+	std::string reg;
+	reg.reserve(searchFor.size() * 2);
+	for (auto& c : searchFor)
+	{
+		if (!std::isalnum(c)) {
+			//what to do
+			return;
+		}
+		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
+	}
+	reg += "(?:.*)?";
+	std::regex searchreg(std::move(reg));
+
+	Cleared();
+	attributes.clear();
+	wxDataViewItemArray ars;
+	ars.reserve(mItems.size());
+	for (auto& item : mItems) {
+		size_t idx = GetIdxFromItem(item);
+
+		auto& datum = (*datastore)[idx].first[col];
+		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
+		if (std::regex_match(text, searchreg)) {
+			ars.push_back(item);
+		}
+	}
+	ItemsAdded(wxDataViewItem(0), ars);
+}
+
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const
 {
 	return false;
@@ -177,6 +245,11 @@ bool pof::DataModel::IsEnabled(const wxDataViewItem& item, unsigned int col) con
 size_t pof::DataModel::GetIdxFromItem(const wxDataViewItem& item) {
 	size_t i = reinterpret_cast<size_t>(item.GetID());
 	return (--i);
+}
+
+wxDataViewItem pof::DataModel::GetItemFromIdx(size_t idx)
+{
+	return wxDataViewItem{reinterpret_cast<void*>(idx + 1)};
 }
 
 bool pof::DataModel::IsContainer(const wxDataViewItem& item) const
@@ -354,7 +427,7 @@ void pof::DataModel::GetValue(wxVariant& v, const wxDataViewItem& item, unsigned
 		case pof::base::data::kind::datetime:
 		{
 			auto t = pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(d));
-			v = fmt::format("{:%y-%m-%d}", fmt::localtime(t));
+			v = fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(d));
 			break;
 		}
 		case pof::base::data::kind::text:
@@ -447,28 +520,51 @@ bool pof::DataModel::RemoveData(const wxDataViewItem& item)
 {
 	size_t idx = GetIdxFromItem(item);
 	if (idx >= datastore->size()) return false;
-	auto iter = std::next(datastore->begin(), idx);
-	if (iter == datastore->end()) return false;
 
+	auto iter = std::next(datastore->begin(), idx);
 	mSignals[static_cast<size_t>(Signals::REMOVED)](iter); //do what should be done
 	datastore->erase(iter);
-	ItemDeleted(wxDataViewItem(0), item);
+
+	//remove last element item
+	ItemDeleted(wxDataViewItem(0), mItems.back());
+	mItems.pop_back();
 	return true;
 }
 
 bool pof::DataModel::RemoveData(const wxDataViewItemArray& items)
 {
 	//figure out how to do remove-erase here
-	bool ret = false;
-	for (auto& item : items){
-		ret = RemoveData(item);
+	//items is sorted in acceding order
+	if (items.IsEmpty()) return false;
+	size_t count = 0;
+	auto remv = std::remove_if(datastore->begin(), datastore->end(), [&](auto& row) {
+		bool ret = std::any_of(items.begin(), items.end(), [&](auto& item) {
+			bool yes =  (count == GetIdxFromItem(item));
+			if (yes) {
+				auto iter = std::next(datastore->begin(), count);
+				mSignals[static_cast<size_t>(Signals::REMOVED)](iter);
+			}
+			return yes;
+		});
+		count++;
+		return ret;
+	});
+	auto& tab = datastore->tab();
+	tab.erase(remv, std::end(tab));
+	count = 0;
+	while (count != items.size()){
+		ItemDeleted(wxDataViewItem(0), mItems.back());
+		mItems.pop_back();
+		count++;
 	}
-	return ret;
+	return true;
+		
 }
 
 void pof::DataModel::Reload()
 {
 	Cleared();
+	attributes.clear();
 	mItems.Clear();
 	mItems.reserve(datastore->size());
 	for (size_t i = 0; i < datastore->size(); i++) {
@@ -478,8 +574,18 @@ void pof::DataModel::Reload()
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
+void pof::DataModel::ReloadSet()
+{
+	Cleared();
+	ItemsAdded(wxDataViewItem(0), mItems);
+}
+
 void pof::DataModel::Signal(Signals sig, size_t i) const
 {
+	auto iter = std::next(datastore->begin(), i);
+	if (iter == std::end(*datastore)) return;
+
+	mSignals[static_cast<size_t>(sig)](iter);
 }
 
 boost::signals2::connection pof::DataModel::ConnectSlot(signal_t::slot_type&& slot, Signals signal)

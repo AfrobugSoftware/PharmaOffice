@@ -7,6 +7,8 @@
 #include <optional>
 #include <filesystem>
 #include <exception>
+#include <utility>
+#include <date/date.h>
 
 namespace pof {
 	namespace base {
@@ -259,6 +261,30 @@ namespace pof {
 
 					return std::tuple_cat(std::move(t1), std::move(t2));
 				}
+
+				template<typename tuple_t>
+				static bool build(tuple_t& tup, const pof::base::data::row_t& row)
+				{
+					auto& v = row.first;
+					if (v.empty()) return false;
+					using arg_type = std::tuple_element_t<N, tuple_t>;
+
+					if (boost::variant2::holds_alternative<arg_type>(v[N])) {
+						std::get<N>(tup) = boost::variant2::get<arg_type>(v[N]);
+					}
+					else {
+						if constexpr (std::is_integral_v<arg_type>) {
+							std::get<N>(tup) = static_cast<arg_type>(0);
+						}
+						else if constexpr (std::is_floating_point_v<arg_type>) {
+							std::get<N>(tup) = static_cast<arg_type>(0.0f);
+						}
+						else {
+							std::get<N>(tup) = arg_type{};
+						}
+					}
+					return detail::loop<N - 1>::build(tup, row);
+				}
 			};
 
 			template<>
@@ -284,8 +310,34 @@ namespace pof {
 
 					return detail::do_retrive<arg_type, 0>(statement);
 				}
+
+				template<typename tuple_t>
+				static bool build(tuple_t& tup, const pof::base::data::row_t& row)
+				{
+					auto& v = row.first;
+					if (v.empty()) return false;
+					using arg_type = std::tuple_element_t<0, tuple_t>;
+
+					if (boost::variant2::holds_alternative<arg_type>(v[0])) {
+						std::get<0>(tup) = boost::variant2::get<arg_type>(v[0]);
+					}
+					else {
+						if constexpr (std::is_integral_v<arg_type>) {
+							std::get<0>(tup) = static_cast<arg_type>(0);
+						}
+						else if constexpr (std::is_floating_point_v<arg_type>) {
+							std::get<0>(tup) = static_cast<arg_type>(0.0f);
+						}
+						else {
+							std::get<0>(tup) = arg_type{};
+						}
+					}
+					return true;
+				}
 			};
 		}
+		
+
 
 		template<typename... Args, size_t... I>
 		pof::base::data::row_t::first_type make_row_from_tuple_impl(const std::tuple<Args...>& tup,
@@ -312,6 +364,41 @@ namespace pof {
 			return make_tuple_from_row_impl(row, tuple{}, idx{});
 		}
 
+		template<typename... Args>
+		bool build(std::tuple<Args...>& tup, const pof::base::data::row_t& row) {
+			constexpr size_t count = sizeof...(Args);
+			assert(count == row.first.size());
+
+			return detail::loop<count - 1>::build(tup, row);
+
+		}
+
+		struct func_aggregate
+		{
+			typedef void (*arg_func)(sqlite3_context*, int, sqlite3_value**);
+			typedef void(*arg_step)(sqlite3_context*, int, sqlite3_value**);
+			typedef void(*arg_final)(sqlite3_context*);
+			constexpr const static std::int32_t encoding = SQLITE_UTF8;
+
+			std::string name;
+			std::int32_t arg_count = 0;
+			void* user_data =  nullptr;
+			arg_func func = nullptr;
+			arg_step fstep = nullptr;
+			arg_final ffinal =  nullptr;
+
+			func_aggregate() = default;
+		};
+
+
+		extern void month_func(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		extern void day_func(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		//extern void _func(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		extern void cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals);
+		extern void cost_final_func(sqlite3_context* conn);
+		extern void cost_multi_add(sqlite3_context* conn, int arg, sqlite3_value** vals);
+		extern void cost_multi(sqlite3_context* conn, int arg, sqlite3_value** vals);
+
 
 		class database : public boost::noncopyable {
 		public:
@@ -319,25 +406,70 @@ namespace pof {
 			using stmt_map = std::unordered_map<std::string, stmt_t>;
 			using query_t = std::string;
 
+			typedef int(*exeu_callback)(void* arg, int col, char** rol_val, char** col_names);
+			typedef int(*commit_callback)(void* arg);
+			typedef void(*rollback_callback)(void* arg);
+			typedef void(*update_callback)(void* arg, int evt, char const* database_name, char const* table_name, sqlite_int64 rowid);
+			typedef int(*trace_callback)(std::uint32_t traceType, void* UserData, void* statement, void* traceData);
+			typedef int(*busy_callback)(void* arg, int i);
+			typedef int(*progress_callback)(void* arg);
+			typedef int(*auth)(void* arg, int eventCode, const char* evt_1, const char* evt_2, const char* database_name, const char* tig_view_name);
+
+
 			database(const std::filesystem::path& path);
 			~database();
 			database(database&& db) noexcept;
 			database& operator=(database&& db) noexcept;
 
 
-			std::optional<stmt_t> prepare(const query_t& query);
-			std::optional<stmt_t> prepare(std::string_view query);
-			void reset(stmt_t stmt);
-			void finalise(stmt_t stmt);
+			std::optional<stmt_t> prepare(const query_t& query) const;
+			std::optional<stmt_t> prepare(std::string_view query) const;
+			void reset(stmt_t stmt) const;
+			void finalise(stmt_t stmt) const;
+			void clear_bindings(stmt_t stmt) const;
 			bool add_map(const std::string& name, stmt_t stmt);
 			bool remove_map(const std::string& name);
+			bool flush_db();
+			bool register_func(const func_aggregate& argg);
 			std::optional<stmt_t> get_map(const std::string& value);
 
-			bool execute(const query_t& query);
-			bool execute(stmt_t stmt);
+			void set_commit_handler(commit_callback callback, void* UserData);
+			bool set_trace_handler(trace_callback callback, std::uint32_t mask, void* UserData);
+			bool set_busy_handler(busy_callback callback, void* UserData);
+			void set_rowback_handler(rollback_callback callback, void* UserData);
+			void set_update_handler(update_callback callback, void* UserData);
+			bool set_auth_handler(auth callback, void* UserData);
+			void set_progress_handler(progress_callback callback, void* UserData, int frq);
+
+
+			bool execute(const query_t& query) const;
+			bool execute(stmt_t stmt) const;
+
+			bool begin_trans() const;
+			bool end_trans() const;
 
 			inline std::string_view err_msg() const { return std::string_view(sqlite3_errmsg(m_connection)); }
 			inline int err_code() const { return sqlite3_errcode(m_connection); }
+
+			template<size_t N, std::enable_if_t<std::cmp_greater(N, 1), int> = 0>
+			auto prepare_multiple(std::string_view sql) const -> std::optional<std::array<stmt_t, N>>
+			{
+				std::array<stmt_t, N> stmts;
+				if (sql.empty()) return std::nullopt;
+				std::string_view subquery = sql;
+				const char* tail = nullptr;
+				stmt_t stmt = nullptr;
+				size_t count = N;
+				while(count--) {
+					if (sqlite3_prepare_v2(m_connection, subquery.data(), subquery.size(), &stmt, &tail) != SQLITE_OK) return std::nullopt;
+					if (tail == nullptr) break;
+
+					stmts[count] = stmt;
+					subquery = std::string_view{ tail, strlen(tail) };
+				};
+				return stmts;
+			}
+
 
 			template<typename... Args>
 			auto retrive(const std::string& name) -> std::optional<pof::base::relation<Args...>>
@@ -432,7 +564,7 @@ namespace pof {
 					return false;
 				}
 				for (auto& row : rel) {
-					if (!bind(stmt, std::forward<pof::base::relation<Args...>>(row))) {
+					if (!bind(stmt, std::forward<typename pof::base::relation<Args...>::tuple_t>(row))) {
 						sqlite3_step(rollback);
 						reset(stmt);
 						reset(begin_immidiate);
@@ -447,6 +579,8 @@ namespace pof {
 						reset(rollback);
 						return false;
 					}
+					reset(stmt);
+					sqlite3_clear_bindings(stmt);
 				}
 
 				if (sqlite3_step(end) != SQLITE_DONE) {

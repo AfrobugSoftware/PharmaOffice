@@ -2,12 +2,17 @@
 #include <wx/busyinfo.h>
 #include <wx/msgdlg.h>
 #include <wx/aui/framemanager.h>
+#include <wx/sysopt.h>
+#include <wx/config.h>
+#include <wx/stdpaths.h>
+#include <wx/propdlg.h>
 
 #include <filesystem>
 #include <netmanager.h>
 #include <database.h>
 #include <chrono>
 #include <sstream>
+#include <random>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -21,12 +26,24 @@
 #include "MainFrame.h"
 #include "ProductManager.h"
 #include "SaleManager.h"
+#include "AuditManager.h"
+#include "PrintManager.h"
 
 
 namespace js = nlohmann;
 namespace fs = std::filesystem;
 using namespace std::literals::string_literals;
 namespace pof {
+	template<typename T = std::uint64_t, std::enable_if_t<std::is_integral_v<T>, int> = 0>
+	auto GenRandomId() -> T
+	{
+		static std::mt19937_64 engine(std::random_device{}());
+		static std::uniform_int_distribution<T> dist(1000000, 100000000);
+		static auto random = std::bind(dist, engine);
+
+		return random();
+	}
+
 	class Application : public wxApp
 	{
 	public:
@@ -41,20 +58,21 @@ namespace pof {
 
 
 		static void SetUpColorTable();
-
+		void SetupDatabaseExt();
 		bool CreateMainFrame();
 		bool CheckForUpdate();
 		bool LunchWizard();
 		bool OpenLocalDatabase();
 		bool SetUpPaths();
-		bool LoadSettings(const fs::path& fp);
-		bool SaveSettings(const fs::path& fp);
+		bool LoadSettings();
+		bool SaveSettings();
 
 		bool RegisterPharmacy();
 		bool RegisterAccount();
 		bool RegisterPharmacyLocal();
 		bool RegisterAccountLocal();
 		bool SignIn();
+		bool SignOut();
 
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		void TestAccountAndPharmacy();
@@ -63,28 +81,56 @@ namespace pof {
 		pof::base::net_manager mNetManager;
 		pof::ProductManager mProductManager;
 		pof::SaleManager mSaleManager;
+		pof::AuditManager mAuditManager;
+		std::shared_ptr<pof::PrintManager> mPrintManager;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
+
 		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;
 		bool bGlobalCostMarkup = false;
 		bool bKeepMeSignedIn = false;
 		bool bUseMinStock = false;
+		bool bPharamcistWarings = false;
+		bool bCheckExpired = true;
+		bool bCheckOutOfStock = true;
+		bool bCheckPOM = true;
+		bool bCheckExpirePeiodOnIdle = true;
+		bool bAlertCriticalWarnings = true;
+		bool bCheckExpiredOnUpdate = true;
+		bool bCheckOutOfStockOnUpdate = true;
+		bool bAutomaticBroughtForward = true;
+		bool bAllowOtherUsersInventoryPermission = false;
+		bool bMaximizeOnLoad = true;
+		bool bShowPreviewOnSale = false;
 
-		pof::Pharmacy MainPharamcy;
-		pof::Account MainAccount;
+		wxPaperSize sPaperSize; //may not need it
+		date::days gSessionLast;
+
+
+		std::shared_ptr<pof::Pharmacy> MainPharmacy;
+		std::shared_ptr<pof::Account> MainAccount;
+		std::string gVersion;
+		
 
 		boost::property_tree::ptree& operator[](const std::string& path);
 
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);
+		bool HasPrivilage(pof::Account::Privilage priv);
+		void ShowSettings();
+		void ShowGeneralSettings(wxPropertySheetDialog& sd);
+		void ShowPharmacySettings(wxPropertySheetDialog& sd);
+		void ShowAccountSettings(wxPropertySheetDialog& sd);
+		void ShowSaleSettings(wxPropertySheetDialog& sd);
+	
 	private:
+		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 
 		pof::MainFrame* mMainFrame;
-		std::string mVersion;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
 

@@ -15,14 +15,22 @@
 #include <wx/sizer.h>
 #include <wx/panel.h>
 #include <wx/infoBar.h>
+#include <wx/itemattr.h>
 
+#include "PackView.h"
 #include "AuiTheme.h"
 #include "ProductInfo.h"
 #include "DataObject.h"
 #include "AddProductDialog.h"
+#include "InventoryDialog.h"
+#include "OrderView.h"
+#include "Reports.h"
+#include "StockCheck.h"
 
 #include <boost/signals2/signal.hpp>
+#include <OpenXLSX.hpp>
 
+namespace excel = OpenXLSX;
 namespace pof
 {
 	class ProductView : public wxPanel
@@ -39,16 +47,26 @@ namespace pof
 			ID_ADD_PRODUCT = wxID_HIGHEST + 2000,
 			ID_REMOVE_PRODUCT,
 			ID_ADD_ORDER_LIST,
+			ID_ORDER_LIST,
+			ID_REMOVE_FROM_CATEGORY,
 			ID_PRODUCTINFO,
 			ID_BACK,
 			ID_FORWARD,
 			ID_DATA_VIEW,
+			ID_FUNCTIONS,
+			ID_FUNCTION_BROUGHT_FORWARD,
+			ID_FUNCTION_STOCK_CHECK,
+			ID_FUNCTION_MARK_UP_PRODUCTS,
+			ID_REPORTS,
+			ID_REPORTS_CONSUMPTION_PATTERN,
+			ID_REPORTS_ENDOFDAY,
 			ID_SEARCH,
 			ID_SEARCH_BY_CATEGORY,
 			ID_SEARCH_BY_NAME,
 			ID_OUT_OF_STOCK,
 			ID_OPTIMISE_BY_FORMULARY,
 			ID_ADD_CATEGORY,
+			ID_ADD_INVENTORY,
 			ID_REMOVE_GROUP_BY,
 			ID_QUICK_SORT_TEST,
 			ID_INVENTORY_VIEW,
@@ -58,18 +76,28 @@ namespace pof
 			ID_PRODUCT_CONTEXT_QUICKEDIT,
 			ID_PRODUCT_CONTEXT_REMOVE,
 			ID_PRODUCT_EXPIRE,
+			ID_PRODUCT_MARKUP,
 			ID_EXPIRY_VIEW,
 			ID_SELECT_MULTIPLE,
 			ID_UNSELECT_MULTIPLE,
 			ID_SHOW_COST_PRICE,
 			ID_TO_JSON,
-			ID_FILE
+			ID_FILE,
+			ID_PACKS,
+			ID_MOVE_PRODUCT_STOCK,
+			ID_DOWNLOAD_EXCEL,
 		};
+
+		size_t mRowHeights;
+		wxItemAttr mHeaderAttr;
+		wxFont mDataViewFont;
+
 
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
 		wxAuiToolBarItem* mOutOfStockItem = nullptr;
 		wxAuiToolBarItem* mExpireProductItem = nullptr;
+		wxAuiToolBarItem* mReportItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -81,12 +109,15 @@ namespace pof
 
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
-
+		std::string mActiveCategory;
 
 		//attibutes
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
 		std::set<wxDataViewItem> mSelections;
 
+		std::chrono::system_clock::time_point mExpireProductWatchDog;
+		std::chrono::system_clock::time_point mOutOfStockProductWatchDog;
+		std::chrono::system_clock::duration mWatchDogDuration = std::chrono::minutes(30);
 	public:
 		boost::signals2::signal<void(const std::string&)> CategoryAddSignal;
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
@@ -96,7 +127,13 @@ namespace pof
 		void ReSizeColumns();
 		void SaveColumnWidths();
 		void SetupAuiTheme();
+		void SetupDataViewStyle();
 
+		inline void SetHeaderAttr(const wxItemAttr& attr) { mHeaderAttr = attr; }
+		inline void SetDataViewRowHeight(size_t rowHeight) { mRowHeights = rowHeight; }
+		inline void SetDataViewFont(const wxFont& font) { mDataViewFont = font; }
+
+		void ReloadProductView();
 
 		//events
 		void OnResize(wxSizeEvent& evt);
@@ -108,6 +145,7 @@ namespace pof
 		void OnExpiredProducts(wxCommandEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
+		void OnRemoveFromCategory(wxCommandEvent& evt);
 		void OnSearchFlag(wxCommandEvent& evt);
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnRemoveProduct(wxCommandEvent& evt);
@@ -118,8 +156,22 @@ namespace pof
 		void OnSelection(wxCommandEvent& evt);
 		void OnShowCostPrice(wxCommandEvent& evt);
 		void OnOutOfStock(wxCommandEvent& evt);
-	
+		void OnAddInventory(wxCommandEvent& evt);
+		void OnReportDropdown(wxAuiToolBarEvent& evt);
+		void OnConsumptionPattern(wxCommandEvent& evt);
+		void OnEndOfDayReport(wxCommandEvent& evt);
+		void OnPacks(wxCommandEvent& evt);
+		void OnFunctions(wxAuiToolBarEvent& evt);
+		void OnBFFunction(wxCommandEvent& evt);
+		void OnSCFunction(wxCommandEvent& evt);
+		void OnShowOrderList(wxCommandEvent& evt);
+		void OnMarkUp(wxCommandEvent& evt);
+		void OnMarkUpProducts(wxCommandEvent& evt);
+		void OnMoveExpiredStock(wxCommandEvent& evt);
+		void OnUpdateUI(wxUpdateUIEvent& evt);
+		void OnDownloadExcel(wxCommandEvent& evt);
 
+		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
@@ -141,7 +193,7 @@ namespace pof
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
-		void SetExpireProducts(); //view the expired products
+		void DoBroughtForward();
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 	private:
 		DECLARE_EVENT_TABLE()

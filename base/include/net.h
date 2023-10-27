@@ -2,6 +2,10 @@
 //pharmaoffice uses http for communication with the outside world
 //it seralised tuples as j
 
+#ifdef _WIN32
+#define _WIN32_WINNT 0x0A00
+#endif
+
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/core.hpp>

@@ -146,6 +146,7 @@ namespace pof
 
             inline void reserve(size_t size) { value.reserve(size); }
             inline void resize(size_t size) { value.resize(size); }
+            void shrink_to_fit();
 
             inline const auto& back() const { return value.back(); }
             inline const auto& front() const { return value.front(); }
@@ -156,6 +157,7 @@ namespace pof
 
             //get the underlying table
             inline const table_t& tab() const { return value; }
+            inline table_t& tab()  { return value; }
 
             inline iterator begin() { return value.begin(); }
             inline const_iterator begin() const { return value.begin(); }

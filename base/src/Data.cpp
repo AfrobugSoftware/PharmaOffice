@@ -121,6 +121,11 @@ bool pof::base::data::test_state(size_t x, state s)
 	return value[x].second.first.test(static_cast<std::underlying_type_t<state>>(s));
 }
 
+void pof::base::data::shrink_to_fit()
+{
+	value.shrink_to_fit();
+}
+
 const pof::base::data::row_t& pof::base::data::operator[](size_t i) const
 {
 	if (i > value.size()) throw std::out_of_range("Row index is out of range");

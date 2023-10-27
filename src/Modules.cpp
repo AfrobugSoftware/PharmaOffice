@@ -1,5 +1,6 @@
 #include "Modules.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	EVT_TREE_ITEM_ACTIVATED(pof::Modules::ID_TREE, pof::Modules::OnActivated)
@@ -131,6 +132,7 @@ void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
 	auto name = evt.GetLabel().ToStdString();
 	if (name.empty() || oldName == name) {
 		evt.Veto();
+		return;
 	}
 	spdlog::info("Changing {} to {}", oldName, name);
 	mChildEditedSignal(oldName, name); //signal a name change
@@ -161,13 +163,9 @@ void pof::Modules::OnContextRemove(wxCommandEvent& evt)
 
 void pof::Modules::SetupFont()
 {
-	mFonts[FONT_MAIN] = std::move(wxFont(
-			wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased()
-		.FaceName("Bookman").Bold()));
-	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Bookman")));
-	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased()
-		.Family(wxFONTFAMILY_SWISS).FaceName("Monospaced")));
+	mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased().Bold()));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased().Family(wxFONTFAMILY_SWISS)));
 }
 void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
 {
@@ -205,16 +203,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
 
-	//add the account type
-	wxStaticText* m_staticText3;
-	std::string AccountType = wxGetApp().MainAccount.GetAccountTypeString();
-	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
-	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
-	m_staticText3->Wrap(-1);
-	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
-
-	wxStaticText* m_staticText1;
-	std::string AccountName = wxGetApp().MainAccount.GetName();
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
 	std::transform(AccountName.begin(), AccountName.end(),
 		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
@@ -222,8 +211,14 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText1->Wrap(-1);
 	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
 
-	wxStaticText* m_staticText2;
-	std::string PharmacyName = wxGetApp().MainPharamcy.GetName();
+	//add the account type
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
+	m_staticText3->Wrap(-1);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
+
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
 			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 
@@ -275,33 +270,27 @@ void pof::Modules::CreateTree()
 
 	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 0);
 	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 0);
-	mWarehouse     = mModuleTree->AppendItem(root, "Warehouse", 0);
-	mReports       = mModuleTree->AppendItem(root, "Reports", 0);
 
 
-	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 3);
+	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1, 4);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
 	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
-	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision book", 1);
+	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision Book", 1);
 	
 	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 1);
-	mOrders        = mModuleTree->AppendItem(mTransactions, "Orders", 1);
+	mAuditTrails   = mModuleTree->AppendItem(mTransactions, "Audit Trails", 1);
 	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 1);
+	mOrders        = mModuleTree->AppendItem(mTransactions, "ADR Reports", 1);
 
-	mAuditTrails        = mModuleTree->AppendItem(mReports, "Audit Trails", 1);
-	mConsumptionPattern = mModuleTree->AppendItem(mReports, "Consumption Patterns", 1);
 	
 	mModuleTree->Expand(mPharmacy);
 	mModuleTree->Expand(mTransactions);
-	mModuleTree->Expand(mReports);
 }
 
 void pof::Modules::Style()
 {
 	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
-	mModuleTree->SetItemFont(mWarehouse, mFonts[FONT_MAIN]);
-	mModuleTree->SetItemFont(mReports, mFonts[FONT_MAIN]);
 	
 	mModuleTree->SetItemFont(mPrescriptions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mPaitents, mFonts[FONT_CHILD]);
@@ -310,7 +299,23 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mSales, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mOrders, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mAuditTrails, mFonts[FONT_CHILD]);
 
+}
+
+void pof::Modules::activateModule(wxTreeItemId mod)
+{
+	auto winIter = mModuleViews.find(mod);
+	if (winIter == mModuleViews.end()) {
+		//what to do here, main not pressed check children of main
+		auto found = std::ranges::find(mChildId, mod);
+		if (found != mChildId.end()) {
+			auto string = mModuleTree->GetItemText(mod).ToStdString();
+			mChildSignal(std::move(string));
+		}
+		return;
+	}
+	mSig(winIter, Evt::ACTIVATED);
 }
 
 std::string pof::Modules::GetText(const_iterator item) const
@@ -330,6 +335,28 @@ pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemI
 		return std::make_pair<wxTreeItemId, wxWindow*>(wxTreeItemId{}, nullptr);
 	}
 	return *iter;
+}
+
+void pof::Modules::ReloadAccountDetails()
+{
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
+	std::transform(AccountName.begin(), AccountName.end(),
+		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
+	std::transform(PharmacyName.begin(), PharmacyName.end(),
+		PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+
+	m_panel1->Freeze();
+
+	m_staticText1->SetLabel(std::move(AccountName));
+	m_staticText2->SetLabel(std::move(PharmacyName));
+	m_staticText3->SetLabel(std::move(AccountType));
+	
+	m_panel1->Layout();
+	m_panel1->Thaw();
+	m_panel1->Refresh();
+
 }
 
 boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)

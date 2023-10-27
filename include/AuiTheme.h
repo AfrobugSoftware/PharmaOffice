@@ -10,6 +10,7 @@
 
 namespace pof {
 	//Monostate class to provide a theme for the Aui managed frames
+	//also add dataviewctrl theme here
 	class AuiTheme {
 	public:
 		using Signal_t = boost::signals2::signal<void(void)>;

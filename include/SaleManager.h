@@ -3,32 +3,93 @@
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
 #include <memory>
+#include <fstream>
+#include <sstream>
+#include <date/date.h>
+
+#include "database.h"
+#include "Account.h"
+#include "Pharmacy.h"
 
 
+#include <wx/html/htmprint.h>
+#include <dep/HTML/HTML.h>
+
+namespace html = HTML;
 //still need to thing
 namespace pof {
 	class SaleManager : public boost::noncopyable {
 
 	public:
 		enum {
-			PRODUCT_SERIAL_NUM,
+			SALE_UUID,
+			PRODUCT_UUID,
 			PRODUCT_NAME,
-			PRODUCT_CATEGORY,
 			PRODUCT_PRICE,
 			PRODUCT_QUANTITY,
 			PRODUCT_EXT_PRICE,
+			SALE_DATE,
 			MAX
 		};
+
+		enum {
+			HIST_DATE,
+			HIST_PROD_NAME,
+			HIST_QUANTITY,
+			HIST_EXTPRICE,
+			HIST_MAX
+		};
+
+		//sale payment type
+		enum {
+			BANK_TRANSFER,
+			BANK_CARD,
+			CASH,
+		};
+		constexpr static const std::array<std::string_view, 3> sPaymentType = { "BANK TRANSFER", "BANK CARD", "CASH" };
 
 		SaleManager();
 		~SaleManager();
 		void DoSale();
 
+		std::shared_ptr<pof::base::database> mLocalDatabase;
+		std::shared_ptr<pof::Account> mCurAccount;
+		std::shared_ptr<pof::Pharmacy> mCurPharmacy;
+
+		bool LoadHistoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt);
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
-		inline std::unique_ptr<pof::DataModel>& GEtProductHistory() { return ProductSaleHistory; }
+		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
+
+		bool CreateSaleTable();
+		bool StoreSale();
+		void Finalise();
+		void RestoreSale(const boost::uuids::uuid& saleID);
+		
+
+		//SAVE SALE
+		void CreateSaveSaleTable();
+		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
+		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
+		bool SaveSale(const boost::uuids::uuid& saleID); //pushes the current sale in mSaleData; 
+		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
+		bool CheckIfSaved(const boost::uuids::uuid& saleID);
+
+		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
+		bool RemoveProductSaveSale(pof::base::data::const_iterator iterator);
+
+		boost::uuids::random_generator_mt19937 sUidGen;
+		double vat = 0.0;
+		std::string mCurPaymentType;
 	private:
+		
 		std::unique_ptr<pof::DataModel> SaleData;
 		std::unique_ptr<pof::DataModel> ProductSaleHistory; //loaded in per product
+
+		pof::base::database::stmt_t mLoadProductHistory = nullptr;
+		pof::base::database::stmt_t mStoreSale = nullptr;
+		pof::base::database::stmt_t mProductHistByDateStmt = nullptr;
+
+
 	};
 };

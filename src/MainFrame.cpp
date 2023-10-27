@@ -1,35 +1,58 @@
 #include "MainFrame.h"
-#include "Application.h"
+//#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_CLOSE(pof::MainFrame::OnClose)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
+	EVT_MENU(pof::MainFrame::ID_MENU_HELP_SETTINGS, pof::MainFrame::OnShowSettings)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_LOG, pof::MainFrame::OnShowLog)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_JSON, pof::MainFrame::OnExportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_EXCEL, pof::MainFrame::OnExportExcel)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_CSV, pof::MainFrame::OnExportCSV)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SAVE, pof::MainFrame::OnTestSave)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_LOAD, pof::MainFrame::OnTestLoad)
+	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES, pof::MainFrame::OnShowModules)
+	EVT_MENU(pof::MainFrame::ID_MENU_ACCOUNT_SIGN_OUT, pof::MainFrame::OnSignOut)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_EXCEL, pof::MainFrame::OnImportExcel)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_MARKUP_SETTINGS, pof::MainFrame::OnMarkupSettings)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_OS, pof::MainFrame::OnNotif)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_NOTIF_EXPIRE, pof::MainFrame::OnNotif)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_CLASS, pof::MainFrame::OnSaleAlerts)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_OS, pof::MainFrame::OnSaleAlerts)
+	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, pof::MainFrame::OnSaleAlerts)
+	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
-: wxFrame(parent, id, "PHARMAOFFICE", position, size), mAuiManager(this, AUIMGRSTYLE) {
+: wxFrame(parent, id, "PHARMAOFFICE - Personal", position, size), mAuiManager(this, AUIMGRSTYLE) {
 	SetBackgroundColour(*wxWHITE); //wrap in theme
 	SetupAuiTheme();
 	CreateMenuBar();
+
+	mPager = new wxSimplebook(this, ID_PAGER);
+	CreateWelcomePage();
 	CreateWorkSpace();
+
+	mPager->AddPage(mWelcomePage, "Welcome", true);
+	mPager->AddPage(mWorkspace, "Workspace", false);
+
+	mAuiManager.AddPane(mPager, wxAuiPaneInfo().Name("Pager").CaptionVisible(false).CenterPane().Show());
+
+
 	CreateLogView();
 	CreateViews();
 	CreateModules();
 	CreateImageList();
-	CreateStatusBar();
+	//CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
-
+	SetExtraStyle(wxWS_EX_PROCESS_IDLE);
+	mExpireWatchTime = std::chrono::system_clock::now();
 
 	wxIcon appIcon;
-	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("dglopaico"));
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
 }
 
@@ -38,6 +61,11 @@ pof::MainFrame::~MainFrame()
 	
 }
 
+
+void pof::MainFrame::ReloadFrame()
+{
+	mModules->ReloadAccountDetails();
+}
 
 void pof::MainFrame::CreateMenuBar()
 {
@@ -63,26 +91,53 @@ void pof::MainFrame::CreateMenuBar()
 		"Extentions",
 		"Help"
 	};
+	//account menu
+	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
 
 
 	//product menu
-	Menus[2]->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json\tCtrl-J", nullptr);
 	wxMenu* exportSubMenu = new wxMenu;
+	wxMenu* importSubMenu = new wxMenu;
+
+	importSubMenu->Append(ID_MENU_PRODUCT_IMPORT_JSON, "Import Json", nullptr);
+	importSubMenu->Append(ID_MENU_PRODUCT_IMPORT_EXCEL, "Import Excel", nullptr);
+	
 	exportSubMenu->Append(ID_MENU_EXPORT_JSON, "JSON", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_EXCEL, "EXCEL", nullptr);
 	exportSubMenu->Append(ID_MENU_EXPORT_CSV, "CSV", nullptr);
-	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export\tCtrl-E", exportSubMenu);
+	
+	auto al1  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_OS, "Alert Out of Stock", "Alert when products out of stock are sold");
+	auto al2  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_CLASS, "Alert product class", "Alert on product class");
+	auto al3  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, "Alert expire", "Alert on product expired");
+	auto it  = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_OS, "Notify Out of Stock", "Notify when products go out of stock");
+	auto it2 = Menus[2]->AppendCheckItem(ID_MENU_PRODUCT_NOTIF_EXPIRE, "Notify Expire Products", "Notify when products are expired");
+	
+	al1->Check(wxGetApp().bCheckOutOfStock);
+	al2->Check(wxGetApp().bCheckPOM);
+	al3->Check(wxGetApp().bCheckExpired);
+	it->Check(wxGetApp().bCheckOutOfStockOnUpdate);
+	it2->Check(wxGetApp().bCheckExpiredOnUpdate);
+
+	Menus[2]->AppendSeparator();
+	Menus[2]->Append(ID_MENU_PRODUCT_MARKUP_SETTINGS, "Mark-up", nullptr);
+	Menus[2]->Append(wxID_ANY, "Import Products", importSubMenu);
+	Menus[2]->Append(ID_MENU_PRODUCT_EXPORT, "Export Products", exportSubMenu);
+
 
 	//TEST
+#ifdef DEBUG
 	Menus[2]->Append(ID_MENU_PRODUCT_SAVE, "Save\tCtrl-S", nullptr);
 	Menus[2]->Append(ID_MENU_PRODUCT_LOAD, "Load\tCtrl-L", nullptr);
-
-
+#endif // DEBUG
 
 	//view
 	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
+	auto item =Menus[5]->AppendCheckItem(ID_MENU_VIEW_SHOW_MODULES, "Modules\tCtrl-M");
+	item->Check();
+
 
 	//about
+	Menus[7]->Append(ID_MENU_HELP_SETTINGS, "Settings", nullptr);
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
@@ -123,25 +178,32 @@ void pof::MainFrame::CreateModules()
 {
 	mModules = new pof::Modules(this, ID_MODULE);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
+	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlotReload, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
+	mModules->SetChildTreeEditSlot(std::bind_front(&pof::ProductView::OnCategoryEdited, mProductView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
-		.CaptionVisible(false).Left().BottomDockable(false).TopDockable(false).Show());
+		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());
 
 	//set the module to view pipeline
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
 	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
 	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
-		
+	mModules->mModuleViews.insert({ mModules->mAuditTrails, mAuditView });
+
+	//load cat to modules
+	auto& cat = wxGetApp().mProductManager.GetCategories();
+	std::ranges::for_each(cat, [&](const pof::base::data::row_t& row) {
+		auto& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]);
+		mProductView->CategoryAddSignal(name);
+	});
 }
 
 void pof::MainFrame::CreateWorkSpace()
 {
-	mWorkspace = new pof::Workspace(this, ID_WORKSPACE, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
-
-
-	mAuiManager.AddPane(mWorkspace, wxAuiPaneInfo().Name("Workspace").CaptionVisible(false).CenterPane().Show());
+	mWorkspace = new pof::Workspace(mPager, ID_WORKSPACE, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	mWorkspace->AddNotifSlot(std::bind_front(&pof::MainFrame::OnWorkspaceNotif, this));
 }
 
 void pof::MainFrame::CreateImageList()
@@ -152,7 +214,8 @@ void pof::MainFrame::CreateImageList()
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
 	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
 	mImageList->Add(wxArtProvider::GetBitmap("user"));
-
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST));
+		
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
 }
@@ -164,13 +227,143 @@ void pof::MainFrame::CreateViews()
 	mProductView = new pof::ProductView(workspaceBook, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	
+	mAuditView = new pof::AuditView(workspaceBook, ID_AUDIT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
 
 	mProductView->Hide();
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
+	mAuditView->Hide();
+}
+
+void pof::MainFrame::CreateWelcomePage()
+{
+	mWelcomePage = new wxPanel(mPager, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mWelcomePage->SetBackgroundColour(*wxWHITE);
+	mWelcomePage->SetDoubleBuffered(true);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mWelcomePage, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	auto today = std::chrono::system_clock::now();
+	std::string todayTime = fmt::format("{:%H:%M}", today);
+	auto day = date::floor<date::days>(today);
+	auto month = date::floor<date::months>(today);
+
+	int monthCount = month.time_since_epoch().count() % 12;
+	auto u = static_cast<unsigned>(day.time_since_epoch().count());
+	int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
+
+	std::stringstream os;
+	os << fmt::format("{:%d} {}, {} {:%Y}", today, dayNames[dayCount], monthNames[monthCount], today);
+
+
+
+	time1 = new wxStaticText(m7, wxID_ANY, todayTime, wxDefaultPosition, wxDefaultSize, 0);
+	time1->SetFont(wxFontInfo(64).AntiAliased().Family(wxFONTFAMILY_SWISS));
+	time1->Wrap(-1);
+	time1->SetDoubleBuffered(true);
+	bSizer9->Add(time1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	date1 = new wxStaticText(m7, wxID_ANY, os.str(), wxDefaultPosition, wxDefaultSize, 0);
+	date1->SetFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS));
+	date1->Wrap(-1);
+	date1->SetDoubleBuffered(true);
+	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->AddSpacer(20);
+
+	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, wxSize(380, 300), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	CreateSelectList();
+	bSizer9->Add(mSelectList, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mWelcomePage->SetSizer(bSizer6);
+	mWelcomePage->Layout();
+
+
+}
+
+void pof::MainFrame::CreateSelectList()
+{
+	wxImageList* imagelist = new wxImageList(48, 48);
+	imagelist->Add(wxArtProvider::GetBitmap("supplement-bottle"));
+	imagelist->Add(wxArtProvider::GetBitmap("checkout"));
+	imagelist->Add(wxArtProvider::GetBitmap("doctor"));
+	imagelist->Add(wxArtProvider::GetBitmap("prescription"));
+
+	mSelectList->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
+
+	wxListItem item;
+	item.SetId(0);
+	item.SetText("Products");
+	item.SetImage(0);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	item.SetId(1);
+	item.SetText("Sales");
+	item.SetImage(1);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	
+	item.SetId(2);
+	item.SetText("Patients");
+	item.SetImage(2);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+
+	item.SetId(3);
+	item.SetText("Prescriptions");
+	item.SetImage(3);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT);
+
+	mSelectList->InsertItem(item);
+	mSelectList->Bind(wxEVT_LIST_ITEM_ACTIVATED, std::bind_front(&pof::MainFrame::OnWelcomePageSelect, this));
 }
 
 void pof::MainFrame::SetupAuiTheme()
@@ -184,7 +377,7 @@ void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
 	wxAboutDialogInfo info;
 	info.SetName(wxT("D-Glopa PharmaOffice"));
-	info.SetVersion(wxT("0.0.1 pre beta")); //version string need to come from settings
+	info.SetVersion(wxGetApp().gVersion); //version string need to come from settings
 	info.SetDescription(wxT("Pharmacy mamagement system aid in the managment of pharmaceutical products, sale, transactions, prescription, expiry and so much more"));
 	info.SetCopyright(wxT("(C) 2023 D-Glopa Technologies"));
 	info.AddDeveloper("Ferife Zino :)");
@@ -215,6 +408,7 @@ void pof::MainFrame::OnExportJson(wxCommandEvent& evt)
 
 void pof::MainFrame::OnExportExcel(wxCommandEvent& evt)
 {
+
 }
 
 void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
@@ -223,6 +417,27 @@ void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
 
 void pof::MainFrame::OnUpdateUI(wxUpdateUIEvent& evt)
 {
+}
+
+void pof::MainFrame::OnShowModules(wxCommandEvent& evt)
+{
+	if (!mModules) return;
+	auto& pane = mAuiManager.GetPane("Modules");
+	if (!pane.IsOk()) return;
+
+	if (evt.IsChecked()) {
+		pane.Show();
+	}
+	else {
+		pane.Hide();
+	}
+	mAuiManager.Update();
+}
+
+void pof::MainFrame::OnSignOut(wxCommandEvent& evt)
+{
+	mAccount->DoSignOut();
+	wxGetApp().SignOut();
 }
 
 void pof::MainFrame::OnTestSave(wxCommandEvent& evt)
@@ -261,6 +476,160 @@ void pof::MainFrame::OnTestLoad(wxCommandEvent& evt)
 	}
 }
 
+void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
+{
+	wxFileDialog dialog(this, "Open Excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_FILE_MUST_EXIST | wxFD_OPEN );
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Import Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	excel::XLDocument doc;
+
+	//do mapping
+	std::unordered_map<size_t,std::string> mHeaders;
+	{
+		
+
+	}
+}
+
+void pof::MainFrame::OnMarkupSettings(wxCommandEvent& evt)
+{
+	wxTextEntryDialog dialog(this, "Please enter the precentage(%) Mark-Up\nRange ( 0 - 100 )", "Product Markup");
+	dialog.SetTextValidator(wxTextValidator{wxFILTER_DIGITS});
+	if (dialog.ShowModal() == wxID_OK) {
+		float input =  static_cast<float>(std::atoi(dialog.GetValue().ToStdString().c_str()));
+		input = std::max(0.0f, std::min(input, 100.0f));
+		input /= 100.0f;
+		wxGetApp().mProductManager.gMarkup = input;
+	}
+}
+
+void pof::MainFrame::OnNotif(wxCommandEvent& evt)
+{
+	wxWindowID id = evt.GetId();
+	bool checked = evt.IsChecked();
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
+	switch (id)
+	{
+	case ID_MENU_PRODUCT_NOTIF_OS:
+		wxGetApp().bCheckOutOfStockOnUpdate = checked;
+		config->Write(wxT("CheckOutOfStockOnUpdate"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of notify out of stock");
+		break;
+	case ID_MENU_PRODUCT_NOTIF_EXPIRE:
+		wxGetApp().bCheckExpiredOnUpdate = checked;
+		config->Write(wxT("CheckExpiredOnUpdate"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of notify on expire");
+		break;
+	default:
+		break;
+	}
+	config->SetPath(wxT("/"));
+
+}
+
+void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
+{
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/application"));
+	if (!config) return;
+	bool checked = evt.IsChecked();
+	switch (evt.GetId())
+	{
+	case ID_MENU_PRODUCT_SALE_ALERTS_CLASS:
+		wxGetApp().bCheckPOM = checked;
+		config->Write(wxT("CheckPOM"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product class on sale");
+		break;
+	case ID_MENU_PRODUCT_SALE_ALERTS_OS:
+		wxGetApp().bCheckOutOfStock = checked;
+		config->Write(wxT("CheckOutOfStock"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product out of stock on sale");
+		break;
+	case ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE:
+		wxGetApp().bCheckExpired = checked;
+		config->Write(wxT("CheckExpired"), checked);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Changed state of check product expired on sale");
+		break;
+	default:
+		break;
+	}
+	config->SetPath(wxT("/"));
+}
+
+void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
+{
+	wxGetApp().ShowSettings();
+}
+
+void pof::MainFrame::OnIdle(wxIdleEvent& evt)
+{
+	if (wxGetApp().bCheckExpirePeiodOnIdle){
+		//check how often, 30 mins
+		auto now = std::chrono::system_clock::now();
+		if (now >= mExpireWatchTime + std::chrono::minutes(30)){
+			mExpireWatchTime = now;
+		}
+	}
+	int sel = mPager->GetSelection();
+	if (sel == PAGE_WELCOME)
+	{
+		//update the time and date
+		auto today = std::chrono::system_clock::now();
+		std::string todayTime = fmt::format("{:%H:%M}", today);
+		auto day = date::floor<date::days>(today);
+		auto month = date::floor<date::months>(today);
+
+		int monthCount = month.time_since_epoch().count() % 12;
+		auto u = static_cast<unsigned>(day.time_since_epoch().count());
+		int dayCount = static_cast<unsigned char>(day.time_since_epoch().count() >= -4 ? (u + 4) % 7 : u % 7);
+
+		std::stringstream os;
+		os << fmt::format("{:%d} {}, {} {:%Y}", today, dayNames[dayCount], monthNames[monthCount], today);
+
+		time1->Freeze();
+		time1->SetLabelText(todayTime);
+		time1->Thaw();
+		time1->Refresh();
+
+		date1->Freeze();
+		date1->SetLabelText(os.str());
+		date1->Thaw();
+		date1->Refresh();
+	}
+}
+
+void pof::MainFrame::OnWelcomePageSelect(wxListEvent& evt)
+{
+	int sel = evt.GetItem().GetId();
+	//how to trigger the module to change page
+	switch (sel)
+	{
+	case 0:
+		mModules->activateModule(mModules->mProducts);
+		break;
+	case 1:
+		mModules->activateModule(mModules->mSales);
+		break;
+	case 2:
+		mModules->activateModule(mModules->mPaitents);
+		break;
+	case 3:
+		mModules->activateModule(mModules->mPrescriptions);
+		break;
+	default:
+		break;
+	}
+}
+
 void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 {
 	wxFileDialog dialog(this);
@@ -271,12 +640,12 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		if (filename.empty()) return;
 		std::filesystem::path fp(filename);
 		if (fp.extension().string() != ".json") {
-			wxMessageBox("File is not a JSON file, with proper extension", "JSON IMPORT");
+			wxMessageBox("File is not a JSON file, with proper extension", "Json Import");
 			return;
 		}
 		std::fstream fs(fp, std::ios::in);
 		if (!fs.is_open()) {
-			wxMessageBox("Cannot Open JSON FILE, file corrrupted", "JSON IMPORT", wxICON_ERROR | wxOK);
+			wxMessageBox("Cannot Open JSON FILE, file corrrupted", "Json Import", wxICON_ERROR | wxOK);
 			return;
 		}
 		try {
@@ -285,32 +654,37 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 			nlohmann::json js;
 			fs >> js;
 			if (js.empty()) {
-				wxMessageBox("JSON READ ERROR, FILE CORRUPTED", "JSON IMPORT", wxICON_ERROR | wxOK);
+				wxMessageBox("JSON READ ERROR, FILE CORRUPTED", "Json Import", wxICON_ERROR | wxOK);
 				return;
 			}
 
-			wxProgressDialog progress("Importing json", "Reading file...", js.size(), this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
+			wxProgressDialog progress("Importing json", "Reading file...", js.size(), this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 			size_t value = 0;
+			auto& pds = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 			for (auto iter = js.begin(); iter != js.end(); iter++) {
 				nlohmann::json& tempjs = *iter;
 				pof::base::data::row_t row; 
+				//check if name already exsit in store
+				if (std::ranges::any_of(pds, [&](const auto& r) -> bool {
+					return boost::variant2::get<pof::base::data::text_t>(r.first[pof::ProductManager::PRODUCT_NAME])
+					== static_cast<std::string>(tempjs["Name"]);
+				})) {
+					wxMessageBox(fmt::format("{} already exist in store, skipping", static_cast<std::string>(tempjs["Name"])), "Json Import", wxICON_INFORMATION | wxOK);
+					continue;
+				}
+				
 				row.first.resize(pof::ProductManager::PRODUCT_MAX);
-				/*row.first[pof::ProductManager::PRODUCT_UUID] = boost::uuids::uuid();
-				row.first[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::string();
-				row.first[pof::ProductManager::PRODUCT_CLASS] = std::string();
-				row.first[pof::ProductManager::PRODUCT_BARCODE] = std::string();*/
-
-
-				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Serial number"]));
+				row.first[pof::ProductManager::PRODUCT_UUID] = wxGetApp().mProductManager.UuidGen();
+				row.first[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
 				row.first[pof::ProductManager::PRODUCT_NAME] = pof::base::data::data_t(static_cast<std::string>(tempjs["Name"])); //name
 				row.first[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Package size"]));
-				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Stock count"]));
+				row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 				row.first[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::data_t(pof::base::data::currency_t(static_cast<std::string>(tempjs["Unit price"])));
-				row.first[pof::ProductManager::PRODUCT_CATEGORY] = pof::base::data::data_t(static_cast<std::uint64_t>(tempjs["Category id"]));
+				row.first[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 
 				datastore.insert(std::move(row));
 				if (!progress.Update(++value, fmt::format("Reading {}", iter.key()))) {
-					wxMessageBox("IMPORT CANCELED", "JSON IMPORT");
+					wxMessageBox("Import Cancelled", "Json Import");
 					return;
 				}
 				spdlog::info("{}", iter.key());
@@ -318,7 +692,9 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 			}
 			//write the data to the product manager 
 			wxMessageBox(fmt::format("Complete! Loaded {:d} products.", datastore.size()), "JSON IMPORT", wxICON_INFORMATION | wxOK);
-			wxGetApp().mProductManager.EmplaceProductData(std::move(datastore));
+			auto& meta = wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata();
+			datastore.set_metadata(meta);
+			wxGetApp().mProductManager.StoreProductData(std::move(datastore));
 		}
 		catch (const std::exception& exp) {
 			wxMessageBox(exp.what(), "JSON IMPORT", wxICON_ERROR | wxOK);
@@ -330,9 +706,16 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)
 {
+	int sel = wxNOT_FOUND;
 	switch (notif) {
 	case Modules::Evt::ACTIVATED:
 		mWorkspace->AddSpace(win->second, mModules->GetText(win), mModules->GetImage(win)); //where are the windows kept and created
+		sel = mPager->GetSelection();
+		if (sel != wxNOT_FOUND && sel == PAGE_WELCOME)
+		{
+			//HAVE YOU MOVED ON ZINO ??
+			mPager->SetSelection(PAGE_WORKSPACE);
+		}
 		break;
 	case Modules::Evt::SEL_CHANGED:
 		break;
@@ -340,6 +723,15 @@ void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt
 		break;
 	default:
 		break;
+	}
+}
+
+void pof::MainFrame::OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif)
+{
+	if (notif == Modules::Evt::ACTIVATED) {
+		if (win->first == mModules->mProducts && mProductView->IsActiveCategory()) {
+			mProductView->ReloadProductView();
+		}
 	}
 }
 
@@ -354,5 +746,20 @@ void pof::MainFrame::OnCategoryAdded(const std::string& name)
 	if (name.empty()) return;
 	mModules->AppendChildTreeId(mModules->mProducts, name, 2);
 	mModules->mModuleTree->Expand(mModules->mProducts);
+}
+
+void pof::MainFrame::OnProductModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif)
+{
+}
+
+void pof::MainFrame::OnWorkspaceNotif(pof::Workspace::Notif notif, size_t page)
+{
+	switch (notif) {
+	case pof::Workspace::Notif::CLOSED:
+		if (mWorkspace->GetPageCount() == 0){
+			mPager->SetSelection(PAGE_WELCOME);
+		}
+		break;
+	}
 }
 

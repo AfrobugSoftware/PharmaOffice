@@ -1,11 +1,15 @@
-
 #include "AddProductDialog.h"
+#include "PofPch.h"
+//#include "Application.h"
+
 BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 	EVT_BUTTON(pof::AddProdutDialog::ID_SCAN_PRODUCT, pof::AddProdutDialog::OnScanProduct)
+	EVT_CHECKBOX(pof::AddProdutDialog::ID_INVENTORY_ADD, pof::AddProdutDialog::OnInventoryCheck)
 END_EVENT_TABLE()
 
 
-pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) :
+	wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour( wxColour( 255, 255, 255 ) );
@@ -21,7 +25,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("ADD PRODUCT"), wxDefaultPosition, wxDefaultSize, 0 );
 	TitleText->Wrap( -1 );
-	TitleText->SetFont( wxFont( 15, 70, 90, 92, false, wxEmptyString ) );
+	TitleText->SetFont( wxFont(wxFontInfo(12).Bold()));
 	
 	bSizer2->Add( TitleText, 1, wxALL, 15 );
 	
@@ -171,6 +175,11 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	bSizer7->Add( mCategoryLabel, 0, wxALIGN_CENTER|wxALL, 5 );
 	
 	wxArrayString mCategoryValueChoices;
+	auto& cat = wxGetApp().mProductManager.GetCategories();
+	for (auto& p : cat){
+		mCategoryValueChoices.push_back(boost::variant2::get<std::string>(p.first[pof::ProductManager::CATEGORY_NAME]));
+	}
+	mCategoryValueChoices.push_back("No Category");
 	mCategoryValue = new wxChoice( m_panel71, wxID_ANY, wxDefaultPosition, wxDefaultSize, mCategoryValueChoices, 0 );
 	mCategoryValue->SetSelection( 0 );
 	bSizer7->Add( mCategoryValue, 1, wxALL, 5 );
@@ -274,11 +283,17 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->SetFlexibleDirection( wxBOTH );
 	fgSizer21->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
+	mAddInventory = new wxCheckBox(mProductInvenPanel, ID_INVENTORY_ADD,wxT("Add Inventory"), wxDefaultPosition, wxDefaultSize, 0);
+	fgSizer21->Add(mAddInventory, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	fgSizer21->AddStretchSpacer();
+
 	mBacthNumber = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mBacthNumber->Wrap( -1 );
 	fgSizer21->Add( mBacthNumber, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mBatchNumbeValue = new wxTextCtrl( mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mBatchNumbeValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add( mBatchNumbeValue, 1, wxALL|wxEXPAND, 5 );
 	
 	m_staticText8 = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Product Expiry Date"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -296,7 +311,22 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mQunatityValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add( mQunatityValue, 0, wxALL|wxEXPAND, 5 );
 	
-	
+	mSupplierName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Supplier Name"), wxDefaultPosition, wxDefaultSize, 0);
+	mSupplierName->Wrap(-1);
+	fgSizer21->Add(mSupplierName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mSuplierNameValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	fgSizer21->Add(mSuplierNameValue, 0, wxALL | wxEXPAND, 5);
+
+	mCostPerUnitName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Cost Price Per Unit(N)"), wxDefaultPosition, wxDefaultSize, 0);
+	mSupplierName->Wrap(-1);
+	fgSizer21->Add(mCostPerUnitName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mCostPerUnitValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mCostPerUnitValue->SetValidator(val);
+	fgSizer21->Add(mCostPerUnitValue, 0, wxALL | wxEXPAND, 5);
+
+
 	mProductInvenPanel->SetSizer( fgSizer21 );
 	mProductInvenPanel->Layout();
 	fgSizer21->Fit( mProductInvenPanel );
@@ -336,6 +366,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
+	//bSizer1->Fit(this);
 	
 	this->Centre( wxBOTH );
 }
@@ -350,8 +381,17 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	datum->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 	auto& v = datum->first;
 	v.resize(pof::ProductManager::PRODUCT_MAX);
+	auto& productDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (std::ranges::any_of(productDatastore, [&](const auto& row) -> bool {
+		return boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]) ==
+			mProductNameValue->GetValue().ToStdString();
+	})){
+		wxMessageBox("Product with that name exists in pharmacy", "Add Product", wxICON_WARNING | wxOK);
+		return false;
+	}
 
-	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = static_cast<std::uint64_t>(9099090);
+	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
+	v[pof::ProductManager::PRODUCT_SERIAL_NUM] =  pof::GenRandomId(); //change this 
 	v[pof::ProductManager::PRODUCT_NAME] = std::move(mProductNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(mGenericNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[mFormulationValue->GetSelection()].ToStdString());
@@ -368,26 +408,46 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(atoi(mPackageSizeValue->GetValue().ToStdString().c_str()));
 	v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(mSideEffectsValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
+	
+	//
+	v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = 0;
+	v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = ""s;
+
+	auto& cat = wxGetApp().mProductManager.GetCategories();
+	if (cat.empty()) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+	else {
+		int idx = mCategoryValue->GetSelection();
+		if(idx == wxNOT_FOUND) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+		else {
+			if(idx >= cat.size()) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+			auto& r = cat[idx];
+			v[pof::ProductManager::PRODUCT_CATEGORY] = r.first[pof::ProductManager::CATEGORY_ID];
+		}
+	}
 
 	//only emplace when the fields are 
-	datumInven.emplace();
-	datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
-	auto& i = datumInven->first;
-	i.resize(pof::ProductManager::INVENTORY_MAX);
-	i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(9999999); //test
-	i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
-	i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
-	i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
-	i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = "D-GLOPA"; //test
-	i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
-
+	if (mAddInventory->GetValue()) {
+		datumInven.emplace();
+		datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
+		auto& i = datumInven->first;
+		i.resize(pof::ProductManager::INVENTORY_MAX);
+		i[pof::ProductManager::INVENTORY_PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+		i[pof::ProductManager::INVENTORY_ID] = 0; //first ever inventory
+		i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
+		i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
+		i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
+		i[pof::ProductManager::INVENTORY_EXPIRE_DATE] = pof::base::data::clock_t::from_time_t(m_datePicker1->GetValue().GetTicks());
+		i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPerUnitValue->GetValue().ToStdString() };
+		i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = std::move(mSuplierNameValue->GetValue().ToStdString()); //test
+		i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
+	}
 	return true;
 }
 
 void pof::AddProdutDialog::OnScanProduct(wxCommandEvent& evt)
 {
-	wxTextEntryDialog dialog(this, "Please scan a product with a barcode scanner");
-	dialog.SetValidator(wxTextValidator{ wxFILTER_DIGITS });
+	wxTextEntryDialog dialog(this, "Please scan a product with a barcode scanner","SCAN PRODUCT");
+	dialog.SetTextValidator(wxTextValidator{ wxFILTER_DIGITS });
 	if (dialog.ShowModal() == wxID_OK) {
 		mScanProductString = std::move(dialog.GetValue().ToStdString());
 	}
@@ -407,4 +467,15 @@ void pof::AddProdutDialog::OnMoreSideffects(wxCommandEvent& evt)
 
 void pof::AddProdutDialog::OnMoreHealthConditions(wxCommandEvent& evt)
 {
+}
+
+void pof::AddProdutDialog::OnInventoryCheck(wxCommandEvent& evt)
+{
+	if (evt.IsChecked())
+	{
+		mBatchNumbeValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	}
+	else {
+		mBatchNumbeValue->SetValidator(wxTextValidator{ });
+	}
 }

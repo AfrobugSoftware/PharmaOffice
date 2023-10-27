@@ -12,6 +12,9 @@
 #include <bitset>
 #include <fmt/format.h>
 
+#include "database.h"
+#include <../base/bcrypt/include/bcrypt.h> //to avoid clashing
+
 namespace nl = nlohmann;
 namespace pof {
 	class Account : private boost::noncopyable {
@@ -22,17 +25,17 @@ namespace pof {
 		using privilage_set_t = std::bitset<8>;
 		constexpr static const size_t max_account_type = 7;
 		constexpr static const std::array<std::string_view, max_account_type> account_type_string = {
-			"PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
+			"SUPERINTENDENT PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
 				"MANAGER"
 		};
 		enum class Privilage: std::uint8_t {
-				PHARMACIST = 1,
-				PHARMTECH = 1 << 1,
-				DISPENSER = 1 << 2,
-				SALES_ASSISTANT = 1 << 3,
-				INTEN_PHARMCIST = 1 << 4,
-				STUDENT_PHARMACIST = 1 << 5,
-				MANAGER = 1 << 6
+				PHARMACIST = 0,
+				PHARMTECH,
+				DISPENSER,
+				SALES_ASSISTANT,
+				INTEN_PHARMCIST,
+				STUDENT_PHARMACIST,
+				MANAGER
 		};
 		
 		Account();
@@ -41,6 +44,8 @@ namespace pof {
 
 		nl::json Pack() const;
 		void UnPack(const nl::json& package);
+
+		void DoSignOut();
 
 		inline constexpr const std::string& GetName() const { return name; }
 		inline constexpr std::uint64_t GetID() const { return accountID; }
@@ -55,18 +60,42 @@ namespace pof {
 			return priv.test(std::underlying_type_t<Privilage>(p));
 		}
 
+		//log out
+
+		//session
+		bool CreateSessionTable();
+		bool InsertSession();
+
+		bool SignInFromSession();
+		bool RemoveSession();
+		bool UpdateSession();
+
+		bool CreateAccountInfoTable();
+		bool CreateAccountInfo();
+		bool CheckForUsername(const std::string& usersname);
+		bool ChangePassword(const std::string& newPass);
+		bool AddNewRole(const Privilage& p);
+		std::string GetSecurityQuestion(const std::string& username);
+		std::uint64_t GetLastId() const;
+		bool DeleteAccount();
+
+		void SetSignInTime();
+		void SetSecurityQuestion(const std::string& question, const std::string& answer);
+		std::shared_ptr<pof::base::database> mLocalDatabase;
+		signal_t signOutSig; 
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;
+		datetime_t::duration sessionDuration;
 		std::uint64_t accountID = 0;
 		std::string name;
 		std::string lastname;
-		std::string username;
+		std::string username; //username should be unique
 		std::string email;
 		std::string phonenumber;
 		std::string regnumber;
 		std::string passhash;
 		bool isLoccum = false; 
 		//account details?
-	};
+	}; 
 };

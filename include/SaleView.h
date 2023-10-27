@@ -14,11 +14,21 @@
 #include <wx/dataview.h>
 #include <wx/button.h>
 #include <wx/srchctrl.h>
+#include <wx/aui/auibar.h>
 
+#include <wx/propgrid/propgrid.h>
+#include <wx/propgrid/manager.h>
+#include <wx/propgrid/advprops.h>
+
+#include "PackView.h"
 #include "SaleManager.h"
 #include "DropTarget.h"
+#include "SearchPopup.h"
+#include "SaveSaleDialog.h"
+#include "database.h"
 
 #include <ranges>
+#include <unordered_map>
 #include <numeric>
 
 namespace pof
@@ -29,12 +39,15 @@ namespace pof
 
 	protected:
 		wxPanel* mMainPane;
-		wxPanel* mTopTools;
+		wxAuiToolBar* mTopTools;
+		wxAuiToolBar* mBottomTools;
 		wxStaticText* mProductNameText;
 		wxSearchCtrl* mProductNameValue;
 		wxStaticText* mScanProduct;
 		wxSearchCtrl* mScanProductValue;
+		wxPanel* mProductViewPane = nullptr;
 		wxPanel* mDataPane;
+		wxPropertyGrid* mPropertyManager;
 		wxDataViewCtrl* m_dataViewCtrl1;
 		wxDataViewColumn* mSerialNumber;
 		wxDataViewColumn* mProductNameCol;
@@ -57,8 +70,32 @@ namespace pof
 		wxPanel* mSalePaymentButtonsPane;
 		wxButton* mClear;
 		wxButton* mSave;
-		wxButton* mCheckout;
+		wxButton* mCheckout = nullptr;
+		pof::SearchPopup* mSearchPopup = nullptr;
+		pof::base::database::stmt_t mExpiredStatement = nullptr;
+		std::string mCurPack;
+		pof::base::data::duuid_t mCurPackID;
+		wxInfoBar* mInfoBar = nullptr;
+		wxStaticText* mActiveSaleId = nullptr;
+		wxAuiToolBarItem* mActiveSaleTextItem = nullptr;
 
+		//product properties
+		wxStringProperty* productName = nullptr;
+		wxStringProperty* genArray = nullptr;
+		wxEditEnumProperty* dirArray = nullptr;
+		wxIntProperty* stock = nullptr;
+		wxStringProperty* strength = nullptr;
+		wxStringProperty* strength_type = nullptr;
+		wxArrayStringProperty* warning = nullptr;
+
+
+
+		pof::base::data::duuid_t mCurSaleuuid;
+		std::map<size_t, std::string> mCurDirForUse;
+		std::map<size_t, std::string> mSideEffectWarnings; 
+
+		boost::uuids::random_generator_mt19937 uuidGen;
+		//pof::base::database::stmt_t mExpiredStatemet; 
 	public:
 
 		enum {
@@ -66,8 +103,16 @@ namespace pof
 			ID_PRODUCT_SCAN,
 			ID_SALE_DATA_VIEW,
 			ID_CHECKOUT,
+			ID_REMOVE_PRODUCT,
+			ID_HIDE_PRODUCT_VIEW_PROPERTY,
 			ID_SAVE,
 			ID_CLEAR,
+			ID_PRODUCT_VIEW_PROPERTY,
+			ID_PRINT_LABELS,
+			ID_PACKS,
+			ID_FORM_M,
+			ID_OPEN_SAVE_SALE,
+			ID_ACTIVE_UI_TEXT,
 		};
 
 
@@ -76,28 +121,52 @@ namespace pof
 		void SetupDropTarget();
 
 		void CreateSpecialColumnHandlers();
+		void CreateSearchPopup();
+		void CreateProductDetails();
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
+		void ResetSaleDisplay();
 		void Checkout();
 
 		void OnClear(wxCommandEvent& evt);
 		void OnCheckout(wxCommandEvent& evt);
+		void OnSaleComplete(bool status, size_t printState);
 		void OnSave(wxCommandEvent& evt);
 		void OnDropPossible(wxDataViewEvent& evt);
 		void OnDrop(wxDataViewEvent& evt);
 
 		void OnBeginDrag(wxDataViewEvent& evt);
 		void OnProductNameSearch(wxCommandEvent& evt);
-
+		void OnRemoveProduct(wxCommandEvent& evt);
+		void OnSelected(wxDataViewEvent& evt);
+		void OnHideProductViewProperty(wxCommandEvent& evt);
+		void OnPrintAsLabels(wxCommandEvent& evt);
+		void OnShowPacks(wxCommandEvent& evt);
+		void OnFormM(wxCommandEvent& evt);
+		void OnOpenSaveSale(wxCommandEvent& evt);
 
 		void OnValueChanged(wxDataViewEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void OnEditingDone(wxDataViewEvent& evt);
+		void OnSaleUuidTextUI(wxUpdateUIEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
+		void OnSearchPopup(const pof::base::data::row_t& row);
+		void OnScanBarCode(wxCommandEvent& evt);
+	
+		bool CheckInStock(const pof::base::data::row_t& product);
+		bool CheckProductWarning(const pof::base::data::duuid_t& pid);
+		bool CheckProductClass(const pof::base::data::row_t& product);
+		bool CheckExpired(const pof::base::data::row_t& product);
+		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
+		void ProductNameKeyEvent(); //test
+		void LoadProductDetails(const pof::base::data::row_t& product);
+		void OnProductUpdate(pof::base::data::const_iterator iter);
+		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
+		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
 
 		DECLARE_EVENT_TABLE();
 	};

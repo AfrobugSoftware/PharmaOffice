@@ -1,6 +1,6 @@
 #include "SignInDIalog.h"
-#include "Application.h"
-
+//#include "Application.h"
+#include "PofPch.h"
 BEGIN_EVENT_TABLE(pof::SignInDialog, wxDialog)
 	EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
 	EVT_BUTTON(pof::SignInDialog::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
@@ -145,6 +145,10 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::SignInDialog::~SignInDialog()
@@ -169,6 +173,7 @@ void pof::SignInDialog::onLogon(wxCommandEvent& evt)
 void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 {
 	pof::RegistrationDialog regDialog(nullptr);
+	regDialog.mAccount.mLocalDatabase = wxGetApp().mLocalDatabase;
 	//Hide();
 	int ret = regDialog.ShowModal();
 	bool status = false;
@@ -213,27 +218,29 @@ bool pof::SignInDialog::ValidateLocal()
 		return false;
 	}
 	if (rel->empty()) {
-		wxMessageBox(fmt::format("USERNAME \"{}\" DOES NOT EXIST", Username), "SIGN IN", wxICON_WARNING | wxOK);
+		wxMessageBox(fmt::format("Username \"{}\" does not exists", Username), "Sign in", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
 	}
 	auto& v = rel->front();
 
 	if (!bcrypt::validatePassword(UserPassword, std::get<8>(v))) {
-		wxMessageBox("INVALID PASSWORD", "SIGN IN", wxICON_WARNING | wxOK);
+		wxMessageBox("Password is incorrect", "Sign in", wxICON_WARNING | wxOK);
 		dbPtr->finalise(*stmt);
 		return false;
 	}
 
-	account.signintime = pof::Account::clock_t::now();
-	account.accountID = std::get<0>(v);
-	account.priv = pof::Account::privilage_set_t(std::get<1>(v));
-	account.name = fmt::format("{} {}", std::get<2>(v), std::get<3>(v));
-	account.email = std::get<4>(v);
-	account.phonenumber = std::get<5>(v);
-	account.regnumber = std::get<6>(v);
-	account.passhash = std::get<7>(v);
-
+	account->signintime = pof::Account::clock_t::now();
+	account->accountID = std::get<0>(v);
+	account->priv = pof::Account::privilage_set_t(std::get<1>(v));
+	account->name = std::get<2>(v);
+	account->lastname = std::get<3>(v);
+	account->email = std::get<4>(v);
+	account->phonenumber = std::get<5>(v);
+	account->regnumber = std::get<6>(v);
+	account->username = std::get<7>(v);
+	account->passhash = std::get<8>(v);
+	account->SetSignInTime();
 	dbPtr->finalise(*stmt);
 	return true;
 }
@@ -247,7 +254,7 @@ bool pof::SignInDialog::ValidateGlobal()
 	try {
 		//do verification how ??
 			//send to chws?
-		wxProgressDialog dlg("SIGING IN", "CONNECTING TO FILODOXIA...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL);
+		wxProgressDialog dlg("SIGING IN", "CONNECTING TO FILODOXIA...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 
 		js::json payload;
 		payload["Username"] = Username;
@@ -302,10 +309,7 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 	if (!dbPtr) return false;
 
 	auto stmt = dbPtr->prepare(sql);
-	if (!stmt.has_value()) {
-		//read last error from database
-		return false;
-	}
+	assert(stmt.has_value());
 	dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
 		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
 	bool ret = dbPtr->execute(*stmt);

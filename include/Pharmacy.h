@@ -17,11 +17,11 @@ namespace pof{
 	public:
 		enum class PharmacyType : std::uint8_t
 		{
-			COMMUNITY = 1,
-			HOSPITAL = 1 << 1,
-			MANUFACTURE = 1 << 2,
-			WHOLESALE = 1 << 3,
-			UNIVERSITY = 1 << 4
+			COMMUNITY,
+			HOSPITAL,
+			MANUFACTURE,
+			WHOLESALE,
+			UNIVERSITY
 		};
 		
 		using employeModel_t = std::shared_ptr<pof::DataModel>;
@@ -35,12 +35,18 @@ namespace pof{
 			std::string postcode;
 
 			struct geolocation {
-				double longitude;
-				double latitude;
+				double longitude = 0.0f;
+				double latitude = 0.0f;
 			};
 			geolocation location;
 		};
 
+		struct contactInfo
+		{
+			std::string phoneNumber;
+			std::string email;
+			std::string website;
+		};
 
 		Pharmacy();
 		virtual ~Pharmacy();
@@ -48,6 +54,8 @@ namespace pof{
 		inline const std::bitset<8>& GetPharmacyType() const { return pharmacyType; }
 		inline const std::string& GetName() const { return name; }
 		inline const address& GetAddress() const { return addy; }
+		std::string GetAddressAsString() const;
+		std::string GetContactAsString() const;
 		inline void SetPharmacyType(const std::bitset<8>& bitset) { pharmacyType = bitset; }
 		inline void SetPharmacyType(PharmacyType ty) {
 			pharmacyType.set(static_cast<size_t>(std::underlying_type_t<PharmacyType>(ty)));
@@ -61,6 +69,7 @@ namespace pof{
 		std::bitset<8> pharmacyType;
 		std::string name;
 		address addy;
+		contactInfo contact;
 		
 
 		//datamodels
