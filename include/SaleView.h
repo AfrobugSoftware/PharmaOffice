@@ -114,6 +114,7 @@ namespace pof
 			ID_OPEN_SAVE_SALE,
 			ID_ACTIVE_UI_TEXT,
 			ID_REPRINT,
+			ID_REPRINT_LAST_SALE,
 			ID_RETURN_SALE,
 			ID_FUNCTIONS,
 		};
@@ -153,9 +154,9 @@ namespace pof
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void OnEditingDone(wxDataViewEvent& evt);
 		void OnSaleUuidTextUI(wxUpdateUIEvent& evt);
-		void OnFunctionsMenu(wxAuiToolBarEvent& evt);
 		void OnReturnSale(wxCommandEvent& evt);
-		void OnReprintSale(wxCommandEvent& evt);
+		void OnReprintLastSale(wxCommandEvent& evt);
+		void OnReprintSale(wxAuiToolBarEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);

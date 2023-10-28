@@ -12,8 +12,8 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
-	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_FUNCTIONS, pof::SaleView::OnFunctionsMenu)
-	EVT_TOOL(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
+	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
+	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
 	EVT_TOOL(pof::SaleView::ID_REPRINT, pof::SaleView::OnReturnSale)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
@@ -100,7 +100,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"));
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
-	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT), "Reprint a sale");
+	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT), "Reprint a sale")->SetHasDropDown(true);
 	mBottomTools->AddTool(ID_RETURN_SALE, "Retrun", wxArtProvider::GetBitmap(wxART_REDO), "Return an Item");
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddStretchSpacer();
@@ -877,87 +877,134 @@ void pof::SaleView::OnSaleUuidTextUI(wxUpdateUIEvent& evt)
 	}
 }
 
-void pof::SaleView::OnFunctionsMenu(wxAuiToolBarEvent& evt)
-{
-	if (evt.IsDropDownClicked()){
-		wxMenu* menu = new wxMenu;
-		auto rr = menu->Append(ID_REPRINT, "Reprint receipt", nullptr);
-		auto rp = menu->Append(ID_RETURN_SALE, "Return product", nullptr);
-
-		mBottomTools->PopupMenu(menu);
-	}
-}
-
 void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 {
 }
 
-void pof::SaleView::OnReprintSale(wxCommandEvent& evt)
+void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
 {
-	while (1) {
-		wxTextEntryDialog dialog(this, wxT("Please enter receipt ID"), "Reprint");
-		if (dialog.ShowModal() == wxID_OK) {
-			
+	bool status = false;
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Reprinting last sale")
+		.Text(fmt::format("Please wait...."))
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
 
-			std::string rid = dialog.GetValue().ToStdString();
-			if (rid.empty()) {
-				mInfoBar->ShowMessage("Empty receipt id");
-				return;
-			}
-			try {
-				boost::uuids::uuid sid = boost::lexical_cast<boost::uuids::uuid>(rid);
-				if (!wxGetApp().mSaleManager.CheckIfSaleExists(sid)) {
-					wxMessageBox(fmt::format("No sale with reciept {} occured in the store", boost::uuids::to_string(sid)), "Reprint", wxICON_INFORMATION | wxOK);
+	//we have an active sale 
+	if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+		status = wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
+		if (!status) {
+			spdlog::error("Failed to save sale for reprint");
+			mInfoBar->ShowMessage("Failed to reprint last sale");
+			return;
+		}
+	}
+	//restore the sale we want to reprint
+	status = wxGetApp().mSaleManager.RestoreLastSale();
+	if (!status) {
+		spdlog::error("Failed to save sale for reprint");
+		mInfoBar->ShowMessage("Failed to reprint last sale");
+		return;
+	}
+	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
+	wxGetApp().mPrintManager->PrintSaleReceipt(this);
+
+	if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+		status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
+	}
+	else {
+		wxGetApp().mSaleManager.GetSaleData()->Clear();
+	}
+	mInfoBar->ShowMessage(fmt::format("Reprinted last sale successfully"));
+	return;
+}
+
+void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
+{
+	if (!evt.IsDropDownClicked()) {
+		while (1) {
+			wxTextEntryDialog dialog(this, wxT("Please enter receipt ID"), "Reprint");
+			if (dialog.ShowModal() == wxID_OK) {
+
+
+				std::string rid = dialog.GetValue().ToStdString();
+				if (rid.empty()) {
+					mInfoBar->ShowMessage("Empty receipt id");
 					return;
 				}
-				bool status = false;
-				wxIcon cop;
-				cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
-				wxBusyInfo info
-				(
-					wxBusyInfoFlags()
-					.Parent(this)
-					.Icon(cop)
-					.Title("Reprinting")
-					.Text(fmt::format("{}", boost::uuids::to_string(sid)))
-					.Foreground(*wxBLACK)
-					.Background(*wxWHITE)
-					.Transparency(4 * wxALPHA_OPAQUE / 5)
-				);
-
-				//we have an active sale 
-				if (mCurSaleuuid != boost::uuids::nil_uuid()) {
-					status = wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
-					if (!status) {
-						spdlog::error("Failed to save sale for reprint");
-						mInfoBar->ShowMessage("Failed to reprint reciept");
+				try {
+					boost::uuids::uuid sid = boost::lexical_cast<boost::uuids::uuid>(rid);
+					if (!wxGetApp().mSaleManager.CheckIfSaleExists(sid)) {
+						mInfoBar->ShowMessage(fmt::format("No sale with reciept {} occured in the store", boost::uuids::to_string(sid)));
 						return;
 					}
-				}
-				//restore the sale we want to reprint
-				wxGetApp().mSaleManager.RestoreSale(sid);
-				wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
-				wxGetApp().mPrintManager->PrintSaleReceipt(this);
+					bool status = false;
+					wxIcon cop;
+					cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+					wxBusyInfo info
+					(
+						wxBusyInfoFlags()
+						.Parent(this)
+						.Icon(cop)
+						.Title("Reprinting")
+						.Text(fmt::format("{}", boost::uuids::to_string(sid)))
+						.Foreground(*wxBLACK)
+						.Background(*wxWHITE)
+						.Transparency(4 * wxALPHA_OPAQUE / 5)
+					);
 
-				if (mCurSaleuuid != boost::uuids::nil_uuid()) {
-					status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
+					//we have an active sale 
+					if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+						status = wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
+						if (!status) {
+							spdlog::error("Failed to save sale for reprint");
+							mInfoBar->ShowMessage("Failed to reprint reciept");
+							return;
+						}
+					}
+					//restore the sale we want to reprint
+					status = wxGetApp().mSaleManager.RestoreSale(sid);
+					if (!status) {
+						spdlog::error("Failed to save sale for reprint");
+						mInfoBar->ShowMessage(fmt::format("Failed to reprint sale {}", boost::uuids::to_string(sid)));
+						return;
+					}
+					wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
+					wxGetApp().mPrintManager->PrintSaleReceipt(this);
 
+					if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+						status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
+
+					}
+					else {
+						wxGetApp().mSaleManager.GetSaleData()->Clear();
+					}
+					mInfoBar->ShowMessage(fmt::format("Reprinted sale {} successfully", rid));
+					return;
 				}
-				else {
-					wxGetApp().mSaleManager.GetSaleData()->Clear();
+				catch (boost::bad_lexical_cast& err) {
+					spdlog::error(err.what());
+					if (wxMessageBox("Incorrect receipt Id, try again ?", "Reprint", wxICON_INFORMATION | wxYES_NO) == wxYES) continue;
+					return;
 				}
-				mInfoBar->ShowMessage(fmt::format("Reprinted sale {} successfully", rid));
-				return;
 			}
-			catch (boost::bad_lexical_cast& err) {
-				spdlog::error(err.what());
-				if (wxMessageBox("Incorrect receipt Id, try again ?", "Reprint", wxICON_INFORMATION | wxYES_NO) == wxYES) continue;
-				return;
-			} 
+			else {
+				break;
+			}
 		}
-		else {
-			break;
-		}
+	}
+	else {
+		wxMenu* menu = new wxMenu;
+		auto rr = menu->Append(ID_REPRINT_LAST_SALE, "Reprint Last Sale", nullptr);
+		mBottomTools->PopupMenu(menu);
 	}
 }
 

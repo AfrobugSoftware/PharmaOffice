@@ -66,6 +66,7 @@ namespace pof {
 		void Finalise();
 		bool RestoreSale(const boost::uuids::uuid& saleID);
 		bool CheckIfSaleExists(const boost::uuids::uuid& saleId);
+		bool RestoreLastSale();
 
 		//SAVE SALE
 		void CreateSaveSaleTable();

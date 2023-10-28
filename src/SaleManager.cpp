@@ -298,6 +298,50 @@ bool pof::SaleManager::CheckIfSaleExists(const boost::uuids::uuid& saleId)
 	return false;
 }
 
+bool pof::SaleManager::RestoreLastSale()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT s.uuid, s.product_uuid, p.name, p.unit_price, 
+		s.product_quantity, s.product_ext_price, s.sale_date 
+		FROM sales s, products p 
+		WHERE s.product_uuid = p.uuid AND s.uuid = (SELECT s.uuid FROM sales s ORDER BY s.sale_date DESC LIMIT 1);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		//assert(stmt);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::currency_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::datetime_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return false;
+
+		//reset the sale
+		SaleData->Clear();
+		for (auto& tup : *rel) {
+			pof::base::data::row_t row;
+			row.first = pof::base::make_row_from_tuple(tup);
+			SaleData->EmplaceData(std::move(row));
+		}
+		return true;
+	}
+	return false;
+}
+
 void pof::SaleManager::CreateSaveSaleTable()
 {
 	if (mLocalDatabase)
