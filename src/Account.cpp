@@ -101,7 +101,7 @@ bool pof::Account::InsertSession()
 		mLocalDatabase->finalise(*stmt);
 		return status;
 	}
-
+	return false;
 }
 
 bool pof::Account::CheckForUsername(const std::string& usersname)

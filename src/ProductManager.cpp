@@ -2216,6 +2216,7 @@ std::optional<std::vector<pof::ProductManager::packDescType>> pof::ProductManage
 		}
 		return rel;
 	}
+	return std::nullopt;
 }
 
 std::optional<std::vector<pof::ProductManager::packType>> pof::ProductManager::GetProductPack(const pof::base::data::duuid_t& packId)

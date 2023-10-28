@@ -97,6 +97,7 @@ bool pof::AuditManager::LoadCache(size_t from, size_t limit)
 		}
 		return true;
 	}
+	return false;
 }
 
 void pof::AuditManager::LoadDate(const pof::base::data::datetime_t& date, size_t from, size_t to)
@@ -179,6 +180,7 @@ bool pof::AuditManager::LoadType(auditType type, size_t from, size_t limt)
 		}
 		return true;
 	}
+	return false;
 }
 
 void pof::AuditManager::LoadDate(auditType type, const pof::base::data::datetime_t& date, size_t from, size_t to)

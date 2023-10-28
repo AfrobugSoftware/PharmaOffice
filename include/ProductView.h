@@ -104,6 +104,7 @@ namespace pof
 		wxDataViewColumn* mProductClass = nullptr;
 		wxDataViewColumn* mProductUnitPriceCol = nullptr;
 		wxDataViewColumn* mProductCostPriceCol = nullptr;
+		wxDataViewColumn* mProductFormulation = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
 		wxDataViewColumn* mSelectionCol = nullptr;
 

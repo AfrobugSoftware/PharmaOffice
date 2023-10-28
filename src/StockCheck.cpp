@@ -343,6 +343,7 @@ void pof::StockCheck::AddSpecialCols()
 		default:
 			break;
 		}
+		return wxVariant(wxNullBitmap);
 	};
 
 	shortage.first = [&](size_t r, size_t col) -> wxVariant {

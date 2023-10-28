@@ -410,16 +410,16 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 	
 	//
-	v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = 0;
+	v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = static_cast<std::uint64_t>(0);
 	v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = ""s;
 
 	auto& cat = wxGetApp().mProductManager.GetCategories();
-	if (cat.empty()) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+	if (cat.empty()) v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 	else {
 		int idx = mCategoryValue->GetSelection();
-		if(idx == wxNOT_FOUND) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+		if(idx == wxNOT_FOUND) v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 		else {
-			if(idx >= cat.size()) v[pof::ProductManager::PRODUCT_CATEGORY] = 0;
+			if(idx >= cat.size()) v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 			auto& r = cat[idx];
 			v[pof::ProductManager::PRODUCT_CATEGORY] = r.first[pof::ProductManager::CATEGORY_ID];
 		}

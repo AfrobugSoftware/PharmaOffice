@@ -15,8 +15,7 @@
 #include <random>
 
 #include <boost/uuid/uuid.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
+#include <boost/lexical_cast.hpp>
 
 
 #include <nlohmann/json.hpp>
@@ -116,8 +115,6 @@ namespace pof {
 		std::string gVersion;
 		
 
-		boost::property_tree::ptree& operator[](const std::string& path);
-
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);
 		bool HasPrivilage(pof::Account::Privilage priv);
@@ -134,7 +131,6 @@ namespace pof {
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
 
-		boost::property_tree::ptree mSettings;
 	};
 };
 DECLARE_APP(pof::Application)
