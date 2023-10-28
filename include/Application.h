@@ -6,6 +6,7 @@
 #include <wx/config.h>
 #include <wx/stdpaths.h>
 #include <wx/propdlg.h>
+#include <wx/snglinst.h>
 
 #include <filesystem>
 #include <netmanager.h>
@@ -127,6 +128,8 @@ namespace pof {
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 
+		std::unique_ptr<wxSingleInstanceChecker> mChecker; //only one instance of the application 
+
 		pof::MainFrame* mMainFrame;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 

@@ -171,6 +171,7 @@ namespace pof
 		void OnMoveExpiredStock(wxCommandEvent& evt);
 		void OnUpdateUI(wxUpdateUIEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
+		void OnCacheHint(wxDataViewEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

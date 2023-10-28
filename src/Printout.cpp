@@ -30,6 +30,11 @@ bool pof::Printout::OnBeginDocument(int startPage, int endPage)
 
 void pof::Printout::GetPageInfo(int* minPage, int* maxPage, int* selPageFrom, int* selPageTo)
 {
+	*minPage = 1;
+	*maxPage = 1;
+	*selPageFrom = 1;
+	*selPageTo = 1;
+	//wxPrintout::GetPageInfo(minPage, maxPage, selPageFrom, selPageTo);
 }
 
 size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)

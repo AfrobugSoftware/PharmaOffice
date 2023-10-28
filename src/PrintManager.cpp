@@ -3,8 +3,8 @@
 pof::PrintManager::PrintManager()
 {
 	//mPageSetupData = std::make_unique<wxPageSetupData>();
-	mPrintData = std::make_unique<wxPrintData>();
 	//mPrintData->SetQuality(wxPRINT_QUALITY_HIGH);
+	mPrintData = std::make_unique<wxPrintData>();
 	mPrintDialogData = std::make_unique<wxPrintDialogData>(*mPrintData);
 
 	mPrintDialogData->EnableSelection(true);
@@ -36,8 +36,8 @@ void pof::PrintManager::PrinterSetup()
 void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 {
 	//PrinterSetup();
-	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
-	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	pof::Printout* po = new pof::Printout(nullptr);
+	pof::Printout* po2 = new pof::Printout(nullptr);
 	po->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	if (wxGetApp().bShowPreviewOnSale){
@@ -49,10 +49,14 @@ void pof::PrintManager::PrintJob(wxWindow* parent, wxPrintout* printout)
 {
 	wxPrinter printer(mPrintDialogData.get());
 	if (printout) {
-		if (!printer.Print(parent, &(*printout))) {
+		if (!printer.Print(parent, printout, false)) {
 			if (GetLastError() == wxPRINTER_ERROR) {
 				wxMessageBox("Problem printing", "Printing", wxICON_ERROR | wxOK);
 			}
+			else if (GetLastError() == wxPRINTER_CANCELLED){
+				wxMessageBox("Printing cancelled", "Printing", wxICON_ERROR | wxOK);
+			}
+			printSig(false, gPrintState);
 		}else {
 			printSig(true, gPrintState);
 			(*mPrintData) = printer.GetPrintDialogData().GetPrintData();

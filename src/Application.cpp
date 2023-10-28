@@ -55,6 +55,14 @@ bool pof::Application::OnInit()
 	// check for updates
 	//lunch mainframe
 	if (!wxApp::OnInit()) return false;
+	mChecker = std::make_unique<wxSingleInstanceChecker>();
+	if (mChecker->IsAnotherRunning()) {
+		//..find out how to pop up the current running application
+		mChecker.reset(nullptr);
+		OnExit();
+		return false;
+	}
+
 
 	//load the settings
 	LoadSettings();

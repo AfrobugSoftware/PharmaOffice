@@ -537,21 +537,21 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 
 	//Print receipt
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
-	wxGetApp().mPrintManager->PrintSaleReceipt(this);
+	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
 }
 
 void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 {
-	if (!status) {
-		wxMessageBox("Sale could not be completed, please contact admin", "Sale", wxICON_ERROR | wxOK);
-		return;
-	}
 	//to put back when testing is over
 	std::ostringstream os;
 	os << mCurSaleuuid;
 	switch (printState)
 	{
 	case pof::PrintManager::RECEIPT:
+		if (!status) {
+			wxMessageBox("Sale could not be completed, please contact admin", "Sale", wxICON_ERROR | wxOK);
+			return;
+		}
 		wxGetApp().mSaleManager.GetSaleData()->Clear();
 		if (mPropertyManager->IsShown()) {
 			mPropertyManager->Hide();
@@ -566,6 +566,15 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Sale {} completed", os.str()));
 		break;
 	case pof::PrintManager::REPRINT_RECEIPT:
+		if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+			status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
+		}
+		else {
+			wxGetApp().mSaleManager.GetSaleData()->Clear();
+		}
+		if (!status) {
+			mInfoBar->ShowMessage(fmt::format("Reprint failed"));
+		}else	mInfoBar->ShowMessage(fmt::format("Reprinted successfully"));
 		break;
 	default:
 		break;
@@ -915,16 +924,7 @@ void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
 		return;
 	}
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
-	wxGetApp().mPrintManager->PrintSaleReceipt(this);
-
-	if (mCurSaleuuid != boost::uuids::nil_uuid()) {
-		status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
-	}
-	else {
-		wxGetApp().mSaleManager.GetSaleData()->Clear();
-	}
-	mInfoBar->ShowMessage(fmt::format("Reprinted last sale successfully"));
-	return;
+	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
 }
 
 void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
@@ -979,16 +979,6 @@ void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
 					}
 					wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
 					wxGetApp().mPrintManager->PrintSaleReceipt(this);
-
-					if (mCurSaleuuid != boost::uuids::nil_uuid()) {
-						status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
-
-					}
-					else {
-						wxGetApp().mSaleManager.GetSaleData()->Clear();
-					}
-					mInfoBar->ShowMessage(fmt::format("Reprinted sale {} successfully", rid));
-					return;
 				}
 				catch (boost::bad_lexical_cast& err) {
 					spdlog::error(err.what());

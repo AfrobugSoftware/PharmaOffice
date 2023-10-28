@@ -8,6 +8,8 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnContextMenu)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnHeaderClicked)
+	EVT_DATAVIEW_CACHE_HINT(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnCacheHint)
+
 	//TOOLS
 	EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 	EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
@@ -1140,6 +1142,11 @@ void pof::ProductView::OnDownloadExcel(wxCommandEvent& evt)
 	doc.save();
 	doc.close();
 	wxMessageBox(fmt::format("Downloaded excel to \n{}", fullPath.string()), "Excel export", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ProductView::OnCacheHint(wxDataViewEvent& evt){
+	//look into these cache stuff
+	////
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
