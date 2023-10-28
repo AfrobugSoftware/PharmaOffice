@@ -396,7 +396,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(mGenericNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[mFormulationValue->GetSelection()].ToStdString());
 	v[pof::ProductManager::PRODUCT_CLASS] = std::move(ProductClassChoices[mClassValue->GetSelection()].ToStdString());
-	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = 0;
+	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 	v[pof::ProductManager::PRODUCT_BARCODE] = std::move(mScanProductString);
 	v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::data::currency_t(mCostPriceValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::currency_t(mSalePriceValue->GetValue().ToStdString());
@@ -432,7 +432,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		auto& i = datumInven->first;
 		i.resize(pof::ProductManager::INVENTORY_MAX);
 		i[pof::ProductManager::INVENTORY_PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
-		i[pof::ProductManager::INVENTORY_ID] = 0; //first ever inventory
+		i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(0); //first ever inventory
 		i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
 		i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 		i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
