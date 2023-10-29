@@ -17,14 +17,9 @@ pof::InventoryDialog::InventoryDialog(wxWindow* parent)
 
 bool pof::InventoryDialog::TransferDataFromWindow()
 {
-	static std::mt19937 engine(std::random_device{}());
-	static std::uniform_int_distribution<std::uint64_t> distrb(std::numeric_limits<std::uint64_t>::min(),
-		std::numeric_limits<uint64_t>::max());
-	static auto rrand = std::bind(distrb, engine);
-
 
 	mInventoryData.first.resize(pof::ProductManager::INVENTORY_MAX);
-	mInventoryData.first[pof::ProductManager::INVENTORY_ID] = rrand();
+	mInventoryData.first[pof::ProductManager::INVENTORY_ID] = pof::GenRandomId();
 	mInventoryData.first[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::Application::clock_t::now();
 	mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
 	mInventoryData.first[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(mQuantityInControl->GetValue());

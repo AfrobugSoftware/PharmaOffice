@@ -43,6 +43,8 @@ pof::Application::Application()
 	MainAccount = std::make_shared<pof::Account>();
 	mPrintManager = std::make_shared<pof::PrintManager>();
 
+	wxHandleFatalExceptions(true);
+
 }
 
 bool pof::Application::OnInit()
@@ -357,6 +359,10 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("CheckOutOfStockOnUpdate"), &bCheckOutOfStockOnUpdate);
 	config->Read(wxT("AutomacticBroughtForward"), &bAutomaticBroughtForward);
 	config->Read(wxT("AllowOtherUsersInventoryPermission"), &bAllowOtherUsersInventoryPermission);
+	config->Read(wxT("MaximizeOnLoad"), &bMaximizeOnLoad);
+	config->Read(wxT("ShowPreviewOnSale"), &bShowPreviewOnSale);
+	config->Read(wxT("ShowPrintPromt"), &bShowPrintPrompt);
+	
 	wxString version;
 	config->Read(wxT("Version"), &version);
 	gVersion = version;
@@ -562,6 +568,52 @@ void pof::Application::SaveSettingsFlags()
 
 }
 
+void pof::Application::GenerateReport(wxDebugReport::Context ctx)
+{
+	wxDebugReport* report = new wxDebugReport;
+	report->AddAll(ctx);
+	wxFileName fn(report->GetDirectory(), "timestamp.my");
+	wxFFile file(fn.GetFullPath(), "w");
+	if (file.IsOpened())
+	{
+		wxDateTime dt = wxDateTime::Now();
+		file.Write(dt.FormatISODate() + ' ' + dt.FormatISOTime());
+		file.Close();
+	}
+
+	report->AddFile(fn.GetFullName(), "timestamp of this report");
+	report->AddFile((fs::current_path() / "log.txt").c_str(), "Application log");
+
+#ifdef __WXMSW__
+	wxString windir;
+	if (!wxGetEnv("WINDIR", &windir))
+		windir = "C:\\Windows";
+	fn.AssignDir(windir);
+	fn.AppendDir("system32");
+	fn.AppendDir("drivers");
+	fn.AppendDir("etc");
+#else // !__WXMSW__
+	fn.AssignDir("/etc");
+#endif // __WXMSW__/!__WXMSW__
+	fn.SetFullName("hosts");
+
+	if (fn.FileExists())
+		report->AddFile(fn.GetFullPath(), "Local hosts file");
+	if (wxDebugReportPreviewStd().Show(*report))
+	{
+		if (report->Process())
+		{
+			report->Reset();
+		}
+	}
+	delete report;
+}
+
+void pof::Application::OnFatalException()
+{
+	GenerateReport(wxDebugReport::Context_Exception);
+}
+
 pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDateTime& dt)
 {
 	return clock_t::from_time_t(dt.GetTicks());
@@ -645,6 +697,8 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp6 = grid->Append(new wxBoolProperty("Check Product Class On Sale", "6", bCheckPOM));
 	auto pp7 = grid->Append(new wxBoolProperty("Allow other users to Add inventory", "7", bAllowOtherUsersInventoryPermission));
 	auto pp8 = grid->Append(new wxBoolProperty("Maximise application", "8", bMaximizeOnLoad));
+	auto pp9 = grid->Append(new wxBoolProperty("Brought forward", "9", bAutomaticBroughtForward));
+	auto pp10 = grid->Append(new wxBoolProperty("Alert critical warnings", "10", bAlertCriticalWarnings));
 	if (mLocalDatabase){
 		pp0->Enable(false);
 	}
@@ -657,12 +711,63 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp6, "Check product class on sale");
 	grid->SetPropertyHelpString(pp7, "Allow other users than the sperindent pharmacist to add inventory to stock");
 	grid->SetPropertyHelpString(pp8, "Maximize the application on load");
+	grid->SetPropertyHelpString(pp9, "Allow application to do automatic brough forward on inventory");
+	grid->SetPropertyHelpString(pp10, "Alert critical warnings on sale");
+
 	pp0->SetBackgroundColour(*wxWHITE);
 
 
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
-
-
+		wxPGProperty* props = evt.GetProperty();
+		if (!props || props->IsCategory()) return;
+		try {
+			size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+			wxVariant v = evt.GetPropertyValue();
+			switch (n)
+			{
+			case 0:
+				bUsingLocalDatabase = v.GetBool();
+				break;
+			case 1:
+				bHighlightLowStock = v.GetBool();
+				break;
+			case 2:
+				bUseMinStock = v.GetBool();
+				break;
+			case 3:
+				bPharamcistWarings = v.GetBool();
+				break;
+			case 4:
+				bCheckExpired = v.GetBool();
+				break;
+			case 5:
+				bCheckOutOfStock = v.GetBool();
+				break;
+			case 6:
+				bCheckPOM = v.GetBool();
+				break;
+			case 7:
+				bAllowOtherUsersInventoryPermission = v.GetBool();
+				break;
+			case 8:
+				bMaximizeOnLoad = v.GetBool();
+				break;
+			case 9:
+				bAutomaticBroughtForward = v.GetBool();
+				break;
+			case 10:
+				bAlertCriticalWarnings = v.GetBool();
+				break;
+			default:
+				evt.Skip();
+				return;
+			}
+		}
+		catch (std::exception& exp){
+			spdlog::error(exp.what());
+			return;
+		}
+		evt.Veto();
 
 	});
 
@@ -702,26 +807,26 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 	wxString mPharamcyTypeValueChoices[] = { wxT("COMMUNITY"), wxT("HOSPITAL"), wxT("INDUSTRY"), wxT("WHOLESALE"), wxT("EDUCATIONAL") };
 	wxPGChoices ptypes;
 	ptypes.Add(5, mPharamcyTypeValueChoices);
-	auto pp0 = grid->Append(new wxEnumProperty("Type", "ptypes" , ptypes));
-	auto pp1 = grid->Append(new wxStringProperty("Name", "pname", MainPharmacy->name));
+	auto pp0 = grid->Append(new wxEnumProperty("Type", "0" , ptypes));
+	auto pp1 = grid->Append(new wxStringProperty("Name", "1", MainPharmacy->name));
 	auto pType = MainPharmacy->GetPharmacyType();
 	size_t idx = pType.to_ullong() % (1ull << 5);
 	if (idx >= 5) idx = 0;
 	pp0->SetValue(wxVariant(mPharamcyTypeValueChoices[idx]));
 
 
-	auto pp2 = grid->Append(new wxStringProperty("Phone Number", "pnum", MainPharmacy->contact.phoneNumber));
-	auto pp3 = grid->Append(new wxStringProperty("Email", "pemail", MainPharmacy->contact.email));
-	auto pp4 = grid->Append(new wxStringProperty("Website", "pwebsite", MainPharmacy->contact.website));
+	auto pp2 = grid->Append(new wxStringProperty("Phone Number", "2", MainPharmacy->contact.phoneNumber));
+	auto pp3 = grid->Append(new wxStringProperty("Email", "3", MainPharmacy->contact.email));
+	auto pp4 = grid->Append(new wxStringProperty("Website", "4", MainPharmacy->contact.website));
 
 	auto ct1 = grid->Append(new wxPropertyCategory("Pharmacy Address"));
 
-	auto pp5 = grid->Append(new wxStringProperty("No", "no", MainPharmacy->addy.number));
-	auto pp6 = grid->Append(new wxStringProperty("Street", "street", MainPharmacy->addy.street));
-	auto pp7 = grid->Append(new wxStringProperty("City", "city", MainPharmacy->addy.city));
-	auto pp8 = grid->Append(new wxStringProperty("L.G.A", "lga", MainPharmacy->addy.lga));
-	auto pp9 = grid->Append(new wxStringProperty("State", "state", MainPharmacy->addy.state));
-	auto pp10 = grid->Append(new wxStringProperty("Country", "country", MainPharmacy->addy.country));
+	auto pp5 = grid->Append(new wxStringProperty("No", "5", MainPharmacy->addy.number));
+	auto pp6 = grid->Append(new wxStringProperty("Street", "6", MainPharmacy->addy.street));
+	auto pp7 = grid->Append(new wxStringProperty("City", "7", MainPharmacy->addy.city));
+	auto pp8 = grid->Append(new wxStringProperty("L.G.A", "8", MainPharmacy->addy.lga));
+	auto pp9 = grid->Append(new wxStringProperty("State", "9", MainPharmacy->addy.state));
+	auto pp10 = grid->Append(new wxStringProperty("Country", "10", MainPharmacy->addy.country));
 
 
 	grid->SetPropertyHelpString(pp0, "Change the Type of the pharmacy");
@@ -740,6 +845,31 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 
 	
 	grid->SetPropertyBackgroundColour("ptypes", *wxWHITE);
+
+	mSettingProperties[1]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
+		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+			wxMessageBox("User account cannot perform this function", "Product Information", wxICON_INFORMATION | wxOK);
+			evt.Skip();
+			return;
+		}
+		
+		wxPGProperty* props = evt.GetProperty();
+		if (!props || props->IsCategory()) return;
+		try {
+			size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+			wxVariant v = evt.GetPropertyValue();
+			switch (n)
+			{
+			default:
+				break;
+			}
+		}
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+			return;
+		}
+
+	});
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);
 
@@ -783,11 +913,11 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 	auto ct0 = grid->Append(new wxPropertyCategory("User account details"));
 	auto tt0 = grid->Append(new wxStringProperty("Account Type", "at", MainAccount->GetAccountTypeString()));
 	auto pp0 = grid->Append(new wxStringProperty("Name", "0", MainAccount->name));
-	auto pp1 = grid->Append(new wxStringProperty("Last Name", "2", MainAccount->lastname));
-	auto pp2 = grid->Append(new wxStringProperty("Username", "3", MainAccount->username));
-	auto pp3 = grid->Append(new wxStringProperty("Email", "4", MainAccount->email));
-	auto pp4 = grid->Append(new wxStringProperty("Phone Number", "5", MainAccount->phonenumber));
-	auto pp5 = grid->Append(new wxStringProperty("Reg Number", "6", MainAccount->regnumber));
+	auto pp1 = grid->Append(new wxStringProperty("Last Name", "1", MainAccount->lastname));
+	auto pp2 = grid->Append(new wxStringProperty("Username", "2", MainAccount->username));
+	auto pp3 = grid->Append(new wxStringProperty("Email", "3", MainAccount->email));
+	auto pp4 = grid->Append(new wxStringProperty("Phone Number", "4", MainAccount->phonenumber));
+	auto pp5 = grid->Append(new wxStringProperty("Reg Number", "5", MainAccount->regnumber));
 
 	tt0->Enable(false);
 	pp2->Enable(false);
@@ -801,7 +931,21 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp5, "Change reg number");
 
 	mSettingProperties[2]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
-	
+	wxPGProperty* props = evt.GetProperty();
+	if (!props || props->IsCategory()) return;
+	try {
+		size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+		wxVariant v = evt.GetPropertyValue();
+		switch (n)
+		{
+		default:
+			break;
+		}
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
+	}
 
 	});
 	wxBoxSizer* bSizer5;
@@ -836,11 +980,34 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 		tool->SetBackgroundColour(*wxWHITE);
 	}
 
+	grid->Append(new wxPropertyCategory("Sale Printer"));
 	auto pp0 = grid->Append(new wxBoolProperty("Show Preview on Sale", "0", bShowPreviewOnSale));
+	auto pp1 = grid->Append(new wxBoolProperty("Show Print prompt on Sale", "1", bShowPrintPrompt));
 
 	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
+	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing");
 	mSettingProperties[3]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
-
+	wxPGProperty* props = evt.GetProperty();
+	if (!props || props->IsCategory()) return;
+	try {
+		size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+		wxVariant v = evt.GetPropertyValue();
+		switch (n)
+		{
+		case 0:
+			bShowPreviewOnSale = v.GetBool();
+			break;
+		case 1:
+			bShowPrintPrompt = v.GetBool();
+			break;
+		default:
+			break;
+		}
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
+	}
 
 	});
 

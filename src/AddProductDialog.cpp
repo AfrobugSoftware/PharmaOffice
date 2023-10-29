@@ -25,7 +25,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("ADD PRODUCT"), wxDefaultPosition, wxDefaultSize, 0 );
 	TitleText->Wrap( -1 );
-	TitleText->SetFont( wxFont(wxFontInfo(12).Bold()));
+	TitleText->SetFont( wxFont(wxFontInfo(10).AntiAliased().Bold()));
 	
 	bSizer2->Add( TitleText, 1, wxALL, 15 );
 	
@@ -137,7 +137,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	m_panel4->SetSizer( sbSizer7 );
 	m_panel4->Layout();
 	sbSizer7->Fit( m_panel4 );
-	bSizer3->Add( m_panel4, 1, wxEXPAND | wxALL, 5 );
+	bSizer3->Add( m_panel4, 0, wxEXPAND | wxALL, 5 );
 	
 	m_panel5 = new wxPanel( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxStaticBoxSizer* sbSizer8;
@@ -270,7 +270,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	m_panel5->SetSizer( sbSizer8 );
 	m_panel5->Layout();
 	sbSizer8->Fit( m_panel5 );
-	bSizer3->Add( m_panel5, 1, wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
+	bSizer3->Add( m_panel5, 0, wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
 	
 	m_panel6 = new wxPanel( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxStaticBoxSizer* sbSizer3;
@@ -301,6 +301,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->Add( m_staticText8, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	m_datePicker1 = new wxDatePickerCtrl( mProductInvenPanel, wxID_ANY, wxDefaultDateTime, wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT|wxDP_DROPDOWN );
+	m_datePicker1->SetRange(wxDateTime::Now(), wxDateTime{});
 	fgSizer21->Add( m_datePicker1, 1, wxALL|wxEXPAND, 5 );
 	
 	mQuntity = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -432,11 +433,16 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		auto& i = datumInven->first;
 		i.resize(pof::ProductManager::INVENTORY_MAX);
 		i[pof::ProductManager::INVENTORY_PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
-		i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(0); //first ever inventory
+		i[pof::ProductManager::INVENTORY_ID] = pof::GenRandomId();//static_cast<std::uint64_t>(0); //first ever inventory
 		i[pof::ProductManager::INVENTORY_LOT_NUMBER] = std::move(mBatchNumbeValue->GetValue().ToStdString());
 		i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(atoi(mQunatityValue->GetValue().ToStdString().c_str()));
 		i[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::base::data::clock_t::now();
-		i[pof::ProductManager::INVENTORY_EXPIRE_DATE] = pof::base::data::clock_t::from_time_t(m_datePicker1->GetValue().GetTicks());
+		auto expDate = std::chrono::system_clock::from_time_t(m_datePicker1->GetValue().GetTicks());
+		if (date::floor<date::days>(expDate) == date::floor<date::days>(pof::base::data::clock_t::now())) {
+			wxMessageBox("Expiry date cannot be today's date, check and try again", "Add Stock", wxICON_INFORMATION | wxOK);
+			return false;
+		}
+		i[pof::ProductManager::INVENTORY_EXPIRE_DATE] = expDate;
 		i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPerUnitValue->GetValue().ToStdString() };
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = std::move(mSuplierNameValue->GetValue().ToStdString()); //test
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);

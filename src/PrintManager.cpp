@@ -49,7 +49,7 @@ void pof::PrintManager::PrintJob(wxWindow* parent, wxPrintout* printout)
 {
 	wxPrinter printer(mPrintDialogData.get());
 	if (printout) {
-		if (!printer.Print(parent, printout, false)) {
+		if (!printer.Print(parent, printout, wxGetApp().bShowPrintPrompt)) {
 			if (GetLastError() == wxPRINTER_ERROR) {
 				wxMessageBox("Problem printing", "Printing", wxICON_ERROR | wxOK);
 			}

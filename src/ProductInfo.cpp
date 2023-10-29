@@ -37,13 +37,12 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
-	//m_auiToolBar1->AddTool(ID_TOOL_REMV_EXPIRE_BATCH, wxT("Remove Expired Inventory Batches"), wxArtProvider::GetBitmap("action_remove"), "Remove all expired batches", wxITEM_NORMAL);
 	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("action_check"), "Show the products information", wxITEM_CHECK);
 	std::bitset<32> bitset(mShowAddInfo->GetState());
 	bitset.set(5);
 	mShowAddInfo->SetState(bitset.to_ulong());
 
-	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Product Warnings"), wxArtProvider::GetBitmap("action_remove"), "Warnings associated with this product", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Warnings"), wxArtProvider::GetBitmap("action_remove"), "Warnings associated with this product", wxITEM_NORMAL);
 	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("pen"), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->AddStretchSpacer();
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
@@ -203,6 +202,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 			firstMonth.emplace();
 		}
 		mInventoryDate->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
+		mInventoryDate->SetValue(wxDateTime::Now());
 
  	}
 	catch (const std::exception& exp) {

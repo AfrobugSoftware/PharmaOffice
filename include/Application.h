@@ -7,6 +7,11 @@
 #include <wx/stdpaths.h>
 #include <wx/propdlg.h>
 #include <wx/snglinst.h>
+#include <wx/debugrpt.h>
+#include <wx/file.h>
+#include <wx/ffile.h>
+#include <wx/notifmsg.h>
+
 
 #include <filesystem>
 #include <netmanager.h>
@@ -89,6 +94,9 @@ namespace pof {
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
 
+		void GenerateReport(wxDebugReport::Context ctx);
+		virtual void OnFatalException() override;
+
 		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;
 		bool bGlobalCostMarkup = false;
@@ -106,6 +114,7 @@ namespace pof {
 		bool bAllowOtherUsersInventoryPermission = false;
 		bool bMaximizeOnLoad = true;
 		bool bShowPreviewOnSale = false;
+		bool bShowPrintPrompt = true;
 
 		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;
