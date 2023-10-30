@@ -1305,7 +1305,7 @@ void pof::ProductView::CreateDataView()
 	mInfoBar = new wxInfoBar(panel, wxID_ANY);
 	
 
-	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	auto& pm = wxGetApp().mProductManager;
 	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
 	pm.GetProductData()->DecRef();

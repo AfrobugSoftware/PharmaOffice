@@ -225,7 +225,7 @@ void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
 			mWriteStatement = *stmt;
 		}
 
-		bool status = mLocalDatabase->bind(mWriteStatement, std::make_tuple(pof::base::data::clock_t::now(), at, mCurrentAccount->name, message));
+		bool status = mLocalDatabase->bind(mWriteStatement, std::make_tuple(pof::base::data::clock_t::now(), at, mCurrentAccount->username, message));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return; 

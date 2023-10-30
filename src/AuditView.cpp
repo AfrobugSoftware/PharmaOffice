@@ -85,7 +85,7 @@ void pof::AuditView::CreateDataView()
 	wxBoxSizer* size = new wxBoxSizer(wxVERTICAL);
 
 	mInfoBar = new wxInfoBar(panel, ID_INFOBAR);
-	mDataView = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES);
+	mDataView = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES | wxDV_VERT_RULES);
 	auto& ad = wxGetApp().mAuditManager.GetAuditData();
 	mDataView->AssociateModel(ad.get());
 	mDataView->SetDoubleBuffered(true);
