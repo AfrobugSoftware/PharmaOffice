@@ -19,7 +19,7 @@ void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, s
 {
 	assert(colNames.size() == colSizes.size());
 	mTable = new wxDataViewCtrl(this, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize,
-		wxDV_ROW_LINES);
+		wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mTable->AssociateModel(mTableModel);
 	mTableModel->DecRef();
 
