@@ -101,7 +101,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
 	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT), "Reprint a sale")->SetHasDropDown(true);
-	mBottomTools->AddTool(ID_RETURN_SALE, "Retrun", wxArtProvider::GetBitmap(wxART_REDO), "Return an Item");
+	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO), "Return an Item");
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddStretchSpacer();
 
