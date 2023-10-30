@@ -24,13 +24,17 @@ namespace pof
 
 		std::string mFooterMessage;
 		int startPage = 1, endPage = 1, pageNum = 1;
+		wxFont mPharmacyNameFont;
 		wxFont mHeaderFont;
 		wxFont mBodyFont;
 		wxFont mFooterFont;
+		wxFont mContactFont;
+		wxFont mInoiceHeaderFont;
 
 		int leftMargin = 10;
 		int topMargin = 10;
 		int rightMargin = 10;
 
+		wxPrintDialogData* mPrintDialogData;
 	};
 };

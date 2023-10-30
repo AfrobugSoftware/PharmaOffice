@@ -5,6 +5,7 @@
 
 pof::Printout::Printout(wxPrintDialogData* printDlgData, const std::string& title)
 : wxPrintout(title){
+	mPrintDialogData = printDlgData;
 	SetDefaultFonts();
 }
 
@@ -51,8 +52,8 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	int rightMarginLogical = int(mmToLogical * (pageWidthMM - rightMargin));
 	int border = 5;
 
-	dc->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	wxCoord xExtent, yExtent;
+	dc->SetFont(mPharmacyNameFont);
+	wxCoord xExtent = 0, yExtent = 0;
 	dc->GetTextExtent(text, &xExtent, &yExtent);
 
 	int xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
@@ -66,11 +67,11 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	dc->DrawText(addy, xPos, yPos + border);
 
 	//print contact
+	dc->SetFont(mContactFont);
 	std::string contact = app.MainPharmacy->GetContactAsString();
 	yPos += yExtent + border;
 	dc->GetTextExtent(contact, &xExtent, &yExtent);
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->SetFont(wxFont(wxFontInfo(10)));
 	dc->DrawText(contact, xPos, yPos + border);
 
 
@@ -110,7 +111,7 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 
 	//draw titile
 	const std::string title = "INVOICE";
-	dc->SetFont(wxFont(wxFontInfo(14).Bold()));
+	dc->SetFont(mInoiceHeaderFont);
 	dc->GetTextExtent(title, &xExtent, &yExtent);
 	yPos += border + 20;
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
@@ -139,7 +140,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 
 	//tite
 	wxRect rect(leftMarginLogical, yPos, lineLength, lineHeight);
-	dc->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	dc->SetFont(mInoiceHeaderFont);
 
 	dc->DrawLabel("QUANTITY", rect, wxALIGN_LEFT);
 	dc->DrawLabel("PRODUCT", rect, wxALIGN_CENTER);
@@ -174,7 +175,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 		rightMarginLogical, yPos + border);
 	dc->DrawLine(leftMarginLogical, yPos + border + 5,
 		rightMarginLogical, yPos + border + 5);
-	dc->SetFont(wxFontInfo(14).Bold());
+	dc->SetFont(mInoiceHeaderFont);
 	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
 	dc->GetTextExtent(totalA, &xExtent, &yExtent);
 	yPos += border + 20;
@@ -183,7 +184,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
 
 	yPos += yExtent + border;
-	dc->SetFont(mBodyFont);
+	dc->SetFont(mFooterFont);
 	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
 	dc->DrawLine(leftMarginLogical, yPos + border + 5,
 		rightMarginLogical, yPos + border + 5);
@@ -194,7 +195,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 
 	//
 	yPos += yExtent + border;
-	dc->SetFont(wxFontInfo(8).Bold().Italic());
+	//dc->SetFont(mFooterFont);
 	std::string copyRight = "Powered by PharmaOffice";
 	dc->GetTextExtent(copyRight, &xExtent, &yExtent);
 	xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
@@ -240,7 +241,31 @@ bool pof::Printout::DrawSalePrint()
 
 void pof::Printout::SetDefaultFonts()
 {
-	mHeaderFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mBodyFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mFooterFont = std::move(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	size_t headerSize = 12, bodySize = 10, footerSize = 10, contactSize = 10, invoiceHeaderSize = 10;
+	if (!mPrintDialogData) return;
+	int ps = mPrintDialogData->GetPrintData().GetPaperId();
+	switch (ps)
+	{
+	case wxPAPER_10X14:
+	case wxPAPER_10X11:
+		mPrintDialogData->GetPrintData().SetQuality(wxPRINT_QUALITY_LOW);
+		headerSize = 7;
+		bodySize = 5;
+		footerSize = 5;
+		contactSize = 5;
+		invoiceHeaderSize = 7;
+		break;
+
+	case wxPAPER_A4:
+	default:
+		break;
+	}
+
+	mPharmacyNameFont = std::move(wxFont(wxFontInfo(headerSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mHeaderFont = std::move(wxFont(wxFontInfo(headerSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mBodyFont = std::move(wxFont(wxFontInfo(bodySize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFooterFont = std::move(wxFont(wxFontInfo(footerSize).AntiAliased().Italic().Family(wxFONTFAMILY_SWISS)));
+	mContactFont = std::move(wxFont(wxFontInfo(contactSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mInoiceHeaderFont = std::move(wxFont(wxFontInfo(invoiceHeaderSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
 }
+

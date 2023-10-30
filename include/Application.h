@@ -96,6 +96,7 @@ namespace pof {
 
 		void GenerateReport(wxDebugReport::Context ctx);
 		virtual void OnFatalException() override;
+		virtual void OnUnhandledException() override;
 
 		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;

@@ -8,18 +8,6 @@
 
 #include <fstream>
 
-//#include <random>
-//
-//#include <data.h>
-//#include <data_tuple.h>
-//#include <packages.h>
-
-
-
-//#include "DataModel.h"
-//
-//#include "datatree.h"
-
 #include "RegisterPharmacy.h"
 
 IMPLEMENT_APP(pof::Application)
@@ -64,6 +52,7 @@ bool pof::Application::OnInit()
 		OnExit();
 		return false;
 	}
+	SetUseBestVisual(true, true);
 
 
 	//load the settings
@@ -314,7 +303,8 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("AllowOtherUsersInventoryPermission"), bAllowOtherUsersInventoryPermission);
 	config->Write(wxT("MaximizeOnLoad"), bMaximizeOnLoad);
 	config->Write(wxT("Version"), wxString(gVersion));
-
+	config->Write(wxT("ShowPreviewOnSale"), bShowPreviewOnSale);
+	config->Write(wxT("ShowPrintPrompt"), bShowPrintPrompt);
 
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
@@ -614,6 +604,20 @@ void pof::Application::OnFatalException()
 	GenerateReport(wxDebugReport::Context_Exception);
 }
 
+void pof::Application::OnUnhandledException()
+{
+	wxApp::OnUnhandledException();
+	auto exp = std::current_exception();
+	if (exp) {
+		try {
+			std::rethrow_exception(exp);
+		}
+		catch (const std::exception& e) {
+			spdlog::critical(e.what());
+		}
+	}
+}
+
 pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDateTime& dt)
 {
 	return clock_t::from_time_t(dt.GetTicks());
@@ -844,7 +848,7 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 
 
 	
-	grid->SetPropertyBackgroundColour("ptypes", *wxWHITE);
+	grid->SetPropertyBackgroundColour(pp0, *wxWHITE);
 
 	mSettingProperties[1]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
 		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {

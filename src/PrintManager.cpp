@@ -36,8 +36,8 @@ void pof::PrintManager::PrinterSetup()
 void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 {
 	//PrinterSetup();
-	pof::Printout* po = new pof::Printout(nullptr);
-	pof::Printout* po2 = new pof::Printout(nullptr);
+	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
+	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
 	po->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	if (wxGetApp().bShowPreviewOnSale){
