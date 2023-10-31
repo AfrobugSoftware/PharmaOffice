@@ -26,7 +26,7 @@ END_EVENT_TABLE()
 
 pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 1178,689 ), wxDefaultSize );
+	//this->SetSizeHints( wxSize( 1178,689 ), wxDefaultSize );
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(wxAUI_MGR_DEFAULT);
 	
@@ -111,7 +111,6 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mSummary->Layout();
 	bSizer2->Fit( mSummary );
 	
-	this->Centre( wxBOTH );
 
 	OnAuiThemeChange();
 	AddSpecialCols();
@@ -124,6 +123,9 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	LoadStockSelect();
 	UpdateSummary();
 	m_mgr.Update();
+
+	this->Layout();
+	this->Centre( wxBOTH );
 }
 
 void pof::StockCheck::CreateToolBar()

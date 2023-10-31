@@ -818,11 +818,9 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 	wxPGChoices ptypes;
 	ptypes.Add(5, mPharamcyTypeValueChoices);
 	auto pp0 = grid->Append(new wxEnumProperty("Type", "0" , ptypes));
+	pp0->SetValue(MainPharmacy->GetPharmacyTypeAsString());
 	auto pp1 = grid->Append(new wxStringProperty("Name", "1", MainPharmacy->name));
-	auto pType = MainPharmacy->GetPharmacyType();
-	size_t idx = pType.to_ullong() % (1ull << 5);
-	if (idx >= 5) idx = 0;
-	pp0->SetValue(wxVariant(mPharamcyTypeValueChoices[idx]));
+	pp1->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 
 	auto ct1 = grid->Append(new wxPropertyCategory("Pharmacy Contact"));
 	auto pp2 = grid->Append(new wxStringProperty("Phone Number", "2", MainPharmacy->contact.phoneNumber));
@@ -917,6 +915,7 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 			case 0: {
 				int sel = v.GetInteger();
 				if (sel == wxNOT_FOUND) break;
+				MainPharmacy->pharmacyType.reset();
 				MainPharmacy->pharmacyType.set(sel);
 			}
 				break;
@@ -1004,8 +1003,11 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 	auto ct0 = grid->Append(new wxPropertyCategory("User account details"));
 	auto tt0 = grid->Append(new wxStringProperty("Account Type", "at", MainAccount->GetAccountTypeString()));
 	auto pp0 = grid->Append(new wxStringProperty("Name", "0", MainAccount->name));
+	pp0->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	auto pp1 = grid->Append(new wxStringProperty("Last Name", "1", MainAccount->lastname));
+	pp1->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	auto pp2 = grid->Append(new wxStringProperty("Username", "2", MainAccount->username));
+	pp1->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	auto pp3 = grid->Append(new wxStringProperty("Email", "3", MainAccount->email));
 	auto pp4 = grid->Append(new wxStringProperty("Phone Number", "4", MainAccount->phonenumber));
 	pp4->SetValidator(wxTextValidator{wxFILTER_DIGITS});

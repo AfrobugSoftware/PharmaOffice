@@ -101,7 +101,7 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 	mTools->Realize();
 	mTools->Refresh();
 
-	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 430);
+	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 230);
 	report.AppendColumn("CLOSING STOCK", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("EXPIRED STOCK", wxLIST_FORMAT_LEFT, 150);
 	report.AppendColumn("INVENTORY IN", wxLIST_FORMAT_LEFT, 150);

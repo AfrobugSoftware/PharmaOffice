@@ -101,7 +101,7 @@ namespace pof
 				STOCK_EXPIRED,
 			};
 
-			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1178,689 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 978,589 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 			wxAuiManager m_mgr;
 			void CreateToolBar();
 			void CreateEmptyStockCheck();

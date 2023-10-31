@@ -137,6 +137,7 @@ namespace pof {
 		wxStaticText* m_staticText3;
 		wxStaticText* m_staticText1;
 		wxStaticText* m_staticText2;
+		wxStaticText* m_staticText4;
 		signal_t mSig;
 		childtree_signal_t mChildSignal;
 		childtree_signal_t mChildRemoveSignal;

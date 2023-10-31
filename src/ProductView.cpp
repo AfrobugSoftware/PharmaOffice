@@ -868,6 +868,7 @@ void pof::ProductView::OnSCFunction(wxCommandEvent& evt)
 {
 	//we need a stock check dialog
 	pof::StockCheck dialog(this);
+	//dialog.Center(wxBOTH);
 	dialog.ShowModal();
 }
 

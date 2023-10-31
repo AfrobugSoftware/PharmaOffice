@@ -219,14 +219,14 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText1->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText1->Wrap(-1);
-	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 2);
+	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 1);
 
 	//add the account type
 	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
 	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText3->Wrap(-1);
-	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 2);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 1);
 
 	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
@@ -236,7 +236,13 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText2->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText2->Wrap(-1);
 	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
-	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 2);
+	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 1);
+
+	std::string pharmacyType = wxGetApp().MainPharmacy->GetPharmacyTypeAsString();
+	m_staticText4 = new wxStaticText(m_panel1, wxID_ANY, pharmacyType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText4->SetFont(wxFontInfo(6).AntiAliased());
+	m_staticText4->Wrap(-1);
+	bSizer2->Add(m_staticText4, 0, wxALIGN_CENTER | wxALL, 1);
 
 	bSizer2->Add(0, 5, 0, wxEXPAND, 5);
 
@@ -359,12 +365,15 @@ void pof::Modules::ReloadAccountDetails()
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
 		PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
 
+	std::string PharmacyType = wxGetApp().MainPharmacy->GetPharmacyTypeAsString();
+
 	m_panel1->Freeze();
 
 	m_staticText1->SetLabel(std::move(AccountName));
 	m_staticText2->SetLabel(std::move(PharmacyName));
 	m_staticText3->SetLabel(std::move(AccountType));
-	
+	m_staticText4->SetLabel(std::move(PharmacyType));
+
 	m_panel1->Layout();
 	m_panel1->Thaw();
 	m_panel1->Refresh();

@@ -41,7 +41,6 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	bSizer5->Fit( m_panel5 );
 	bSizer4->Add( m_panel5, 0, wxALL|wxEXPAND, 2 );
 	
-	wxFlexGridSizer* fgSizer1;
 	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer1->AddGrowableCol( 1 );
 	fgSizer1->SetFlexibleDirection( wxBOTH );
@@ -246,8 +245,8 @@ bool pof::RegistrationDialog::ValidateEmail(const std::string email)
 
 void pof::RegistrationDialog::OnShowPassword(wxCommandEvent& evt)
 {
-	auto pflags = mPasswordValue->GetWindowStyle();
-	auto cflags = mConfirmPasswordValue->GetWindowStyle();
+	auto pflags = mPasswordValue->GetWindowStyleFlag();
+	auto cflags = mConfirmPasswordValue->GetWindowStyleFlag();
 
 	if (evt.IsChecked()) {
 		pflags = (pflags & (~wxTE_PASSWORD));
@@ -258,15 +257,29 @@ void pof::RegistrationDialog::OnShowPassword(wxCommandEvent& evt)
 		pflags = pflags | wxTE_PASSWORD;
 		cflags = cflags | wxTE_PASSWORD;
 	}
+	
+
 	Freeze();
-	mPasswordValue->SetWindowStyle(pflags);
-	mConfirmPasswordValue->SetWindowStyle(cflags);
-	mPasswordValue->Refresh();
-	mPasswordValue->Update();
-	mConfirmPasswordValue->Refresh();
-	mConfirmPasswordValue->Update();
+	auto pv = mPasswordValue->GetValue();
+	auto cv = mConfirmPasswordValue->GetValue();
+	
+	delete mPasswordValue;
+	delete mConfirmPasswordValue;
+
+	auto newPass = new wxTextCtrl(m_scrolledWindow1, wxID_ANY, pv, wxDefaultPosition, wxDefaultSize, pflags);
+	auto newConfirm = new wxTextCtrl(m_scrolledWindow1, wxID_ANY, cv, wxDefaultPosition, wxDefaultSize, cflags);
+
+	fgSizer1->Insert(13, newPass, wxSizerFlags().Expand().Border(wxALL, 5));
+	fgSizer1->Insert(15, newConfirm, wxSizerFlags().Expand().Border(wxALL, 5));
+
+	
+	mPasswordValue = newPass;
+	mConfirmPasswordValue = newConfirm;
+
+	m_radioBox2->Layout();
+	fgSizer1->Layout();
 	Thaw();
-	Update();
+	m_scrolledWindow1->Refresh();
 }
 
 void pof::RegistrationDialog::OnAccountTypeSelect(wxCommandEvent& evt)

@@ -121,7 +121,7 @@ namespace pof
 			ID_MORE_HEALTHCON,
 			ID_INVENTORY_ADD,
 		};
-		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(948, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		~AddProdutDialog();
 
 		virtual bool TransferDataFromWindow() override final;

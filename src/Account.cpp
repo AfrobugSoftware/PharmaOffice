@@ -324,14 +324,14 @@ bool pof::Account::UpdateAccount() {
 	if (mLocalDatabase)
 	{
 		constexpr const std::string_view sql = R"(UPDATE users SET name = ?, last_name = ?, email = ?, 
-		phonenumber = ?, regnumber = ?;)";
+		phonenumber = ?, regnumber = ? WHERE id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
 		bool status = mLocalDatabase->bind(*stmt, 
-			std::make_tuple(name, lastname, email, phonenumber, regnumber));
+			std::make_tuple(name, lastname, email, phonenumber, regnumber, accountID));
 		assert(status);
 		status = mLocalDatabase->execute(*stmt);
 		if (!status) {

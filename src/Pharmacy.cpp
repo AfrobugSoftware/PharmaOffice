@@ -27,3 +27,12 @@ nl::json pof::Pharmacy::Pack() const
 void pof::Pharmacy::UnPack(const nl::json& js)
 {
 }
+
+std::string pof::Pharmacy::GetPharmacyTypeAsString() const
+{
+	int i = 0;
+	for (; i < 5; i++) {
+		if (pharmacyType.test(i)) break;
+	}
+	return std::string(sPharamcyTypes[i]);
+}

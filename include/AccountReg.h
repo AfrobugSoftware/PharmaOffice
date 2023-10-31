@@ -54,6 +54,7 @@ namespace pof {
 		wxStdDialogButtonSizer* m_sdbSizer3;
 		wxButton* m_sdbSizer3Save;
 		wxButton* m_sdbSizer3Cancel;
+		wxFlexGridSizer* fgSizer1;
 
 
 	public:

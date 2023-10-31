@@ -24,12 +24,13 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 	mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
 	mInventoryData.first[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(mQuantityInControl->GetValue());
 	mInventoryData.first[pof::ProductManager::INVENTORY_COST] = pof::base::currency(static_cast<float>(mCostControl->GetValue()));
-	auto expDate = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
-	if (date::floor<date::days>(expDate) == date::floor<date::days>(pof::base::data::clock_t::now())){
+	auto expDate = date::floor<date::days>(std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks()));
+	auto nowDate = date::floor<date::days>(pof::base::data::clock_t::now()) - date::days(1);
+	if (expDate == nowDate) {
 		wxMessageBox("Expiry date cannot be today's date, check and try again", "Add Stock", wxICON_INFORMATION | wxOK);
 		return false;
 	}
-	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = expDate;
+	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
 	mInventoryData.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = mManufactureName->GetValue().ToStdString();
 	return true;
 }
