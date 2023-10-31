@@ -12,6 +12,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
+	EVT_TOOL(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
 	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
 	EVT_TOOL(pof::SaleView::ID_REPRINT, pof::SaleView::OnReturnSale)
@@ -888,6 +889,12 @@ void pof::SaleView::OnSaleUuidTextUI(wxUpdateUIEvent& evt)
 
 void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 {
+	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
+		mInfoBar->ShowMessage("No products selected to return");
+		return;
+	}
+
+
 }
 
 void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)

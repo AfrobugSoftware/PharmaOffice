@@ -26,7 +26,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
-: wxFrame(parent, id, "PHARMAOFFICE - Personal", position, size), mAuiManager(this, AUIMGRSTYLE) {
+: wxFrame(parent, id, "PharmaOffice - Personal", position, size), mAuiManager(this, AUIMGRSTYLE) {
 	SetBackgroundColour(*wxWHITE); //wrap in theme
 	SetupAuiTheme();
 	CreateMenuBar();
