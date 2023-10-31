@@ -743,6 +743,7 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 	
 	if (evt.GetId() == ID_STOCK_MARK_PROD_AS_COMPLETE)
 	{
+		if (wxMessageBox("Are you sure you want to mark stock check as complete", "Stock check", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 		auto item = mStockData->GetSelection();
 		if (!item.IsOk()) return; //not a valid selection
 		size_t idx = pof::DataModel::GetIdxFromItem(item);
@@ -758,7 +759,7 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 		}
 	}
 	else {
-		if (wxMessageBox("Are you sure you want to mark stock check as complete", "Stock check", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
+		if (wxMessageBox("Are you sure you want to mark all stock check products as complete", "Stock check", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 		mStockData->Freeze();
 		for (auto& row : datastore) {
 			row.first[STOCK_STATUS] = static_cast<std::uint64_t>(DONE);

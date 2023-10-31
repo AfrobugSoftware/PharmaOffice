@@ -549,7 +549,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 	{
 	case pof::PrintManager::RECEIPT:
 		if (!status) {
-			wxMessageBox("Sale could not be completed, please contact admin", "Sale", wxICON_ERROR | wxOK);
+			spdlog::error("Printing failed");
 			return;
 		}
 		wxGetApp().mSaleManager.GetSaleData()->Clear();

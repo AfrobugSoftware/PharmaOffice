@@ -254,6 +254,10 @@ void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission) {
+		wxMessageBox("User accoount cannot add product to store", "Add Product", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	pof::AddProdutDialog dialog(this);
 	dialog.Center();
 	if (dialog.ShowModal() == wxID_OK) {
@@ -906,6 +910,10 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 
 void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Mark up", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	wxGetApp().mProductManager.MarkUpProducts();
 	
 	//refresh the display

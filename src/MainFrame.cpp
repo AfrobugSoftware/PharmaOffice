@@ -501,6 +501,11 @@ void pof::MainFrame::OnImportExcel(wxCommandEvent& evt)
 
 void pof::MainFrame::OnMarkupSettings(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Mark up", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	wxTextEntryDialog dialog(this, "Please enter the precentage(%) Mark-Up\nRange ( 0 - 100 )", "Product Markup");
 	dialog.SetTextValidator(wxTextValidator{wxFILTER_DIGITS});
 	if (dialog.ShowModal() == wxID_OK) {

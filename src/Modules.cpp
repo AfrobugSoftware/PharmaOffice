@@ -139,6 +139,16 @@ void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
 	evt.Skip();
 }
 
+void pof::Modules::OnAccountUpdated(const pof::Account& acc)
+{
+	ReloadAccountDetails();
+}
+
+void pof::Modules::OnPharmacyUpdated(const pof::Pharmacy& pharm)
+{
+	ReloadAccountDetails();
+}
+
 void pof::Modules::OnContextEdit(wxCommandEvent& evt)
 {
 	auto item = mModuleTree->GetSelection();
@@ -254,6 +264,8 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	
 	Style(); //should it be here ?
 	
+	wxGetApp().MainAccount->updateSig.connect(std::bind_front(&pof::Modules::OnAccountUpdated, this));
+	wxGetApp().MainPharmacy->updateSig.connect(std::bind_front(&pof::Modules::OnPharmacyUpdated, this));
 	this->SetSizer( bSizer1 );
 	this->Layout();
 }

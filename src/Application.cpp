@@ -49,10 +49,9 @@ bool pof::Application::OnInit()
 	if (mChecker->IsAnotherRunning()) {
 		//..find out how to pop up the current running application
 		mChecker.reset(nullptr);
-		OnExit();
 		return false;
 	}
-	SetUseBestVisual(true, true);
+	//SetUseBestVisual(true, true);
 
 
 	//load the settings
@@ -719,6 +718,13 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp10, "Alert critical warnings on sale");
 
 	pp0->SetBackgroundColour(*wxWHITE);
+	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
+		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
+			evt.Veto();
+			return;
+		}
+	});
 
 
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
@@ -818,14 +824,16 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 	if (idx >= 5) idx = 0;
 	pp0->SetValue(wxVariant(mPharamcyTypeValueChoices[idx]));
 
-
+	auto ct1 = grid->Append(new wxPropertyCategory("Pharmacy Contact"));
 	auto pp2 = grid->Append(new wxStringProperty("Phone Number", "2", MainPharmacy->contact.phoneNumber));
+	pp2->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	auto pp3 = grid->Append(new wxStringProperty("Email", "3", MainPharmacy->contact.email));
 	auto pp4 = grid->Append(new wxStringProperty("Website", "4", MainPharmacy->contact.website));
 
-	auto ct1 = grid->Append(new wxPropertyCategory("Pharmacy Address"));
+	auto ct2 = grid->Append(new wxPropertyCategory("Pharmacy Address"));
 
 	auto pp5 = grid->Append(new wxStringProperty("No", "5", MainPharmacy->addy.number));
+	pp5->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	auto pp6 = grid->Append(new wxStringProperty("Street", "6", MainPharmacy->addy.street));
 	auto pp7 = grid->Append(new wxStringProperty("City", "7", MainPharmacy->addy.city));
 	auto pp8 = grid->Append(new wxStringProperty("L.G.A", "8", MainPharmacy->addy.lga));
@@ -849,6 +857,48 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 
 	
 	grid->SetPropertyBackgroundColour(pp0, *wxWHITE);
+	mSettingProperties[1]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
+		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
+			evt.Veto();
+			return;
+		}
+		wxPGProperty* props = evt.GetProperty();
+		if (!props || props->IsCategory()) return;
+		try {
+			size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+			wxVariant v = evt.GetPropertyValue();
+			switch (n)
+			{
+			case 2: {
+				auto phonenumer = v.GetString().ToStdString();
+				if (phonenumer.size() != 11){
+					wxMessageBox("Phone number is not complete, please enter valid phone number", "Settings", wxICON_WARNING | wxOK);
+					evt.Veto();
+				}
+			}
+				break;
+			case 3: {
+				auto email = v.GetString().ToStdString();
+				const std::regex rex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)");
+				if (!std::regex_match(email, rex)) {
+					wxMessageBox("Invalid Email Address", "Settings", wxICON_WARNING | wxOK);
+					evt.Veto();
+					return;
+				}
+			}
+				break;
+			default:
+				break;
+			}
+		}
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+			return;
+		}
+
+	});
+
 
 	mSettingProperties[1]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
 		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
@@ -864,9 +914,46 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 			wxVariant v = evt.GetPropertyValue();
 			switch (n)
 			{
+			case 0: {
+				int sel = v.GetInteger();
+				if (sel == wxNOT_FOUND) break;
+				MainPharmacy->pharmacyType.set(sel);
+			}
+				break;
+			case 1:
+				MainPharmacy->name = std::move(v.GetString().ToStdString());
+				break;
+			case 2:
+				MainPharmacy->contact.phoneNumber = std::move(v.GetString().ToStdString());
+				break;
+			case 3:
+				MainPharmacy->contact.email = std::move(v.GetString().ToStdString());
+				break;
+			case 4:
+				MainPharmacy->contact.website = std::move(v.GetString().ToStdString());
+				break;
+			case 5:
+				MainPharmacy->addy.number = std::move(v.GetString().ToStdString());
+				break;
+			case 6:
+				MainPharmacy->addy.street = std::move(v.GetString().ToStdString());
+				break;
+			case 7:
+				MainPharmacy->addy.city = std::move(v.GetString().ToStdString());
+				break;
+			case 8:
+				MainPharmacy->addy.lga = std::move(v.GetString().ToStdString());
+				break;
+			case 9:
+				MainPharmacy->addy.state = std::move(v.GetString().ToStdString());
+				break;
+			case 10:
+				MainPharmacy->addy.country = std::move(v.GetString().ToStdString());
+				break;
 			default:
 				break;
 			}
+			MainPharmacy->updateSig(*MainPharmacy);
 		}
 		catch (std::exception& exp) {
 			spdlog::error(exp.what());
@@ -921,6 +1008,8 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 	auto pp2 = grid->Append(new wxStringProperty("Username", "2", MainAccount->username));
 	auto pp3 = grid->Append(new wxStringProperty("Email", "3", MainAccount->email));
 	auto pp4 = grid->Append(new wxStringProperty("Phone Number", "4", MainAccount->phonenumber));
+	pp4->SetValidator(wxTextValidator{wxFILTER_DIGITS});
+
 	auto pp5 = grid->Append(new wxStringProperty("Reg Number", "5", MainAccount->regnumber));
 
 	tt0->Enable(false);
@@ -934,6 +1023,45 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp4, "Change phone number");
 	grid->SetPropertyHelpString(pp5, "Change reg number");
 
+	mSettingProperties[2]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
+		wxPGProperty* props = evt.GetProperty();
+		if (!props || props->IsCategory()) return;
+		try {
+		size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+		wxVariant v = evt.GetPropertyValue();
+		switch (n)
+		{
+		case 3:{
+			auto email = v.GetString().ToStdString();
+			const std::regex rex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)");
+			if (!std::regex_match(email, rex)) {
+				wxMessageBox("Invalid Email Address", "Settings", wxICON_WARNING | wxOK);
+				evt.Veto();
+				return;
+			}
+		}
+			break;
+		case 4: {
+			auto phonenumber = v.GetString().ToStdString();
+			if (phonenumber.size() != 11) {
+				//cannot properly validate number just the count
+				wxMessageBox("Phone number is not complete, please enter valid phone number", "Settings", wxICON_WARNING | wxOK);
+				evt.Veto();
+				return;
+			}
+		}
+			break;
+		default:
+			break;
+		}
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
+	}
+	});
+
+
 	mSettingProperties[2]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
 	wxPGProperty* props = evt.GetProperty();
 	if (!props || props->IsCategory()) return;
@@ -942,9 +1070,25 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 		wxVariant v = evt.GetPropertyValue();
 		switch (n)
 		{
+		case 0:
+			MainAccount->name = v.GetString().ToStdString();
+			break;
+		case 1:
+			MainAccount->lastname = v.GetString().ToStdString();
+			break;
+		case 3:
+			MainAccount->email = v.GetString().ToStdString();
+			break;
+		case 4:
+			MainAccount->phonenumber = v.GetString().ToStdString();
+			break;
+		case 5:
+			MainAccount->regnumber = v.GetString().ToStdString();
+			break;
 		default:
 			break;
 		}
+		MainAccount->UpdateAccount();
 	}
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());
@@ -990,6 +1134,14 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 
 	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
 	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing");
+	mSettingProperties[3]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
+		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
+			evt.Veto();
+			return;
+		}
+	});
+	
 	mSettingProperties[3]->Bind(wxEVT_PG_CHANGED, [&](wxPropertyGridEvent& evt) {
 	wxPGProperty* props = evt.GetProperty();
 	if (!props || props->IsCategory()) return;

@@ -51,10 +51,11 @@ void pof::PrintManager::PrintJob(wxWindow* parent, wxPrintout* printout)
 	if (printout) {
 		if (!printer.Print(parent, printout, wxGetApp().bShowPrintPrompt)) {
 			if (GetLastError() == wxPRINTER_ERROR) {
+				spdlog::error("Problem printing");
 				wxMessageBox("Problem printing", "Printing", wxICON_ERROR | wxOK);
 			}
 			else if (GetLastError() == wxPRINTER_CANCELLED){
-				wxMessageBox("Printing cancelled", "Printing", wxICON_ERROR | wxOK);
+				spdlog::error("Print cancelled");
 			}
 			printSig(false, gPrintState);
 		}else {

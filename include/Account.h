@@ -25,7 +25,7 @@ namespace pof {
 		using privilage_set_t = std::bitset<8>;
 		constexpr static const size_t max_account_type = 7;
 		constexpr static const std::array<std::string_view, max_account_type> account_type_string = {
-			"SUPERINTENDENT PHARMACIST", "PHARMTECH", "DISPENSER", "SALES_ASSISTANT", "INTERN_PHARMACIST", "STUDENT_PHARMACIST", 
+			"SUPERINTENDENT PHARMACIST", "PHARMTECH", "DISPENSER", "SALES ASSISTANT", "INTERN PHARMACIST", "STUDENT PHARMACIST", 
 				"MANAGER"
 		};
 		enum class Privilage: std::uint8_t {
@@ -78,11 +78,12 @@ namespace pof {
 		std::string GetSecurityQuestion(const std::string& username);
 		std::uint64_t GetLastId() const;
 		bool DeleteAccount();
-
+		bool UpdateAccount();
 		void SetSignInTime();
 		void SetSecurityQuestion(const std::string& question, const std::string& answer);
 		std::shared_ptr<pof::base::database> mLocalDatabase;
-		signal_t signOutSig; 
+		signal_t signOutSig;
+		signal_t updateSig;
 		boost::uuids::uuid sessionID;
 		privilage_set_t priv;
 		datetime_t signintime;

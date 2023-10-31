@@ -320,6 +320,32 @@ bool pof::Account::DeleteAccount()
 	return false;
 }
 
+bool pof::Account::UpdateAccount() {
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE users SET name = ?, last_name = ?, email = ?, 
+		phonenumber = ?, regnumber = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt, 
+			std::make_tuple(name, lastname, email, phonenumber, regnumber));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			goto end;
+		}
+		updateSig(*this);
+	end:
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 //save the current sign in time
 void pof::Account::SetSignInTime()
 {

@@ -8,6 +8,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 	EVT_TOOL(pof::ProductInfo::ID_SHOW_PRODUCT_SALE_HISTORY, pof::ProductInfo::OnShowProducSaleHistory)
 	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
+	EVT_PG_CHANGING(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanging)
 	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
@@ -90,6 +91,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("IV");
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
+	FormulationChoices.Add("CREAM"); //needles, cannula and the rest
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
 	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));
@@ -555,13 +557,12 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
-	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
-		wxMessageBox("User account cannot perform this function", "Product Information", wxICON_INFORMATION | wxOK);
+	spdlog::info("Editing prop: {}", evt.GetPropertyName().ToStdString());
+	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
+	if (PropIter == mNameToProductElem.end()) {
+		evt.Skip();
 		return;
 	}
-	spdlog::info("{}", evt.GetPropertyName().ToStdString());
-	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
-	if (PropIter == mNameToProductElem.end()) return;
 	if (!mPropertyUpdate.has_value()) {
 		mPropertyUpdate.emplace();
 		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
@@ -639,6 +640,15 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	
 	spdlog::info("Property {} Changed", evt.GetPropertyName().ToStdString());
 	evt.Veto(); //might not be necessary
+}
+
+void pof::ProductInfo::OnPropertyChanging(wxPropertyGridEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Product Info", wxICON_INFORMATION | wxOK);
+		evt.Veto();
+		return;
+	}
 }
 
 void pof::ProductInfo::StyleSheet()

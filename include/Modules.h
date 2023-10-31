@@ -100,7 +100,8 @@ namespace pof {
 		void OnContextMenu(wxTreeEvent& evt);
 		void OnBeginEditLabel(wxTreeEvent& evt);
 		void OnEndEditLabel(wxTreeEvent& evt);
-
+		void OnAccountUpdated(const pof::Account& acc);
+		void OnPharmacyUpdated(const pof::Pharmacy& pharm);
 		//menu handlers
 		void OnContextEdit(wxCommandEvent& evt);
 		void OnContextRemove(wxCommandEvent& evt);

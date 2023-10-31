@@ -19,6 +19,7 @@
 #include <chrono>
 #include <sstream>
 #include <random>
+#include <regex>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/lexical_cast.hpp>

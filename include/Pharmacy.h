@@ -15,6 +15,7 @@ namespace nl = nlohmann;
 namespace pof{
 	class Pharmacy : private boost::noncopyable {
 	public:
+
 		enum class PharmacyType : std::uint8_t
 		{
 			COMMUNITY,
@@ -23,6 +24,13 @@ namespace pof{
 			WHOLESALE,
 			UNIVERSITY
 		};
+
+		static constexpr const std::array<std::string_view, 5> sPharamcyTypes = 
+		{  "COMMUNITY", 
+		   "HOSPITAL", 
+		   "INDUSTRY", 
+		   "WHOLESALE", 
+		   "EDUCATIONAL" };
 		
 		using employeModel_t = std::shared_ptr<pof::DataModel>;
 		struct address {
@@ -56,6 +64,7 @@ namespace pof{
 		inline const address& GetAddress() const { return addy; }
 		std::string GetAddressAsString() const;
 		std::string GetContactAsString() const;
+		std::string GetPharmacyTypeAsString() const;
 		inline void SetPharmacyType(const std::bitset<8>& bitset) { pharmacyType = bitset; }
 		inline void SetPharmacyType(PharmacyType ty) {
 			pharmacyType.set(static_cast<size_t>(std::underlying_type_t<PharmacyType>(ty)));
@@ -68,6 +77,7 @@ namespace pof{
 		boost::uuids::uuid branchID; //this particular branch
 		std::bitset<8> pharmacyType;
 		std::string name;
+		boost::signals2::signal<void(const Pharmacy&)> updateSig;
 		address addy;
 		contactInfo contact;
 		

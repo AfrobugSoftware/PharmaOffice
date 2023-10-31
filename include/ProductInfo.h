@@ -146,6 +146,7 @@ namespace pof
 		void OnGoBack(wxCommandEvent& evt);
 		void OnAddInventory(wxCommandEvent& evt);
 		void OnPropertyChanged(wxPropertyGridEvent& evt);
+		void OnPropertyChanging(wxPropertyGridEvent& evt);
 		void StyleSheet();
 
 		void OnSashDoubleClick(wxSplitterEvent& evt);
@@ -156,6 +157,7 @@ namespace pof
 		void OnRemoveInventory(wxCommandEvent& evt);
 		void OnInvenContextMenu(wxDataViewEvent& evt);
 		void OnWarnings(wxCommandEvent& evt);
+
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;
