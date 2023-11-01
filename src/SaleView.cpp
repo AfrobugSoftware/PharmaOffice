@@ -893,7 +893,21 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("No products selected to return");
 		return;
 	}
+	try {
+		wxTextEntryDialog dialog(this, "Please enter the receipt ID for this return", "Return");
+		if (dialog.ShowModal() != wxID_OK) return;
+		std::string uids = dialog.GetValue().ToStdString();
+		if (uids.empty()) return;
+		boost::uuids::uuid rid = boost::lexical_cast<boost::uuids::uuid>(uids);
 
+
+
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Incorrect recepit ID", "Return", wxICON_INFORMATION | wxOK);
+		return;
+	}
 
 }
 
@@ -986,6 +1000,7 @@ void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
 					}
 					wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
 					wxGetApp().mPrintManager->PrintSaleReceipt(this);
+					return;
 				}
 				catch (boost::bad_lexical_cast& err) {
 					spdlog::error(err.what());

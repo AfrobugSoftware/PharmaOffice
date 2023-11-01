@@ -6,6 +6,7 @@ BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
 EVT_TOOL(pof::ReportsDialog::ID_EXCEL, pof::ReportsDialog::OnDownloadExcel)
 EVT_DATE_CHANGED(pof::ReportsDialog::ID_EOD_DATE, pof::ReportsDialog::OnDateChange)
+EVT_LIST_ITEM_RIGHT_CLICK(pof::ReportsDialog::ID_REPORT_LIST, pof::ReportsDialog::OnEodRightClick)
 END_EVENT_TABLE()
 
 pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
@@ -28,11 +29,14 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, 2);
 	mBook = new wxSimplebook(m_panel5, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 
-	mListReport = new wxListCtrl(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
+	mListReport = new wxListCtrl(mBook, ID_REPORT_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
 	wxImageList* imageList = new wxImageList(16, 16);
 	imageList->Add(wxArtProvider::GetBitmap("action_check"));
 	imageList->Add(wxArtProvider::GetBitmap("action_delete"));
 	mListReport->AssignImageList(imageList, wxIMAGE_LIST_NORMAL);
+	mListReport->Bind(wxEVT_LIST_ITEM_SELECTED, [&](wxListEvent& evt) {
+		mSelItem = evt.GetItem();
+	});
 	CreateEmptyEodPage();
 
 
@@ -217,6 +221,10 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		report.AppendColumn("QUANTITY", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("AMOUNT", wxLIST_FORMAT_LEFT, 200);
 
+		if (bShowSaleID) {
+			report.AppendColumn("RECIEPT ID", wxLIST_FORMAT_CENTER, 205);
+		}
+
 		size_t i = 0;
 		for (auto iter = data->begin(); iter != data->end(); iter++) {
 			auto& v = iter->first;
@@ -250,6 +258,14 @@ bool pof::ReportsDialog::LoadEndOFDay()
 			item.SetText(fmt::format("{:cu}", amount));
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.SetItem(item);
+
+			if (bShowSaleID){
+				item.SetColumn(4);
+				item.SetId(i);
+				item.SetText(boost::uuids::to_string(boost::variant2::get<boost::uuids::uuid>(v[5])));
+				item.SetMask(wxLIST_MASK_TEXT);
+				report.SetItem(item);
+			}
 
 			i++;
 		}
@@ -296,6 +312,32 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 	m_panel5->Refresh();
 }
 
+void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
+{
+	if (mCurReportType == ReportType::EOD){
+		wxMenu* menu = new wxMenu;
+		auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
+
+		mListReport->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
+			if (!bShowSaleID) return;
+
+			wxClipboardLocker clipLocker;
+			if (!clipLocker) {
+				spdlog::error("Can't open the clipboard");
+				return;
+			}
+			
+			auto str = mListReport->GetItemText(mSelItem.GetId(), 4); 
+			wxTextDataObject *tObj = new wxTextDataObject(std::move(str));
+			wxTheClipboard->Clear();
+			wxTheClipboard->AddData(tObj);
+
+		}, ID_COPY_RECIEPT_ID);
+
+		mListReport->PopupMenu(menu);
+	}
+}
+
 void pof::ReportsDialog::CreateToolBar()
 {
 	text = new wxStaticText(mTools, wxID_ANY, wxEmptyString);
@@ -326,10 +368,27 @@ void pof::ReportsDialog::CreateComsumptionPatternToolBar()
 
 void pof::ReportsDialog::CreateEODToolBar()
 {
+	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxArtProvider::GetBitmap("application"), "Show/Hide the receipt ID", wxITEM_CHECK);
+	mTools->AddSpacer(5);
 	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
 	mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
 	mTools->AddControl(mEodDate);
+
+
+	this->Bind(wxEVT_TOOL, [&](wxCommandEvent& evt) {
+
+		bShowSaleID = evt.IsChecked();
+		m_panel5->Freeze();
+		mListReport->Freeze();
+		mListReport->ClearAll();
+		LoadEndOFDay();
+		mListReport->Thaw();
+		mListReport->Refresh();
+		m_panel5->Thaw();
+		m_panel5->Refresh();
+
+	}, ID_SHOW_SALE_ID); 
 }
 
 void pof::ReportsDialog::CreateEmptyEodPage()

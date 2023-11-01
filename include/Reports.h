@@ -22,6 +22,7 @@
 #include <wx/listctrl.h>
 #include <OpenXLSX.hpp>
 #include <wx/simplebook.h>
+#include <wx/clipbrd.h>
 
 namespace excel = OpenXLSX;
 namespace pof
@@ -55,6 +56,9 @@ namespace pof
 			ID_EXCEL,
 			ID_EOD_DATE,
 			ID_BOOK,
+			ID_SHOW_SALE_ID,
+			ID_REPORT_LIST,
+			ID_COPY_RECIEPT_ID,
 
 		};
 
@@ -85,6 +89,7 @@ namespace pof
 		void OnDownloadExcel(wxCommandEvent& evt);
 		void OnReportSelectSelected(wxListEvent& evt);
 		void OnDateChange(wxDateEvent& evt);
+		void OnEodRightClick(wxListEvent& evt);
 
 
 		void CreateToolBar();
@@ -97,7 +102,9 @@ namespace pof
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
 
+		bool bShowSaleID = false;
 		ReportType mCurReportType;
+		wxListItem mSelItem;
 		DECLARE_EVENT_TABLE()
 	};
 
