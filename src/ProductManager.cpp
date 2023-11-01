@@ -2688,6 +2688,69 @@ bool pof::ProductManager::UpdateTimeCheck(pof::base::data::datetime_t time)
 	return false;
 }
 
+bool pof::ProductManager::ReturnToInventory(const pof::base::data::duuid_t& pid, std::tuple<std::uint64_t, pof::base::data::currency_t> quan)
+{
+	if (mLocalDatabase){
+		//get the most recent inserted inventory for this product
+		constexpr const std::string_view qSql = R"(SELECT i.uuid, id, MAX(i.input_date), i.expire_date, p.stock_count
+			 FROM inventory i, products p
+			 WHERE i.uuid = ? AND p.uuid = ? LIMIT 1;)";
+
+		constexpr const std::string_view sql = R"(INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?);)";
+		
+		auto stmt = mLocalDatabase->prepare(qSql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, pid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::datetime_t,
+			pof::base::data::datetime_t,
+			std::uint64_t
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) {
+			return false; //cannot return to an empty inventory
+		}
+		auto& tup = *(rel->begin());
+		stmt.emplace();
+		stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto today = pof::base::data::clock_t::now();
+		status = mLocalDatabase->bind(*stmt, std::make_tuple(
+			std::get<1>(tup) + 1, std::get<0>(tup),
+				std::get<3>(tup), today, std::get<0>(quan) , std::get<1>(quan), "RETURN"s, 0, "0"s
+		));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		
+		//update the product stock
+		auto stock = std::get<4>(tup) + std::get<0>(quan);
+		status = UpdatePD(std::make_tuple(pid, stock), { "uuid", "stock_count" });
+		return status;	
+	}
+	return false;
+}
+
 void pof::ProductManager::Finialize()
 {
 	if (bUsingLocalDatabase) {

@@ -76,11 +76,18 @@ namespace pof {
 		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
 		bool CheckIfSaved(const boost::uuids::uuid& saleID);
 
+		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
 		bool RemoveProductSaveSale(pof::base::data::const_iterator iterator);
 
+		bool RemoveProductFromSale(const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid);
+		std::optional<std::tuple<std::uint64_t, pof::base::data::currency_t>> GetReturnedProductQuan(const pof::base::data::duuid_t& pid,
+			const pof::base::data::duuid_t& sid);
+
+
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;
+		double discount = 0.0;
 		std::string mCurPaymentType;
 	private:
 		

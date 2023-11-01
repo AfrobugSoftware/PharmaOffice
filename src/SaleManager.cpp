@@ -571,3 +571,51 @@ bool pof::SaleManager::RemoveProductSaveSale(pof::base::data::const_iterator ite
 	}
 	return false;
 }
+
+bool pof::SaleManager::RemoveProductFromSale(const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM sales WHERE product_uuid = ? AND uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, sid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+
+	}
+	return false;
+}
+
+std::optional<std::tuple<std::uint64_t, pof::base::data::currency_t>> pof::SaleManager::GetReturnedProductQuan(const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT product_quantity, product_ext_price FROM sales WHERE product_uuid = ? AND uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, sid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t, pof::base::data::currency_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+		return (*(rel->begin()));
+	}
+	return std::nullopt;
+}

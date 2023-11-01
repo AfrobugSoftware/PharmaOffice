@@ -899,16 +899,67 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		std::string uids = dialog.GetValue().ToStdString();
 		if (uids.empty()) return;
 		boost::uuids::uuid rid = boost::lexical_cast<boost::uuids::uuid>(uids);
+		wxIcon cop;
+		cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+		wxBusyInfo info
+		(
+			wxBusyInfoFlags()
+			.Parent(this)
+			.Icon(cop)
+			.Title("Returning")
+			.Text(fmt::format("Please wait...."))
+			.Foreground(*wxBLACK)
+			.Background(*wxWHITE)
+			.Transparency(4 * wxALPHA_OPAQUE / 5)
+		);
+		bool status = false;
+		for (auto& retSale : wxGetApp().mSaleManager.GetSaleData()->GetDatastore()) {
+			auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
+			auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
+			if (!retQuan.has_value()) goto err;
+			status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
+			if (!status) goto err;
+			
+			//get product
+			auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+			auto prodIter = std::ranges::find_if(prodDatastore,
+				[&](auto& r) -> bool {
+					return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
+					== pid;
+			});
+			if (std::end(prodDatastore) == prodIter) goto err;
+			wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
+			
 
-
-
+			//delete
+			status = wxGetApp().mSaleManager.RemoveProductFromSale(pid, rid);
+			if (!status) goto err;
+			auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, uids));
+		}
+		wxGetApp().mSaleManager.GetSaleData()->Clear();
+		if (mPropertyManager->IsShown()) {
+			mPropertyManager->Hide();
+			mDataPane->Layout();
+			mDataPane->Refresh();
+		}
+		ResetSaleDisplay();
+		mCurSaleuuid = boost::uuids::nil_uuid();
+		SetActiveSaleIdText(mCurSaleuuid);
+		if (mInfoBar->IsShown()) {
+			mInfoBar->Dismiss();
+		}
+		mInfoBar->ShowMessage("Return sucessfull");
+		return;
 	}
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());
 		wxMessageBox("Incorrect recepit ID", "Return", wxICON_INFORMATION | wxOK);
 		return;
 	}
-
+err:
+	mInfoBar->ShowMessage("Return failed");
+	return;
 }
 
 void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
