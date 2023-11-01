@@ -34,5 +34,6 @@ std::string pof::Pharmacy::GetPharmacyTypeAsString() const
 	for (; i < 5; i++) {
 		if (pharmacyType.test(i)) break;
 	}
+	if (i >= 5) i = 0;
 	return std::string(sPharamcyTypes[i]);
 }
