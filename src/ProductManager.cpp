@@ -1640,7 +1640,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 						WHERE i.uuid NOT NULL
 						GROUP BY i.uuid
 					)  
-			AND ? > i.expire_date AND p.stock_count > 0; )";
+			AND ? > i.expire_date AND p.stock_count > 0 AND p.uuid = i.uuid; )";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -1671,6 +1671,8 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 		for (size_t i = 0; i < datastore.size(); i++){
 			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[PRODUCT_UUID]);
 			if (set.find(uid) != set.end()) {
+				auto& name = boost::variant2::get<pof::base::data::text_t>(datastore[i].first[PRODUCT_NAME]);
+				spdlog::info("{} has expired", name);
 				items.emplace_back(pof::DataModel::GetItemFromIdx(i));
 			}
 		}

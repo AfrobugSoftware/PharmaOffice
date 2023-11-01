@@ -1429,7 +1429,8 @@ void pof::ProductView::CreateSpecialCols()
 
 void pof::ProductView::Style()
 {
-	//m_dataViewCtrl1->SetAlternateRowColour(wxTheColourDatabase->Find("Navajo_white"));
+	wxColour col = wxTheColourDatabase->Find("Navajo_white");
+	//m_dataViewCtrl1->SetAlternateRowColour(wxColour(col.Red(),col.Green(), col.Blue(), 50));
 }
 
 void pof::ProductView::SwapCenterPane(bool IsInventoryView)

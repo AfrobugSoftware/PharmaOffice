@@ -454,6 +454,9 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
+
+		//refresh inventory view
+
 	}
 	else {
 		//rejected

@@ -129,7 +129,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
 
 
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 600, wxALIGN_CENTER);
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("QUANTITY"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
 	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRICE"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("EXT PRICE"), pof::SaleManager::PRODUCT_EXT_PRICE);
@@ -889,6 +889,11 @@ void pof::SaleView::OnSaleUuidTextUI(wxUpdateUIEvent& evt)
 
 void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Return", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
 		mInfoBar->ShowMessage("No products selected to return");
 		return;
@@ -931,9 +936,10 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 			wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
 			
 
-			//delete
-			status = wxGetApp().mSaleManager.RemoveProductFromSale(pid, rid);
-			if (!status) goto err;
+			// do not delete from sale, the problems is too much, never delete sale
+			//status = wxGetApp().mSaleManager.RemoveProductFromSale(pid, rid);
+			//if (!status) goto err;
+
 			auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
 			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, uids));
 		}
@@ -949,7 +955,7 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		if (mInfoBar->IsShown()) {
 			mInfoBar->Dismiss();
 		}
-		mInfoBar->ShowMessage("Return sucessfull");
+		mInfoBar->ShowMessage("Return successfull");
 		return;
 	}
 	catch (std::exception& exp) {

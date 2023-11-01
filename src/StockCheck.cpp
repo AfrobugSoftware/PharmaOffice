@@ -48,7 +48,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mProductName = mStockData->AppendTextColumn( wxT("Product Name"), STOCK_PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, wxALIGN_CENTER);
 	mCurrenctStock = mStockData->AppendTextColumn( wxT("Currenct Stock"), STOCK_CURRENT_STOCK, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mCheckedStock = mStockData->AppendTextColumn(wxT("Checked Stock"), STOCK_CHECKED_STOCK, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
-	mExpiredStock = mStockData->AppendTextColumn(wxT("Expired Stock"), STOCK_EXPIRED, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
+	mExpiredStock = mStockData->AppendTextColumn(wxT("Expired Stock"), STOCK_EXPIRED, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	
 	mShortage = mStockData->AppendTextColumn( wxT("Shortage"), STOCK_SHORTAGE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mStatus = mStockData->AppendBitmapColumn( wxT("Status"), STOCK_STATUS, wxDATAVIEW_CELL_INERT, 50, wxALIGN_CENTER);
