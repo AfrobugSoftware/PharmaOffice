@@ -2696,7 +2696,7 @@ bool pof::ProductManager::ReturnToInventory(const pof::base::data::duuid_t& pid,
 		//get the most recent inserted inventory for this product
 		constexpr const std::string_view qSql = R"(SELECT i.uuid, id, MAX(i.input_date), i.expire_date, p.stock_count
 			 FROM inventory i, products p
-			 WHERE i.uuid = ? AND p.uuid = ? LIMIT 1;)";
+			 WHERE i.uuid = ? AND p.uuid = ?  LIMIT 1;)";
 
 		constexpr const std::string_view sql = R"(INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?);)";
 		
@@ -2732,6 +2732,7 @@ bool pof::ProductManager::ReturnToInventory(const pof::base::data::duuid_t& pid,
 			return false;
 		}
 		auto today = pof::base::data::clock_t::now();
+		spdlog::info("Product cost {:cu}", std::get<1>(quan));
 		status = mLocalDatabase->bind(*stmt, std::make_tuple(
 			std::get<1>(tup) + 1, std::get<0>(tup),
 				std::get<3>(tup), today, std::get<0>(quan) , std::get<1>(quan), "RETURN"s, 0, "0"s

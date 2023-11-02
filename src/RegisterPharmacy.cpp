@@ -223,6 +223,11 @@ bool pof::PharmacyRegistration::TransferDataFromWindow()
 		wxMessageBox("Critical Error, failed to create pharmacy, please call admin", "ERROR", wxICON_ERROR | wxOK);
 		return false; //critial error;
 	}
+	int sel = mPharamcyTypeValue->GetSelection();
+	if (sel != wxNOT_FOUND) {
+		mp->pharmacyType.set(sel);
+	}
+
 	mp->name = mPharmacyNameValue->GetValue();
 	
 	mp->addy.city = mCityValue->GetValue();

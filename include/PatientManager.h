@@ -3,17 +3,32 @@
 #include <ranges>
 #include <date/date.h>
 #include <algorithm>
+#include <array>
 #include <set>
 #include <shared_mutex>
 #include "DataModel.h"
 #include "database.h"
 #include "Account.h"
+#include "Pharmacy.h"
+
 
 namespace pof {
 	class PatientManager : private boost::noncopyable
 	{
 	public:
 		//Patients
+		static constexpr const std::array<std::string_view, 10> strengthType = {
+			"g",
+			"mg",
+			"mcg",
+			"L",
+			"ml",
+			"%v/v",
+			"%w/v",
+			"mol",
+			"mmol",
+			"NOT SPECIFIED" };
+
 		enum : std::uint8_t {
 			PATIENT_UUID,
 			PATIENT_NAME,
@@ -31,7 +46,8 @@ namespace pof {
 			PATIENT_BP,
 			PATIENT_RR,
 			PATIENT_TEMPT,
-			
+			PATIENT_ENTERED_DATE,
+			PATIENT_MODIFIED_DATE,
 			PATIENT_MAX
 		};
 		
@@ -39,25 +55,41 @@ namespace pof {
 		enum : std::uint8_t {
 			MED_PRODUCT_UUID,
 			MED_PATIENT_UUID,
-			MED_DURATION,
 			MED_PURPOSE,
-			MED_DIR_FOR_USE,
 			MED_OUTCOME,
 			MED_STOCK,
+			MED_TAKEN,
+			MED_DIR_FOR_USE_QUANTITY,
+			MED_DIR_FOR_USE_STRENGHT,
+			MED_DURATION, //IN DAYS COUNT FOR EXAMPLE 3 TIMES A DAY
 			MED_START_DATE,
 			MED_STOP_DATE,
 			MED_MAX,
 		};
 
-		//Patient History
-		enum : std::uint8_t {
-			PATIENT_HIST_PROD_UUID,
-			PAITENT_MED_UUID,
+		//public shared globals
+		std::shared_ptr<pof::base::database> mLocalDatabase;
+		std::shared_ptr<pof::Account> mCurAccount;
+		std::shared_ptr<pof::Pharmacy> mCurPharmacy;
+		
+		PatientManager();
+		~PatientManager();
 
+		bool CreatePatientTable();
+		bool CreatePatientMedicationTable();
 
-		};
+		std::unique_ptr<pof::DataModel>& GetPatientData();
+		std::unique_ptr<pof::DataModel>& GetPatientMedData();
+		std::unique_ptr<pof::DataModel>& GetPatientHistotyData();
 
+		bool LoadPatients();
+		bool LoadPatientMedication(const pof::base::data::duuid_t& pid);
+		bool LoadPatientHistory(const pof::base::data::duuid_t& pid);
+
+		//updates the take drugs that have been taken
+		bool UpdateTakenCount();
 	private:
+		
 		std::unique_ptr<pof::DataModel> mPaitnets;
 		std::unique_ptr<pof::DataModel> mPatientMedications;
 		std::unique_ptr<pof::DataModel> mPatientHistory;

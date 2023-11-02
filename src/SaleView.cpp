@@ -275,7 +275,10 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	CreateSpecialColumnHandlers();
 	CreateSearchPopup();
 	ProductNameKeyEvent(); //experiment
-
+	CreateAccelTable();
+	this->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
+		mScanProductValue->SetFocus();
+	}, ID_FOCUS_SCAN);
 	wxGetApp().mPrintManager->printSig.connect(std::bind_front(&pof::SaleView::OnSaleComplete, this));
 	/*this->Bind(wxEVT_UPDATE_UI, [&](wxUpdateUIEvent& evt) {
 		UpdateSaleDisplay();
@@ -391,6 +394,17 @@ void pof::SaleView::CreateProductDetails()
 	mPropertyManager->SetBackgroundColour(*wxWHITE);
 	mPropertyManager->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
 	mPropertyManager->SetCaptionTextColour(*wxBLACK);
+}
+
+void pof::SaleView::CreateAccelTable()
+{
+	wxAcceleratorEntry entries[2];
+	entries[0].Set(wxACCEL_CTRL, (int)'P', ID_CHECKOUT);
+	entries[1].Set(wxACCEL_CTRL, (int)'F', ID_FOCUS_SCAN);
+
+
+	wxAcceleratorTable accel(2, entries);
+	this->SetAcceleratorTable(accel);
 }
 
 void pof::SaleView::UpdateSaleDisplay()
@@ -1099,9 +1113,8 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 		}
 		status = CheckProductClass(val);
 		if (status) {
-			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
-				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			return;
+			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue",
+				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
 		}
 		std::optional<pof::base::data::iterator> iterOpt;
 		auto& v = val.first;
@@ -1254,9 +1267,8 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		}
 		bool status = CheckProductClass(*iter);
 		if (status) {
-			wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
-				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			return;
+			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
+				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO)) return;
 		}
 		auto& v = iter->first;
 		std::optional<pof::base::data::iterator> iterOpt;
@@ -1302,6 +1314,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		UpdateSaleDisplay();
 
 		mScanProductValue->Clear();
+		mScanProductValue->SetFocus();
 	}
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());

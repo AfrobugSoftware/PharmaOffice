@@ -117,6 +117,7 @@ namespace pof
 			ID_REPRINT_LAST_SALE,
 			ID_RETURN_SALE,
 			ID_FUNCTIONS,
+			ID_FOCUS_SCAN,
 		};
 
 
@@ -127,6 +128,7 @@ namespace pof
 		void CreateSpecialColumnHandlers();
 		void CreateSearchPopup();
 		void CreateProductDetails();
+		void CreateAccelTable();
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
