@@ -42,6 +42,8 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_EXCEL, pof::ProductView::OnDownloadExcel)
 
+	//TIMER
+	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
 	EVT_UPDATE_UI(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnUpdateUI)
 END_EVENT_TABLE()
@@ -60,7 +62,8 @@ wxHelpProvider::Set( new wxSimpleHelpProvider );
 
 static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
 
-pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) 
+	: wxPanel( parent, id, pos, size, style ), mStockCheckTimer(this, ID_STOCK_CHECK_TIMER)
 {
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(AUIMGRSTYLE);
@@ -1012,13 +1015,11 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			if (!items.has_value()) { }
 			else if (!items->empty()){
 				mInfoBar->ShowMessage(fmt::format("{:d} products in store has expired", items->size()), wxICON_WARNING);
-				this->Layout();
-				this->Refresh();
-
+				mInfoBar->Refresh();
 			}
-			mExpireProductWatchDog = now;
 
 		}
+		mExpireProductWatchDog = now;
 	}
 	if (wxGetApp().bCheckOutOfStockOnUpdate){
 		auto now = std::chrono::system_clock::now();
@@ -1027,11 +1028,13 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			if (!items.has_value()) {}
 			else if (!items->empty()) {
 				mInfoBar->ShowMessage(fmt::format("{:d} products in store are out of stock", items->size()), wxICON_WARNING);
-				this->Layout();
-
+				mInfoBar->Refresh();
 			}
-			mOutOfStockProductWatchDog = now;
 		}
+		mOutOfStockProductWatchDog = now;
+	}
+	if (wxGetApp().bNotifyStockCheckInComplete) {
+		CheckIfStockCheckIsComplete();
 	}
 }
 
@@ -1156,6 +1159,23 @@ void pof::ProductView::OnDownloadExcel(wxCommandEvent& evt)
 void pof::ProductView::OnCacheHint(wxDataViewEvent& evt){
 	//look into these cache stuff
 	////
+	wxBusyCursor crs;
+	size_t i = evt.GetCacheFrom();
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (evt.GetCacheTo() >= datastore.size()) return;
+	spdlog::info("Loading cache from {:d} to {:d}", evt.GetCacheFrom(), evt.GetCacheTo());
+	//do this in the ProductManager
+	/*for (; i < evt.GetCacheTo(); i++) {
+		auto& row = datastore[i];
+		wxGetApp().mProductManager.RefreshRowFromDatabase(
+			boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]), row);
+	}*/
+
+}
+
+void pof::ProductView::OnStockCheckTimer(wxTimerEvent& evt)
+{
+	mInfoBar->ShowMessage("Stock check is incomplete, please finish stock check before end of month");
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
@@ -1201,7 +1221,7 @@ void pof::ProductView::OnCategorySelected(const std::string& name)
 void pof::ProductView::ShowCostPriceColumn()
 {
 	mProductUnitPriceCol->SetWidth(100);
-	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("COST PRICE", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("Cost Price", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 }
 
 void pof::ProductView::HideCostPriceColumn()
@@ -1482,5 +1502,24 @@ void pof::ProductView::RemoveCheckedState(wxAuiToolBarItem* item)
 	m_auiToolBar1->Thaw();
 	m_auiToolBar1->Refresh();
 	
+}
+
+void pof::ProductView::CheckIfStockCheckIsComplete()
+{
+	auto today = pof::base::data::clock_t::now();
+	auto month = date::floor<date::months>(today);
+	auto nextMonth = month + date::months(1);
+	constexpr std::chrono::milliseconds ms =
+		std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::minutes(60));
+	//should be 5 days before the next month
+	if ((month + date::days(5)) >= nextMonth) {
+		if (!wxGetApp().mProductManager.IsStockCheckComplete()) {
+			if (!mStockCheckTimer.IsRunning()) {
+				mStockCheckTimer.Start(ms.count());
+			}
+		}else{
+			mStockCheckTimer.Stop();
+		}
+	}
 }
 

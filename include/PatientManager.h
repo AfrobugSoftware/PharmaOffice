@@ -55,6 +55,7 @@ namespace pof {
 		enum : std::uint8_t {
 			MED_PRODUCT_UUID,
 			MED_PATIENT_UUID,
+			MED_NAME,
 			MED_PURPOSE,
 			MED_OUTCOME,
 			MED_STOCK,
@@ -85,6 +86,16 @@ namespace pof {
 		bool LoadPatients();
 		bool LoadPatientMedication(const pof::base::data::duuid_t& pid);
 		bool LoadPatientHistory(const pof::base::data::duuid_t& pid);
+
+		//crud
+		bool OnAddPatient(pof::base::data::const_iterator iter);
+		bool OnRemovePatient(pof::base::data::const_iterator iter);
+		bool OnUpdatePatient(pof::base::data::const_iterator iter);
+		
+		//crud medication
+		bool OnAddMedication(pof::base::data::const_iterator iter);
+		bool OnRemoveMedication(pof::base::data::const_iterator iter);
+		bool OnUpdateMedication(pof::base::data::const_iterator iter);
 
 		//updates the take drugs that have been taken
 		bool UpdateTakenCount();

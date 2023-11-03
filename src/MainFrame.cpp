@@ -388,6 +388,7 @@ void pof::MainFrame::OnClose(wxCloseEvent& evt)
 {
 	spdlog::drop_all();
 	mLogView.reset();
+	wxGetApp().SaveSettings();
 
 	evt.Skip();
 }

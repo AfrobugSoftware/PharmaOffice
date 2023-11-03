@@ -117,6 +117,8 @@ namespace pof {
 		bool bMaximizeOnLoad = true;
 		bool bShowPreviewOnSale = false;
 		bool bShowPrintPrompt = true;
+		bool bAutomaticBatchNumber = true;
+		bool bNotifyStockCheckInComplete = true;
 
 		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;

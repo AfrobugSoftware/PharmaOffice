@@ -86,6 +86,7 @@ namespace pof
 			ID_PACKS,
 			ID_MOVE_PRODUCT_STOCK,
 			ID_DOWNLOAD_EXCEL,
+			ID_STOCK_CHECK_TIMER,
 		};
 
 		size_t mRowHeights;
@@ -107,7 +108,7 @@ namespace pof
 		wxDataViewColumn* mProductFormulation = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
 		wxDataViewColumn* mSelectionCol = nullptr;
-
+		wxTimer mStockCheckTimer;
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
 		std::string mActiveCategory;
@@ -172,6 +173,7 @@ namespace pof
 		void OnUpdateUI(wxUpdateUIEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
 		void OnCacheHint(wxDataViewEvent& evt);
+		void OnStockCheckTimer(wxTimerEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
@@ -197,6 +199,7 @@ namespace pof
 		void CreateCategoryMenu(wxMenu* menu);
 		void DoBroughtForward();
 		void RemoveCheckedState(wxAuiToolBarItem* item);
+		void CheckIfStockCheckIsComplete();
 	private:
 		DECLARE_EVENT_TABLE()
 

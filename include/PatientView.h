@@ -13,6 +13,7 @@
 #include <wx/button.h>
 #include <wx/srchctrl.h>
 #include <wx/aui/auibar.h>
+#include <wx/aui/aui.h>
 
 #include <wx/collheaderctrl.h>
 #include <wx/collpane.h>
@@ -54,6 +55,7 @@ namespace pof {
 			ID_PATIENT_MEDS_VIEW,
 			ID_PATIENT_HISTORY_VIEW,
 			ID_ADD_PRODUCT,
+			ID_BOOK,
 
 		};
 
@@ -61,18 +63,31 @@ namespace pof {
 		~PatientView();
 		void CreateToolBars();
 		void CreateViews();
+		void CreatePatientSummaryPopUp();
+		void CreatePatientDetailsPane();
+		void CreateSpecialCols();
 
-		
+		void ShowPatientDetails();
+		wxBitmap GetPatientBitMap();
+		void SwitchToolBar();
+		std::set<wxDataViewItem> mMedicationSelections;
+		std::set<wxDataViewItem> mPatientSelections;
 	protected:
 		void OnPatientSelected(wxDataViewEvent& evt);
+		void OnAddPatient(wxCommandEvent& evt);
+		void OnRemovePatient(wxCommandEvent& evt);
+		void OnSelectCol(wxCommandEvent& evt);
 
+
+		wxAuiManager mManager;
+		wxPanel* mPanel = nullptr;
 		wxTimer mUpdatePatientStockTimer;
 		wxAuiToolBar* mTopTools = nullptr;
 		wxAuiToolBar* mBottomTools = nullptr;
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
 		
-		wxPanel* mPatientPanel;
+		wxScrolledWindow * mPatientPanel;
 		wxCollapsiblePane* mCurrentMedicationPane = nullptr;
 		wxCollapsiblePane* mMedsHistoryPane = nullptr;
 		wxCollapsiblePane* mPane = nullptr;
@@ -82,6 +97,7 @@ namespace pof {
 		wxDataViewCtrl* mMedHistoryView;
 
 		wxPropertyGridManager* mPatientDetails;
+		pof::base::data::row_t mCurrentPatient;
 
 		DECLARE_EVENT_TABLE()
 	};

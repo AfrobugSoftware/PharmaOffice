@@ -139,9 +139,11 @@ bool pof::Application::OnInit()
 		}
 	}
 
-	SaveSettings();
 	mProductManager.UpdateTimeCheck(today);
-	return CreateMainFrame();
+	bool status = CreateMainFrame();
+	
+	SaveSettings();
+	return status;
 }
 
 int pof::Application::OnExit()
@@ -153,7 +155,6 @@ int pof::Application::OnExit()
 		mLocalDatabase->flush_db();
 		sqlite3_shutdown();
 	}
-	SaveSettings();
 	return 0;
 }
 
@@ -205,7 +206,7 @@ void pof::Application::SetupDatabaseExt()
 bool pof::Application::CreateMainFrame()
 {
 	wxConfigBase* config = wxConfigBase::Get();
-	config->SetPath(wxT("/mainframe"));
+	config->SetPath(wxT("/pharmacy"));
 	int x, y, w, h;
 	x = y = w = h = -1;
 	config->Read(wxT("PosX"), &x);
@@ -226,18 +227,7 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
 	if (bMaximizeOnLoad) mMainFrame->Maximize();
-	mMainFrame->Show();
-	
-	config->SetPath("/pharmacy");
-	wxPoint pos = mMainFrame->GetPosition();
-	wxSize size = mMainFrame->GetSize();
-
-	config->Write(wxT("PosX"), pos.x);
-	config->Write(wxT("PosY"), pos.y);
-	config->Write(wxT("SizeW"), size.x);
-	config->Write(wxT("SizeH"), size.y);
-	
-	return true;
+	return mMainFrame->Show();
 }
 
 bool pof::Application::CheckForUpdate()
@@ -324,7 +314,15 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("Contact.email"), wxString(MainPharmacy->contact.email));
 	config->Write(wxT("Contact.website"), wxString(MainPharmacy->contact.website));
 
-	
+	//for the applicaion size
+	config->SetPath("/pharmacy");
+	wxPoint pos = mMainFrame->GetPosition();
+	wxSize size = mMainFrame->GetSize();
+
+	config->Write(wxT("PosX"), pos.x);
+	config->Write(wxT("PosY"), pos.y);
+	config->Write(wxT("SizeW"), size.x);
+	config->Write(wxT("SizeH"), size.y);
 
 	return true;
 }
@@ -713,7 +711,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp5, "Alert if product is out of stock on sale");
 	grid->SetPropertyHelpString(pp6, "Check product class on sale");
 	grid->SetPropertyHelpString(pp7, "Allow other users than the sperindent pharmacist to add inventory to stock");
-	grid->SetPropertyHelpString(pp8, "Maximize the application on load");
+	grid->SetPropertyHelpString(pp8, "Maximize the application on start up");
 	grid->SetPropertyHelpString(pp9, "Allow application to do automatic brough forward on inventory");
 	grid->SetPropertyHelpString(pp10, "Alert critical warnings on sale");
 
