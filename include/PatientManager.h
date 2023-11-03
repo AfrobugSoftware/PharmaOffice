@@ -59,9 +59,8 @@ namespace pof {
 			MED_PURPOSE,
 			MED_OUTCOME,
 			MED_STOCK,
-			MED_TAKEN,
 			MED_DIR_FOR_USE_QUANTITY,
-			MED_DIR_FOR_USE_STRENGHT,
+			MED_DIR_FOR_USE_STRENGTH,
 			MED_DURATION, //IN DAYS COUNT FOR EXAMPLE 3 TIMES A DAY
 			MED_START_DATE,
 			MED_STOP_DATE,
@@ -97,8 +96,6 @@ namespace pof {
 		bool OnRemoveMedication(pof::base::data::const_iterator iter);
 		bool OnUpdateMedication(pof::base::data::const_iterator iter);
 
-		//updates the take drugs that have been taken
-		bool UpdateTakenCount();
 	private:
 		
 		std::unique_ptr<pof::DataModel> mPaitnets;

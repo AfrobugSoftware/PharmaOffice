@@ -294,6 +294,8 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("Version"), wxString(gVersion));
 	config->Write(wxT("ShowPreviewOnSale"), bShowPreviewOnSale);
 	config->Write(wxT("ShowPrintPrompt"), bShowPrintPrompt);
+	config->Write(wxT("AutomaticBatchNumber"), bAutomaticBatchNumber);
+	config->Write(wxT("NotifyStockCheckInComplete"), bNotifyStockCheckInComplete);
 
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
@@ -349,7 +351,10 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("MaximizeOnLoad"), &bMaximizeOnLoad);
 	config->Read(wxT("ShowPreviewOnSale"), &bShowPreviewOnSale);
 	config->Read(wxT("ShowPrintPromt"), &bShowPrintPrompt);
-	
+	config->Read(wxT("AutomaticBatchNumber"), &bAutomaticBatchNumber);
+	config->Read(wxT("NotifyStockCheckInComplete"), &bNotifyStockCheckInComplete);
+
+
 	wxString version;
 	config->Read(wxT("Version"), &version);
 	gVersion = version;
@@ -689,17 +694,19 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 
 	//the grid settings
 	auto ct0 = grid->Append(new wxPropertyCategory("Application settings"));
-	auto pp0 = grid->Append(new wxBoolProperty("Use Local Database", "0", bUsingLocalDatabase));
-	auto pp1 = grid->Append(new wxBoolProperty("Highlight Low Stock", "1", bHighlightLowStock));
-	auto pp2 = grid->Append(new wxBoolProperty("Use Minimum Stock Count", "2", bUseMinStock));
-	auto pp3 = grid->Append(new wxBoolProperty("Show Product Warnings", "3", bPharamcistWarings));
-	auto pp4 = grid->Append(new wxBoolProperty("Check Expired On Sale", "4", bCheckExpired));
-	auto pp5 = grid->Append(new wxBoolProperty("Check Out Of Stock On Sale", "5", bCheckOutOfStock));
-	auto pp6 = grid->Append(new wxBoolProperty("Check Product Class On Sale", "6", bCheckPOM));
-	auto pp7 = grid->Append(new wxBoolProperty("Allow other users to Add inventory", "7", bAllowOtherUsersInventoryPermission));
+	auto pp0 = grid->Append(new wxBoolProperty("Use local database", "0", bUsingLocalDatabase));
+	auto pp1 = grid->Append(new wxBoolProperty("Highlight low stock", "1", bHighlightLowStock));
+	auto pp2 = grid->Append(new wxBoolProperty("Use minimum stock count", "2", bUseMinStock));
+	auto pp3 = grid->Append(new wxBoolProperty("Show product warnings", "3", bPharamcistWarings));
+	auto pp4 = grid->Append(new wxBoolProperty("Check expired on sale", "4", bCheckExpired));
+	auto pp5 = grid->Append(new wxBoolProperty("Check out of stock on sale", "5", bCheckOutOfStock));
+	auto pp6 = grid->Append(new wxBoolProperty("Check product class on sale", "6", bCheckPOM));
+	auto pp7 = grid->Append(new wxBoolProperty("Allow other users to add inventory", "7", bAllowOtherUsersInventoryPermission));
 	auto pp8 = grid->Append(new wxBoolProperty("Maximise application", "8", bMaximizeOnLoad));
 	auto pp9 = grid->Append(new wxBoolProperty("Brought forward", "9", bAutomaticBroughtForward));
-	auto pp10 = grid->Append(new wxBoolProperty("Alert critical warnings", "10", bAlertCriticalWarnings));
+	auto pp10 = grid->Append(new wxBoolProperty("Alert critical warnings", "10", bAlertCriticalWarnings));	
+	auto pp11 = grid->Append(new wxBoolProperty("Automatic batch number generation", "11", bAutomaticBatchNumber));	
+	auto pp12 = grid->Append(new wxBoolProperty("Notify stock check before end of month", "12", bNotifyStockCheckInComplete));	
 	if (mLocalDatabase){
 		pp0->Enable(false);
 	}
@@ -714,6 +721,8 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp8, "Maximize the application on start up");
 	grid->SetPropertyHelpString(pp9, "Allow application to do automatic brough forward on inventory");
 	grid->SetPropertyHelpString(pp10, "Alert critical warnings on sale");
+	grid->SetPropertyHelpString(pp11, "Allow PharmaOffice to generate batch number for inventory entry");
+	grid->SetPropertyHelpString(pp12, "Notify the user of stock check incomplete 5 days before end of month");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -765,6 +774,12 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 				break;
 			case 10:
 				bAlertCriticalWarnings = v.GetBool();
+				break;
+			case 11:
+				bAutomaticBatchNumber = v.GetBool();
+				break;
+			case 12:
+				bNotifyStockCheckInComplete = v.GetBool();
 				break;
 			default:
 				evt.Skip();

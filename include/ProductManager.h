@@ -120,6 +120,7 @@ namespace pof {
 			STOCK_CHECKED,
 			BROUGHT_FORWARD,
 			CHECK_TIME,
+			DATA_BACKUP,
 		};
 		using relation_t = pof::base::relation <
 			pof::base::data::duuid_t, //UUID

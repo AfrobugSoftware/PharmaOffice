@@ -694,7 +694,7 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 					return;
 				}
 				spdlog::info("{}", iter.key());
-				std::this_thread::sleep_for(3ms);
+				//std::this_thread::sleep_for(3ms);
 			}
 			//write the data to the product manager 
 			wxMessageBox(fmt::format("Complete! Loaded {:d} products.", datastore.size()), "JSON IMPORT", wxICON_INFORMATION | wxOK);

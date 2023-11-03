@@ -687,9 +687,9 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 		bool status = mLocalDatabase->execute(*stmt);
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
-			return status;
 		}
 		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	else {
 		//

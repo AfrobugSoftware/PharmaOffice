@@ -969,7 +969,7 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		if (mInfoBar->IsShown()) {
 			mInfoBar->Dismiss();
 		}
-		mInfoBar->ShowMessage("Return successfull");
+		mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
 		return;
 	}
 	catch (std::exception& exp) {
@@ -978,7 +978,7 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		return;
 	}
 err:
-	mInfoBar->ShowMessage("Return failed");
+	mInfoBar->ShowMessage("Return failed", wxICON_ERROR);
 	return;
 }
 
