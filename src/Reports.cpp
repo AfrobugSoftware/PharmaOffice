@@ -54,6 +54,10 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	this->Layout();
 
 	this->Centre(wxBOTH);
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::ReportsDialog::~ReportsDialog()

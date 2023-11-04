@@ -124,6 +124,10 @@ void pof::InventoryDialog::SizeDialog()
 	SetSizer(topSizer);
 	//topSizer->SetSizeHints(this);
 	Center();
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 void pof::InventoryDialog::OnOk(wxCommandEvent& evt)

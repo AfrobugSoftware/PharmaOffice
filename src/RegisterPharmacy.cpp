@@ -195,6 +195,10 @@ pof::PharmacyRegistration::PharmacyRegistration( wxWindow* parent, wxWindowID id
 	this->SetSizer( bSizer1 );
 	this->Layout();
 	this->Centre(wxBOTH);
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::PharmacyRegistration::~PharmacyRegistration()

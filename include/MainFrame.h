@@ -9,7 +9,7 @@
 #include <wx/frame.h>
 #include <wx/progdlg.h>
 #include <wx/infobar.h>
-
+#include <wx/creddlg.h>
 
 #include "AuiTheme.h"
 #include "LogSink.h"
@@ -87,12 +87,15 @@ namespace pof {
 			ID_MENU_PRODUCT_SALE_ALERTS_CLASS,
 			ID_MENU_PRODUCT_SALE_ALERTS_OS,
 			ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE,
+			ID_MENU_PHARMACY_BACKUP,
+			ID_MENU_PHARMACY_ROLLBACK,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
 		virtual ~MainFrame();
 
 		void ReloadFrame();
+		void UpdateWelcomePage();
 		std::shared_ptr<pof::Account> mAccount;
 	protected:
 		void CreateMenuBar();
@@ -127,10 +130,11 @@ namespace pof {
 		void OnTestLoad(wxCommandEvent& evt);
 		void OnIdle(wxIdleEvent& evt);
 		void OnWelcomePageSelect(wxListEvent& evt);
-
+	
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);
-
+		void OnBackupData(wxCommandEvent& evt);
+		void OnRollbackData(wxCommandEvent& evt);
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);
@@ -149,7 +153,7 @@ namespace pof {
 		wxListCtrl* mSelectList = nullptr;
 		std::unique_ptr<wxImageList> mImageList = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
-
+		wxStaticText* pharmName = nullptr; //update the pharm name in the welcome page
 		//views
 		pof::ProductView* mProductView = nullptr;
 		pof::SaleView* mSaleView = nullptr;

@@ -971,7 +971,7 @@ void pof::Application::ShowPharmacySettings(wxPropertySheetDialog& sd)
 			spdlog::error(exp.what());
 			return;
 		}
-
+		mMainFrame->UpdateWelcomePage();
 	});
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer(wxVERTICAL);

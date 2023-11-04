@@ -56,7 +56,10 @@ namespace pof {
 			ID_PATIENT_HISTORY_VIEW,
 			ID_ADD_PRODUCT,
 			ID_BOOK,
-
+			ID_TOP_TOOLS,
+			ID_PATIENT_TOOLS,
+			ID_ADD_PATIENTS,
+			ID_SELECT,
 		};
 
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -77,13 +80,16 @@ namespace pof {
 		void OnAddPatient(wxCommandEvent& evt);
 		void OnRemovePatient(wxCommandEvent& evt);
 		void OnSelectCol(wxCommandEvent& evt);
-
+		void OnPatientsContextMenu(wxDataViewEvent& evt);
+		void OnMedicationsContextMenu(wxDataViewEvent& evt);
+		void OnMedicationsSelected(wxDataViewEvent& evt);
+		void OnMedicationHistorySelected(wxDataViewEvent& evt);
 
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
 		wxTimer mUpdatePatientStockTimer;
 		wxAuiToolBar* mTopTools = nullptr;
-		wxAuiToolBar* mBottomTools = nullptr;
+		wxAuiToolBar* mPatientTools = nullptr;
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
 		

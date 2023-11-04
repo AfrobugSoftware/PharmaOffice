@@ -29,6 +29,7 @@ pof::PatientManager::PatientManager()
 		pof::base::data::duuid_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
+		pof::base::data::text_t,
 		std::uint64_t,
 		std::uint64_t,
 		pof::base::data::text_t,
@@ -42,6 +43,7 @@ pof::PatientManager::PatientManager()
 		pof::base::data::duuid_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
+		pof::base::data::text_t,
 		std::uint64_t,
 		std::uint64_t,
 		pof::base::data::text_t,
@@ -49,6 +51,16 @@ pof::PatientManager::PatientManager()
 		pof::base::data::datetime_t,
 		pof::base::data::datetime_t
 	>();
+
+	//set up crud slots
+	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddMedication, this), pof::DataModel::Signals::ADDED);
+	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnRemoveMedication, this), pof::DataModel::Signals::REMOVED);
+	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnUpdateMedication, this), pof::DataModel::Signals::UPDATE);
+
+	//curd slots
+	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddPatient, this), pof::DataModel::Signals::ADDED);
+	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnRemovePatient, this), pof::DataModel::Signals::REMOVED);
+	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnUpdatePatient, this), pof::DataModel::Signals::UPDATE);
 
 }
 
@@ -373,6 +385,8 @@ bool pof::PatientManager::OnUpdatePatient(pof::base::data::const_iterator iter)
 			}
 		}
 		os << " WHERE uuid = ?;";
+		upIdx.push_back(PATIENT_UUID);
+
 		auto stmt = mLocalDatabase->prepare(os.str());
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -421,7 +435,129 @@ bool pof::PatientManager::OnAddMedication(pof::base::data::const_iterator iter)
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = R"(INSERT INTO medications VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		//i have to copy it
+		auto v = iter->first;
+		auto remvIter = std::next(v.begin(), MED_NAME);
+		v.erase(remvIter);
+		std::tuple<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::datetime_t,
+			pof::base::data::datetime_t
+		> tup;
 
+		pof::base::data::row_t row;
+		row.first = std::move(v);
+		bool status = pof::base::build(tup, row);
+		assert(status);
+
+		status = mLocalDatabase->bind(*stmt, std::move(tup));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::PatientManager::OnRemoveMedication(pof::base::data::const_iterator iter)
+{
+	if(mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM medications WHERE patient_uuid = ? AND product_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PATIENT_UUID]);
+		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PATIENT_UUID]);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uuid, puuid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase) {
+		constexpr static const std::array<std::string_view, 10> colNames = {
+			"product_uuid","patient_uuid", "purpose", "outcome", "stock", "dirforusequan", "dirforusesten", 
+			"duration", "startdate", "stopdate"
+		};
+		std::ostringstream os;
+		std::vector<size_t> upIdx;
+		os << "UPDATE medications ";
+		auto& updateFlag = iter->second.second;
+		for (int i = 0; i < MED_MAX; i++) {
+			if (updateFlag.test(i)) {
+				upIdx.push_back(i);
+				os << "SET " << colNames[i] << "= ?";
+			}
+		}
+		os << " WHERE patient_uuid = ? AND product_uuid = ?;";
+		upIdx.push_back(MED_PATIENT_UUID);
+		upIdx.push_back(MED_PRODUCT_UUID);
+
+		auto stmt = mLocalDatabase->prepare(os.str());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		size_t i = 1;
+		auto& meta = mPaitnets->GetDatastore().get_metadata();
+		auto& v = iter->first;
+		for (size_t d : upIdx) {
+			auto kind = meta[d];
+			switch (kind)
+			{
+			case pof::base::data::kind::uint64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::uint64_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::datetime:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::datetime_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::text:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::text_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::blob:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::blob_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::uuid:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::duuid_t>(v[d]), i);
+				break;
+			default:
+				break;
+			}
+			i++;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	return false;
 }

@@ -371,6 +371,10 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	//bSizer1->Fit(this);
 	
 	this->Centre( wxBOTH );
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::AddProdutDialog::~AddProdutDialog()

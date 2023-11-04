@@ -8,8 +8,9 @@
 #include <filesystem>
 #include <exception>
 #include <utility>
+#include <functional>
 #include <date/date.h>
-
+namespace fs = std::filesystem;
 namespace pof {
 	namespace base {
 		//for SQL with ? instead of a parameter
@@ -450,6 +451,9 @@ namespace pof {
 
 			inline std::string_view err_msg() const { return std::string_view(sqlite3_errmsg(m_connection)); }
 			inline int err_code() const { return sqlite3_errcode(m_connection); }
+
+			bool backup(const std::filesystem::path& location, const std::function<bool(int)>& progress);
+			bool rollback_data(const std::filesystem::path& location, const std::function<bool(int)>& progress);
 
 			template<size_t N, std::enable_if_t<std::cmp_greater(N, 1), int> = 0>
 			auto prepare_multiple(std::string_view sql) const -> std::optional<std::array<stmt_t, N>>

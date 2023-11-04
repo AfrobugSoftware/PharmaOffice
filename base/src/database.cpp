@@ -261,6 +261,54 @@ bool pof::base::database::end_trans() const
 	return ret;
 }
 
+bool pof::base::database::backup(const std::filesystem::path& location, const std::function<bool(int)>& progress)
+{
+	sqlite3* destinationdb = nullptr;
+	int result = sqlite3_open(location.string().c_str(), &destinationdb);
+	if (result != SQLITE_OK) return false;
+
+	//this functions is doubling the size of the used memory, and sqlite3_finish is not cleaning it up
+	auto backup_handle = sqlite3_backup_init(destinationdb, "main", m_connection, "main");
+	if (backup_handle == nullptr) return false;
+
+	//get page count
+	char* errmessage = nullptr;
+	size_t pages = 0;
+	
+	result = sqlite3_exec(m_connection, "pragma page_count;", [](void* prt, int a, char** v, char** data) -> int {
+		*((size_t*)prt) = atoi(v[0]);
+		return SQLITE_OK; //find out the appropriate return
+	}, (void*)& pages, & errmessage);
+	if (result != SQLITE_OK) return false;
+
+
+	float pg = 0.0;
+	int i = 0;
+	bool status = false;
+	sqlite3_backup_step(backup_handle, 1);
+	while (sqlite3_backup_remaining(backup_handle) > 0) {
+		sqlite3_backup_step(backup_handle, 1);
+		pg = static_cast<float>(((float)i / (float)pages) * 100.f);
+		if (!progress((int)pg)) {
+			goto finish;
+		}
+		i++;
+	}
+	status = true;
+finish:
+	result = sqlite3_backup_finish(backup_handle);
+	result = sqlite3_close(destinationdb);
+
+	return status;
+}
+
+bool pof::base::database::rollback_data(const std::filesystem::path& location, const std::function<bool(int)>& progress)
+{
+	return false;
+}
+
+
+
 bool pof::base::database::flush_db()
 {
 	int ret = sqlite3_db_cacheflush(m_connection);

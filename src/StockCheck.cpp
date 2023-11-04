@@ -126,6 +126,10 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 
 	this->Layout();
 	this->Centre( wxBOTH );
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 void pof::StockCheck::CreateToolBar()
@@ -772,4 +776,5 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 			wxMessageBox("Cannot mark all as stock check", "Stock check", wxICON_ERROR | wxOK);
 		}
 	}
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Marked stock check as complete");
 }

@@ -22,6 +22,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_CLASS, pof::MainFrame::OnSaleAlerts)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_OS, pof::MainFrame::OnSaleAlerts)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, pof::MainFrame::OnSaleAlerts)
+	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_BACKUP, pof::MainFrame::OnBackupData)
+	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_ROLLBACK, pof::MainFrame::OnRollbackData)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
@@ -67,6 +69,16 @@ void pof::MainFrame::ReloadFrame()
 	mModules->ReloadAccountDetails();
 }
 
+void pof::MainFrame::UpdateWelcomePage()
+{
+	pharmName->Freeze();
+	pharmName->SetLabelText(fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name));
+	pharmName->Thaw();
+
+	mWelcomePage->Layout();
+	mWelcomePage->Refresh();
+}
+
 void pof::MainFrame::CreateMenuBar()
 {
 	constexpr const size_t MenuCount = 8;
@@ -93,6 +105,10 @@ void pof::MainFrame::CreateMenuBar()
 	};
 	//account menu
 	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
+
+	//pharmacy menu
+	Menus[1]->Append(ID_MENU_PHARMACY_BACKUP, "Backup Store Data", nullptr, "Back up the current data in the database");
+	Menus[1]->Append(ID_MENU_PHARMACY_ROLLBACK, "Roll back Store Data", nullptr, "Roll back database to a backed up database");
 
 
 	//product menu
@@ -288,9 +304,9 @@ void pof::MainFrame::CreateWelcomePage()
 	date1->SetDoubleBuffered(true);
 	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
-	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	pharmName = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
+	pharmName->Wrap(-1);
+	bSizer9->Add(pharmName, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 
 	bSizer9->AddSpacer(20);
@@ -708,6 +724,63 @@ void pof::MainFrame::OnImportJson(wxCommandEvent& evt)
 		}
 	}
 
+}
+
+void pof::MainFrame::OnBackupData(wxCommandEvent& evt)
+{
+	//next step is to consider silent backups
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	//generate backupname
+	auto today = pof::base::data::clock_t::now();
+	pof::base::data::datetime_t::duration::rep count = today.time_since_epoch().count();
+	auto file = fmt::format("PharmaOfficebackup{:d}", count);
+	auto backupPath = fs::current_path() / ".backup";
+	if (!fs::is_directory(backupPath)) {
+		fs::create_directory(backupPath);
+	}
+
+	wxFileDialog dialog(this, "Backup database", backupPath.string(), file, "db files (*.db)|*.db",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+	if (fullPath.extension() != ".db") {
+		wxMessageBox("File extension is not compactable with .db files", "Backup database",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxProgressDialog dlg("Backup database", "backing up, please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	auto progress = [&](int pg) -> bool {
+		return dlg.Update(pg);
+	};
+	bool status = wxGetApp().mLocalDatabase->backup(fullPath, progress);
+	if (!status) {
+		dlg.Update(100);
+		spdlog::error(wxGetApp().mLocalDatabase->err_msg());
+		wxMessageBox("Backup failed, the backup file may be incomplete or corrupt, please try again", "Backup data", wxICON_ERROR | wxOK);
+
+	}
+	else {
+		wxMessageBox(fmt::format("Successfully backed up data to {}", fullPath.string()), "Backup data", wxICON_INFORMATION | wxOK);	
+	}
+}
+
+void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
+{
+	//next step is to consider silent backups
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	if (wxMessageBox("Rolling back to a backup database would erase all the data in the current database, this is not reversible, are you sure you want to continue?", "Roll back", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	wxCredentialEntryDialog dialog( this, "User credentials are required to complete this function", "Roll back database");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)
