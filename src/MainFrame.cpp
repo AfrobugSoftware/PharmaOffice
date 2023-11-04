@@ -767,6 +767,7 @@ void pof::MainFrame::OnBackupData(wxCommandEvent& evt)
 	else {
 		wxMessageBox(fmt::format("Successfully backed up data to {}", fullPath.string()), "Backup data", wxICON_INFORMATION | wxOK);	
 	}
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Backed up database");
 }
 
 void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
@@ -777,10 +778,46 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 		return;
 	}
 	if (wxMessageBox("Rolling back to a backup database would erase all the data in the current database, this is not reversible, are you sure you want to continue?", "Roll back", wxICON_WARNING | wxYES_NO) == wxNO) return;
-	wxCredentialEntryDialog dialog( this, "User credentials are required to complete this function", "Roll back database");
+	wxCredentialEntryDialog dialog( this, "User credentials are required to begin roll back", "Roll back database");
 	dialog.Center(wxBOTH);
 	dialog.SetBackgroundColour(*wxWHITE);
-	if (dialog.ShowModal() == wxID_CANCEL) return;
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid user name or password", "Roll back", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+
+	auto backupPath = fs::current_path() / ".backup";
+	if (!fs::is_directory(backupPath)) {
+		fs::create_directory(backupPath);
+	}
+
+	wxFileDialog fileDialog(this, "Backup database", backupPath.string(), wxEmptyString, "db files (*.db)|*.db",
+		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (fileDialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = fileDialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	wxProgressDialog dlg("Backup database", "backing up, please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	auto progress = [&](int pg) -> bool {
+		return dlg.Update(pg);
+	};
+	bool status = wxGetApp().mLocalDatabase->rollback_data(fullPath, progress);
+	if (!status) {
+		dlg.Update(100);
+		spdlog::error(wxGetApp().mLocalDatabase->err_msg());
+		wxMessageBox("Roll back failed, the backup file may be incomplete or corrupt, please try again", "Roll back data", wxICON_ERROR | wxOK);
+
+	}
+	else {
+		wxMessageBox(fmt::format("Successfully roll back database to {}", fullPath.string()), "Roll back data", wxICON_INFORMATION | wxOK);
+	}
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Rolled back database");
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

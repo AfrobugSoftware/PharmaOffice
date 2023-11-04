@@ -72,6 +72,7 @@ namespace pof {
 
 		bool CreateAccountInfoTable();
 		bool CreateAccountInfo();
+		bool ValidateCredentials(const std::string& username, const std::string& password);
 		bool CheckForUsername(const std::string& usersname);
 		bool ChangePassword(const std::string& newPass);
 		bool AddNewRole(const Privilage& p);

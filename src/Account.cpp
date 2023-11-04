@@ -415,3 +415,10 @@ void pof::Account::DoSignOut()
 	RemoveSession();
 	signOutSig(*this);
 }
+
+bool pof::Account::ValidateCredentials(const std::string& uname, const std::string& password)
+{
+	if (uname.empty() || password.empty()) return false;
+	if (uname != username) return false;
+	return bcrypt::validatePassword(password, passhash);
+}
