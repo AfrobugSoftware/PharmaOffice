@@ -777,7 +777,25 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& pd = wxGetApp().mProductManager.GetProductData();
 
+	//check if product has expired inventory
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission) {
+		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	auto items = wxGetApp().mProductManager.DoExpiredProducts();
+	if (!items.has_value()) return;
+	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[pof::DataModel::GetIdxFromItem(i)];
+	return boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID])
+		== boost::variant2::get<boost::uuids::uuid>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID]);
+		})) {
+		wxMessageBox("Product has expired inventory, clear inventory before adding new", "Add Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
+
 	pof::InventoryDialog dialog(nullptr);
+	dialog.mProductUuid = boost::variant2::get<pof::base::data::duuid_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID]);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID];

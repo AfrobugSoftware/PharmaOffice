@@ -1002,6 +1002,29 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetLastInventory
 	return std::nullopt;
 }
 
+std::optional<pof::base::data::text_t> pof::ProductManager::GetLastInventoryBatchNumber(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT lot_number, MAX(input_date) FROM inventory WHERE uuid = ? LIMIT 1;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::text_t, pof::base::data::datetime_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return pof::base::data::text_t{}; //return an empty string on empty load
+		return std::get<0>(*(rel->begin()));
+	}
+	return std::nullopt;
+}
+
 void pof::ProductManager::AddCategory(const std::string& name)
 {
 	if (name.empty()) return;

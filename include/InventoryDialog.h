@@ -21,13 +21,13 @@ namespace pof {
 		virtual bool TransferDataToWindow() override;
 		inline pof::base::data::row_t& GetData() { return mInventoryData; }
 
+		pof::base::data::duuid_t mProductUuid;
 		enum
 		{
 			ID_CALENDAR = wxID_HIGHEST + 2333,
 			ID_IMPROPER_DATE,
 			ID_DATE_PICKER,
 		};
-
 	private:
 		void CreateDialog();
 		void SizeDialog();

@@ -37,6 +37,25 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 
 bool pof::InventoryDialog::TransferDataToWindow()
 {
+	if (wxGetApp().bAutomaticBatchNumber) {
+
+		auto lotNum = wxGetApp().mProductManager.GetLastInventoryBatchNumber(mProductUuid);
+		//only work if we get valid data from the database
+		if (lotNum) {
+			auto& v = lotNum.value();
+			if (std::ranges::all_of(v, [&](char c) -> bool {return std::isdigit(c); })) {
+				//if it a digit
+				try {
+					size_t c = boost::lexical_cast<size_t>(v);
+					c++;
+					mBatchNumber->SetValue(std::to_string(c));
+				}
+				catch (std::exception& exp) {
+					spdlog::error(exp.what());
+				}
+			}
+		}
+	}
 	return true;
 }
 

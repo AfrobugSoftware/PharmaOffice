@@ -421,6 +421,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 	}
 
 	pof::InventoryDialog dialog(nullptr);
+	dialog.mProductUuid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
