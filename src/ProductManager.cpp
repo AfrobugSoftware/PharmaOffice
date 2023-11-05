@@ -1296,8 +1296,29 @@ void pof::ProductManager::InventoryBroughtForward()
 		auto& v = rel.value();
 		auto today = pof::base::data::clock_t::now();
 		for (auto& tup : v) {
+			//get the next lot number 
+			std::string lotNumber = "0"s;
+			if (wxGetApp().bAutomaticBatchNumber) {
+				auto lotNum = wxGetApp().mProductManager.GetLastInventoryBatchNumber(std::get<0>(tup));
+				//only work if we get valid data from the database
+				if (lotNum) {
+					auto& v = lotNum.value();
+					if (std::ranges::all_of(v, [&](char c) -> bool {return std::isdigit(c); })) {
+						//if it a digit
+						try {
+							size_t c = boost::lexical_cast<size_t>(v);
+							c++;
+							lotNumber = std::move(std::to_string(c));
+						}
+						catch (std::exception& exp) {
+							spdlog::error(exp.what());
+						}
+					}
+				}
+			}
+
 			status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<1>(tup) + 1, std::get<0>(tup),
-				std::get<3>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, "0"s));
+				std::get<3>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, std::move(lotNumber)));
 			assert(status);
 			status = mLocalDatabase->execute(*stmt);
 			assert(status);
@@ -2756,10 +2777,26 @@ bool pof::ProductManager::ReturnToInventory(const pof::base::data::duuid_t& pid,
 		}
 		auto today = pof::base::data::clock_t::now();
 		spdlog::info("Product cost {:cu}", std::get<1>(quan));
-		status = mLocalDatabase->bind(*stmt, std::make_tuple(
-			std::get<1>(tup) + 1, std::get<0>(tup),
-				std::get<3>(tup), today, std::get<0>(quan) , std::get<1>(quan), "RETURN"s, 0, "0"s
-		));
+		std::string lotNumber = "0"s;
+		if (wxGetApp().bAutomaticBatchNumber) {
+			auto lotNum = wxGetApp().mProductManager.GetLastInventoryBatchNumber(std::get<0>(tup));
+			//only work if we get valid data from the database
+			if (lotNum) {
+				auto& v = lotNum.value();
+				if (std::ranges::all_of(v, [&](char c) -> bool {return std::isdigit(c); })) {
+					//if it a digit
+					try {
+						size_t c = boost::lexical_cast<size_t>(v);
+						c++;
+						lotNumber = std::move(std::to_string(c));
+					}
+					catch (std::exception& exp) {
+						spdlog::error(exp.what());
+					}
+				}
+			}
+		}
+		status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<1>(tup) + 1, std::get<0>(tup),std::get<3>(tup), today, std::get<0>(quan) , std::get<1>(quan), "RETURN"s, 0, std::move(lotNumber)));
 		assert(status);
 		status = mLocalDatabase->execute(*stmt);
 		if (!status) {

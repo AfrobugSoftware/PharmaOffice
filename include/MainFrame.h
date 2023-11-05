@@ -20,6 +20,7 @@
 #include "SaleView.h"
 #include "AuditView.h"
 #include "PrescriptionView.h"
+#include "PatientView.h"
 
 #include <Data.h>
 #include <data_tuple.h>
@@ -66,6 +67,7 @@ namespace pof {
 			ID_SALE_VIEW,
 			ID_PRESCRIPTION_VIEW,
 			ID_AUDIT_VIEW,
+			ID_PATIENT_VIEW,
 			//MENUS
 			ID_PAGER,
 			ID_MENU_VIEW_SHOW_MODULES,
@@ -95,6 +97,8 @@ namespace pof {
 		virtual ~MainFrame();
 
 		void ReloadFrame();
+		std::string Perspective();
+		void Perspective(const std::string& pers);
 		void UpdateWelcomePage();
 		std::shared_ptr<pof::Account> mAccount;
 	protected:
@@ -159,6 +163,7 @@ namespace pof {
 		pof::SaleView* mSaleView = nullptr;
 		pof::PrescriptionView* mPrescriptionView = nullptr;
 		pof::AuditView* mAuditView = nullptr;
+		pof::PatientView* mPatientView = nullptr;
 
 		std::chrono::system_clock::time_point mExpireWatchTime;
 		DECLARE_EVENT_TABLE()

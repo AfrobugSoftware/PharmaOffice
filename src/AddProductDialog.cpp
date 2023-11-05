@@ -23,12 +23,17 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
-	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("ADD PRODUCT"), wxDefaultPosition, wxDefaultSize, 0 );
+	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("Add Product"), wxDefaultPosition, wxDefaultSize, 0 );
 	TitleText->Wrap( -1 );
 	TitleText->SetFont( wxFont(wxFontInfo(10).AntiAliased().Bold()));
 	
-	bSizer2->Add( TitleText, 1, wxALL, 15 );
-	
+	bSizer2->Add( TitleText, 1, wxALL, 5 );
+
+	wxStaticText* ext = new wxStaticText(m_panel1, wxID_ANY, wxT("Creates a product for the pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
+	ext->Wrap(-1);
+	ext->SetFont(wxFont(wxFontInfo().AntiAliased()));
+
+	bSizer2->Add(ext, 0, wxALL, 2);
 	
 	m_panel1->SetSizer( bSizer2 );
 	m_panel1->Layout();

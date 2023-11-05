@@ -1254,7 +1254,7 @@ void pof::ProductView::HideCostPriceColumn()
 }
 
 void pof::ProductView::ShowSelectionColumn(){
-	mSelectionCol = m_dataViewCtrl1->PrependToggleColumn(wxT("SELECT"), SELECTION_MODEL_COL,
+	mSelectionCol = m_dataViewCtrl1->PrependToggleColumn(wxT("Select"), SELECTION_MODEL_COL,
 		 wxDATAVIEW_CELL_ACTIVATABLE, 50);
 }
 

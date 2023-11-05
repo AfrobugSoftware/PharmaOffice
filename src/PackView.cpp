@@ -138,6 +138,10 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	this->Centre( wxBOTH );
 
 	LoadPackDescSelect();
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::PackView::~PackView()
@@ -233,7 +237,7 @@ void pof::PackView::CreatePackTools()
 
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");
-	mTopTools->AddTool(ID_TOOL_REMOVE_PRODUCT_PACK, wxT("Remove Product"), wxArtProvider::GetBitmap("action_delete"), "Remove product from pack");
+	mTopTools->AddTool(ID_TOOL_REMOVE_PRODUCT_PACK, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"), "Remove product from pack");
 	mTopTools->Realize();
 	mTopTools->Thaw();
 	mTopTools->Refresh();

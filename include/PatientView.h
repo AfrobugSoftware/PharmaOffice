@@ -44,6 +44,7 @@ namespace pof {
 	{
 	public:
 		//pages
+		constexpr const static size_t SELECTION_COL = 30456;
 		enum : std::uint8_t {
 			PATIENT_SELECT = 0,
 			PATIENT_VIEW,
@@ -55,13 +56,22 @@ namespace pof {
 			ID_PATIENT_MEDS_VIEW,
 			ID_PATIENT_HISTORY_VIEW,
 			ID_ADD_PRODUCT,
+			ID_REMOVE_PRODUCT,
+			ID_ADD_PACK,
+			ID_STOP_PRODUCT,
 			ID_BOOK,
 			ID_TOP_TOOLS,
 			ID_PATIENT_TOOLS,
 			ID_ADD_PATIENTS,
+			ID_SHOW_PATIENT_DETAILS,
+			ID_REMOVE_PATIENTS,
 			ID_SELECT,
+			ID_SELECT_MED,
+			ID_SEARCH,
+			ID_SEARCH_BY_NAME,
+			ID_SEARCH_BY_LAST_NAME,
 		};
-
+		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~PatientView();
 		void CreateToolBars();
@@ -70,20 +80,38 @@ namespace pof {
 		void CreatePatientDetailsPane();
 		void CreateSpecialCols();
 
+
+		void SetupAuiTheme();
+
 		void ShowPatientDetails();
 		wxBitmap GetPatientBitMap();
 		void SwitchToolBar();
 		std::set<wxDataViewItem> mMedicationSelections;
 		std::set<wxDataViewItem> mPatientSelections;
+		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
 	protected:
 		void OnPatientSelected(wxDataViewEvent& evt);
 		void OnAddPatient(wxCommandEvent& evt);
 		void OnRemovePatient(wxCommandEvent& evt);
+		void OnRemoveMedication(wxCommandEvent& evt);
 		void OnSelectCol(wxCommandEvent& evt);
+		void OnSelectMedCol(wxCommandEvent& evt);
 		void OnPatientsContextMenu(wxDataViewEvent& evt);
 		void OnMedicationsContextMenu(wxDataViewEvent& evt);
 		void OnMedicationsSelected(wxDataViewEvent& evt);
 		void OnMedicationHistorySelected(wxDataViewEvent& evt);
+		void OnAuiThemeChange();
+		void OnSearchPatient(wxCommandEvent& evt);
+		void OnSearchCleared(wxCommandEvent& evt);
+		void OnStopProduct(wxCommandEvent& evt);
+
+		//hide/show patient search column
+		void ShowPatientsSelectCol();
+		void ShowMedSelectCol();
+		void HidePatientsSelectCol();
+		void HideMedSelectCol();
+		void OnPatientHeaderClicked(wxDataViewEvent& evt);
+		void OnMedHeaderClicked(wxDataViewEvent& evt);
 
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
@@ -99,11 +127,16 @@ namespace pof {
 		wxCollapsiblePane* mPane = nullptr;
 
 		wxDataViewCtrl* mPatientSelect;
+		wxDataViewColumn* mSelectCol = nullptr;
 		wxDataViewCtrl* mCurrentMedicationView;
+		wxDataViewColumn* mSelectMedCol = nullptr;
+
 		wxDataViewCtrl* mMedHistoryView;
 
 		wxPropertyGridManager* mPatientDetails;
+		wxPropertyGridManager* mMedicationDetails;
 		pof::base::data::row_t mCurrentPatient;
+		wxSearchCtrl* mSearchbar = nullptr;
 
 		DECLARE_EVENT_TABLE()
 	};

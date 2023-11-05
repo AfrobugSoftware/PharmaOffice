@@ -708,6 +708,14 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 		mBook->SetSelection(PAGE_SALE_HIST);
 	}
 	else {
+		wxGetApp().mSaleManager.GetProductHistory()->Clear();
+
+		std::bitset<32> bitset(mProductHist->GetState());
+		if (bitset.test(5)) {
+			bitset.flip(5);
+			mProductHist->SetState(bitset.to_ulong());
+		}
+
 		wxGetApp().mProductManager.GetInventory()->Reload();
 		mBook->SetSelection(PAGE_INVENTORY);
 	}

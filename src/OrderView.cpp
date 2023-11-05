@@ -103,6 +103,10 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 
 	CreateSpeicalCol();
 	UpdateTexts();
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::OrderListView::~OrderListView()

@@ -215,7 +215,7 @@ bool pof::Application::CreateMainFrame()
 	config->Read(wxT("SizeH"), &h);
 	if (x == -1) {
 		mMainFrame = new pof::MainFrame(nullptr,
-			wxID_ANY, wxDefaultPosition, wxSize(1422, 762));
+			wxID_ANY, wxDefaultPosition, wxSize(822, 762));
 	}
 	else {
 		mMainFrame = new pof::MainFrame(nullptr,
@@ -227,6 +227,12 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
 	if (bMaximizeOnLoad) mMainFrame->Maximize();
+
+	wxString readData;
+	config->Read(wxT("Perspective"), &readData);
+	spdlog::info(readData.ToStdString());
+	mMainFrame->Perspective(readData.ToStdString());
+
 	return mMainFrame->Show();
 }
 
@@ -318,14 +324,15 @@ bool pof::Application::SaveSettings()
 
 	//for the applicaion size
 	config->SetPath("/pharmacy");
-	wxPoint pos = mMainFrame->GetPosition();
-	wxSize size = mMainFrame->GetSize();
-
-	config->Write(wxT("PosX"), pos.x);
-	config->Write(wxT("PosY"), pos.y);
-	config->Write(wxT("SizeW"), size.x);
-	config->Write(wxT("SizeH"), size.y);
-
+	if (!mMainFrame->IsMaximized()) {
+		wxPoint pos = mMainFrame->GetPosition();
+		wxSize size = mMainFrame->GetSize();
+		config->Write(wxT("PosX"), pos.x);
+		config->Write(wxT("PosY"), pos.y);
+		config->Write(wxT("SizeW"), size.x);
+		config->Write(wxT("SizeH"), size.y);
+	}
+	config->Write(wxT("Perspective"), wxString(mMainFrame->Perspective()));
 	return true;
 }
 
@@ -405,7 +412,6 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Contact.website"), &readData);
 	MainPharmacy->contact.website = readData;
 
-	config->SetPath(wxT("/"));
 	return true;
 }
 

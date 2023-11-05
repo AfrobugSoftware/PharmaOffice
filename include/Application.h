@@ -34,7 +34,7 @@
 #include "SaleManager.h"
 #include "AuditManager.h"
 #include "PrintManager.h"
-
+#include "PatientManager.h"
 
 namespace js = nlohmann;
 namespace fs = std::filesystem;
@@ -88,6 +88,7 @@ namespace pof {
 		pof::ProductManager mProductManager;
 		pof::SaleManager mSaleManager;
 		pof::AuditManager mAuditManager;
+		pof::PatientManager mPatientManager;
 		std::shared_ptr<pof::PrintManager> mPrintManager;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 

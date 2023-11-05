@@ -69,6 +69,18 @@ void pof::MainFrame::ReloadFrame()
 	mModules->ReloadAccountDetails();
 }
 
+std::string pof::MainFrame::Perspective()
+{
+	// TODO: insert return statement here
+	return mAuiManager.SavePerspective().ToStdString();
+}
+
+void pof::MainFrame::Perspective(const std::string& pers)
+{
+	if (pers.empty()) return;
+	mAuiManager.LoadPerspective(pers);
+}
+
 void pof::MainFrame::UpdateWelcomePage()
 {
 	pharmName->Freeze();
@@ -141,13 +153,16 @@ void pof::MainFrame::CreateMenuBar()
 
 
 	//TEST
-#ifdef DEBUG
+#ifdef _DEBUG
+	Menus[2]->AppendSeparator();
 	Menus[2]->Append(ID_MENU_PRODUCT_SAVE, "Save\tCtrl-S", nullptr);
 	Menus[2]->Append(ID_MENU_PRODUCT_LOAD, "Load\tCtrl-L", nullptr);
 #endif // DEBUG
 
 	//view
+#ifdef _DEBUG
 	Menus[5]->Append(ID_MENU_VIEW_LOG, "Log\tCtrl-L", nullptr);
+#endif	
 	auto item =Menus[5]->AppendCheckItem(ID_MENU_VIEW_SHOW_MODULES, "Modules\tCtrl-M");
 	item->Check();
 
@@ -207,6 +222,7 @@ void pof::MainFrame::CreateModules()
 	mModules->mModuleViews.insert({ mModules->mSales, mSaleView });
 	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
 	mModules->mModuleViews.insert({ mModules->mAuditTrails, mAuditView });
+	mModules->mModuleViews.insert({ mModules->mPaitents,  mPatientView });
 
 	//load cat to modules
 	auto& cat = wxGetApp().mProductManager.GetCategories();
@@ -244,6 +260,7 @@ void pof::MainFrame::CreateViews()
 	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mAuditView = new pof::AuditView(workspaceBook, ID_AUDIT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mPatientView = new pof::PatientView(workspaceBook, ID_PATIENT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
@@ -252,6 +269,7 @@ void pof::MainFrame::CreateViews()
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
 	mAuditView->Hide();
+	mPatientView->Hide();
 }
 
 void pof::MainFrame::CreateWelcomePage()
@@ -434,6 +452,7 @@ void pof::MainFrame::OnExportCSV(wxCommandEvent& evt)
 
 void pof::MainFrame::OnUpdateUI(wxUpdateUIEvent& evt)
 {
+	wxGetApp().bMaximizeOnLoad = IsMaximized();
 }
 
 void pof::MainFrame::OnShowModules(wxCommandEvent& evt)
@@ -594,6 +613,7 @@ void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)
 {
+	wxGetApp().bMaximizeOnLoad = IsMaximized();
 	if (wxGetApp().bCheckExpirePeiodOnIdle){
 		//check how often, 30 mins
 		auto now = std::chrono::system_clock::now();

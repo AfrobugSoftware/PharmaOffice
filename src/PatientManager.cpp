@@ -11,7 +11,7 @@ pof::PatientManager::PatientManager()
 		pof::base::data::duuid_t, //UUID
 		pof::base::data::text_t, //NAME
 		pof::base::data::text_t, //LAST NAME
-		std::uint64_t, // AGE
+		pof::base::data::datetime_t, // DOB
 		pof::base::data::text_t, //PHONE NUMBER
 		pof::base::data::text_t, // ADDRESS
 		std::uint64_t, // BMI
@@ -76,7 +76,7 @@ bool pof::PatientManager::CreatePatientTable()
 			uuid blob,
 			name text,
 			lastname text,
-			age integer,
+			dob integer,
 			phonenumber text,
 			address text,
 			bmi integer,
@@ -162,7 +162,7 @@ bool pof::PatientManager::LoadPatients()
 			pof::base::data::duuid_t, //UUID
 			pof::base::data::text_t, //NAME
 			pof::base::data::text_t, //LAST NAME
-			std::uint64_t, // AGE
+			pof::base::data::datetime_t, // AGE
 			pof::base::data::text_t, //PHONE NUMBER
 			pof::base::data::text_t, // ADDRESS
 			std::uint64_t, // BMI
