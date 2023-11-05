@@ -96,6 +96,8 @@ void pof::PatientView::CreateViews()
 	mBook = new wxSimplebook(this, ID_BOOK);
 	mPatientSelect = new wxDataViewCtrl(mBook, ID_PATIENT_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mPatientSelect->AssociateModel(wxGetApp().mPatientManager.GetPatientData().get());
+	wxGetApp().mPatientManager.LoadPatients();
+
 	mPatientSelect->AppendTextColumn("Name", pof::PatientManager::PATIENT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 	mPatientSelect->AppendTextColumn("Last name", pof::PatientManager::PATIENT_LAST_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 	mPatientSelect->AppendTextColumn("Date of birth", pof::PatientManager::PATIENT_AGE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
@@ -252,7 +254,11 @@ void pof::PatientView::OnPatientSelected(wxDataViewEvent& evt)
 
 void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 {
-	wxMessageBox("Add Patients");
+	pof::AddPatient ap(this, wxID_ANY, "Add Patients");
+	if (ap.ShowModal() == wxID_OK) {
+		auto& exp = ap.GetPatientData();
+		wxGetApp().mPatientManager.GetPatientData()->EmplaceData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
+	}
 }
 
 void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)

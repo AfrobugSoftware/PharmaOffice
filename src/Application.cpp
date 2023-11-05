@@ -265,6 +265,7 @@ bool pof::Application::OpenLocalDatabase()
 	mProductManager.mLocalDatabase = mLocalDatabase;
 	mAuditManager.mLocalDatabase = mLocalDatabase;
 	mSaleManager.mLocalDatabase = mLocalDatabase;
+	mPatientManager.mLocalDatabase = mLocalDatabase;
 	MainAccount->mLocalDatabase = mLocalDatabase;
 
 	return true;
@@ -553,6 +554,9 @@ void pof::Application::CreateTables()
 
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();
+
+	mPatientManager.CreatePatientMedicationTable();
+	mPatientManager.CreatePatientTable();
 }
 
 void pof::Application::ReadSettingsFlags()

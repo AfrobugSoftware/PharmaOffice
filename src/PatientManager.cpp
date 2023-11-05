@@ -17,7 +17,8 @@ pof::PatientManager::PatientManager()
 		std::uint64_t, // BMI
 		std::uint64_t, // WEIGHT
 		std::uint64_t, //HR
-		std::uint64_t, // BP
+		std::uint64_t, // BP SYS
+		std::uint64_t, // BP DYS
 		std::uint64_t, // RR
 		std::uint64_t, // TEMPT
 		pof::base::data::datetime_t, // ENTERED DATE
@@ -53,12 +54,12 @@ pof::PatientManager::PatientManager()
 	>();
 
 	//set up crud slots
-	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddMedication, this), pof::DataModel::Signals::ADDED);
+	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddMedication, this), pof::DataModel::Signals::STORE);
 	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnRemoveMedication, this), pof::DataModel::Signals::REMOVED);
 	mPatientMedications->ConnectSlot(std::bind_front(&pof::PatientManager::OnUpdateMedication, this), pof::DataModel::Signals::UPDATE);
 
 	//curd slots
-	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddPatient, this), pof::DataModel::Signals::ADDED);
+	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnAddPatient, this), pof::DataModel::Signals::STORE);
 	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnRemovePatient, this), pof::DataModel::Signals::REMOVED);
 	mPaitnets->ConnectSlot(std::bind_front(&pof::PatientManager::OnUpdatePatient, this), pof::DataModel::Signals::UPDATE);
 
@@ -68,8 +69,7 @@ pof::PatientManager::~PatientManager()
 {
 }
 
-bool pof::PatientManager::CreatePatientTable()
-{
+bool pof::PatientManager::CreatePatientTable() {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS patients 
 		(
@@ -89,7 +89,7 @@ bool pof::PatientManager::CreatePatientTable()
 			modifieddate integer	
 		);)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		if (stmt.has_value()){
+		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
@@ -168,7 +168,8 @@ bool pof::PatientManager::LoadPatients()
 			std::uint64_t, // BMI
 			std::uint64_t, // WEIGHT
 			std::uint64_t, //HR
-			std::uint64_t, // BP
+			std::uint64_t, // BP_sys
+			std::uint64_t, // BP_dys
 			std::uint64_t, // RR
 			std::uint64_t, // TEMPT
 			pof::base::data::datetime_t, // ENTERED DATE

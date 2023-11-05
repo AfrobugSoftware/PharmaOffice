@@ -139,7 +139,7 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	
 	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	wxString m_radioBox2Choices[] = { wxT("Princepal Pharmacist"), wxT("Loccum Pharmacist") };
+	wxString m_radioBox2Choices[] = { wxT("Principal Pharmacist"), wxT("Loccum Pharmacist") };
 	int m_radioBox2NChoices = sizeof( m_radioBox2Choices ) / sizeof( wxString );
 	m_radioBox2 = new wxRadioBox( m_scrolledWindow1, wxID_ANY, wxT("Phamacist role"), wxDefaultPosition, wxDefaultSize, m_radioBox2NChoices, m_radioBox2Choices, 1, wxRA_SPECIFY_COLS );
 	fgSizer1->Add( m_radioBox2, 0, wxALL|wxEXPAND, 5 );

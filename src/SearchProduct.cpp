@@ -33,6 +33,11 @@ pof::SearchProduct::SearchProduct(wxWindow* parent, wxWindowID id, const wxStrin
 
 	m_mgr.Update();
 	this->Centre(wxBOTH);
+
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
 }
 
 pof::SearchProduct::~SearchProduct()
@@ -110,7 +115,7 @@ void pof::SearchProduct::CreateToolBar()
 	SearchProductBar->AddSpacer(5);
 	SearchProductBar->AddTool(ID_FILTER, wxT("Filter"), wxArtProvider::GetBitmap("pen"));
 	SearchProductBar->AddSpacer(2);
-	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
+	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
 	SearchProductBar->AddSpacer(2);
 	SearchProductBar->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"));
 	SearchProductBar->Realize();

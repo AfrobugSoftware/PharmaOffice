@@ -91,18 +91,18 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddStretchSpacer();
 	
-	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER));
+	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16,16)));
 	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"));
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"));
-	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("Hide product view"), wxArtProvider::GetBitmap("pen"));
+	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("product view"), wxArtProvider::GetBitmap("pen"));
 	
 	mTopTools->Realize();
 
 	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"));
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
-	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT), "Reprint a sale")->SetHasDropDown(true);
-	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO), "Return an Item");
+	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16,16)), "Reprint a sale")->SetHasDropDown(true);
+	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddStretchSpacer();
 

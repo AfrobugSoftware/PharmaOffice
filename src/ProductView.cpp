@@ -1419,7 +1419,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddSpacer(2);
 	auto mOrderListItem = m_auiToolBar1->AddTool(ID_ORDER_LIST, wxEmptyString, wxArtProvider::GetBitmap("file"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
 	m_auiToolBar1->AddSpacer(2);
-	m_auiToolBar1->AddTool(ID_PACKS, wxEmptyString, wxArtProvider::GetBitmap(wxART_FOLDER), wxT("Pharamcy Packs"));
+	m_auiToolBar1->AddTool(ID_PACKS, wxEmptyString, wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16,16)), wxT("Pharamcy Packs"));
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
