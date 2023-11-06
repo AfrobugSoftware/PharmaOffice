@@ -29,7 +29,37 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, 2);
 	mBook = new wxSimplebook(m_panel5, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 
-	mListReport = new wxListCtrl(mBook, ID_REPORT_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
+	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
+
+	mSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
+
+	mTotalQuantity = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalQuantity->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalQuantity->Wrap(-1);
+	bSizer4->Add(mTotalQuantity, 0, wxALL, 5);
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mTotalAmount = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmount->Wrap(-1);
+	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
+
+
+	mSPanel->SetSizer(bSizer4);
+	mSPanel->Layout();
+	bSizer4->Fit(mSPanel);
+
+
+
+	mListReport = new wxListCtrl(panel, ID_REPORT_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
 	wxImageList* imageList = new wxImageList(16, 16);
 	imageList->Add(wxArtProvider::GetBitmap("action_check"));
 	imageList->Add(wxArtProvider::GetBitmap("action_delete"));
@@ -39,8 +69,14 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	});
 	CreateEmptyEodPage();
 
+	sz->Add(mListReport, 1, wxEXPAND | wxALL, 0);
+	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 0);
 
-	mBook->AddPage(mListReport, "Report", true);
+	panel->SetSizer(sz);
+	sz->SetSizeHints(panel);
+	panel->Layout();
+
+	mBook->AddPage(panel, "Report", true);
 	mBook->AddPage(mEmptyEod, "Empty", false);
 
 	bSizer7->Add(mBook, 1, wxALL | wxEXPAND, 0);
@@ -73,9 +109,11 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	{
 	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:
 		ret = LoadConsumptionPattern(month);
+		SetTitle("Consumption Pattern");
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
 		ret = LoadEndOFDay();
+		SetTitle("End Of Day");
 		break;
 	default:
 		break;
@@ -595,6 +633,18 @@ void pof::ReportsDialog::EODExcel()
 
 	doc.save();
 	doc.close();
+}
+
+void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
+{
+	if (data.empty()) return;
+	pof::base::currency mTotalAmount;
+	std::uint64_t mTotalQuantity = 0;
+
+	mTotalAmount = std::accumulate(data.begin(), data.end(), mTotalAmount, [&](const pof::base::currency& c, const pof::base::data::row_t& row) -> pof::base::currency {
+		return c + boost::variant2::get<pof::base::currency>(row.first[4]);
+	});
+
 }
 
 

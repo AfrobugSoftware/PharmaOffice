@@ -134,7 +134,7 @@ namespace pof {
 		void OnTestLoad(wxCommandEvent& evt);
 		void OnIdle(wxIdleEvent& evt);
 		void OnWelcomePageSelect(wxListEvent& evt);
-	
+		void OnMenuUpdateUI(wxUpdateUIEvent& evt);
 		//menu evts
 		void OnImportJson(wxCommandEvent& evt);
 		void OnBackupData(wxCommandEvent& evt);

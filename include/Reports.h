@@ -42,6 +42,9 @@ namespace pof
 		wxSimplebook* mBook = nullptr;
 		wxDatePickerCtrl* mEodDate = nullptr;
 		wxPanel* mEmptyEod = nullptr;
+		wxStaticText* mTotalQuantity = nullptr;
+		wxStaticText* mTotalAmount = nullptr;
+		wxPanel* mSPanel = nullptr;
 		pof::base::data::datetime_t mSelectedMonth;
 		pof::base::data::datetime_t mSelectDay;
 	public:
@@ -101,6 +104,7 @@ namespace pof
 		//download for the report type
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
+		void UpdateTotals(const pof::base::data& data);
 
 		bool bShowSaleID = false;
 		ReportType mCurReportType;

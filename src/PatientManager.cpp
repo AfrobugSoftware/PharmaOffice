@@ -81,6 +81,7 @@ bool pof::PatientManager::CreatePatientTable() {
 			address text,
 			bmi integer,
 			weight integer,
+			hr integer,
 			bpsys integer,
 			bpdys integer,
 			rr integer,
@@ -303,10 +304,37 @@ bool pof::PatientManager::LoadPatientHistory(const pof::base::data::duuid_t& pid
 	return false;
 }
 
+bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT 1 FROM medications WHERE patient_uuid = ? AND Days(stopdate) > ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		//on some computers it does not work with the day ahead
+		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
+		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, static_cast<std::uint64_t>(day)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return (!rel->empty());
+	}
+	return false;
+}
+
 bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -316,13 +344,14 @@ bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 			pof::base::data::duuid_t, //UUID
 			pof::base::data::text_t, //NAME
 			pof::base::data::text_t, //LAST NAME
-			std::uint64_t, // AGE
+			pof::base::data::datetime_t, // AGE
 			pof::base::data::text_t, //PHONE NUMBER
 			pof::base::data::text_t, // ADDRESS
 			std::uint64_t, // BMI
 			std::uint64_t, // WEIGHT
 			std::uint64_t, //HR
 			std::uint64_t, // BP
+			std::uint64_t, // BP_sys
 			std::uint64_t, // RR
 			std::uint64_t, // TEMPT
 			pof::base::data::datetime_t, // ENTERED DATE

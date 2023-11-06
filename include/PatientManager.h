@@ -87,6 +87,7 @@ namespace pof {
 		bool LoadPatientMedication(const pof::base::data::duuid_t& pid);
 		bool LoadPatientHistory(const pof::base::data::duuid_t& pid);
 
+		bool IsPatientActive(const pof::base::data::duuid_t& pid);
 		//crud
 		bool OnAddPatient(pof::base::data::const_iterator iter);
 		bool OnRemovePatient(pof::base::data::const_iterator iter);

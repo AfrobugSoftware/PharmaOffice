@@ -4,7 +4,10 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_TOOL(pof::PatientView::ID_ADD_PATIENTS, pof::PatientView::OnAddPatient)
 	EVT_TOOL(pof::PatientView::ID_SELECT, pof::PatientView::OnSelectCol)
 	EVT_TOOL(pof::PatientView::ID_SELECT_MED, pof::PatientView::OnSelectMedCol)
-
+	EVT_TOOL(wxID_BACKWARD, pof::PatientView::OnBack)
+	EVT_TOOL(pof::PatientView::ID_ADD_PRODUCT, pof::PatientView::OnAddMedication)
+	EVT_TOOL(pof::PatientView::ID_ADD_PACK, pof::PatientView::OnAddPacks)
+	EVT_TOOL(pof::PatientView::ID_PATIENT_MED_DETAILS, pof::PatientView::OnHidePatientMedicalDetails)
 
 	//menus
 	EVT_MENU(pof::PatientView::ID_REMOVE_PATIENTS, pof::PatientView::OnRemovePatient)
@@ -18,9 +21,15 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	//dataview
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientsContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsContextMenu)
-	EVT_DATAVIEW_ITEM_ACTIVATED(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientSelected)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientActivated)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientHeaderClicked)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedHeaderClicked)
+
+	EVT_SPLITTER_SASH_POS_CHANGED(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionChanged)
+	EVT_SPLITTER_SASH_POS_CHANGING(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionChanging)
+	EVT_SPLITTER_SASH_POS_RESIZE(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionResize)
+	EVT_SPLITTER_DCLICK(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnDClick)
+	//EVT_SPLITTER_UNSPLIT(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView:OnUnsplitEvent)
 END_EVENT_TABLE()
 
 pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
@@ -29,6 +38,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	mManager.SetFlags(AUIMGRSTYLE);
 	SetSizeHints(wxDefaultSize, wxDefaultSize);
 	SetBackgroundColour(*wxWHITE);
+
 
 	CreateToolBars();
 	SetupAuiTheme();
@@ -86,9 +96,25 @@ void pof::PatientView::CreateToolBars()
 	mTopTools->AddSpacer(5);
 	mTopTools->AddTool(ID_SHOW_PATIENT_DETAILS, "Show details", wxArtProvider::GetBitmap("application"), "Show patient details", wxITEM_CHECK);
 
+	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
+	mPatientTools->AddSeparator();
+	mPatientTools->AddSpacer(5);
 
-	mManager.AddPane(mTopTools, wxAuiPaneInfo().Name("TopTools").Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
-	mManager.AddPane(mPatientTools, wxAuiPaneInfo().Name("PaitentTools").Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
+	mPatientTools->AddStretchSpacer();
+	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR, wxSize(16, 16)), "Patient medical details", wxITEM_CHECK);
+	std::bitset<32> bitset(pd->GetState());
+	bitset.set(5);
+	pd->SetState(bitset.to_ulong());
+
+
+	mPatientTools->AddSpacer(5);
+	mPatientTools->AddTool(ID_ADD_PACK, "Rx Packs", wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16, 16)), "Add Pharmacy packs to patient");
+	mPatientTools->AddSpacer(5);
+	mPatientTools->AddTool(ID_ADD_PRODUCT, "Add Medication", wxArtProvider::GetBitmap("action_add"), "Add Medication to patient");
+	
+	
+	mManager.AddPane(mTopTools, wxAuiPaneInfo().Name("TopTools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	mManager.AddPane(mPatientTools, wxAuiPaneInfo().Name("PatientTools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 }
 
 void pof::PatientView::CreateViews()
@@ -103,57 +129,76 @@ void pof::PatientView::CreateViews()
 	mPatientSelect->AppendTextColumn("Date of birth", pof::PatientManager::PATIENT_AGE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 	mPatientSelect->AppendTextColumn("Status", 1000, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 
-	mPatientPanel =  new wxScrolledWindow(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
+	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 
-	mCurrentMedicationPane = new wxCollapsiblePane(mPatientPanel, wxID_ANY, "Current Medications");
-	wxSizer* csz = new wxBoxSizer(wxVERTICAL);
+	mSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
+
+	mPatientNameText = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mPatientNameText->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mPatientNameText->Wrap(-1);
+	bSizer4->Add(mPatientNameText, 0, wxALL, 5);
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mDobText = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mDobText->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mDobText->Wrap(-1);
+	bSizer4->Add(mDobText, 0, wxALL, 5);
+
+
+	mSPanel->SetSizer(bSizer4);
+	mSPanel->Layout();
+	bSizer4->Fit(mSPanel);
+	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 0);
+
+
+	mPatientPanel =  new wxSplitterWindow(panel, ID_PATIENT_PANEL, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE |
+		wxCLIP_CHILDREN | wxNO_BORDER/* | wxSP_NO_XP_THEME */);
+	//wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 	
-	mCurrentMedicationView = new wxDataViewCtrl(mCurrentMedicationPane->GetPane(), ID_PATIENT_MEDS_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mCurrentMedicationView = new wxDataViewCtrl(mPatientPanel, ID_PATIENT_MEDS_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mCurrentMedicationView->AssociateModel(wxGetApp().mPatientManager.GetPatientMedData().get());
-	mCurrentMedicationView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendTextColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	
-	csz->Add(mCurrentMedicationView, wxSizerFlags().Expand().Border(wxALL, 0));
-	
-	mCurrentMedicationPane->GetPane()->SetSizer(csz);
-	csz->SetSizeHints(mCurrentMedicationPane->GetPane());
-	mCurrentMedicationPane->Expand();
 
-
-
-	mMedsHistoryPane = new wxCollapsiblePane(mPatientPanel, wxID_ANY, "Patient medication history");
-	wxSizer* msz = new wxBoxSizer(wxVERTICAL);
-	mMedHistoryView = new wxDataViewCtrl(mMedsHistoryPane->GetPane(), ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mMedHistoryView = new wxDataViewCtrl(mPatientPanel, ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mMedHistoryView->AssociateModel(wxGetApp().mPatientManager.GetPatientHistotyData().get());
-	mMedHistoryView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-
-	msz->Add(mMedHistoryView, wxSizerFlags().Expand().Border(wxALL, 0));
-	mMedsHistoryPane->GetPane()->SetSizer(msz);
-	msz->SetSizeHints(mMedsHistoryPane->GetPane());
-	mMedsHistoryPane->Collapse();
-
-	sz->Add(mCurrentMedicationPane, wxSizerFlags().Expand().Border(wxALL, 2));
-	sz->Add(mMedsHistoryPane, wxSizerFlags().Expand().Border(wxALL, 2));
+	mMedHistoryView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 
 
-	mPatientPanel->SetSizer(sz);
-	mPatientPanel->Layout();
-	sz->Fit(mPatientPanel);
+	mCurrentMedicationView->Show();
+	mMedHistoryView->Show();
+	mPatientPanel->SplitHorizontally(mCurrentMedicationView, mMedHistoryView);
+
+	sz->Add(mPatientPanel, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 0));
+
+	panel->SetSizer(sz);
+	sz->SetSizeHints(panel);
+	panel->Layout();
+	mPatientPanel->SetExtraStyle(wxWS_EX_PROCESS_IDLE);
+	mPatientPanel->Connect(wxEVT_IDLE, wxIdleEventHandler(PatientView::OnSpliterOnIdle), NULL, this);
 
 	mBook->AddPage(mPatientSelect, "Patient Select", true);
-	mBook->AddPage(mPatientPanel, "Patient medication panel", false);
+	mBook->AddPage(panel, "Patient medication panel", false);
 	
 	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CenterPane().Show());
 }
@@ -164,15 +209,12 @@ void pof::PatientView::CreatePatientSummaryPopUp()
 	wxBitmap pbm = GetPatientBitMap();
 }
 
-void pof::PatientView::CreatePatientDetailsPane()
-{
-	///
-}
-
 void pof::PatientView::CreateSpecialCols()
 {
 	pof::DataModel::SpeicalColHandler_t SelectColHandler;
 	pof::DataModel::SpeicalColHandler_t SelectMedColHandler;
+	pof::DataModel::SpeicalColHandler_t statusHandler;
+
 
 	SelectColHandler.first = [&](size_t row, size_t col) -> wxVariant {
 		auto found = mPatientSelections.find(pof::DataModel::GetItemFromIdx(row));
@@ -205,9 +247,55 @@ void pof::PatientView::CreateSpecialCols()
 		}
 	};
 
+	statusHandler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& datastore = wxGetApp().mPatientManager.GetPatientData()->GetDatastore();
+		auto& pid = boost::variant2::get<pof::base::data::duuid_t>(datastore[row].first[pof::PatientManager::PATIENT_UUID]);
+		if (wxGetApp().mPatientManager.IsPatientActive(pid)) {
+			return "Active";
+		}
+		else return "Inactive";
+	};
+
 	wxGetApp().mPatientManager.GetPatientData()->SetSpecialColumnHandler(SELECTION_COL, std::move(SelectColHandler));;
+	wxGetApp().mPatientManager.GetPatientData()->SetSpecialColumnHandler(1000, std::move(statusHandler));;
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(SELECTION_COL, std::move(SelectMedColHandler));;
 
+}
+
+void pof::PatientView::CreatePatientDetailsPane()
+{
+	mPatientDetails = new wxPropertyGridManager(this, ID_MED_DETAILS,
+		wxDefaultPosition, wxSize(350, -1), wxPG_BOLD_MODIFIED | wxPG_SPLITTER_AUTO_CENTER |
+		wxPG_TOOLBAR |
+		wxPG_DESCRIPTION |
+		wxPG_SPLITTER_AUTO_CENTER |
+		wxNO_BORDER |
+		wxPGMAN_DEFAULT_STYLE);
+	mPatientDetails->SetBackgroundColour(*wxWHITE);
+	mPatientDetails->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
+	auto grid = mPatientDetails->AddPage("Medication", wxNullBitmap);
+	grid->GetGrid()->SetBackgroundColour(*wxWHITE);
+	grid->GetGrid()->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	grid->GetGrid()->SetCaptionTextColour(*wxBLACK);
+	grid->GetGrid()->SetMarginColour(wxTheColourDatabase->Find("Aqua"));
+
+
+	//details
+	auto ct0 = grid->Append(new wxPropertyCategory("Patient Details"));
+	auto pp0 = grid->Append(new wxIntProperty("Body mass index (BMI)", "0"));
+	auto pp1 = grid->Append(new wxIntProperty("Weight (KG)", "1"));
+	auto pp2 = grid->Append(new wxIntProperty("Heart rate (HR)", "2"));
+	auto pp3 = grid->Append(new wxIntProperty("Blood pressure systolic (BP/SYS)", "3"));
+	auto pp4 = grid->Append(new wxIntProperty("Blood pressure diastolic (BP/DIA)", "4"));
+	auto pp5 = grid->Append(new wxIntProperty("Resipratory rate (RR)", "5"));
+	auto pp6 = grid->Append(new wxIntProperty("Body tempreture (o')", "6"));
+	auto pp7 = grid->Append(new wxStringProperty("Date entered", "7"));
+	auto pp8 = grid->Append(new wxStringProperty("Date modified", "8"));
+
+	pp7->Enable(false);
+	pp8->Enable(false);
+
+	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
 }
 
 void pof::PatientView::SetupAuiTheme()
@@ -237,6 +325,7 @@ void pof::PatientView::SwitchToolBar()
 {
 	auto& topPane = mManager.GetPane("TopTools");
 	auto& pPane = mManager.GetPane("PatientTools");
+	if (!topPane.IsOk() || !pPane.IsOk()) return;
 	if (pPane.IsShown()) {
 		topPane.Show();
 		pPane.Hide();
@@ -248,8 +337,30 @@ void pof::PatientView::SwitchToolBar()
 	mManager.Update();
 }
 
-void pof::PatientView::OnPatientSelected(wxDataViewEvent& evt)
+void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 {
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+	auto& pane = mManager.GetPane("PatientDetails");
+	if (pane.IsOk()) {
+		std::bitset<32> bitset(pd->GetState());
+		if (bitset.test(5)) {
+			pane.Show();
+			mManager.Update();
+		}
+	}
+	mCurrentPatient.emplace(wxGetApp().mPatientManager.GetPatientData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)]);
+	SwitchToolBar();
+	auto& v = mCurrentPatient.value().get().first;
+	mSPanel->Freeze();
+	mPatientNameText->SetLabelText(fmt::format("Patient Name: {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
+	mDobText->SetLabelText(fmt::format("Date of birth: {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mSPanel->Thaw();
+	mSPanel->Layout();
+	mSPanel->Refresh();
+
+	mBook->SetSelection(PATIENT_VIEW);
 }
 
 void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
@@ -257,11 +368,19 @@ void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 	pof::AddPatient ap(this, wxID_ANY, "Add Patients");
 	if (ap.ShowModal() == wxID_OK) {
 		auto& exp = ap.GetPatientData();
-		wxGetApp().mPatientManager.GetPatientData()->EmplaceData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
+		wxGetApp().mPatientManager.GetPatientData()->StoreData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
 	}
 }
 
 void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
+{
+}
+
+void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
+{
+}
+
+void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
 {
 }
 
@@ -325,15 +444,49 @@ void pof::PatientView::OnAuiThemeChange()
 
 void pof::PatientView::OnSearchPatient(wxCommandEvent& evt)
 {
-
+	auto searchString = evt.GetString().ToStdString();
+	auto& datastore = wxGetApp().mPatientManager.GetPatientData();
+	mPatientSelect->Freeze();
+	if (searchString.empty()) {
+		datastore->Reload();
+	}
+	else {
+		datastore->StringSearchAndReload(mSearchColumn, std::move(searchString));
+	}
+	mPatientSelect->Thaw();
+	mPatientSelect->Refresh();
 }
 
 void pof::PatientView::OnSearchCleared(wxCommandEvent& evt)
 {
+	auto& datastore = wxGetApp().mPatientManager.GetPatientData();
+	mPatientSelect->Freeze();
+	datastore->Reload();
+	mPatientSelect->Thaw();
+	mPatientSelect->Refresh();
 }
 
 void pof::PatientView::OnStopProduct(wxCommandEvent& evt)
 {
+}
+
+void pof::PatientView::OnBack(wxCommandEvent& evt)
+{
+	auto& pane = mManager.GetPane("PatientDetails");
+	if (pane.IsOk()) {
+		pane.Hide();
+		mManager.Update();
+	}
+	SwitchToolBar();
+	mBook->SetSelection(PATIENT_SELECT);
+}
+
+void pof::PatientView::OnHidePatientMedicalDetails(wxCommandEvent& evt)
+{
+	auto& pane = mManager.GetPane("PatientDetails");
+	if (!pane.IsOk()) return;
+	pane.Show(evt.IsChecked());
+	mManager.Update();
 }
 
 void pof::PatientView::ShowPatientsSelectCol()
@@ -432,4 +585,34 @@ void pof::PatientView::OnMedHeaderClicked(wxDataViewEvent& evt)
 	else {
 		evt.Skip();
 	}
+}
+
+void pof::PatientView::OnPositionChanged(wxSplitterEvent& event)
+{
+	event.Skip();
+}
+
+void pof::PatientView::OnPositionChanging(wxSplitterEvent& event)
+{
+	event.Skip();
+}
+
+void pof::PatientView::OnPositionResize(wxSplitterEvent& event)
+{
+	event.Skip();
+}
+
+void pof::PatientView::OnDClick(wxSplitterEvent& event)
+{
+	event.Veto(); //prevent double click
+}
+
+void pof::PatientView::OnUnsplitEvent(wxSplitterEvent& event)
+{
+}
+
+void pof::PatientView::OnSpliterOnIdle(wxIdleEvent& evt)
+{
+	mPatientPanel->SetSashPosition(350);
+	mPatientPanel->Disconnect(wxEVT_IDLE, wxIdleEventHandler(PatientView::OnSpliterOnIdle), NULL, this);
 }

@@ -21,7 +21,8 @@
 #include <wx/stattext.h>
 #include <wx/simplebook.h>
 #include <wx/timer.h>
-
+#include <wx/splitter.h>
+#include <wx/statline.h>
 
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/manager.h>
@@ -53,8 +54,10 @@ namespace pof {
 		enum {
 			ID_SEARCH_BAR = wxID_HIGHEST,
 			ID_PATIENT_VIEW,
+			ID_PATIENT_PANEL,
 			ID_PATIENT_MEDS_VIEW,
 			ID_PATIENT_HISTORY_VIEW,
+			ID_MED_DETAILS,
 			ID_ADD_PRODUCT,
 			ID_REMOVE_PRODUCT,
 			ID_ADD_PACK,
@@ -64,6 +67,7 @@ namespace pof {
 			ID_PATIENT_TOOLS,
 			ID_ADD_PATIENTS,
 			ID_SHOW_PATIENT_DETAILS,
+			ID_PATIENT_MED_DETAILS,
 			ID_REMOVE_PATIENTS,
 			ID_SELECT,
 			ID_SELECT_MED,
@@ -80,7 +84,6 @@ namespace pof {
 		void CreatePatientDetailsPane();
 		void CreateSpecialCols();
 
-
 		void SetupAuiTheme();
 
 		void ShowPatientDetails();
@@ -90,9 +93,11 @@ namespace pof {
 		std::set<wxDataViewItem> mPatientSelections;
 		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
 	protected:
-		void OnPatientSelected(wxDataViewEvent& evt);
+		void OnPatientActivated(wxDataViewEvent& evt);
 		void OnAddPatient(wxCommandEvent& evt);
 		void OnRemovePatient(wxCommandEvent& evt);
+		void OnAddMedication(wxCommandEvent& evt);
+		void OnAddPacks(wxCommandEvent& evt);
 		void OnRemoveMedication(wxCommandEvent& evt);
 		void OnSelectCol(wxCommandEvent& evt);
 		void OnSelectMedCol(wxCommandEvent& evt);
@@ -104,6 +109,8 @@ namespace pof {
 		void OnSearchPatient(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnStopProduct(wxCommandEvent& evt);
+		void OnBack(wxCommandEvent& evt);
+		void OnHidePatientMedicalDetails(wxCommandEvent& evt);
 
 		//hide/show patient search column
 		void ShowPatientsSelectCol();
@@ -113,6 +120,16 @@ namespace pof {
 		void OnPatientHeaderClicked(wxDataViewEvent& evt);
 		void OnMedHeaderClicked(wxDataViewEvent& evt);
 
+		//for the splitter
+		void OnPositionChanged(wxSplitterEvent& event);
+		void OnPositionChanging(wxSplitterEvent& event);
+		void OnPositionResize(wxSplitterEvent& event);
+		void OnDClick(wxSplitterEvent& event);
+		void OnUnsplitEvent(wxSplitterEvent& event);
+		void OnSpliterOnIdle(wxIdleEvent& evt);
+
+
+
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
 		wxTimer mUpdatePatientStockTimer;
@@ -120,8 +137,10 @@ namespace pof {
 		wxAuiToolBar* mPatientTools = nullptr;
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
-		
-		wxScrolledWindow * mPatientPanel;
+		wxAuiToolBarItem* pd = nullptr;
+
+		wxSplitterWindow * mPatientPanel;
+		wxPanel* mSPanel = nullptr;
 		wxCollapsiblePane* mCurrentMedicationPane = nullptr;
 		wxCollapsiblePane* mMedsHistoryPane = nullptr;
 		wxCollapsiblePane* mPane = nullptr;
@@ -130,12 +149,14 @@ namespace pof {
 		wxDataViewColumn* mSelectCol = nullptr;
 		wxDataViewCtrl* mCurrentMedicationView;
 		wxDataViewColumn* mSelectMedCol = nullptr;
+		wxStaticText* mPatientNameText = nullptr;
+		wxStaticText* mDobText = nullptr;
 
 		wxDataViewCtrl* mMedHistoryView;
 
 		wxPropertyGridManager* mPatientDetails;
 		wxPropertyGridManager* mMedicationDetails;
-		pof::base::data::row_t mCurrentPatient;
+		std::optional<std::reference_wrapper<pof::base::data::row_t>> mCurrentPatient;
 		wxSearchCtrl* mSearchbar = nullptr;
 
 		DECLARE_EVENT_TABLE()

@@ -24,6 +24,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, pof::MainFrame::OnSaleAlerts)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_BACKUP, pof::MainFrame::OnBackupData)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_ROLLBACK, pof::MainFrame::OnRollbackData)
+	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
 
@@ -668,6 +669,21 @@ void pof::MainFrame::OnWelcomePageSelect(wxListEvent& evt)
 		mModules->activateModule(mModules->mPrescriptions);
 		break;
 	default:
+		break;
+	}
+}
+
+void pof::MainFrame::OnMenuUpdateUI(wxUpdateUIEvent& evt)
+{
+	wxWindowID id = evt.GetId();
+	switch (id)
+	{
+	case ID_MENU_VIEW_SHOW_MODULES:
+	{
+		auto& pane = mAuiManager.GetPane("Modules");
+		if (!pane.IsOk()) return;
+		evt.Check(pane.IsShown());
+	}
 		break;
 	}
 }
