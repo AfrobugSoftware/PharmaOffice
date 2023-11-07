@@ -152,6 +152,16 @@ void pof::PatientView::CreateViews()
 	mDobText->Wrap(-1);
 	bSizer4->Add(mDobText, 0, wxALL, 5);
 
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mGenderText = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mGenderText->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mGenderText->Wrap(-1);
+	bSizer4->Add(mGenderText, 0, wxALL, 5);
 
 	mSPanel->SetSizer(bSizer4);
 	mSPanel->Layout();
@@ -354,9 +364,10 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	SwitchToolBar();
 	auto& v = mCurrentPatient.value().get().first;
 	mSPanel->Freeze();
-	mPatientNameText->SetLabelText(fmt::format("Patient Name: {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
-	mDobText->SetLabelText(fmt::format("Date of birth: {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mDobText->SetLabelText(fmt::format("Date of birth:  {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
 	mSPanel->Thaw();
 	mSPanel->Layout();
 	mSPanel->Refresh();

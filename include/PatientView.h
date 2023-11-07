@@ -151,6 +151,7 @@ namespace pof {
 		wxDataViewColumn* mSelectMedCol = nullptr;
 		wxStaticText* mPatientNameText = nullptr;
 		wxStaticText* mDobText = nullptr;
+		wxStaticText* mGenderText = nullptr;
 
 		wxDataViewCtrl* mMedHistoryView;
 

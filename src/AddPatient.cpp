@@ -73,6 +73,18 @@ pof::AddPatient::AddPatient( wxWindow* parent, wxWindowID id, const wxString& ti
 	mDOBValue = new wxDatePickerCtrl( m_scrolledWindow2, wxID_ANY, wxDateTime::Now(), wxDefaultPosition, wxDefaultSize, wxDP_DROPDOWN);
 	fgSizer2->Add( mDOBValue, 0, wxALL|wxEXPAND, 5 );
 	
+	mGenderLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Date of birth"), wxDefaultPosition, wxDefaultSize, 0);
+	mGenderLabel->Wrap(-1);
+	fgSizer2->Add(mGenderLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	genChoies.Add("Female");
+	genChoies.Add("Male");
+	genChoies.Add("Not specified");
+
+	mGenderValue = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, genChoies);
+	fgSizer2->Add( mGenderValue, 0, wxALL|wxEXPAND, 5 );
+
+
 	mPhonenumber = new wxStaticText( m_scrolledWindow2, wxID_ANY, wxT("Phone number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mPhonenumber->Wrap( -1 );
 	fgSizer2->Add( mPhonenumber, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
@@ -156,6 +168,9 @@ bool pof::AddPatient::TransferDataFromWindow()
 	v[pof::PatientManager::PATIENT_LAST_NAME] = mPatientLastNameValue->GetValue().ToStdString();
 	auto date = pof::base::data::clock_t::from_time_t(mDOBValue->GetValue().GetTicks());
 	v[pof::PatientManager::PATIENT_AGE] = date;
+	int sel = mGenderValue->GetSelection();
+	if (sel == wxNOT_FOUND) sel = 2;
+	v[pof::PatientManager::PATIENT_GENDER] = genChoies[sel].ToStdString();
 	v[pof::PatientManager::PATIENT_PHONE_NUMBER] = ph;
 	v[pof::PatientManager::PATIENT_ADDRESS] = mAddressValue->GetValue().ToStdString();
 

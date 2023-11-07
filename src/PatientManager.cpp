@@ -12,6 +12,7 @@ pof::PatientManager::PatientManager()
 		pof::base::data::text_t, //NAME
 		pof::base::data::text_t, //LAST NAME
 		pof::base::data::datetime_t, // DOB
+		pof::base::data::text_t,
 		pof::base::data::text_t, //PHONE NUMBER
 		pof::base::data::text_t, // ADDRESS
 		std::uint64_t, // BMI
@@ -78,6 +79,7 @@ bool pof::PatientManager::CreatePatientTable() {
 			name text,
 			lastname text,
 			dob integer,
+			gender text,
 			phonenumber text,
 			address text,
 			bmi integer,
@@ -166,6 +168,7 @@ bool pof::PatientManager::LoadPatients()
 			pof::base::data::text_t, //NAME
 			pof::base::data::text_t, //LAST NAME
 			pof::base::data::datetime_t, // AGE
+			pof::base::data::text_t,
 			pof::base::data::text_t, //PHONE NUMBER
 			pof::base::data::text_t, // ADDRESS
 			std::uint64_t, // BMI
@@ -337,7 +340,7 @@ bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
 bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -348,6 +351,7 @@ bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 			pof::base::data::text_t, //NAME
 			pof::base::data::text_t, //LAST NAME
 			pof::base::data::datetime_t, // AGE
+			pof::base::data::text_t, //GENDER
 			pof::base::data::text_t, //PHONE NUMBER
 			pof::base::data::text_t, // ADDRESS
 			std::uint64_t, // BMI
@@ -405,8 +409,8 @@ bool pof::PatientManager::OnRemovePatient(pof::base::data::const_iterator iter)
 bool pof::PatientManager::OnUpdatePatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr static std::array<std::string_view, 15> colName = {
-			"uuid", "lastname", "age", "phonenumber", "address", "bmi", "weight", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate", "clinical"
+		constexpr static std::array<std::string_view, 16> colName = {
+			"uuid", "lastname", "dob", "gender" ,"phonenumber", "address", "bmi", "weight", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate", "clinical"
 		};
 		std::ostringstream os;
 		std::vector<size_t> upIdx;

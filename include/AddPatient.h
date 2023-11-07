@@ -39,6 +39,8 @@ namespace pof
 			wxTextCtrl* mPatientLastNameValue;
 			wxStaticText* mDateOfBirth;
 			wxDatePickerCtrl* mDOBValue;
+			wxStaticText* mGenderLabel;
+			wxChoice* mGenderValue;
 			wxStaticText* mPhonenumber;
 			wxTextCtrl* mPhonenumberValue;
 			wxStaticText* mAddress;
@@ -49,6 +51,7 @@ namespace pof
 			wxButton* m_sdbSizer2Cancel;
 		
 			pof::base::data::row_t mPatientEntry;
+			wxArrayString genChoies;
 		public:
 			
 			AddPatient( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 891,423 ), long style = wxDEFAULT_DIALOG_STYLE ); 
