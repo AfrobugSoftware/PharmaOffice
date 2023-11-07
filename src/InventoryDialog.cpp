@@ -10,7 +10,7 @@ EVT_BUTTON(InventoryDialog::ID_CALENDAR, InventoryDialog::OnCalendar)
 END_EVENT_TABLE()
 
 pof::InventoryDialog::InventoryDialog(wxWindow* parent)
-: wxDialog(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(800, 348), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL){
+: wxDialog(parent, wxID_ANY, "Add Stock", wxDefaultPosition, wxSize(800, 348), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL) {
 	CreateDialog();
 	SizeDialog();
 }

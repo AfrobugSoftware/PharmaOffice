@@ -33,6 +33,8 @@
 #include "DropTarget.h"
 #include "database.h"
 #include "AddPatient.h"
+#include "SearchProduct.h"
+#include "PackView.h"
 #include <ranges>
 #include <unordered_map>
 #include <numeric>

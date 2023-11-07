@@ -755,11 +755,6 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 		auto prods = dialog.GetPackProducts();
 		if (prods.empty()) return;
 
-		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
-			mCurSaleuuid = uuidGen();
-			SetActiveSaleIdText(mCurSaleuuid);
-		}
-
 		for (auto& prod : prods) {
 
 			//find row
@@ -815,6 +810,10 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME]), presentStock), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxYES) {
 					std::get<3>(prod) = presentStock;
 				}else continue;
+			}
+			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+				mCurSaleuuid = uuidGen();
+				SetActiveSaleIdText(mCurSaleuuid);
 			}
 
 			pof::base::data::row_t rowSale;
