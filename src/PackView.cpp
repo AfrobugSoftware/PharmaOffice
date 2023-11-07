@@ -87,28 +87,27 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	mExtPrice = m_dataViewCtrl3->AppendTextColumn( wxT("Exact Price"), 5);
 	bSizer3->Add( m_dataViewCtrl3, 1, wxALL|wxEXPAND, 2 );
 	
-	m_panel4 = new wxPanel( mPackData, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_panel4->SetMinSize( wxSize( -1,50 ) );
+	m_panel4 = new wxPanel( mPackData, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER );
 	
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText1 = new wxStaticText( m_panel4, wxID_ANY, wxT("Total Quantity: "), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText1->Wrap( -1 );
-	bSizer4->Add( m_staticText1, 0, wxALL, 5 );
 	
-	mTotalQuantity = new wxStaticText( m_panel4, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalQuantity->Wrap( -1 );
-	bSizer4->Add( mTotalQuantity, 0, wxALL|wxLEFT, 5 );
+	mTotalQuantity = new wxStaticText( m_panel4, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mTotalQuantity->SetFont(wxFontInfo(11).AntiAliased());
+	mTotalQuantity->Wrap(-1);
+	bSizer4->Add( mTotalQuantity, 0, wxALL, 5 );
 	
 	
-	bSizer4->Add( 0, 0, 1, wxEXPAND, 5 );
-	
-	mTotalAmountText = new wxStaticText( m_panel4, wxID_ANY, wxT("Total Amount:  "), wxDefaultPosition, wxDefaultSize, 0 );
-	mTotalAmountText->Wrap( -1 );
-	bSizer4->Add( mTotalAmountText, 0, wxALL, 5 );
-	
-	mTotalAmount = new wxStaticText( m_panel4, wxID_ANY, wxT("N 0.0"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(m_panel4, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+		
+	mTotalAmount = new wxStaticText( m_panel4, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	mTotalAmount->SetFont(wxFontInfo(11).AntiAliased());
 	mTotalAmount->Wrap( -1 );
 	bSizer4->Add( mTotalAmount, 0, wxALL, 5 );
 	
@@ -116,7 +115,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	m_panel4->SetSizer( bSizer4 );
 	m_panel4->Layout();
 	bSizer4->Fit( m_panel4 );
-	bSizer3->Add( m_panel4, 0, wxEXPAND | wxALL, 5 );
+	bSizer3->Add( m_panel4, 0, wxEXPAND | wxALL, 0 );
 	
 	
 	mPackData->SetSizer( bSizer3 );
@@ -521,6 +520,9 @@ void pof::PackView::OnRemoveProductPack(wxCommandEvent& evt)
 	if (datastore.empty()) {
 		mBook->SetSelection(3);
 	}
+	else {
+		UpdateTotals();
+	}
 }
 
 void pof::PackView::OnBack(wxCommandEvent& evt)
@@ -568,24 +570,20 @@ void pof::PackView::UpdateTotals()
 {
 	auto& datastore = mPackModel->GetDatastore();
 	pof::base::currency totalAmount;
-	size_t extQuantity = 0;
+	std::uint64_t extQuantity = 0;
 
-	totalAmount = std::accumulate(datastore.begin(),
-		datastore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
-				return v + boost::variant2::get<pof::base::currency>(i.first[5]);
-		});
-
-	extQuantity = std::accumulate(datastore.begin(), datastore.end(), extQuantity,
-		[&](size_t v, const pof::base::data::row_t& i) {
-			return v + boost::variant2::get<std::uint64_t>(i.first[2]);
-		});
+	for (auto& d : datastore)
+	{
+		totalAmount += boost::variant2::get<pof::base::currency>(d.first[5]);
+		extQuantity += boost::variant2::get<std::uint64_t>(d.first[2]);
+	}
 
 	m_panel4->Freeze();
-	mTotalQuantity->SetLabel(fmt::format("{:d}", extQuantity));
-	mTotalAmount->SetLabel(fmt::format("{:cu}", totalAmount));
+	mTotalQuantity->SetLabel(fmt::format("Total Quantity:  {:d}", extQuantity));
+	mTotalAmount->SetLabel(fmt::format("Total Amount:  {:cu}", totalAmount));
+	m_panel4->Thaw();
 
 	m_panel4->Layout();
-	m_panel4->Thaw();
 	m_panel4->Refresh();
 }
 

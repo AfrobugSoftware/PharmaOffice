@@ -29,7 +29,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_SPLITTER_SASH_POS_CHANGING(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionChanging)
 	EVT_SPLITTER_SASH_POS_RESIZE(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionResize)
 	EVT_SPLITTER_DCLICK(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnDClick)
-	//EVT_SPLITTER_UNSPLIT(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView:OnUnsplitEvent)
+	EVT_PG_CHANGED(pof::PatientView::ID_MED_DETAILS, pof::PatientView::OnPatientDetailsChange)
 END_EVENT_TABLE()
 
 pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
@@ -289,11 +289,12 @@ void pof::PatientView::CreatePatientDetailsPane()
 	auto pp4 = grid->Append(new wxIntProperty("Blood pressure diastolic (BP/DIA)", "4"));
 	auto pp5 = grid->Append(new wxIntProperty("Resipratory rate (RR)", "5"));
 	auto pp6 = grid->Append(new wxIntProperty("Body tempreture (o')", "6"));
-	auto pp7 = grid->Append(new wxStringProperty("Date entered", "7"));
-	auto pp8 = grid->Append(new wxStringProperty("Date modified", "8"));
+	auto pp7 = grid->Append(new wxLongStringProperty("Clinical Indication", "7"));
+	auto pp8 = grid->Append(new wxStringProperty("Date entered", "8"));
+	auto pp9 = grid->Append(new wxStringProperty("Date modified", "9"));
 
-	pp7->Enable(false);
 	pp8->Enable(false);
+	pp9->Enable(false);
 
 	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
 }
@@ -584,6 +585,71 @@ void pof::PatientView::OnMedHeaderClicked(wxDataViewEvent& evt)
 	}
 	else {
 		evt.Skip();
+	}
+}
+
+void pof::PatientView::OnPatientDetailsChange(wxPropertyGridEvent& evt)
+{
+	wxPGProperty* props = evt.GetProperty();
+	if (!props || props->IsCategory()) return;
+	try {
+		size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName().ToStdString());
+		wxVariant v = evt.GetPropertyValue();
+		auto& vp = mCurrentPatient.value().get().first;
+		auto& vps = mCurrentPatient.value().get().second.second;
+		switch (n)
+		{
+		case 0:
+			vp[pof::PatientManager::PATIENT_BMI] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_BMI);
+			break;
+		case 1:
+			vp[pof::PatientManager::PATIENT_WEIGHT] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_WEIGHT);
+			break;
+		case 2:
+			vp[pof::PatientManager::PATIENT_HR] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_HR);
+			break;
+		case 3:
+			vp[pof::PatientManager::PATIENT_BP_SYS] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_BP_SYS);
+			break;
+		case 4:
+			vp[pof::PatientManager::PATIENT_BP_DYS] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_BP_DYS);
+			break;
+		case 5:
+			vp[pof::PatientManager::PATIENT_RR] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_RR);
+			break;
+		case 6:
+			vp[pof::PatientManager::PATIENT_TEMPT] = static_cast<std::uint64_t>(v.GetInteger());
+			vps.set(pof::PatientManager::PATIENT_TEMPT);
+			break;
+		case 7:
+			vp[pof::PatientManager::PATIENT_CLINICAL_INDICATION] = v.GetString().ToStdString();
+			vps.set(pof::PatientManager::PATIENT_CLINICAL_INDICATION);
+			break;
+		case 8:
+			//do not change date entered
+			break;
+		case 9:
+			vp[pof::PatientManager::PATIENT_MODIFIED_DATE] = pof::base::data::clock_t::now();
+			vps.set(pof::PatientManager::PATIENT_MODIFIED_DATE);
+			break;
+		default:
+			break;
+		};
+		auto item = mPatientSelect->GetSelection();
+		if (item.IsOk()) {
+			auto& dp = wxGetApp().mPatientManager.GetPatientData();
+			dp->Signal(pof::DataModel::Signals::UPDATE, pof::DataModel::GetIdxFromItem(item));
+		}
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return;
 	}
 }
 

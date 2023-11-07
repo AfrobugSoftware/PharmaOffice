@@ -73,6 +73,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
 	//mProductNameValue->SetValidator(wxTextValidator{wxFILTER_SPACE});
 	mProductNameValue->SetHint("Search product by name");
+	mProductNameValue->ShowCancelButton(true);
+
 	mTopTools->AddControl(mProductNameValue);
 
 	mTopTools->AddSpacer(10);
@@ -87,6 +89,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(300, -1), 0);
 	mScanProductValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	mScanProductValue->SetHint("Scan products");
+	mScanProductValue->ShowCancelButton(true);
+
 	mTopTools->AddControl(mScanProductValue);
 
 	mTopTools->AddStretchSpacer();

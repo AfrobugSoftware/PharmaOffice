@@ -22,7 +22,8 @@ pof::PatientManager::PatientManager()
 		std::uint64_t, // RR
 		std::uint64_t, // TEMPT
 		pof::base::data::datetime_t, // ENTERED DATE
-		pof::base::data::datetime_t  // MODIFIED DATE
+		pof::base::data::datetime_t,  // MODIFIED DATE
+		pof::base::data::text_t
 	>();
 
 	mPatientMedications->Adapt<
@@ -87,7 +88,8 @@ bool pof::PatientManager::CreatePatientTable() {
 			rr integer,
 			tempreture integer,
 			createdate integer,
-			modifieddate integer	
+			modifieddate integer,
+			clinical text	
 		);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()){
@@ -174,7 +176,8 @@ bool pof::PatientManager::LoadPatients()
 			std::uint64_t, // RR
 			std::uint64_t, // TEMPT
 			pof::base::data::datetime_t, // ENTERED DATE
-			pof::base::data::datetime_t  // MODIFIED DATE
+			pof::base::data::datetime_t,  // MODIFIED DATE
+			pof::base::data::text_t //clincial indication
 		>(*stmt);
 		if (!rel.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -334,7 +337,7 @@ bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
 bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -355,7 +358,8 @@ bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 			std::uint64_t, // RR
 			std::uint64_t, // TEMPT
 			pof::base::data::datetime_t, // ENTERED DATE
-			pof::base::data::datetime_t  // MODIFIED DATE
+			pof::base::data::datetime_t,  // MODIFIED DATE
+			pof::base::data::text_t //CLINICAL
 		> tup;
 		pof::base::build(tup, *iter);
 		bool status = mLocalDatabase->bind(*stmt, tup);
@@ -401,8 +405,8 @@ bool pof::PatientManager::OnRemovePatient(pof::base::data::const_iterator iter)
 bool pof::PatientManager::OnUpdatePatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr static std::array<std::string_view, 14> colName = {
-			"uuid", "lastname", "age", "phonenumber", "address", "bmi", "weight", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate"
+		constexpr static std::array<std::string_view, 15> colName = {
+			"uuid", "lastname", "age", "phonenumber", "address", "bmi", "weight", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate", "clinical"
 		};
 		std::ostringstream os;
 		std::vector<size_t> upIdx;

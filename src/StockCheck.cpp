@@ -20,6 +20,8 @@ EVT_LIST_ITEM_RIGHT_CLICK(pof::StockCheck::ID_STOCK_SELECT, pof::StockCheck::OnS
 EVT_MENU(pof::StockCheck::ID_STOCK_CONSUMPTION_PATTERN, pof::StockCheck::OnStockConsumptionPattern)
 EVT_MENU(pof::StockCheck::ID_REMOVE_STOCK, pof::StockCheck::OnRemoveStock)
 EVT_MENU(pof::StockCheck::ID_STOCK_MARK_PROD_AS_COMPLETE, pof::StockCheck::OnMarkAsComplete)
+EVT_TOOL(pof::StockCheck::ID_SELECT, pof::StockCheck::OnSelect)
+EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnHeaderClicked)
 END_EVENT_TABLE()
 
 
@@ -114,12 +116,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 
 	OnAuiThemeChange();
 	AddSpecialCols();
-	mStockCheckMonth->SetValue(wxDateTime::Now());
-
-	/*auto curTime = pof::base::data::clock_t::now();
-	auto month = std::chrono::duration_cast<date::months>(curTime.time_since_epoch());
-	wxGetApp().mProductManager.LoadStockCheckDate(pof::base::data::datetime_t(month));*/
-
+	
 	LoadStockSelect();
 	UpdateSummary();
 	m_mgr.Update();
@@ -130,14 +127,21 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	wxIcon appIcon;
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
+
+	this->Bind(wxEVT_CLOSE_WINDOW, [&](wxCloseEvent& evt) {
+		wxGetApp().mProductManager.GetStockCheckData()->Clear();
+		evt.Skip();
+	});
 }
 
 void pof::StockCheck::CreateToolBar()
 {
 	mTools = new wxAuiToolBar(this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mBackButton = mTools->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"));
-	mTools->AddStretchSpacer();
+	mBackButton = mTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"));
+	mTools->AddSpacer(10);
 	mTools->AddSeparator();
+	mTools->AddSpacer(2);
+	mTools->AddTool(ID_SELECT, "Select", wxNullBitmap, "Show select", wxITEM_CHECK);
 	mTools->AddSpacer(5);
 
 	auto& category = wxGetApp().mProductManager.GetCategories();
@@ -162,18 +166,9 @@ void pof::StockCheck::CreateToolBar()
 	});
 	mTools->AddControl(mCategorySelect, "Select Category");
 	mTools->AddSpacer(5);
-	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
+	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
 	mTools->AddTool(ID_SHOW_SUMMARY, "Show Summary", wxNullBitmap, "Show the summary of the stock check");
-	mTools->AddSpacer(5);
-	mStockCheckMonth = new wxDatePickerCtrl(mTools, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
-	auto firstMonth = wxGetApp().mProductManager.GetFirstStockMonth();
-	if (!firstMonth.has_value()){
-		firstMonth.emplace();
-	}
-	mStockCheckMonth->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
-
-	mTools->AddControl(mStockCheckMonth, "Stock Check Month");
-	mTools->AddSpacer(5);
+	mTools->AddStretchSpacer();
 	mAddButton = mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"));
 	mTools->AddSpacer(2);
 	mTools->AddTool(ID_STOCK_MARK_AS_COMPLETE, "Mark as Complete", wxArtProvider::GetBitmap("action_check"));
@@ -314,6 +309,7 @@ void pof::StockCheck::AddSpecialCols()
 	pof::DataModel::SpeicalColHandler_t shortage;
 	pof::DataModel::SpeicalColHandler_t dateAdded;
 	pof::DataModel::SpeicalColHandler_t expiredStock;
+	pof::DataModel::SpeicalColHandler_t select;
 
 	checkedStock.second = [&](size_t row, size_t col, const wxVariant& value) -> bool
 	{
@@ -380,12 +376,30 @@ void pof::StockCheck::AddSpecialCols()
 
 	};
 
+	select.first = [&](size_t row, size_t col) -> wxVariant {
+		auto found = mSelections.find(pof::DataModel::GetItemFromIdx(row));
+		return wxVariant{ found != mSelections.end() };
+	};
+
+	select.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
+		if (v.GetBool()) {
+			auto [iter, inserted] = mSelections.insert(pof::DataModel::GetItemFromIdx(row));
+			return inserted;
+		}
+		else {
+			mSelections.erase(pof::DataModel::GetItemFromIdx(row));
+			return true;
+		}
+	};
+
+
 	auto& dm = wxGetApp().mProductManager.GetStockCheckData();
 	dm->SetSpecialColumnHandler(STOCK_STATUS, std::move(status));
 	dm->SetSpecialColumnHandler(STOCK_SHORTAGE, std::move(shortage));
 	dm->SetSpecialColumnHandler(STOCK_CHECKED_STOCK, std::move(checkedStock));
 	dm->SetSpecialColumnHandler(STOCK_DATE_ADDED, std::move(dateAdded));
 	dm->SetSpecialColumnHandler(STOCK_EXPIRED, std::move(expiredStock));
+	dm->SetSpecialColumnHandler(STOCK_SELECT, std::move(select));
 	
 }
 
@@ -467,6 +481,8 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 
 				wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(row));
 				wxGetApp().mProductManager.InsertProductInStockCheck(pid);
+				wxGetApp().mProductManager.CaptureStock(pid);
+
 			}
 		}
 		else {
@@ -589,6 +605,11 @@ void pof::StockCheck::OnAuiThemeChange()
 void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 {
 	const wxListItem& item = evt.GetItem();
+	mCategorySelect->Freeze();
+	mCategorySelect->SetSelection(wxNOT_FOUND);
+	mCategorySelect->Thaw();
+	mCategorySelect->Refresh();
+
 	if (item.GetId() == mStockSelect->GetItemCount() - 1)
 	{
 		//adding stock check
@@ -600,7 +621,7 @@ void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 			return;
 		}
 		mSelectedMonth = (pof::base::data::datetime_t*)(item.GetData());
-		
+		wxGetApp().mProductManager.GetStockCheckData()->Clear();
 	}
 	else {
 		pof::base::data::datetime_t* tt = (pof::base::data::datetime_t*)(item.GetData());
@@ -669,26 +690,55 @@ void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)
 		wxMessageBox("Cannot remove this stock check, month is too far back", "Stock Check", wxICON_WARNING | wxOK);
 		return;
 	}
-	wxDataViewItem item = mStockData->GetSelection();
-	if (!item.IsOk()) return;
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
-	const auto& row = datastore[idx];
-	if (wxGetApp().mProductManager.CheckIfDone(
-		boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
-		wxMessageBox("Cannot remove entry, already marked as Completed", "Stock check", wxICON_INFORMATION | wxOK);
-		return;
-	}
+	if (mSelections.empty()) {
+		wxDataViewItem item = mStockData->GetSelection();
+		if (!item.IsOk()) return;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
+		const auto& row = datastore[idx];
+		if (wxGetApp().mProductManager.CheckIfDone(
+			boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
+			wxMessageBox("Cannot remove entry, already marked as Completed", "Stock check", wxICON_INFORMATION | wxOK);
+			return;
+		}
 
-	if (wxGetApp().mProductManager.RemoveStockEntry(
-		boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))){
-		mStockData->Freeze();
-		wxGetApp().mProductManager.GetStockCheckData()->RemoveData(item);
-		mStockData->Thaw();
-		mStockData->Refresh();
+		if (wxGetApp().mProductManager.RemoveStockEntry(
+			boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
+			mStockData->Freeze();
+			wxGetApp().mProductManager.GetStockCheckData()->RemoveData(item);
+			mStockData->Thaw();
+			mStockData->Refresh();
+		}
+		else {
+			wxMessageBox("Failed to remove stock check", "Stock check", wxICON_ERROR | wxOK);
+		}
 	}
 	else {
-		wxMessageBox("Failed to remove stock check", "Stock check", wxICON_ERROR | wxOK);
+		mStockData->Freeze();
+		auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
+		wxDataViewItemArray arr;
+		for (auto& item : mSelections) {
+			if (!item.IsOk()) continue;
+
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			const auto& row = datastore[idx];
+			if (wxGetApp().mProductManager.CheckIfDone(
+				boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
+				wxMessageBox("Cannot remove entry, already marked as Completed", "Stock check", wxICON_INFORMATION | wxOK);
+				continue;
+			}
+
+			if (wxGetApp().mProductManager.RemoveStockEntry(
+				boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
+				arr.push_back(item);
+			}
+			else {
+				wxMessageBox("Failed to remove stock check", "Stock check", wxICON_ERROR | wxOK);
+			}
+		}
+		wxGetApp().mProductManager.GetStockCheckData()->RemoveData(arr);
+		mStockData->Thaw();
+		mStockData->Refresh();
 	}
 	UpdateSummary();
 }
@@ -750,18 +800,36 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 	if (evt.GetId() == ID_STOCK_MARK_PROD_AS_COMPLETE)
 	{
 		if (wxMessageBox("Are you sure you want to mark stock check as complete", "Stock check", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
-		auto item = mStockData->GetSelection();
-		if (!item.IsOk()) return; //not a valid selection
-		size_t idx = pof::DataModel::GetIdxFromItem(item);
-		auto& row = datastore[idx];
-		mStockData->Freeze();
-		row.first[STOCK_STATUS] = static_cast<std::uint64_t>(DONE);
-		mStockData->Thaw();
-		mStockData->Refresh();
+		wxBusyCursor cur;
+		if (mSelections.empty()) {
+			auto item = mStockData->GetSelection();
+			if (!item.IsOk()) return; //not a valid selection
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = datastore[idx];
+			mStockData->Freeze();
+			row.first[STOCK_STATUS] = static_cast<std::uint64_t>(DONE);
+			mStockData->Thaw();
+			mStockData->Refresh();
 
-		if (!wxGetApp().mProductManager.MarkStockCheckAsDone(boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), *mSelectedMonth))
-		{
-			wxMessageBox("Cannot mark all as stock check", "Stock check", wxICON_ERROR | wxOK);
+			if (!wxGetApp().mProductManager.MarkStockCheckAsDone(boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), *mSelectedMonth))
+			{
+				wxMessageBox("Cannot mark all as stock check", "Stock check", wxICON_ERROR | wxOK);
+			}
+		}
+		else {
+			mStockData->Freeze(); 
+			for (auto& item : mSelections) {
+				if (!item.IsOk()) continue; //not a valid selection
+				size_t idx = pof::DataModel::GetIdxFromItem(item);
+				auto& row = datastore[idx];
+				row.first[STOCK_STATUS] = static_cast<std::uint64_t>(DONE);
+				if (!wxGetApp().mProductManager.MarkStockCheckAsDone(boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), *mSelectedMonth))
+				{
+					wxMessageBox("Cannot mark all as stock check", "Stock check", wxICON_ERROR | wxOK);
+				}
+			}
+			mStockData->Thaw();
+			mStockData->Refresh();
 		}
 	}
 	else {
@@ -777,4 +845,64 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 		}
 	}
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Marked stock check as complete");
+}
+
+void pof::StockCheck::OnHeaderClicked(wxDataViewEvent& evt)
+{
+	if (mSelectCol == evt.GetDataViewColumn()) {
+		static bool sel = true;
+		mStockData->Freeze();
+		auto& items = wxGetApp().mProductManager.GetStockCheckData()->GetDataViewItems();
+		if (sel) {
+			if (!mSelections.empty()) {
+				mSelections.clear();
+				sel = false;
+			}
+			else {
+				std::ranges::copy(items, std::inserter(mSelections, mSelections.end()));
+			}
+		}
+		else {
+			for (auto& item : items) {
+				mSelections.erase(item);
+			}
+		}
+		sel = !sel;
+		mStockData->Thaw();
+		mStockData->Refresh();
+		evt.Veto();
+	}
+	else {
+		evt.Skip();
+	}
+}
+
+void pof::StockCheck::OnSelect(wxCommandEvent& evt)
+{
+	if (evt.IsChecked()) {
+		ShowSelect();
+	}
+	else {
+		HideSelect();
+	}
+}
+
+
+void pof::StockCheck::ShowSelect()
+{
+	mSelectCol = mStockData->PrependToggleColumn(wxT("Select"), STOCK_SELECT,
+		wxDATAVIEW_CELL_ACTIVATABLE, 50);
+}
+
+void pof::StockCheck::HideSelect()
+{
+	if (mSelectCol != nullptr) {
+		mSelections.clear();
+
+		mStockData->Freeze();
+		mStockData->DeleteColumn(mSelectCol);
+		mStockData->Thaw();
+		mStockData->Update();
+		mSelectCol = nullptr;
+	}
 }

@@ -1848,7 +1848,18 @@ std::unique_ptr<pof::DataModel>& pof::ProductManager::GetStockCheckData()
 void pof::ProductManager::LoadStockCheckDate(pof::base::data::datetime_t m)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, sc.check_stock, sc.status, sc.date
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, 
+		CASE 
+		 WHEN sc.status = 1 THEN sc.stock_count
+		 WHEN sc.status = 0 THEN p.stock_count
+		END AS stock,
+		CASE
+		 WHEN sc.status = 1 THEN sc.check_stock 
+		 WHEN sc.status = 0 AND (sc.check_stock < p.stock_count OR sc.check_stock = p.stock_count) THEN sc.check_stock
+		 ELSE 0
+		END AS checkcol, 
+		sc.status, 
+		sc.date
 		FROM products p, stock_check sc
 		WHERE p.uuid = sc.prod_uuid AND Months(sc.date) = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -2013,7 +2024,18 @@ bool pof::ProductManager::InsertProductInStockCheck(const pof::base::data::duuid
 void pof::ProductManager::LoadStockDataByCategory(pof::base::data::datetime_t m, std::uint64_t catID)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, sc.stock_count, sc.check_stock, sc.status, sc.date
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, 
+		CASE 
+		 WHEN sc.status = 1 THEN sc.stock_count
+		 WHEN sc.status = 0 THEN p.stock_count
+		END AS stock,
+		CASE
+		 WHEN sc.status = 1 THEN sc.check_stock 
+		 WHEN sc.status = 0 AND (sc.check_stock < p.stock_count OR sc.check_stock = p.stock_count) THEN sc.check_stock
+		 ELSE 0
+		END AS checkcol,
+		sc.status, 
+		sc.date
 		FROM products p, stock_check sc
 		WHERE  Months(sc.date) = ? AND p.category = ? AND p.uuid = sc.prod_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);

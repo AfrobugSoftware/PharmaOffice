@@ -119,7 +119,7 @@ namespace pof {
 		void HideMedSelectCol();
 		void OnPatientHeaderClicked(wxDataViewEvent& evt);
 		void OnMedHeaderClicked(wxDataViewEvent& evt);
-
+		void OnPatientDetailsChange(wxPropertyGridEvent& evt);
 		//for the splitter
 		void OnPositionChanged(wxSplitterEvent& event);
 		void OnPositionChanging(wxSplitterEvent& event);

@@ -57,6 +57,7 @@ namespace pof
 			wxSimplebook* mBook;
 			wxAuiToolBarItem* mBackButton;
 			wxAuiToolBarItem* mAddButton;
+			wxDataViewColumn* mSelectCol = nullptr;
 			pof::base::data::datetime_t* mSelectedMonth = nullptr;
 			std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> mExpiredStockValues;
 		public:
@@ -81,6 +82,7 @@ namespace pof
 					ID_STOCK_CONSUMPTION_PATTERN,
 					ID_STOCK_MARK_AS_COMPLETE,
 					ID_STOCK_MARK_PROD_AS_COMPLETE,
+					ID_SELECT,
 			};
 
 			//status
@@ -99,6 +101,7 @@ namespace pof
 				STOCK_DATE_ADDED,
 				STOCK_SHORTAGE,
 				STOCK_EXPIRED,
+				STOCK_SELECT,
 			};
 
 			StockCheck( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Stock Check"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 978,589 ), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
@@ -112,7 +115,7 @@ namespace pof
 			virtual bool TransferDataFromWindow() override;
 			~StockCheck();
 
-
+			std::set<wxDataViewItem> mSelections;
 		protected:
 			void UpdateSummary();
 			void OnAddProduct(wxCommandEvent& evt);
@@ -134,6 +137,11 @@ namespace pof
 			void OnStockConsumptionPattern(wxCommandEvent& evt);
 			void OnToolUpdateUI(wxUpdateUIEvent& evt);
 			void OnMarkAsComplete(wxCommandEvent& evt);
+			
+			void OnHeaderClicked(wxDataViewEvent& evt);
+			void OnSelect(wxCommandEvent& evt);
+			void ShowSelect();
+			void HideSelect();
 			DECLARE_EVENT_TABLE()
 		
 	};	

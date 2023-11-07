@@ -170,6 +170,7 @@ bool pof::AddPatient::TransferDataFromWindow()
 	auto today = pof::base::data::clock_t::now();
 	v[pof::PatientManager::PATIENT_ENTERED_DATE] = today;
 	v[pof::PatientManager::PATIENT_MODIFIED_DATE] = today;
+	v[pof::PatientManager::PATIENT_CLINICAL_INDICATION] = ""s;
 
 	return true;
 }

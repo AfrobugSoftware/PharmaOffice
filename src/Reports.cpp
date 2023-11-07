@@ -32,12 +32,12 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 
-	mSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	mSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 	mTotalQuantity = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalQuantity->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalQuantity->SetFont(wxFont(wxFontInfo(11).AntiAliased()));
 	mTotalQuantity->Wrap(-1);
 	bSizer4->Add(mTotalQuantity, 0, wxALL, 5);
 
@@ -48,7 +48,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(5);
 
 	mTotalAmount = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmount->SetFont(wxFont(wxFontInfo(11).AntiAliased()));
 	mTotalAmount->Wrap(-1);
 	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
 
@@ -315,6 +315,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 	if (mBook->GetSelection() == REPORT_EMPTY_EOD){
 		mBook->SetSelection(REPORT_VIEW);
 	}
+	UpdateTotals(data.value());
 	return true;
 }
 
@@ -638,13 +639,19 @@ void pof::ReportsDialog::EODExcel()
 void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 {
 	if (data.empty()) return;
-	pof::base::currency mTotalAmount;
-	std::uint64_t mTotalQuantity = 0;
+	pof::base::currency totalAmount;
+	std::uint64_t totalQuantity = 0;
 
-	mTotalAmount = std::accumulate(data.begin(), data.end(), mTotalAmount, [&](const pof::base::currency& c, const pof::base::data::row_t& row) -> pof::base::currency {
-		return c + boost::variant2::get<pof::base::currency>(row.first[4]);
-	});
-
+	for (const auto& d : data) {
+		totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
+		totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
+	}
+	mSPanel->Freeze();
+	mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
+	mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+	mSPanel->Thaw();
+	mSPanel->Layout();
+	mSPanel->Refresh();
 }
 
 
