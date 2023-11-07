@@ -2122,7 +2122,7 @@ bool pof::ProductManager::MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof
 
 		status = mLocalDatabase->execute(*stmt);
 		mLocalDatabase->finalise(*stmt);
-		return status;
+		return status && CaptureStock(pid);
 	}
 	return false;
 }
@@ -2170,6 +2170,62 @@ bool pof::ProductManager::CheckIfDone(pof::base::data::duuid_t pid, pof::base::d
 
 	}
 	return false;
+}
+
+std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT 
+		SumCost((
+			CostMulti(
+				p.unit_price,
+				CASE 
+					WHEN sc.status = 1 THEN sc.stock_count
+					WHEN sc.status = 0 THEN p.stock_count
+				END
+			)
+		)) 
+		FROM stock_check sc, products p WHERE sc.prod_uuid = p.uuid AND Months(sc.date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(month));
+		assert(status);
+		auto rel = mLocalDatabase->retrive<pof::base::currency>(*stmt);
+		if (!rel.has_value() || rel->empty()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return std::get<0>(*(rel->begin()));
+	}
+	return std::nullopt;
+}
+
+std::optional<size_t> pof::ProductManager::GetProductCheckedCount(pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT Count(prod_uuid) FROM stock_check WHERE status = 1 AND Months(date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(month));
+		assert(status);
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value() || rel->empty()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return std::get<0>(*(rel->begin()));
+	}
+	return std::nullopt;
 }
 
 std::optional<pof::base::data::datetime_t> pof::ProductManager::GetFirstStockMonth()

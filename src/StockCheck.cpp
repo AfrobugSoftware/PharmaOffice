@@ -48,7 +48,7 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	mStockData->AssociateModel(wxGetApp().mProductManager.GetStockCheckData().get());
 
 	mProductName = mStockData->AppendTextColumn( wxT("Product Name"), STOCK_PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, wxALIGN_CENTER);
-	mCurrenctStock = mStockData->AppendTextColumn( wxT("Currenct Stock"), STOCK_CURRENT_STOCK, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mCurrenctStock = mStockData->AppendTextColumn( wxT("Closing Stock"), STOCK_CURRENT_STOCK, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mCheckedStock = mStockData->AppendTextColumn(wxT("Checked Stock"), STOCK_CHECKED_STOCK, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
 	mExpiredStock = mStockData->AppendTextColumn(wxT("Expired Stock"), STOCK_EXPIRED, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	
@@ -76,32 +76,38 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	bSizer2 = new wxBoxSizer( wxHORIZONTAL );
 	
 	
-	bSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
+	//bSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
 	
 	wxGridSizer* gSizer1;
 	gSizer1 = new wxGridSizer( 0, 2, 2, 2 );
 	
 	mTotalStockCheckedLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Total Stock Checked:"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalStockCheckedLabel->SetFont(wxFontInfo(9).AntiAliased());
 	mTotalStockCheckedLabel->Wrap(-1);
 	gSizer1->Add(mTotalStockCheckedLabel, 0, wxALIGN_CENTER | wxALL, 2);
 
 	mTotalStockCheckedValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalStockCheckedValue->SetFont(wxFontInfo(9).AntiAliased());
 	mTotalStockCheckedValue->Wrap(-1);
 	gSizer1->Add(mTotalStockCheckedValue, 0, wxALIGN_CENTER | wxALL, 0);
 
 	mTotalShortageLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Total Shortage"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalShortageLabel->SetFont(wxFontInfo(9).AntiAliased());
 	mTotalShortageLabel->Wrap(-1);
 	gSizer1->Add(mTotalShortageLabel, 0, wxALL, 5);
 
 	mTotalShortageValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mTotalShortageValue->SetFont(wxFontInfo(9).AntiAliased());
 	mTotalShortageValue->Wrap(-1);
 	gSizer1->Add(mTotalShortageValue, 0, wxALIGN_CENTER | wxALL, 5);
 
 	mShortageAmountLabel = new wxStaticText(mSummary, wxID_ANY, wxT("Shortage Amount:"), wxDefaultPosition, wxDefaultSize, 0);
+	mShortageAmountLabel->SetFont(wxFontInfo(9).AntiAliased());
 	mShortageAmountLabel->Wrap(-1);
 	gSizer1->Add(mShortageAmountLabel, 0, wxALL, 5);
 
 	mShortageAmountValue = new wxStaticText(mSummary, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	mShortageAmountValue->SetFont(wxFontInfo(9).AntiAliased());
 	mShortageAmountValue->Wrap(-1);
 	gSizer1->Add(mShortageAmountValue, 0, wxALIGN_CENTER | wxALL, 5);
 
@@ -118,7 +124,6 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 	AddSpecialCols();
 	
 	LoadStockSelect();
-	UpdateSummary();
 	m_mgr.Update();
 
 	this->Layout();
@@ -430,10 +435,11 @@ void pof::StockCheck::UpdateSummary()
 		});
 	
 	mSummary->Freeze();
-
-	mTotalStockCheckedValue->SetLabel(fmt::format("{:d} of {:d}", datastore.size(), prodStore.size()));
+	auto prodchecked = wxGetApp().mProductManager.GetProductCheckedCount(*mSelectedMonth);
+	mTotalStockCheckedValue->SetLabel(fmt::format("{:d} of {:d}", prodchecked.value_or((std::uint64_t)0), prodStore.size()));
 	mTotalShortageValue->SetLabel(fmt::format("{:d}", totalShortage));
-
+	auto shortage = wxGetApp().mProductManager.GetShortageCost(*mSelectedMonth);
+	mShortageAmountValue->SetLabelText(fmt::format("{:c}", shortage.value_or(pof::base::currency{})));
 
 	mSummary->Layout();
 	mSummary->Thaw();
@@ -481,7 +487,7 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 
 				wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(row));
 				wxGetApp().mProductManager.InsertProductInStockCheck(pid);
-				wxGetApp().mProductManager.CaptureStock(pid);
+				//wxGetApp().mProductManager.CaptureStock(pid);
 
 			}
 		}
@@ -512,7 +518,7 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 			mStockData->Freeze();
 			wxGetApp().mProductManager.GetStockCheckData()->EmplaceData(std::move(rowx));
 			wxGetApp().mProductManager.InsertProductInStockCheck(pid);
-			wxGetApp().mProductManager.CaptureStock(pid);
+			//wxGetApp().mProductManager.CaptureStock(pid);
 			mStockData->Thaw();
 			mStockData->Refresh();
 		}
@@ -724,7 +730,6 @@ void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)
 			const auto& row = datastore[idx];
 			if (wxGetApp().mProductManager.CheckIfDone(
 				boost::variant2::get<pof::base::data::duuid_t>(row.first[STOCK_PRODUCT_UUID]), boost::variant2::get<pof::base::data::datetime_t>(row.first[STOCK_DATE_ADDED]))) {
-				wxMessageBox("Cannot remove entry, already marked as Completed", "Stock check", wxICON_INFORMATION | wxOK);
 				continue;
 			}
 
