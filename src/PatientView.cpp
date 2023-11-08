@@ -9,6 +9,9 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_TOOL(pof::PatientView::ID_ADD_PACK, pof::PatientView::OnAddPacks)
 	EVT_TOOL(pof::PatientView::ID_PATIENT_MED_DETAILS, pof::PatientView::OnHidePatientMedicalDetails)
 
+	//date events
+	EVT_DATE_CHANGED(pof::PatientView::ID_START_DATE_PICKER, pof::PatientView::OnDateChanged)
+	EVT_DATE_CHANGED(pof::PatientView::ID_STOP_DATE_PICKER, pof::PatientView::OnDateChanged)
 	//menus
 	EVT_MENU(pof::PatientView::ID_REMOVE_PATIENTS, pof::PatientView::OnRemovePatient)
 	EVT_MENU(pof::PatientView::ID_STOP_PRODUCT, pof::PatientView::OnStopProduct)
@@ -22,6 +25,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientsContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsContextMenu)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientActivated)
+	EVT_DATAVIEW_SELECTION_CHANGED(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsSelected)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientHeaderClicked)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedHeaderClicked)
 
@@ -95,11 +99,12 @@ void pof::PatientView::CreateToolBars()
 	mTopTools->AddTool(ID_ADD_PATIENTS, "Add Patients", wxArtProvider::GetBitmap("action_add"), "Add a patient to the pharmacy");
 	mTopTools->AddSpacer(5);
 	mTopTools->AddTool(ID_SHOW_PATIENT_DETAILS, "Show details", wxArtProvider::GetBitmap("application"), "Show patient details", wxITEM_CHECK);
+	mTopTools->Realize();
 
 	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
 	mPatientTools->AddSeparator();
 	mPatientTools->AddSpacer(5);
-
+	mPatientTools->AddTool(ID_SALE_PATIENT_MED,"Add Sale", wxArtProvider::GetBitmap("sci"), "Add current medication to sale");
 	mPatientTools->AddStretchSpacer();
 	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR, wxSize(16, 16)), "Patient medical details", wxITEM_CHECK);
 	std::bitset<32> bitset(pd->GetState());
@@ -111,7 +116,7 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools->AddTool(ID_ADD_PACK, "Rx Packs", wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16, 16)), "Add Pharmacy packs to patient");
 	mPatientTools->AddSpacer(5);
 	mPatientTools->AddTool(ID_ADD_PRODUCT, "Add Medication", wxArtProvider::GetBitmap("action_add"), "Add Medication to patient");
-	
+	mPatientTools->Realize();
 	
 	mManager.AddPane(mTopTools, wxAuiPaneInfo().Name("TopTools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 	mManager.AddPane(mPatientTools, wxAuiPaneInfo().Name("PatientTools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
@@ -168,12 +173,39 @@ void pof::PatientView::CreateViews()
 	bSizer4->Fit(mSPanel);
 	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 0);
 
+	mPatientInfoBar = new wxInfoBar(panel, wxID_ANY);
 
-	mPatientPanel =  new wxSplitterWindow(panel, ID_PATIENT_PANEL, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE |
+	mPatientPanel = new wxSplitterWindow(panel, ID_PATIENT_PANEL, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE |
 		wxCLIP_CHILDREN | wxNO_BORDER/* | wxSP_NO_XP_THEME */);
 	//wxSizer* sz = new wxBoxSizer(wxVERTICAL);
-	
-	mCurrentMedicationView = new wxDataViewCtrl(mPatientPanel, ID_PATIENT_MEDS_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	wxPanel* currentMedPanel = new wxPanel(mPatientPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxSizer* medSz = new wxBoxSizer(wxVERTICAL);
+
+	mMedTools = new wxAuiToolBar(currentMedPanel, ID_PATIENT_TOOLS, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mMedTools->SetMinSize(wxSize(-1, 30));
+	mMedTools->SetBackgroundColour(*wxWHITE); //add to theme
+
+	mMedTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select medications", wxITEM_CHECK);
+	mMedTools->AddStretchSpacer();
+	auto today = pof::base::data::clock_t::now();
+
+	mStartDatePicker = new wxDatePickerCtrl(mMedTools, ID_START_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
+	mStopDatePicker = new wxDatePickerCtrl(mMedTools, ID_STOP_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
+
+	mStartDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
+	mStopDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
+
+	mMedTools->AddControl(new wxStaticText(mMedTools, wxID_ANY, "Start:"), "Start date");
+	mMedTools->AddSpacer(10);
+	mMedTools->AddControl(mStartDatePicker);
+
+	mMedTools->AddSpacer(10);
+	mMedTools->AddControl(new wxStaticText(mMedTools, wxID_ANY, "Stop:"), "Stop date");
+	mMedTools->AddSpacer(10);
+	mMedTools->AddControl(mStopDatePicker);
+	mMedTools->Realize();
+
+	mCurrentMedicationView = new wxDataViewCtrl(currentMedPanel, ID_PATIENT_MEDS_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mCurrentMedicationView->AssociateModel(wxGetApp().mPatientManager.GetPatientMedData().get());
 	mCurrentMedicationView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
@@ -182,8 +214,13 @@ void pof::PatientView::CreateViews()
 	mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendDateColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_ACTIVATABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendDateColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_ACTIVATABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	
 
+	medSz->Add(mMedTools, 0, wxEXPAND | wxALL, 0);
+	medSz->Add(mCurrentMedicationView, 1, wxEXPAND | wxALL, 0);
+
+	currentMedPanel->SetSizer(medSz);
+	medSz->SetSizeHints(currentMedPanel);
+	currentMedPanel->Layout();
 
 	mMedHistoryView = new wxDataViewCtrl(mPatientPanel, ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mMedHistoryView->AssociateModel(wxGetApp().mPatientManager.GetPatientHistotyData().get());
@@ -191,15 +228,16 @@ void pof::PatientView::CreateViews()
 	mMedHistoryView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Started Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendTextColumn("Stopped Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 
 
 	mCurrentMedicationView->Show();
 	mMedHistoryView->Show();
-	mPatientPanel->SplitHorizontally(mCurrentMedicationView, mMedHistoryView);
+	mPatientPanel->SplitHorizontally(currentMedPanel, mMedHistoryView);
 
+	sz->Add(mPatientInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
 	sz->Add(mPatientPanel, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 0));
 
 	panel->SetSizer(sz);
@@ -398,6 +436,13 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	mCurrentPatient.emplace(wxGetApp().mPatientManager.GetPatientData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)]);
 	SwitchToolBar();
 	auto& v = mCurrentPatient.value().get().first;
+	mCurrentMedicationView->Freeze();
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::PatientManager::PATIENT_UUID]);
+	wxGetApp().mPatientManager.LoadPatientMedication(puid);
+	wxGetApp().mPatientManager.LoadPatientHistory(puid);
+	mCurrentMedicationView->Thaw();
+	mCurrentMedicationView->Refresh();
+
 	mSPanel->Freeze();
 	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
@@ -412,6 +457,10 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 
 void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Patients", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	pof::AddPatient ap(this, wxID_ANY, "Add Patients");
 	if (ap.ShowModal() == wxID_OK) {
 		auto& exp = ap.GetPatientData();
@@ -421,6 +470,10 @@ void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 
 void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Patient", wxICON_INFORMATION | wxOK);
+		return;
+	}
 }
 
 void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
@@ -458,7 +511,7 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 			v[pof::PatientManager::MED_DIR_FOR_USE_STRENGTH] = boost::variant2::get<pof::base::data::text_t>(vs[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
 			v[pof::PatientManager::MED_DURATION] = static_cast<std::uint64_t>(0);
 			v[pof::PatientManager::MED_START_DATE] = today;
-			v[pof::PatientManager::MED_STOP_DATE] = today;
+			v[pof::PatientManager::MED_STOP_DATE] = today + date::days(1);
 
 
 			//store
@@ -522,6 +575,18 @@ void pof::PatientView::OnMedicationsContextMenu(wxDataViewEvent& evt)
 
 void pof::PatientView::OnMedicationsSelected(wxDataViewEvent& evt)
 {
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore()[idx];
+	auto& startDate = boost::variant2::get<pof::base::data::datetime_t>(row.first[pof::PatientManager::MED_START_DATE]);
+	auto& stopDate = boost::variant2::get<pof::base::data::datetime_t>(row.first[pof::PatientManager::MED_STOP_DATE]);
+
+
+	mStartDatePicker->SetValue(wxDateTime{ pof::base::data::clock_t::to_time_t(startDate) });
+	mStopDatePicker->SetValue(wxDateTime{ pof::base::data::clock_t::to_time_t(stopDate) });
+
 }
 
 void pof::PatientView::OnMedicationHistorySelected(wxDataViewEvent& evt)
@@ -579,6 +644,45 @@ void pof::PatientView::OnHidePatientMedicalDetails(wxCommandEvent& evt)
 	if (!pane.IsOk()) return;
 	pane.Show(evt.IsChecked());
 	mManager.Update();
+}
+
+void pof::PatientView::OnDateChanged(wxDateEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	auto item = mCurrentMedicationView->GetSelection();
+	if (!item.IsOk()) {
+		mPatientInfoBar->ShowMessage("No Medication selected for date chagne", wxICON_INFORMATION | wxOK);
+		return;
+	} 
+	const wxDateTime& dt = evt.GetDate();
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore()[idx];
+	auto& startDate = boost::variant2::get<pof::base::data::datetime_t>(row.first[pof::PatientManager::MED_START_DATE]);
+	auto& stopDate = boost::variant2::get<pof::base::data::datetime_t>(row.first[pof::PatientManager::MED_STOP_DATE]);
+
+	mCurrentMedicationView->Freeze();
+	switch (evt.GetId())
+	{
+	case ID_START_DATE_PICKER:
+		startDate = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+		break;
+	case ID_STOP_DATE_PICKER:
+		stopDate = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+		break;
+	default:
+		break;
+	}
+
+	//set new the ranges
+	mStartDatePicker->SetRange(wxDateTime(pof::base::data::clock_t::to_time_t(startDate)), 
+			wxDateTime(pof::base::data::clock_t::to_time_t(stopDate)));
+	mStopDatePicker->SetRange(wxDateTime(pof::base::data::clock_t::to_time_t(startDate)), wxDateTime());
+
+	mCurrentMedicationView->Thaw();
+	mCurrentMedicationView->Refresh();
 }
 
 void pof::PatientView::ShowPatientsSelectCol()
@@ -741,6 +845,35 @@ void pof::PatientView::OnPatientDetailsChange(wxPropertyGridEvent& evt)
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
 		return;
+	}
+}
+
+void pof::PatientView::OnSellCurrentMedication(wxCommandEvent& evt)
+{
+	auto& saleData = wxGetApp().mSaleManager.GetSaleData();
+	if (!saleData->GetDatastore().empty()) {
+		wxMessageBox("Sale is not empty, checkout or clear sale before adding medications to sale","Patients", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Selling")
+		.Text("Please wait...")
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
+
+	if (!fSaleSignal(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore())) {
+		mPatientInfoBar->ShowMessage("Could not add medications to sale successfully, please check stock and expiry of the products in store", wxICON_ERROR);
+	}
+	else {
+		mPatientInfoBar->ShowMessage("Medication added to sale, successfully", wxICON_INFORMATION);
 	}
 }
 

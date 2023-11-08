@@ -221,7 +221,7 @@ void pof::PackView::CreatePackTools()
 	mTopTools->Clear();
 
 	mTopTools->AddTool(wxID_BACKWARD, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back");
-	mTopTools->AddSpacer(20);
+	//mTopTools->AddSpacer(20);
 
 	if (mPackText) {
 		mPackText->Destroy();
@@ -230,9 +230,10 @@ void pof::PackView::CreatePackTools()
 	mPackText = new wxStaticText(mTopTools, wxID_ANY, fmt::format("{}", mPackName));
 	mPackText->SetFont(wxFontInfo().AntiAliased().Bold());
 	mPackText->SetBackgroundColour(*wxWHITE);
+	mTopTools->AddSeparator();
 	mTopTools->AddSpacer(2);
 	mTextItem = mTopTools->AddControl(mPackText);
-	mTextItem->SetAlignment(wxALIGN_CENTER);
+	mTextItem->SetAlignment(wxALIGN_BOTTOM);
 
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_TOOL_ADD_PRODUCT_PACK, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"), "Add product to pack");

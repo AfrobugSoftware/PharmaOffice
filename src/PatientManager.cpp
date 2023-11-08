@@ -231,6 +231,7 @@ bool pof::PatientManager::LoadPatientMedication(const pof::base::data::duuid_t& 
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
+			pof::base::data::text_t,
 			std::uint64_t,
 			std::uint64_t,
 			pof::base::data::text_t,
@@ -284,6 +285,7 @@ bool pof::PatientManager::LoadPatientHistory(const pof::base::data::duuid_t& pid
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,
 			pof::base::data::duuid_t,
+			pof::base::data::text_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
 			std::uint64_t,

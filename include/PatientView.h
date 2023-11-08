@@ -38,6 +38,7 @@
 #include <ranges>
 #include <unordered_map>
 #include <numeric>
+#include <boost/signals2.hpp>
 
 
 
@@ -76,6 +77,9 @@ namespace pof {
 			ID_SEARCH,
 			ID_SEARCH_BY_NAME,
 			ID_SEARCH_BY_LAST_NAME,
+			ID_SALE_PATIENT_MED,
+			ID_START_DATE_PICKER,
+			ID_STOP_DATE_PICKER,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -94,6 +98,7 @@ namespace pof {
 		std::set<wxDataViewItem> mMedicationSelections;
 		std::set<wxDataViewItem> mPatientSelections;
 		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
+		boost::signals2::signal<bool(const pof::base::data&)> fSaleSignal;
 	protected:
 		void OnPatientActivated(wxDataViewEvent& evt);
 		void OnAddPatient(wxCommandEvent& evt);
@@ -113,7 +118,7 @@ namespace pof {
 		void OnStopProduct(wxCommandEvent& evt);
 		void OnBack(wxCommandEvent& evt);
 		void OnHidePatientMedicalDetails(wxCommandEvent& evt);
-
+		void OnDateChanged(wxDateEvent& evt);
 		//hide/show patient search column
 		void ShowPatientsSelectCol();
 		void ShowMedSelectCol();
@@ -122,6 +127,7 @@ namespace pof {
 		void OnPatientHeaderClicked(wxDataViewEvent& evt);
 		void OnMedHeaderClicked(wxDataViewEvent& evt);
 		void OnPatientDetailsChange(wxPropertyGridEvent& evt);
+		void OnSellCurrentMedication(wxCommandEvent& evt);
 		//for the splitter
 		void OnPositionChanged(wxSplitterEvent& event);
 		void OnPositionChanging(wxSplitterEvent& event);
@@ -129,6 +135,7 @@ namespace pof {
 		void OnDClick(wxSplitterEvent& event);
 		void OnUnsplitEvent(wxSplitterEvent& event);
 		void OnSpliterOnIdle(wxIdleEvent& evt);
+		
 
 
 
@@ -137,9 +144,13 @@ namespace pof {
 		wxTimer mUpdatePatientStockTimer;
 		wxAuiToolBar* mTopTools = nullptr;
 		wxAuiToolBar* mPatientTools = nullptr;
+		wxAuiToolBar* mMedTools = nullptr;
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
 		wxAuiToolBarItem* pd = nullptr;
+		wxInfoBar* mPatientInfoBar = nullptr;
+		wxDatePickerCtrl* mStartDatePicker = nullptr;
+		wxDatePickerCtrl* mStopDatePicker = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

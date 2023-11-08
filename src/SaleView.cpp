@@ -1327,6 +1327,38 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 
 }
 
+bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
+{
+	if (data.empty()) return false;
+	for (auto& med : data) {
+		auto prodIter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+			[&](const pof::base::data::row_t& row) -> bool {
+				return boost::variant2::get<pof::base::data::duuid_t>(med.first[pof::PatientManager::MED_PRODUCT_UUID]) ==
+				boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);		
+		});
+		if (prodIter == wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) continue;
+		if (CheckExpired(*prodIter)) {
+			if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+			{
+				continue;
+			}
+		}
+		bool status = CheckInStock(*prodIter);
+		if (!status) {
+			wxMessageBox(fmt::format("{} is out of stock",
+				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			continue;
+		}
+		//check that the stock is enough for what we are adding
+		if () {}
+
+
+
+	}
+	return false;
+}
+
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)
 {
 	auto& v = product.first;
