@@ -129,6 +129,8 @@ namespace pof
 		void CreateSearchPopup();
 		void CreateProductDetails();
 		void CreateAccelTable();
+
+		bool OnAddMedicationsToSale(const pof::base::data& data);
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
@@ -164,7 +166,6 @@ namespace pof
 		void OnSearchPopup(const pof::base::data::row_t& row);
 		void OnScanBarCode(wxCommandEvent& evt);
 	
-		bool OnAddMedicationsToSale(const pof::base::data& data);
 
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductWarning(const pof::base::data::duuid_t& pid);

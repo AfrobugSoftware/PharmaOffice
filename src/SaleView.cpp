@@ -811,6 +811,14 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 					std::get<3>(prod) = presentStock;
 				}else continue;
 			}
+
+			status = CheckProductClass(*iter);
+			if (status) {
+				if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue",
+					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) 
+					continue;
+			}
+
 			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 				mCurSaleuuid = uuidGen();
 				SetActiveSaleIdText(mCurSaleuuid);
@@ -1351,12 +1359,35 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 			continue;
 		}
 		//check that the stock is enough for what we are adding
-		if () {}
+		if (boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]) >
+				boost::variant2::get<std::uint64_t>(prodIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT])) {
+			wxMessageBox(fmt::format("{} required is more than the current stock stock",
+				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+			continue;
+		}
 
+		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
+			mCurSaleuuid = uuidGen();
+			SetActiveSaleIdText(mCurSaleuuid);
+		}
 
+		pof::base::data::row_t rowSale;
+		auto& vS = rowSale.first;
+		vS.resize(pof::SaleManager::MAX);
+		vS[pof::SaleManager::SALE_UUID] = mCurSaleuuid;
+		vS[pof::SaleManager::PRODUCT_UUID] = boost::variant2::get<pof::base::data::duuid_t>(med.first[pof::PatientManager::MED_PRODUCT_UUID]);
+		vS[pof::SaleManager::PRODUCT_NAME] = boost::variant2::get<pof::base::data::text_t>(med.first[pof::PatientManager::MED_NAME]);
+		vS[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]);
+		vS[pof::SaleManager::PRODUCT_PRICE] = boost::variant2::get<pof::base::currency>(prodIter->first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+		vS[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(prodIter->first[pof::ProductManager::PRODUCT_UNIT_PRICE]) 
+					* static_cast<double>(boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]));
+
+		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(prodIter->first[pof::ProductManager::PRODUCT_UUID]));
+		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 
 	}
-	return false;
+	UpdateSaleDisplay();
+	return true;
 }
 
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)

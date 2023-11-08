@@ -265,6 +265,8 @@ void pof::MainFrame::CreateViews()
 
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
+	mPatientView->fSaleSignal.connect(std::bind_front(&pof::SaleView::OnAddMedicationsToSale,mSaleView));
+
 
 	mProductView->Hide();
 	mSaleView->Hide();

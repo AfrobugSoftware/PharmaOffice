@@ -8,7 +8,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_TOOL(pof::PatientView::ID_ADD_PRODUCT, pof::PatientView::OnAddMedication)
 	EVT_TOOL(pof::PatientView::ID_ADD_PACK, pof::PatientView::OnAddPacks)
 	EVT_TOOL(pof::PatientView::ID_PATIENT_MED_DETAILS, pof::PatientView::OnHidePatientMedicalDetails)
-
+	EVT_TOOL(pof::PatientView::ID_SALE_PATIENT_MED, pof::PatientView::OnSellCurrentMedication)
 	//date events
 	EVT_DATE_CHANGED(pof::PatientView::ID_START_DATE_PICKER, pof::PatientView::OnDateChanged)
 	EVT_DATE_CHANGED(pof::PatientView::ID_STOP_DATE_PICKER, pof::PatientView::OnDateChanged)
