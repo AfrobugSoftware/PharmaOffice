@@ -216,14 +216,15 @@ bool pof::PatientManager::LoadPatientMedication(const pof::base::data::duuid_t& 
 	pm.startdate,
 	pm.stopdate 
 	FROM medications pm, products p 
-	WHERE pm.stopdate > ? AND pm.patient_uuid = ? AND p.uuid = pm.product_uuid;)";
+	WHERE (Days(pm.stopdate) > ? OR Days(pm.stopdate) = ?) AND pm.patient_uuid = ? AND p.uuid = pm.product_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
-		auto today = pof::base::data::clock_t::now();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(today, pid));
+		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
+		auto day = static_cast<std::uint64_t>((dayAhead).time_since_epoch().count());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(day, day, pid));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -272,14 +273,16 @@ bool pof::PatientManager::LoadPatientHistory(const pof::base::data::duuid_t& pid
 	pm.startdate,
 	pm.stopdate 
 	FROM medications pm, products p 
-	WHERE pm.stopdate < ? AND pm.patient_uuid = ? AND p.uuid = pm.product_uuid;)";
+	WHERE Days(pm.stopdate) < ? AND pm.patient_uuid = ? AND p.uuid = pm.product_uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
-		auto today = pof::base::data::clock_t::now();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(today, pid));
+
+		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
+		auto day = (dayAhead).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(day), pid));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -520,7 +523,7 @@ bool pof::PatientManager::OnAddMedication(pof::base::data::const_iterator iter)
 bool pof::PatientManager::OnRemoveMedication(pof::base::data::const_iterator iter)
 {
 	if(mLocalDatabase){
-		constexpr const std::string_view sql = R"(DELETE FROM medications WHERE patient_uuid = ? AND product_uuid = ?;)";
+		constexpr const std::string_view sql = R"(DELETE FROM medications WHERE patient_uuid = ? AND product_uuid = ? AND Days(stopdate) > ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -528,8 +531,9 @@ bool pof::PatientManager::OnRemoveMedication(pof::base::data::const_iterator ite
 		}
 		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PATIENT_UUID]);
 		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PRODUCT_UUID]);
-
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uuid, puuid));
+		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
+		auto day = (dayAhead).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uuid, puuid, static_cast<std::uint64_t>(day)));
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);
@@ -565,7 +569,7 @@ bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator ite
 		os << " WHERE patient_uuid = ? AND product_uuid = ? AND Days(stopdate) > ?;";
 		upIdx.push_back(MED_PATIENT_UUID);
 		upIdx.push_back(MED_PRODUCT_UUID);
-		upIdx.push_back(MED_STOP_DATE); //only update active products
+		//upIdx.push_back(MED_STOP_DATE); //only update active products
 
 		auto stmt = mLocalDatabase->prepare(os.str());
 		if (!stmt.has_value()) {
@@ -599,6 +603,12 @@ bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator ite
 			}
 			i++;
 		}
+
+		//bind today to only work on medication that has not being stopped 
+		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
+		auto day = static_cast<std::uint64_t>((dayAhead).time_since_epoch().count());
+		mLocalDatabase->bind(*stmt,day, i);
+
 		bool status = mLocalDatabase->execute(*stmt);
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());

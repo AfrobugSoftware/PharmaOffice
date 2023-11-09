@@ -322,7 +322,21 @@ void pof::PatientView::CreateSpecialCols()
 	startDateHandler.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
 		auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
 		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_START_DATE]);
-		date = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
+		auto& stopDate = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_STOP_DATE]);
+		auto setdate = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
+		//start date cannot be less than today
+		auto floorDate = date::floor<date::days>(stopDate);
+		auto floorSetDate = date::floor<date::days>(setdate);
+
+		spdlog::info("stopdate = {:d} setdate = {:d}", floorDate.time_since_epoch().count(), floorSetDate.time_since_epoch().count());
+
+		if ((date::floor<date::days>(setdate) > date::floor<date::days>(stopDate)) || 
+			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
+			mPatientInfoBar->ShowMessage("Start date cannot be less than current date or greater than stop date", wxICON_ERROR);
+			return false;
+		}
+
+		date = setdate;
 
 		datastore[row].second.second.set(pof::PatientManager::MED_START_DATE);
 		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, row);
@@ -340,9 +354,17 @@ void pof::PatientView::CreateSpecialCols()
 
 	stopDateHandler.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
 		auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
+		auto setdate = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
 		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_STOP_DATE]);
-		date = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
+		auto& startdate = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_START_DATE]);
+		if ((date::floor<date::days>(setdate) < date::floor<date::days>(startdate)) || 
+			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
+			//stop date cannot be less than start date
+			mPatientInfoBar->ShowMessage("Stop date cannot be less than start date or current date", wxICON_ERROR);
+			return false;
+		}
 
+		date = setdate;
 		datastore[row].second.second.set(pof::PatientManager::MED_STOP_DATE);
 		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, row);
 		datastore[row].second.second.reset();
@@ -794,23 +816,32 @@ void pof::PatientView::OnDateChanged(wxDateEvent& evt)
 	auto& stopDate = boost::variant2::get<pof::base::data::datetime_t>(row.first[pof::PatientManager::MED_STOP_DATE]);
 
 	mCurrentMedicationView->Freeze();
+	auto setdate = pof::base::data::clock_t::from_time_t(dt.GetTicks());
 	switch (evt.GetId())
 	{
 	case ID_START_DATE_PICKER:
-		startDate = pof::base::data::clock_t::from_time_t(dt.GetTicks());
+		//if less than today
+		if ((date::floor<date::days>(setdate) > date::floor<date::days>(stopDate)) || 
+			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
+			mPatientInfoBar->ShowMessage("Start date cannot be less than current date or greater than stop date", wxICON_ERROR);
+			evt.Skip();
+			break;
+		}
+		startDate = setdate;
 		break;
 	case ID_STOP_DATE_PICKER:
+		//if less than start date or less tha today
+		if ((date::floor<date::days>(setdate) < date::floor<date::days>(startDate)) ||
+			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
+			mPatientInfoBar->ShowMessage("Stop date cannot be less than start date or current date", wxICON_ERROR);
+			evt.Skip();
+			break;
+		}
 		stopDate = pof::base::data::clock_t::from_time_t(dt.GetTicks());
 		break;
 	default:
 		break;
 	}
-
-	//set new the ranges
-	mStartDatePicker->SetRange(wxDateTime(pof::base::data::clock_t::to_time_t(startDate)), 
-			wxDateTime(pof::base::data::clock_t::to_time_t(stopDate)));
-	mStopDatePicker->SetRange(wxDateTime(pof::base::data::clock_t::to_time_t(startDate)), wxDateTime());
-
 	mCurrentMedicationView->Thaw();
 	mCurrentMedicationView->Refresh();
 }
