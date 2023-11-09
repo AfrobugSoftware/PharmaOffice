@@ -464,6 +464,12 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 			showFailedStatus(); return;
 		}
 
+		stop = dlg.Update(65, "Removing product from expired");
+		status = wxGetApp().mProductManager.RemoveProductInMedication(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
+
 		stop = dlg.Update(70, "Removing product sale history");
 		status = wxGetApp().mSaleManager.RemoveProductSaleHistory(next);
 		if (!stop || !status) {
@@ -545,6 +551,11 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 				}
 
 				status = wxGetApp().mProductManager.RemoveProductInExpiredStock(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
+				status = wxGetApp().mProductManager.RemoveProductInMedication(next);
 				if (!status) {
 					showFailedStatus(name); continue;
 				}

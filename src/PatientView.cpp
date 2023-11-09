@@ -28,6 +28,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_DATAVIEW_SELECTION_CHANGED(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsSelected)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientHeaderClicked)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedHeaderClicked)
+	EVT_DATAVIEW_ITEM_EDITING_STARTED(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnEditingStarted)
 
 	EVT_SPLITTER_SASH_POS_CHANGED(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionChanged)
 	EVT_SPLITTER_SASH_POS_CHANGING(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionChanging)
@@ -192,8 +193,8 @@ void pof::PatientView::CreateViews()
 	mStartDatePicker = new wxDatePickerCtrl(mMedTools, ID_START_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
 	mStopDatePicker = new wxDatePickerCtrl(mMedTools, ID_STOP_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
 
-	mStartDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
-	mStopDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
+//	mStartDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
+//	mStopDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
 
 	mMedTools->AddControl(new wxStaticText(mMedTools, wxID_ANY, "Start:"), "Start date");
 	mMedTools->AddSpacer(10);
@@ -211,9 +212,9 @@ void pof::PatientView::CreateViews()
 	mCurrentMedicationView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendDateColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_ACTIVATABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendDateColumn("Stop Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_ACTIVATABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mStockMedCol = mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendDateColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mCurrentMedicationView->AppendDateColumn("Stop Date", pof::PatientManager::MED_STOP_DATE,  wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 
 	medSz->Add(mMedTools, 0, wxEXPAND | wxALL, 0);
 	medSz->Add(mCurrentMedicationView, 1, wxEXPAND | wxALL, 0);
@@ -229,8 +230,8 @@ void pof::PatientView::CreateViews()
 	mMedHistoryView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Started Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Stopped Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+	mMedHistoryView->AppendDateColumn("Started Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	mMedHistoryView->AppendDateColumn("Stopped Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
 
 	mCurrentMedicationView->Show();
@@ -264,7 +265,10 @@ void pof::PatientView::CreateSpecialCols()
 	pof::DataModel::SpeicalColHandler_t SelectMedColHandler;
 	pof::DataModel::SpeicalColHandler_t statusHandler;
 	pof::DataModel::SpeicalColHandler_t startDateHandler;
-	pof::DataModel::SpeicalColHandler_t stopDateHandler;
+	pof::DataModel::SpeicalColHandler_t stopDateHandler;	
+	pof::DataModel::SpeicalColHandler_t startDateHandler2;
+	pof::DataModel::SpeicalColHandler_t stopDateHandler2;
+	pof::DataModel::SpeicalColHandler_t stockHandler;
 
 
 
@@ -319,6 +323,11 @@ void pof::PatientView::CreateSpecialCols()
 		auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
 		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_START_DATE]);
 		date = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
+
+		datastore[row].second.second.set(pof::PatientManager::MED_START_DATE);
+		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, row);
+		datastore[row].second.second.reset();
+
 		return true;
 	};
 
@@ -333,15 +342,51 @@ void pof::PatientView::CreateSpecialCols()
 		auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
 		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_STOP_DATE]);
 		date = pof::base::data::clock_t::from_time_t(v.GetDateTime().GetTicks());
+
+		datastore[row].second.second.set(pof::PatientManager::MED_STOP_DATE);
+		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, row);
+		datastore[row].second.second.reset();
+
 		return true;
 	};
 
+	stockHandler.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
+		auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
+		try {
+			datastore[row].first[pof::PatientManager::MED_STOCK] = boost::lexical_cast<std::uint64_t>(v.GetString().ToStdString());
+			datastore[row].second.second.set(pof::PatientManager::MED_STOCK);
+			wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, row);
+			datastore[row].second.second.reset();
+		}
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+			return false;
+		}
+		return true;
+	};
 
+	startDateHandler2.first = [&](size_t row, size_t col) ->wxVariant {
+		auto& datastore = wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore();
+		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_START_DATE]);
+		wxDateTime d{ pof::base::data::clock_t::to_time_t(date) };
+		return d;
+	};
+
+	stopDateHandler2.first = [&](size_t row, size_t col) ->wxVariant {
+		auto& datastore = wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore();
+		auto& date = boost::variant2::get<pof::base::data::datetime_t>(datastore[row].first[pof::PatientManager::MED_STOP_DATE]);
+		wxDateTime d{ pof::base::data::clock_t::to_time_t(date) };
+		return d;
+	};
+	
 	wxGetApp().mPatientManager.GetPatientData()->SetSpecialColumnHandler(SELECTION_COL, std::move(SelectColHandler));;
 	wxGetApp().mPatientManager.GetPatientData()->SetSpecialColumnHandler(1000, std::move(statusHandler));;
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(SELECTION_COL, std::move(SelectMedColHandler));;
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_START_DATE, std::move(startDateHandler));;
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOP_DATE, std::move(stopDateHandler));;
+	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(pof::PatientManager::MED_START_DATE, std::move(startDateHandler2));;
+	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOP_DATE, std::move(stopDateHandler2));;
+	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOCK, std::move(stockHandler));;
 
 }
 
@@ -354,6 +399,7 @@ void pof::PatientView::CreatePatientDetailsPane()
 		wxPG_SPLITTER_AUTO_CENTER |
 		wxNO_BORDER |
 		wxPGMAN_DEFAULT_STYLE);
+	mPatientDetails->SetDoubleBuffered(true);
 	mPatientDetails->SetBackgroundColour(*wxWHITE);
 	mPatientDetails->SetExtraStyle(wxPG_EX_NATIVE_DOUBLE_BUFFERING | wxPG_EX_MODE_BUTTONS);
 	auto grid = mPatientDetails->AddPage("Medication", wxNullBitmap);
@@ -373,13 +419,13 @@ void pof::PatientView::CreatePatientDetailsPane()
 	auto pp5 = grid->Append(new wxIntProperty("Resipratory rate (RR)", "5"));
 	auto pp6 = grid->Append(new wxIntProperty("Body tempreture (o')", "6"));
 	auto pp7 = grid->Append(new wxLongStringProperty("Clinical Indication", "7"));
-	auto pp8 = grid->Append(new wxStringProperty("Date entered", "8"));
-	auto pp9 = grid->Append(new wxStringProperty("Date modified", "9"));
+	auto pp8 = grid->Append(new wxDateProperty("Date entered", "8"));
+	auto pp9 = grid->Append(new wxDateProperty("Date modified", "9"));
 
 	pp8->Enable(false);
 	pp9->Enable(false);
 
-	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
+	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Caption("Details").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
 }
 
 void pof::PatientView::SetupAuiTheme()
@@ -387,6 +433,27 @@ void pof::PatientView::SetupAuiTheme()
 	auto auiArtProvider = mManager.GetArtProvider();
 	pof::AuiTheme::Update(auiArtProvider);
 	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::PatientView::OnAuiThemeChange, this));
+}
+
+void pof::PatientView::LoadPatientDetails()
+{
+	if (!mCurrentPatient.has_value()) return;
+	auto page = mPatientDetails->GetPage("Medication");
+	if (!page) return;
+	auto& v = mCurrentPatient.value().get().first;
+	page->GetGrid()->GetProperty("0")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BMI]))));
+	page->GetGrid()->GetProperty("1")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_WEIGHT]))));
+	page->GetGrid()->GetProperty("2")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_HR]))));
+	page->GetGrid()->GetProperty("3")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BP_SYS]))));
+	page->GetGrid()->GetProperty("4")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BP_DYS]))));
+	page->GetGrid()->GetProperty("5")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_RR]))));
+	page->GetGrid()->GetProperty("6")->SetValue(wxVariant(static_cast<int>(boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_TEMPT]))));
+	page->GetGrid()->GetProperty("7")->SetValue(wxVariant(boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_CLINICAL_INDICATION])));
+	page->GetGrid()->GetProperty("8")->SetValue(wxVariant(wxDateTime(
+				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_ENTERED_DATE])))));
+	page->GetGrid()->GetProperty("9")->SetValue(wxVariant(wxDateTime(
+				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_MODIFIED_DATE])))));
+
 }
 
 void pof::PatientView::ShowPatientDetails()
@@ -425,6 +492,11 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
 	if (!item.IsOk()) return;
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	auto& pane = mManager.GetPane("PatientDetails");
 	if (pane.IsOk()) {
 		std::bitset<32> bitset(pd->GetState());
@@ -442,6 +514,7 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	wxGetApp().mPatientManager.LoadPatientHistory(puid);
 	mCurrentMedicationView->Thaw();
 	mCurrentMedicationView->Refresh();
+	mCurrentMedicationView->SetFocus();
 
 	mSPanel->Freeze();
 	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
@@ -451,7 +524,8 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	mSPanel->Thaw();
 	mSPanel->Layout();
 	mSPanel->Refresh();
-
+	
+	LoadPatientDetails();
 	mBook->SetSelection(PATIENT_VIEW);
 }
 
@@ -481,6 +555,7 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 	pof::SearchProduct prodSearch(this, wxID_ANY);
 	auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
 	if (prodSearch.ShowModal() != wxID_OK) return;
+	mPatientInfoBar->Dismiss();
 	wxBusyCursor cursor;
 	mCurrentMedicationView->Freeze();
 	if (prodSearch.HasMultipleSelections()) {
@@ -518,6 +593,39 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 			wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
 		}
 	}
+	else {
+		auto& prod = prodSearch.GetSelectedProduct();
+		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>
+			(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]);
+		const pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+		pof::base::data::row_t row;
+
+		auto& v = row.first;
+		auto& p = prod.first;
+		if (std::ranges::any_of(datastore, [&](pof::base::data::row_t& item) -> bool {
+			return boost::variant2::get<pof::base::data::duuid_t>(item.first[pof::PatientManager::MED_PRODUCT_UUID]) == pid; }))
+		{
+			mPatientInfoBar->ShowMessage("Medication already added", wxICON_INFORMATION);
+			return;
+		}
+		v.resize(pof::PatientManager::MED_MAX);
+		auto today = pof::base::data::clock_t::now();
+		auto& vs = prod.first;
+
+		v[pof::PatientManager::MED_PRODUCT_UUID] = pid;
+		v[pof::PatientManager::MED_PATIENT_UUID] = puuid;
+		v[pof::PatientManager::MED_NAME] = boost::variant2::get<pof::base::data::text_t>(vs[pof::ProductManager::PRODUCT_NAME]);
+		v[pof::PatientManager::MED_PURPOSE] = ""s;
+		v[pof::PatientManager::MED_OUTCOME] = ""s;
+		v[pof::PatientManager::MED_STOCK] = static_cast<std::uint64_t>(0);
+		v[pof::PatientManager::MED_DIR_FOR_USE_QUANTITY] = static_cast<std::uint64_t>(0);
+		v[pof::PatientManager::MED_DIR_FOR_USE_STRENGTH] = boost::variant2::get<pof::base::data::text_t>(vs[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+		v[pof::PatientManager::MED_DURATION] = static_cast<std::uint64_t>(0);
+		v[pof::PatientManager::MED_START_DATE] = today;
+		v[pof::PatientManager::MED_STOP_DATE] = today + date::days(1);
+
+		wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
+	}
 	mCurrentMedicationView->Thaw();
 	mCurrentMedicationView->Refresh();
 }
@@ -531,6 +639,27 @@ void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
 
 void pof::PatientView::OnRemoveMedication(wxCommandEvent& evt)
 {
+	auto item = mCurrentMedicationView->GetSelection();
+	if (!item.IsOk()) return;
+	if (wxMessageBox("Are you sure you want to remove medication from the patient?", "Patient", wxICON_QUESTION | wxYES_NO) == wxNO) return;
+	mCurrentMedicationView->Freeze();
+	if (mMedicationSelections.empty()) {
+			wxGetApp().mPatientManager.GetPatientMedData()->RemoveData(item);
+			mPatientInfoBar->ShowMessage(fmt::format("Successfully removed product from medication"));
+	}
+	else {
+		wxDataViewItemArray items;
+		for (auto& item : mMedicationSelections) {
+			wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::REMOVED, pof::DataModel::GetIdxFromItem(item));
+			items.push_back(item);
+		}
+		wxGetApp().mPatientManager.GetPatientMedData()->RemoveData(items);
+		mPatientInfoBar->ShowMessage(fmt::format("Successfully removed {:d} products from medication", items.size()));
+	}
+	mCurrentMedicationView->Thaw();
+	mCurrentMedicationView->Refresh();
+	mCurrentMedicationView->SetFocus();
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Removed product from medication");
 }
 
 void pof::PatientView::OnSelectCol(wxCommandEvent& evt)
@@ -634,6 +763,7 @@ void pof::PatientView::OnBack(wxCommandEvent& evt)
 		pane.Hide();
 		mManager.Update();
 	}
+	mPatientInfoBar->Dismiss();
 	SwitchToolBar();
 	mBook->SetSelection(PATIENT_SELECT);
 }
@@ -830,16 +960,22 @@ void pof::PatientView::OnPatientDetailsChange(wxPropertyGridEvent& evt)
 			//do not change date entered
 			break;
 		case 9:
-			vp[pof::PatientManager::PATIENT_MODIFIED_DATE] = pof::base::data::clock_t::now();
-			vps.set(pof::PatientManager::PATIENT_MODIFIED_DATE);
+			//modified is always updated
 			break;
 		default:
 			break;
 		};
+		//always set modified if we change the details, also update the view
+		vp[pof::PatientManager::PATIENT_MODIFIED_DATE] = pof::base::data::clock_t::now();
+		vps.set(pof::PatientManager::PATIENT_MODIFIED_DATE);
+		mPatientDetails->GetPage("Medication")->GetGrid()->GetProperty("9")->SetValue(wxVariant(wxDateTime(
+			pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(vp[pof::PatientManager::PATIENT_MODIFIED_DATE])))));
+		
 		auto item = mPatientSelect->GetSelection();
 		if (item.IsOk()) {
 			auto& dp = wxGetApp().mPatientManager.GetPatientData();
 			dp->Signal(pof::DataModel::Signals::UPDATE, pof::DataModel::GetIdxFromItem(item));
+			vps.reset();
 		}
 	}
 	catch (const std::exception& exp) {
@@ -855,25 +991,34 @@ void pof::PatientView::OnSellCurrentMedication(wxCommandEvent& evt)
 		wxMessageBox("Sale is not empty, checkout or clear sale before adding medications to sale","Patients", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	wxIcon cop;
-	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
-	wxBusyInfo info
-	(
-		wxBusyInfoFlags()
-		.Parent(this)
-		.Icon(cop)
-		.Title("Selling")
-		.Text("Please wait...")
-		.Foreground(*wxBLACK)
-		.Background(*wxWHITE)
-		.Transparency(4 * wxALPHA_OPAQUE / 5)
-	);
+	
+	wxBusyCursor cursor;
+	if (mMedicationSelections.empty()) {
+		if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty()) {
+			mPatientInfoBar->ShowMessage("Patient medication list is empty", wxICON_INFORMATION);
 
-	if (!fSaleSignal(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore())) {
-		mPatientInfoBar->ShowMessage("Could not add medications to sale successfully, please check stock and expiry of the products in store", wxICON_ERROR);
+		}
+		else if (!fSaleSignal(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore()).value_or(false)) {
+			mPatientInfoBar->ShowMessage("Could not add medications to sale successfully, please check stock and expiry of the products in store", wxICON_ERROR);
+		}
+		else {
+			mPatientInfoBar->ShowMessage("Medication added to sale successfully", wxICON_INFORMATION);
+		}
 	}
 	else {
-		mPatientInfoBar->ShowMessage("Medication added to sale, successfully", wxICON_INFORMATION);
+		auto& medData = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
+		pof::base::data newData;
+		newData.set_metadata(medData.get_metadata());
+		for (auto& item : mMedicationSelections) {
+			auto& row = medData[pof::DataModel::GetIdxFromItem(item)];
+			newData.insert(row.first);
+		}
+		 if (!fSaleSignal(newData).value_or(false)) {
+			mPatientInfoBar->ShowMessage("Could not add medications to sale successfully, please check stock and expiry of the products in store", wxICON_ERROR);
+		}
+		else {
+			mPatientInfoBar->ShowMessage("Medication added to sale successfully", wxICON_INFORMATION);
+		}
 	}
 }
 
@@ -905,4 +1050,20 @@ void pof::PatientView::OnSpliterOnIdle(wxIdleEvent& evt)
 {
 	mPatientPanel->SetSashPosition(350);
 	mPatientPanel->Disconnect(wxEVT_IDLE, wxIdleEventHandler(PatientView::OnSpliterOnIdle), NULL, this);
+}
+
+void pof::PatientView::OnEditingStarted(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	auto col = evt.GetDataViewColumn();
+	if (col == mStockMedCol) {
+		auto ctrl = col->GetRenderer()->GetEditorCtrl();
+		wxIntegerValidator<size_t> val{ NULL };
+		val.SetMin(0);
+		val.SetMax(10000);
+		ctrl->SetValidator(val);
+	}
+
+	//check dates for invalid values ->
+
 }

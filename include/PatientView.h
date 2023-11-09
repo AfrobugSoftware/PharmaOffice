@@ -55,7 +55,7 @@ namespace pof {
 		};
 
 		enum {
-			ID_SEARCH_BAR = wxID_HIGHEST,
+			ID_SEARCH_BAR = wxID_HIGHEST + 2000,
 			ID_PATIENT_VIEW,
 			ID_PATIENT_PANEL,
 			ID_PATIENT_MEDS_VIEW,
@@ -91,7 +91,7 @@ namespace pof {
 		void CreateSpecialCols();
 
 		void SetupAuiTheme();
-
+		void LoadPatientDetails();
 		void ShowPatientDetails();
 		wxBitmap GetPatientBitMap();
 		void SwitchToolBar();
@@ -135,6 +135,8 @@ namespace pof {
 		void OnDClick(wxSplitterEvent& event);
 		void OnUnsplitEvent(wxSplitterEvent& event);
 		void OnSpliterOnIdle(wxIdleEvent& evt);
+
+		void OnEditingStarted(wxDataViewEvent& evt);
 		
 
 
@@ -162,6 +164,7 @@ namespace pof {
 		wxDataViewColumn* mSelectCol = nullptr;
 		wxDataViewCtrl* mCurrentMedicationView;
 		wxDataViewColumn* mSelectMedCol = nullptr;
+		wxDataViewColumn* mStockMedCol = nullptr;
 		wxStaticText* mPatientNameText = nullptr;
 		wxStaticText* mDobText = nullptr;
 		wxStaticText* mGenderText = nullptr;

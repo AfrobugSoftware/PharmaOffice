@@ -315,7 +315,7 @@ bool pof::PatientManager::LoadPatientHistory(const pof::base::data::duuid_t& pid
 bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT 1 FROM medications WHERE patient_uuid = ? AND Days(stopdate) > ?;)";
+		constexpr const std::string_view sql = R"(SELECT 1 FROM medications WHERE patient_uuid = :uuid AND (Days(stopdate) > :dt OR Days(stopdate) = :dt);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -323,8 +323,8 @@ bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
 		}
 		//on some computers it does not work with the day ahead
 		auto dayAhead = date::floor<date::days>(pof::base::data::clock_t::now());
-		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, static_cast<std::uint64_t>(day)));
+		auto day = (dayAhead).time_since_epoch().count();
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(pid, static_cast<std::uint64_t>(day)), {"uuid", "dt"});
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
@@ -411,17 +411,20 @@ bool pof::PatientManager::OnRemovePatient(pof::base::data::const_iterator iter)
 bool pof::PatientManager::OnUpdatePatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr static std::array<std::string_view, 16> colName = {
-			"uuid", "lastname", "dob", "gender" ,"phonenumber", "address", "bmi", "weight", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate", "clinical"
+		constexpr static std::array<std::string_view, PATIENT_MAX> colName = {
+			"uuid", "name", "lastname", "dob", "gender" ,"phonenumber", "address", "bmi", "weight", "hr", "bpsys", "bpdys", "rr", "tempreture", "createdate", "modifieddate", "clinical"
 		};
 		std::ostringstream os;
 		std::vector<size_t> upIdx;
-		os << "UPDATE patients ";
+		os << "UPDATE patients SET ";
 		auto& updateFlag = iter->second.second;
 		for (int i = 0; i < PATIENT_MAX; i++) {
 			if (updateFlag.test(i)) {
+				if (upIdx.size() != 0) {
+					os << ", ";
+				}
 				upIdx.push_back(i);
-				os << "SET " << colName[i] << "= ?";
+				os << colName[i] << "= ?";
 			}
 		}
 		os << " WHERE uuid = ?;";
@@ -524,7 +527,7 @@ bool pof::PatientManager::OnRemoveMedication(pof::base::data::const_iterator ite
 			return false;
 		}
 		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PATIENT_UUID]);
-		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PATIENT_UUID]);
+		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[MED_PRODUCT_UUID]);
 
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uuid, puuid));
 		assert(status);
@@ -542,23 +545,27 @@ bool pof::PatientManager::OnRemoveMedication(pof::base::data::const_iterator ite
 bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr static const std::array<std::string_view, 10> colNames = {
-			"product_uuid","patient_uuid", "purpose", "outcome", "stock", "dirforusequan", "dirforusesten", 
+		constexpr static const std::array<std::string_view, 11> colNames = {
+			"product_uuid","patient_uuid", "name", "purpose", "outcome", "stock", "dirforusequan", "dirforusesten", 
 			"duration", "startdate", "stopdate"
 		};
 		std::ostringstream os;
 		std::vector<size_t> upIdx;
-		os << "UPDATE medications ";
+		os << "UPDATE medications SET ";
 		auto& updateFlag = iter->second.second;
 		for (int i = 0; i < MED_MAX; i++) {
 			if (updateFlag.test(i)) {
+				if (upIdx.size() != 0) {
+					os << ", ";
+				}
 				upIdx.push_back(i);
-				os << "SET " << colNames[i] << "= ?";
+				os << colNames[i] << "= ?";
 			}
 		}
-		os << " WHERE patient_uuid = ? AND product_uuid = ?;";
+		os << " WHERE patient_uuid = ? AND product_uuid = ? AND Days(stopdate) > ?;";
 		upIdx.push_back(MED_PATIENT_UUID);
 		upIdx.push_back(MED_PRODUCT_UUID);
+		upIdx.push_back(MED_STOP_DATE); //only update active products
 
 		auto stmt = mLocalDatabase->prepare(os.str());
 		if (!stmt.has_value()) {
@@ -566,7 +573,7 @@ bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator ite
 			return false;
 		}
 		size_t i = 1;
-		auto& meta = mPaitnets->GetDatastore().get_metadata();
+		auto& meta = mPatientMedications->GetDatastore().get_metadata();
 		auto& v = iter->first;
 		for (size_t d : upIdx) {
 			auto kind = meta[d];

@@ -133,7 +133,6 @@ namespace pof
             void emplace(typename row_t::first_type&& vals);
             const row_t& at(size_t i ) const; //throws std::out_of_range if out of bands
 
-
             constexpr size_t size() const { return value.size(); }
             inline void clear() { value.clear(); }
             void clear_state(state s);
