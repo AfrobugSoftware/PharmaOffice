@@ -35,10 +35,13 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_SPLITTER_SASH_POS_RESIZE(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionResize)
 	EVT_SPLITTER_DCLICK(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnDClick)
 	EVT_PG_CHANGED(pof::PatientView::ID_MED_DETAILS, pof::PatientView::OnPatientDetailsChange)
+
+	//clear timer
+	EVT_TIMER(pof::PatientView::ID_CLEAR_TIMER, pof::PatientView::OnClearTimer)
 END_EVENT_TABLE()
 
 pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
-: wxPanel(parent, id, pos, size, style){
+	: wxPanel(parent, id, pos, size, style), mClearTimer{this, ID_CLEAR_TIMER} {
 	mManager.SetManagedWindow(this);
 	mManager.SetFlags(AUIMGRSTYLE);
 	SetSizeHints(wxDefaultSize, wxDefaultSize);
@@ -98,8 +101,8 @@ void pof::PatientView::CreateToolBars()
 	mTopTools->AddControl(mSearchbar, "Search bar");
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddTool(ID_ADD_PATIENTS, "Add Patients", wxArtProvider::GetBitmap("action_add"), "Add a patient to the pharmacy");
-	mTopTools->AddSpacer(5);
-	mTopTools->AddTool(ID_SHOW_PATIENT_DETAILS, "Show details", wxArtProvider::GetBitmap("application"), "Show patient details", wxITEM_CHECK);
+	//mTopTools->AddSpacer(5);
+	//mTopTools->AddTool(ID_SHOW_PATIENT_DETAILS, "Show details", wxArtProvider::GetBitmap("application"), "Show patient details", wxITEM_CHECK);
 	mTopTools->Realize();
 
 	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
@@ -347,6 +350,7 @@ void pof::PatientView::CreateSpecialCols()
 		if ((date::floor<date::days>(setdate) > date::floor<date::days>(stopDate)) || 
 			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
 			mPatientInfoBar->ShowMessage("Start date cannot be less than current date or greater than stop date", wxICON_ERROR);
+			StartTimer();
 			return false;
 		}
 
@@ -375,6 +379,7 @@ void pof::PatientView::CreateSpecialCols()
 			(date::floor<date::days>(setdate) < date::floor<date::days>(pof::base::data::clock_t::now()))) {
 			//stop date cannot be less than start date
 			mPatientInfoBar->ShowMessage("Stop date cannot be less than start date or current date", wxICON_ERROR);
+			StartTimer();
 			return false;
 		}
 
@@ -453,7 +458,7 @@ void pof::PatientView::CreatePatientDetailsPane()
 	auto pp3 = grid->Append(new wxIntProperty("Blood pressure systolic (BP/SYS)", "3"));
 	auto pp4 = grid->Append(new wxIntProperty("Blood pressure diastolic (BP/DIA)", "4"));
 	auto pp5 = grid->Append(new wxIntProperty("Resipratory rate (RR)", "5"));
-	auto pp6 = grid->Append(new wxIntProperty("Body tempreture (o')", "6"));
+	auto pp6 = grid->Append(new wxIntProperty("Body tempreture ('o)", "6"));
 	auto pp7 = grid->Append(new wxLongStringProperty("Clinical Indication", "7"));
 	auto pp8 = grid->Append(new wxDateProperty("Date entered", "8"));
 	auto pp9 = grid->Append(new wxDateProperty("Date modified", "9"));
@@ -461,7 +466,33 @@ void pof::PatientView::CreatePatientDetailsPane()
 	pp8->Enable(false);
 	pp9->Enable(false);
 
+	grid->SetPropertyHelpString(pp0, R"(Body max index for the patient, Range:
+BMI is less than 18.5, it falls within the underweight range.
+BMI is 18.5 to < 25, it falls within the healthy weight range.
+BMI is 25.0 to < 30, it falls within the overweight range.
+BMI is 30.0 or higher, it falls within the obesity range.)");
+	grid->SetPropertyHelpString(pp1, "Weight of the patient.");
+	grid->SetPropertyHelpString(pp2, "Heart rate of the patient, Range: Between 60 and 100 bpm for normal heart rate.");
+	grid->SetPropertyHelpString(pp3, "Systolic blood pressure of the patient, Range:\nNormal : < 120mmHg\nElevated: 120 - 129mmHg\nHigh: > 140mmHg\nHypertensive crisis: > 180mmHg.");
+	grid->SetPropertyHelpString(pp4, "Diastolic blood pressure of the patient, Range:\nNormal : < 80mmHg\nElevated: 80mmHg\nHigh: > 90mmHg\nHypertensive crisis: > 120mmHg.");
+	grid->SetPropertyHelpString(pp5, "Respiratory rate of the patient, Range: 12 to 16 breaths per minute for normal.");
+	grid->SetPropertyHelpString(pp6, R"(Body tempreture of the patient, Range:
+Babies and children: 97.9°F (36.6°C) to 99°F (37.2°C)
+Adults: 97°F (36.1°C) to 99°F (37.2°C)
+Adults over age 65: 96.4°F (35.8°C) to 98.3°F (36.8°C).)");
+	grid->SetPropertyHelpString(pp7, "Clinical indication for the patient.");
+	grid->SetPropertyHelpString(pp8, "Date created");
+	grid->SetPropertyHelpString(pp9, "Date modified");
+
+
 	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Caption("Details").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
+}
+
+void pof::PatientView::StartTimer()
+{
+	//restart timer if it is running
+	constexpr const auto timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(5));
+	mClearTimer.StartOnce(timeout.count());
 }
 
 void pof::PatientView::SetupAuiTheme()
@@ -585,6 +616,22 @@ void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 		wxMessageBox("User account cannot perform this function", "Patient", wxICON_INFORMATION | wxOK);
 		return;
 	}
+	if ((wxMessageBox("Are you sure you want to remove patient", "Patients", wxICON_INFORMATION | wxYES_NO) == wxNO)) return;
+	mPatientSelect->Freeze();
+	if (mPatientSelections.empty()) {
+		auto item = mPatientSelect->GetSelection();
+		if (!item.IsOk()) return;
+		wxGetApp().mPatientManager.GetPatientData()->RemoveData(item);
+	}
+	else {
+		wxDataViewItemArray items;
+		for (const wxDataViewItem& item : mPatientSelections) {
+			items.push_back(item);
+		}
+		wxGetApp().mPatientManager.GetPatientData()->RemoveData(items);
+	}
+	mPatientSelect->Thaw();
+	mPatientSelect->Refresh();
 }
 
 void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
@@ -643,6 +690,7 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 			return boost::variant2::get<pof::base::data::duuid_t>(item.first[pof::PatientManager::MED_PRODUCT_UUID]) == pid; }))
 		{
 			mPatientInfoBar->ShowMessage("Medication already added", wxICON_INFORMATION);
+			StartTimer();
 			return;
 		}
 		v.resize(pof::PatientManager::MED_MAX);
@@ -702,6 +750,8 @@ void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
 
 		wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
 	}
+	mPatientInfoBar->ShowMessage(fmt::format("Added {:d} products from pack to patient", values.size()));
+	StartTimer();
 
 }
 
@@ -714,11 +764,11 @@ void pof::PatientView::OnRemoveMedication(wxCommandEvent& evt)
 	if (mMedicationSelections.empty()) {
 			wxGetApp().mPatientManager.GetPatientMedData()->RemoveData(item);
 			mPatientInfoBar->ShowMessage(fmt::format("Successfully removed product from medication"));
+			StartTimer();
 	}
 	else {
 		wxDataViewItemArray items;
 		for (auto& item : mMedicationSelections) {
-			wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::REMOVED, pof::DataModel::GetIdxFromItem(item));
 			items.push_back(item);
 		}
 		wxGetApp().mPatientManager.GetPatientMedData()->RemoveData(items);
@@ -1052,6 +1102,8 @@ void pof::PatientView::OnPatientDetailsChange(wxPropertyGridEvent& evt)
 		if (item.IsOk()) {
 			auto& dp = wxGetApp().mPatientManager.GetPatientData();
 			dp->Signal(pof::DataModel::Signals::UPDATE, pof::DataModel::GetIdxFromItem(item));
+			mPatientInfoBar->ShowMessage("Patient updated successfully", wxICON_INFORMATION);
+			StartTimer();
 			vps.reset();
 		}
 	}
@@ -1129,6 +1181,13 @@ void pof::PatientView::OnSpliterOnIdle(wxIdleEvent& evt)
 	mPatientPanel->Disconnect(wxEVT_IDLE, wxIdleEventHandler(PatientView::OnSpliterOnIdle), NULL, this);
 }
 
+void pof::PatientView::OnClearTimer(wxTimerEvent& evt)
+{
+	if (mPatientInfoBar->IsShown())
+		mPatientInfoBar->Dismiss();
+	RemovePropertyModification();
+}
+
 void pof::PatientView::OnEditingStarted(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
@@ -1143,4 +1202,18 @@ void pof::PatientView::OnEditingStarted(wxDataViewEvent& evt)
 
 	//check dates for invalid values ->
 
+}
+
+void pof::PatientView::RemovePropertyModification()
+{
+	auto grid = mPatientDetails->GetPage("Medication")->GetGrid();
+	if (!grid->IsAnyModified()) return;
+
+	auto gridIter = grid->GetIterator();
+	while (!gridIter.AtEnd()) {
+		if (gridIter.GetProperty()->HasFlag(wxPG_PROP_MODIFIED)) {
+			gridIter.GetProperty()->SetFlagRecursively(wxPG_PROP_MODIFIED, false);
+		}
+		gridIter++;
+	}
 }

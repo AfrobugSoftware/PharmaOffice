@@ -27,6 +27,7 @@
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/manager.h>
 #include <wx/propgrid/advprops.h>
+#include <wx/timer.h>
 
 #include "PackView.h"
 #include "PatientManager.h"
@@ -80,6 +81,7 @@ namespace pof {
 			ID_SALE_PATIENT_MED,
 			ID_START_DATE_PICKER,
 			ID_STOP_DATE_PICKER,
+			ID_CLEAR_TIMER,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -90,6 +92,7 @@ namespace pof {
 		void CreatePatientDetailsPane();
 		void CreateSpecialCols();
 
+		void StartTimer();
 		void SetupAuiTheme();
 		void LoadPatientDetails();
 		void ShowPatientDetails();
@@ -135,9 +138,9 @@ namespace pof {
 		void OnDClick(wxSplitterEvent& event);
 		void OnUnsplitEvent(wxSplitterEvent& event);
 		void OnSpliterOnIdle(wxIdleEvent& evt);
-
+		void OnClearTimer(wxTimerEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
-		
+		void RemovePropertyModification();
 
 
 
@@ -172,6 +175,8 @@ namespace pof {
 
 		wxDataViewCtrl* mMedHistoryView;
 
+
+		wxTimer mClearTimer;
 		wxPropertyGridManager* mPatientDetails;
 		wxPropertyGridManager* mMedicationDetails;
 		std::optional<std::reference_wrapper<pof::base::data::row_t>> mCurrentPatient;
