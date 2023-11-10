@@ -143,7 +143,6 @@ void pof::StockCheck::CreateToolBar()
 {
 	mTools = new wxAuiToolBar(this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mBackButton = mTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"));
-	mTools->AddSpacer(10);
 	mTools->AddSeparator();
 	mTools->AddSpacer(2);
 	mTools->AddTool(ID_SELECT, "Select", wxNullBitmap, "Show select", wxITEM_CHECK);
@@ -849,6 +848,7 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 			wxMessageBox("Cannot mark all as stock check", "Stock check", wxICON_ERROR | wxOK);
 		}
 	}
+	UpdateSummary();
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Marked stock check as complete");
 }
 

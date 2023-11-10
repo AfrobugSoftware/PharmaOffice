@@ -35,7 +35,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_SPLITTER_SASH_POS_RESIZE(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnPositionResize)
 	EVT_SPLITTER_DCLICK(pof::PatientView::ID_PATIENT_PANEL, pof::PatientView::OnDClick)
 	EVT_PG_CHANGED(pof::PatientView::ID_MED_DETAILS, pof::PatientView::OnPatientDetailsChange)
-
+	EVT_UPDATE_UI(pof::PatientView::ID_PATIENT_MED_DETAILS, pof::PatientView::OnPatientDetailsUpdateUI)
 	//clear timer
 	EVT_TIMER(pof::PatientView::ID_CLEAR_TIMER, pof::PatientView::OnClearTimer)
 END_EVENT_TABLE()
@@ -46,7 +46,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	mManager.SetFlags(AUIMGRSTYLE);
 	SetSizeHints(wxDefaultSize, wxDefaultSize);
 	SetBackgroundColour(*wxWHITE);
-
+	SetDoubleBuffered(true);
 
 	CreateToolBars();
 	SetupAuiTheme();
@@ -1216,4 +1216,9 @@ void pof::PatientView::RemovePropertyModification()
 		}
 		gridIter++;
 	}
+}
+
+void pof::PatientView::OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt)
+{
+	//mPatientDetails->Refresh();
 }

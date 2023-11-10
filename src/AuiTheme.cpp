@@ -5,7 +5,7 @@ wxFont pof::AuiTheme::sCaptionFont;
 
 size_t pof::AuiTheme::sCaptionSize = 25;
 size_t pof::AuiTheme::sGripperSize = 5;
-size_t pof::AuiTheme::sSashSize = 2;
+size_t pof::AuiTheme::sSashSize = 5;
 size_t pof::AuiTheme::sPaneBorderSize = 0;
 size_t pof::AuiTheme::sGradientType = wxAUI_GRADIENT_HORIZONTAL;
 

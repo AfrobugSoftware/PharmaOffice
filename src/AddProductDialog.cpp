@@ -205,7 +205,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	bSizer5->Add( m_panel71, 0, wxEXPAND | wxALL, 2 );
 	
 	wxFlexGridSizer* fgSizer3;
-	fgSizer3 = new wxFlexGridSizer( 0, 3, 0, 0 );
+	fgSizer3 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer3->AddGrowableCol( 1 );
 	fgSizer3->SetFlexibleDirection( wxBOTH );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -216,19 +216,13 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mProductDescriptionValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mProductDescriptionValue, 1, wxALL|wxEXPAND, 5 );
-	
-	mMoreDescription = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
-	fgSizer3->Add( mMoreDescription, 0, wxALL, 5 );
-	
+		
 	mDirectionForUse = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Direction For Use"), wxDefaultPosition, wxDefaultSize, 0 );
 	mDirectionForUse->Wrap( -1 );
 	fgSizer3->Add( mDirectionForUse, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mDirForUseValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mDirForUseValue, 0, wxALL|wxEXPAND, 5 );
-	
-	mMoreDirForUse = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
-	fgSizer3->Add( mMoreDirForUse, 0, wxALL, 5 );
 	
 	mHealthConditions = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Health Conditions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mHealthConditions->Wrap( -1 );
@@ -237,20 +231,14 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mHealthConditionsValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mHealthConditionsValue, 0, wxALL|wxEXPAND, 5 );
 	
-	mMoreHealthConditons = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
-	fgSizer3->Add( mMoreHealthConditons, 0, wxALL, 5 );
-	
+
 	mSideEffectsLabel = new wxStaticText( mProductAddDetails, wxID_ANY, wxT("Adverse Reactions"), wxDefaultPosition, wxDefaultSize, 0 );
 	mSideEffectsLabel->Wrap( -1 );
 	fgSizer3->Add( mSideEffectsLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mSideEffectsValue = new wxTextCtrl( mProductAddDetails, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( mSideEffectsValue, 1, wxALL|wxEXPAND, 5 );
-	
-	mMoreSideffects = new wxBitmapButton( mProductAddDetails, wxID_ANY, wxArtProvider::GetBitmap(wxART_FILE_OPEN), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
-	fgSizer3->Add( mMoreSideffects, 0, wxALL, 5 );
-	
-	
+		
 	bSizer5->Add( fgSizer3, 1, wxEXPAND, 5 );
 	
 	m_panel8 = new wxPanel( mProductAddDetails, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );

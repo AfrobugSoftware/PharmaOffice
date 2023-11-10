@@ -141,6 +141,7 @@ namespace pof {
 		void OnClearTimer(wxTimerEvent& evt);
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void RemovePropertyModification();
+		void OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt);
 
 
 
