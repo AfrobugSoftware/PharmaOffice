@@ -29,7 +29,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, 2);
 	mBook = new wxSimplebook(m_panel5, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 
-	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 
 	mSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
@@ -37,7 +37,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 	mTotalQuantity = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalQuantity->SetFont(wxFont(wxFontInfo(11).AntiAliased()));
+	mTotalQuantity->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalQuantity->Wrap(-1);
 	bSizer4->Add(mTotalQuantity, 0, wxALL, 5);
 
@@ -48,7 +48,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(5);
 
 	mTotalAmount = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmount->SetFont(wxFont(wxFontInfo(11).AntiAliased()));
+	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmount->Wrap(-1);
 	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
 
@@ -57,7 +57,73 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	mSPanel->Layout();
 	bSizer4->Fit(mSPanel);
 
+	mCSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8 = new wxBoxSizer(wxHORIZONTAL);
 
+	mTotalClosingStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalClosingStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalClosingStock->Wrap(-1);
+	bSizer8->Add(mTotalClosingStock, 0, wxALL, 5);
+
+	bSizer8->AddSpacer(5);
+
+	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer8->AddSpacer(5);
+
+	mTotalExpiredStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalExpiredStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalExpiredStock->Wrap(-1);
+	bSizer8->Add(mTotalExpiredStock, 0, wxALL, 5);
+
+	bSizer8->AddSpacer(5);
+
+	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer8->AddSpacer(5);
+
+	mTotalInventoryIn = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalInventoryIn->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalInventoryIn->Wrap(-1);
+	bSizer8->Add(mTotalInventoryIn, 0, wxALL, 5);
+
+	bSizer8->AddSpacer(5);
+
+	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer8->AddSpacer(5);
+
+	mTotalAmountIn = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmountIn->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountIn->Wrap(-1);
+	bSizer8->Add(mTotalAmountIn, 0, wxALL, 5);
+
+	bSizer8->AddSpacer(5);
+
+	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer8->AddSpacer(5);
+
+	mTotalInventoryOut = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalInventoryOut->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalInventoryOut->Wrap(-1);
+	bSizer8->Add(mTotalInventoryOut, 0, wxALL, 5);
+
+	bSizer8->AddSpacer(5);
+
+	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer8->AddSpacer(5);
+
+
+	mTotalAmountOut = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmountOut->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountOut->Wrap(-1);
+	bSizer8->Add(mTotalAmountOut, 0, wxALL, 5);
+
+	mCSPanel->SetSizer(bSizer8);
+	mCSPanel->Layout();
+	bSizer8->Fit(mCSPanel);
 
 	mListReport = new wxListCtrl(panel, ID_REPORT_LIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
 	wxImageList* imageList = new wxImageList(16, 16);
@@ -70,7 +136,11 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	CreateEmptyEodPage();
 
 	sz->Add(mListReport, 1, wxEXPAND | wxALL, 0);
-	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 0);
+	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 2);
+	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, 2);
+
+	mSPanel->Hide();
+	mCSPanel->Hide();
 
 	panel->SetSizer(sz);
 	sz->SetSizeHints(panel);
@@ -109,23 +179,26 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	{
 	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:
 		ret = LoadConsumptionPattern(month);
+		mCSPanel->Show();
 		SetTitle("Consumption Pattern");
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
 		ret = LoadEndOFDay();
 		SetTitle("End Of Day");
+		mSPanel->Show();
 		break;
 	default:
 		break;
 	}
+	panel->Layout();
+	panel->Refresh();
 	return ret;
 }
 
 bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t month)
 {
 	auto data = wxGetApp().mProductManager.GetConsumptionPattern(month);
-	auto exStock = wxGetApp().mProductManager.GetExpiredProductsStock(month);
-	if (!data.has_value() || !exStock.has_value()) return false;
+	if (!data.has_value()) return false;
 
 	if (data->empty()) {
 		mBook->SetSelection(REPORT_EMPTY_EOD);
@@ -161,16 +234,7 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 	report.SetHeaderAttr(attr);
 
 	size_t i = 0;
-	auto expired = [&](const pof::base::data::row_t& row) -> std::uint64_t{
-		if (exStock.value().empty()) return 0;
-		auto iter = std::ranges::find_if(exStock.value(), [&](auto& val) -> bool {
-			return (boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]) ==
-				val.first);
-		});
-		if (iter == exStock.value().end()) return 0;
-		else return iter->second;
-	};
-
+	
 	for (auto iter = data->begin(); iter != data->end(); iter++) {
 		auto& v = iter->first;
 		wxListItem item;
@@ -189,39 +253,41 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 		item.SetColumn(2);
 		item.SetId(i);
-		item.SetText(fmt::format("{:d}", expired(*iter)));
+		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[3])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 		item.SetColumn(3);
 		item.SetId(i);
-		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[3])));
+		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[4])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 
 		item.SetColumn(4);
 		item.SetId(i);
-		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[4])));
+		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[5])));
 		item.SetMask(wxLIST_MASK_TEXT );
 		report.SetItem(item);
 
 
 		item.SetColumn(5);
 		item.SetId(i);
-		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[5])));
+		item.SetText(fmt::format("{:d}", boost::variant2::get<std::uint64_t>(v[6])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 
 		item.SetColumn(6);
 		item.SetId(i);
-		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[6])));
+		item.SetText(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[7])));
 		item.SetMask(wxLIST_MASK_TEXT);
 		report.SetItem(item);
 
 		i++;
 	}
+
+	UpdateConsumptionTotals(data.value());
 	return true;
 }
 
@@ -531,7 +597,8 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 	};
 
 	writeHeader("PRODUCT NAME");
-	writeHeader("CURRENT STOCK");
+	writeHeader("CLOSING STOCK");
+	writeHeader("EXPIRED STOCK");
 	writeHeader("INVENTORY IN");
 	writeHeader("AMOUNT IN");
 	writeHeader("INVENTORY OUT");
@@ -652,6 +719,40 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 	mSPanel->Thaw();
 	mSPanel->Layout();
 	mSPanel->Refresh();
+}
+
+void pof::ReportsDialog::UpdateConsumptionTotals(const pof::base::data& data)
+{
+	if (data.empty()) return;
+	auto exStock = wxGetApp().mProductManager.GetExpiredProductsStock(mSelectedMonth);
+
+	std::uint64_t totalClosingStock = 0;
+	std::uint64_t totalExpiredStock = 0;
+	std::uint64_t totalInventoryIn = 0;
+	std::uint64_t totalInventoryOut = 0;
+	pof::base::currency totalAmountOut;
+	pof::base::currency totalAmountIn;
+
+	for (const auto& d: data) {
+		auto& v = d.first;
+		totalClosingStock += boost::variant2::get<std::uint64_t>(v[2]);
+		totalExpiredStock += boost::variant2::get<std::uint64_t>(v[3]);
+		totalInventoryIn += boost::variant2::get<std::uint64_t>(v[4]);
+		totalAmountIn += boost::variant2::get<pof::base::currency>(v[5]);
+		totalInventoryOut += boost::variant2::get<std::uint64_t>(v[6]);
+		totalAmountOut += boost::variant2::get<pof::base::currency>(v[7]);
+	}
+
+	mCSPanel->Freeze();
+	mTotalClosingStock->SetLabelText(fmt::format("Total Closing stock:   {:d}", totalClosingStock));
+	mTotalExpiredStock->SetLabelText(fmt::format("Total Expired stock:   {:d}", totalExpiredStock));
+	mTotalInventoryIn->SetLabelText(fmt::format("Total Inventory in:   {:d}", totalInventoryIn));
+	mTotalAmountIn->SetLabelText(fmt::format("Total Amount in:   {:cu}", totalAmountIn));
+	mTotalInventoryOut->SetLabelText(fmt::format("Total Inventory out:   {:d}", totalExpiredStock));
+	mTotalAmountOut->SetLabelText(fmt::format("Total Amount out:   {:cu}", totalAmountOut));
+	mCSPanel->Thaw();
+	mCSPanel->Layout();
+	mCSPanel->Refresh();
 }
 
 

@@ -70,7 +70,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddSpacer(10);
 
-	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
+	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(250, -1));
 	//mProductNameValue->SetValidator(wxTextValidator{wxFILTER_SPACE});
 	mProductNameValue->SetHint("Search product by name");
 	mProductNameValue->ShowCancelButton(true);
@@ -86,7 +86,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddSpacer(10);
 
-	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(300, -1), 0);
+	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(250, -1), 0);
 	mScanProductValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	mScanProductValue->SetHint("Scan products");
 	mScanProductValue->ShowCancelButton(true);
@@ -169,11 +169,11 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	bSizer3->Add(0, 0, 1, wxEXPAND, 5);
 
-	mTextOutPut = new wxPanel(mSaleDisplayPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDOUBLE_BORDER | wxTAB_TRAVERSAL);
+	mTextOutPut = new wxPanel(mSaleDisplayPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxGridSizer* gSizer1;
 	gSizer1 = new wxGridSizer(4, 2, 5, 5);
 
-	const int fontSize = 12;
+	const int fontSize = 9;
 	const int valueFontSize = 10;
 	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased());
 	mQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0);
@@ -220,7 +220,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTextOutPut->SetSizer(gSizer1);
 	mTextOutPut->Layout();
 	gSizer1->Fit(mTextOutPut);
-	bSizer3->Add(mTextOutPut, 1, wxEXPAND | wxALL, 5);
+	bSizer3->Add(mTextOutPut, 0, wxEXPAND | wxALL, 5);
 
 
 	mSaleDisplayPane->SetSizer(bSizer3);
@@ -233,26 +233,26 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
 	mClear->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mClear, 0, wxALL, 5);
 
-	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxSize(-1, 80), wxSIMPLE_BORDER);
+	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
 	mSave->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mSave, 0, wxALL, 5);
 
-	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(-1, 80), wxSUNKEN_BORDER);
+	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
 	mCheckout->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mCheckout, 0, wxALL, 5);
 
 	bSizer4->Add(0, 0, 1, wxEXPAND, 5);
 
 	mTotalAmountLabel = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, wxT("TOTAL AMOUNT: "), wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmountLabel->SetFont(wxFont(wxFontInfo(24).Bold().AntiAliased()));
+	mTotalAmountLabel->SetFont(wxFont(wxFontInfo(15).Bold().AntiAliased()));
 	bSizer4->Add(mTotalAmountLabel, 0, wxALIGN_BOTTOM | wxALL, 5);
 
 	mTotalAmount = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmount->SetFont(wxFont(wxFontInfo(24).Bold().AntiAliased()));
+	mTotalAmount->SetFont(wxFont(wxFontInfo(15).Bold().AntiAliased()));
 	bSizer4->Add(mTotalAmount, 0, wxALIGN_BOTTOM | wxALL, 5);
 	
 	mSalePaymentButtonsPane->SetSizer( bSizer4 );

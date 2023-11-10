@@ -44,9 +44,20 @@ namespace pof
 		wxPanel* mEmptyEod = nullptr;
 		wxStaticText* mTotalQuantity = nullptr;
 		wxStaticText* mTotalAmount = nullptr;
+		
+		wxPanel* mCSPanel = nullptr;
+		wxStaticText* mTotalClosingStock = nullptr;
+		wxStaticText* mTotalExpiredStock = nullptr;
+		wxStaticText* mTotalInventoryIn = nullptr;
+		wxStaticText* mTotalAmountIn = nullptr;
+		wxStaticText* mTotalInventoryOut = nullptr;
+		wxStaticText* mTotalAmountOut = nullptr;
+
+
 		wxPanel* mSPanel = nullptr;
 		pof::base::data::datetime_t mSelectedMonth;
 		pof::base::data::datetime_t mSelectDay;
+		wxPanel* panel = nullptr;
 	public:
 		//pages
 		enum {
@@ -105,7 +116,7 @@ namespace pof
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
 		void UpdateTotals(const pof::base::data& data);
-
+		void UpdateConsumptionTotals(const pof::base::data& data);
 		bool bShowSaleID = false;
 		ReportType mCurReportType;
 		wxListItem mSelItem;
