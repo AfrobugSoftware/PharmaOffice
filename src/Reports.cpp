@@ -584,7 +584,7 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 	auto wks = doc.workbook().worksheet("Sheet1");
 	wks.setName("Consumption pattern");
 	const size_t colSize = mListReport->GetColumnCount();
-	const size_t rowSize = datastore.value().size();
+	const size_t rowSize = datastore.value().size() + 2; //plus the title and total row
 	const size_t firstRow = 1;
 	const size_t firstCol = 1;
 
@@ -615,15 +615,39 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 		iter->value().set(boost::variant2::get<std::uint64_t>(row[3]));
 		iter++;
 
-		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[4])));
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[4]));
 		iter++;
 
-		iter->value().set(boost::variant2::get<std::uint64_t>(row[5]));
+		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[5])));
+		iter++;
+
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[6]));
 		iter++;
 		
-		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[6])));
+		iter->value().set(fmt::format("{:cu}",boost::variant2::get<pof::base::data::currency_t>(row[7])));
 		iter++;
 	}
+
+	//total
+	iter++;
+
+	iter->value().set(mTotalClosingStock->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalExpiredStock->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalInventoryIn->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmountIn->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalInventoryOut->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmountOut->GetLabel().ToStdString());
+	iter++;
 
 	doc.save();
 	doc.close();
@@ -665,7 +689,7 @@ void pof::ReportsDialog::EODExcel()
 	auto wks = doc.workbook().worksheet("Sheet1");
 	wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
 	const size_t colSize = mListReport->GetColumnCount();
-	const size_t rowSize = datastore.value().size();
+	const size_t rowSize = datastore.value().size() + 2; //plus title and total row
 	const size_t firstRow = 1;
 	const size_t firstCol = 1;
 
@@ -698,6 +722,15 @@ void pof::ReportsDialog::EODExcel()
 		iter->value().set(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(row[4])));
 		iter++;
 	}
+	//totals
+	iter++; //skip two columns
+	iter++; //skip two columns
+
+	iter->value().set(mTotalQuantity->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmount->GetLabel().ToStdString());
+	iter++;
 
 	doc.save();
 	doc.close();
