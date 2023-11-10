@@ -168,6 +168,7 @@ namespace pof {
 		wxStaticText* mPatientNameText = nullptr;
 		wxStaticText* mDobText = nullptr;
 		wxStaticText* mGenderText = nullptr;
+		wxStaticText* mPhoneText = nullptr;
 
 		wxDataViewCtrl* mMedHistoryView;
 

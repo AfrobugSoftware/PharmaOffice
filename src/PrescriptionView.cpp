@@ -85,7 +85,9 @@ void pof::PrescriptionView::CreateDispensaryToolBar()
 {
 	auto bar = new wxAuiToolBar(this, ID_DISPENSARY_TOOL_BAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW);
 	bar->SetToolBitmapSize(wxSize(16, 16));
-	bar->AddTool(ID_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"));
+	bar->AddTool(ID_BACK, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"));
+	bar->AddSpacer(2);
+	bar->AddSeparator();
 	bar->AddStretchSpacer();
 	bar->AddTool(ID_ADD_DRUG_TO_PRESCRIPTION, "Add Drug To Prescription", wxArtProvider::GetBitmap("action_add"));
 	bar->AddTool(ID_SHOW_PATIENT_FILE, "Show Patient File", wxArtProvider::GetBitmap("folder"));

@@ -169,6 +169,20 @@ void pof::PatientView::CreateViews()
 	mGenderText->Wrap(-1);
 	bSizer4->Add(mGenderText, 0, wxALL, 5);
 
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mPhoneText = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mPhoneText->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mPhoneText->Wrap(-1);
+	bSizer4->Add(mPhoneText, 0, wxALL, 5);
+
+
+
+
 	mSPanel->SetSizer(bSizer4);
 	mSPanel->Layout();
 	bSizer4->Fit(mSPanel);
@@ -543,6 +557,7 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
 	mDobText->SetLabelText(fmt::format("Date of birth:  {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
 	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
+	mPhoneText->SetLabelText(fmt::format("Phone no: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER])));
 	mSPanel->Thaw();
 	mSPanel->Layout();
 	mSPanel->Refresh();
@@ -584,6 +599,7 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 		auto vec = prodSearch.GetSelectedProducts();
 		auto& puuid = boost::variant2::get<pof::base::data::duuid_t>
 					(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]);
+		auto today = pof::base::data::clock_t::now();
 		for (auto& prod : vec) {
 			pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(prod.get().first[pof::ProductManager::PRODUCT_UUID]);
 			pof::base::data::row_t row;
@@ -595,7 +611,6 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 				continue;
 			}
 			v.resize(pof::PatientManager::MED_MAX);
-			auto today = pof::base::data::clock_t::now();
 			auto& vs = prod.get().first;
 
 			v[pof::PatientManager::MED_PRODUCT_UUID] = pid;
@@ -656,6 +671,37 @@ void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
 {
 	pof::PackView pk(this, true, wxID_ANY, wxT("Add Pack to patient"));
 	if (pk.ShowModal() != wxID_OK) return;
+	auto values = pk.GetPackProducts();
+	if (values.empty()) return;
+	auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
+	auto& puuid = boost::variant2::get<pof::base::data::duuid_t>
+		(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]);
+	wxBusyCursor cursor;
+	auto today = pof::base::data::clock_t::now();
+	for (auto& p : values) {
+		if (std::ranges::any_of(datastore, [&](pof::base::data::row_t& item) -> bool {
+			return boost::variant2::get<pof::base::data::duuid_t>(item.first[pof::PatientManager::MED_PRODUCT_UUID]) == std::get<1>(p); }))
+		{
+			continue;
+		}
+		pof::base::data::row_t row;
+		auto& v = row.first;
+		v.resize(pof::PatientManager::MED_MAX);
+
+		v[pof::PatientManager::MED_PRODUCT_UUID] = std::get<1>(p);
+		v[pof::PatientManager::MED_PATIENT_UUID] = puuid;
+		v[pof::PatientManager::MED_NAME] = std::get<2>(p);
+		v[pof::PatientManager::MED_PURPOSE] = ""s;
+		v[pof::PatientManager::MED_OUTCOME] = ""s;
+		v[pof::PatientManager::MED_STOCK] = std::get<3>(p);
+		v[pof::PatientManager::MED_DIR_FOR_USE_QUANTITY] = static_cast<std::uint64_t>(0);
+		v[pof::PatientManager::MED_DIR_FOR_USE_STRENGTH] = ""s;
+		v[pof::PatientManager::MED_DURATION] = static_cast<std::uint64_t>(0);
+		v[pof::PatientManager::MED_START_DATE] = today;
+		v[pof::PatientManager::MED_STOP_DATE] = today + date::days(1);
+
+		wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
+	}
 
 }
 

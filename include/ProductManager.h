@@ -298,9 +298,9 @@ namespace pof {
 		using packDescType = std::tuple<pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t>;
-		using packType = std::tuple<pof::base::data::duuid_t,
-					pof::base::data::duuid_t,
-					pof::base::data::text_t,
+		using packType = std::tuple<pof::base::data::duuid_t, //pack uuid
+					pof::base::data::duuid_t, //product uuid
+					pof::base::data::text_t, //product name
 					std::uint64_t, //quantity
 					std::uint64_t, //package size
 					pof::base::data::currency_t, //current price

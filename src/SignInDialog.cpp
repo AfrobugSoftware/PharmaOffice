@@ -8,7 +8,7 @@ END_EVENT_TABLE()
 
 
 
-pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, wxT("PharmaOffice - Personal"), pos, size, style)
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	
