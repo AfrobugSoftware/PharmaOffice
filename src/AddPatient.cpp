@@ -73,7 +73,7 @@ pof::AddPatient::AddPatient( wxWindow* parent, wxWindowID id, const wxString& ti
 	mDOBValue = new wxDatePickerCtrl( m_scrolledWindow2, wxID_ANY, wxDateTime::Now(), wxDefaultPosition, wxDefaultSize, wxDP_DROPDOWN);
 	fgSizer2->Add( mDOBValue, 0, wxALL|wxEXPAND, 5 );
 	
-	mGenderLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Date of birth"), wxDefaultPosition, wxDefaultSize, 0);
+	mGenderLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Gender"), wxDefaultPosition, wxDefaultSize, 0);
 	mGenderLabel->Wrap(-1);
 	fgSizer2->Add(mGenderLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 

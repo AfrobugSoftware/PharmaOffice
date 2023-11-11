@@ -9,6 +9,7 @@ EVT_TOOL(wxID_APPLY, pof::AuditView::OnApplyFilter)
 EVT_TOOL(wxID_FORWARD, pof::AuditView::OnNextPage)
 EVT_TOOL(wxID_BACKWARD, pof::AuditView::OnBackPage)
 EVT_TOOL(pof::AuditView::ID_COLOUR_TYPE, pof::AuditView::OnColourAuditType)
+EVT_TOOL(pof::AuditView::ID_DOWNLOAD_EXCEL, pof::AuditView::OnDownloadExcel)
 END_EVENT_TABLE()
 
 
@@ -197,6 +198,75 @@ void pof::AuditView::OnColourAuditType(wxCommandEvent& evt)
 
 void pof::AuditView::OnDownloadExcel(wxCommandEvent& evt)
 {
+	auto rel = wxGetApp().mAuditManager.GetAuditDump();
+	if (!rel.has_value()) {
+		wxMessageBox("Could not get audit logs from database, an error occured", "Audit", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	if (rel->empty()) {
+		wxMessageBox("No audit data", "Audit", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxFileDialog dialog(this, "Save audit excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Audit Logs");
+	const size_t colSize = 4;
+	const size_t rowSize = rel.value().size() + 1; //plus title row
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+
+	writeHeader("DATE/TIME");
+	writeHeader("TYPE");
+	writeHeader("USERNAME");
+	writeHeader("LOG");
+	auto& v = rel.value();
+
+	for (auto it = v.begin(); it != v.end() && iter != range.end(); it++) {
+		auto& row = *it;
+		iter->value().set(fmt::format("{:%d/%m/%Y %H:%M:%S}", std::get<1>(row)));
+		iter++;
+
+		iter->value().set(pof::AuditManager::types[std::get<2>(row)]);
+		iter++;
+
+		iter->value().set(std::get<3>(row));
+		iter++;
+
+		iter->value().set(std::get<4>(row));
+		iter++;
+	}
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Audit", wxICON_INFORMATION | wxOK);
 }
 
 void pof::AuditView::OnAuiThemeChange()

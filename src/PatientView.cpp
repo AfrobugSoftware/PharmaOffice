@@ -204,6 +204,7 @@ void pof::PatientView::CreateViews()
 	mMedTools->SetBackgroundColour(*wxWHITE); //add to theme
 
 	mMedTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select medications", wxITEM_CHECK);
+	mMedTools->AddSeparator();
 	mMedTools->AddStretchSpacer();
 	auto today = pof::base::data::clock_t::now();
 
@@ -212,7 +213,7 @@ void pof::PatientView::CreateViews()
 
 //	mStartDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
 //	mStopDatePicker->SetRange(wxDateTime::Now(), wxDateTime{}); //set the range for the start date
-
+	
 	mMedTools->AddControl(new wxStaticText(mMedTools, wxID_ANY, "Start:"), "Start date");
 	mMedTools->AddSpacer(10);
 	mMedTools->AddControl(mStartDatePicker);
@@ -902,7 +903,7 @@ void pof::PatientView::OnDateChanged(wxDateEvent& evt)
 	}
 	auto item = mCurrentMedicationView->GetSelection();
 	if (!item.IsOk()) {
-		mPatientInfoBar->ShowMessage("No Medication selected for date chagne", wxICON_INFORMATION | wxOK);
+		mPatientInfoBar->ShowMessage("No Medication selected for date change", wxICON_INFORMATION | wxOK);
 		return;
 	} 
 	const wxDateTime& dt = evt.GetDate();
@@ -1146,7 +1147,7 @@ void pof::PatientView::OnSellCurrentMedication(wxCommandEvent& evt)
 			mPatientInfoBar->ShowMessage("Could not add medications to sale successfully, please check stock and expiry of the products in store", wxICON_ERROR);
 		}
 		else {
-			mPatientInfoBar->ShowMessage("Medication added to sale successfully", wxICON_INFORMATION);
+			mPatientInfoBar->ShowMessage(fmt::format("medications added to sale successfully"), wxICON_INFORMATION);
 		}
 	}
 }

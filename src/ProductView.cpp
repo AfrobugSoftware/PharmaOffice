@@ -1362,7 +1362,7 @@ void pof::ProductView::CreateDataView()
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
 	mInfoBar = new wxInfoBar(panel, wxID_ANY);
-	
+	mInfoBar->SetAutoLayout(true);
 
 	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	auto& pm = wxGetApp().mProductManager;
@@ -1401,7 +1401,7 @@ void pof::ProductView::CreateToolBar()
 	mFuncDropItem->SetHasDropDown(true);
 	m_auiToolBar1->AddSeparator();
 
-	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
+	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(350, -1), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	m_searchCtrl1->ShowSearchButton(true);
 #endif

@@ -211,6 +211,29 @@ std::optional<size_t> pof::AuditManager::GetDataSize() const
 	}
 	return size;
 }
+std::optional<pof::base::relation<std::uint64_t, pof::base::data::datetime_t, std::uint64_t, pof::base::data::text_t, pof::base::data::text_t>> pof::AuditManager::GetAuditDump() const
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT * FROM audit;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
+}
 void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
 {
 	std::uint64_t at = static_cast<std::uint64_t>(type);

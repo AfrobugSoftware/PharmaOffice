@@ -56,6 +56,11 @@ namespace pof
 		void CreateAuditDataView();
 		std::optional<size_t> GetDataSize(auditType type) const; 
 		std::optional<size_t> GetDataSize() const;
+		std::optional<pof::base::relation<std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t>> GetAuditDump() const;
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurrentAccount;

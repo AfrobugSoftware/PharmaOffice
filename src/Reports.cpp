@@ -651,7 +651,7 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 
 	doc.save();
 	doc.close();
-
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ReportsDialog::EODExcel()
@@ -734,6 +734,8 @@ void pof::ReportsDialog::EODExcel()
 
 	doc.save();
 	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+
 }
 
 void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
