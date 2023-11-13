@@ -365,6 +365,20 @@ void pof::SaleManager::CreateSaveSaleTable()
 	}
 }
 
+void pof::SaleManager::CreateSaleLabelTable()
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sale_label (uuid blob, labels text);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
 bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
@@ -422,6 +436,68 @@ bool pof::SaleManager::RemoveSaveSale(const boost::uuids::uuid& saleID)
 
 		status = mLocalDatabase->execute(*stmt);
 		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::SaleManager::SaveLabels(const boost::uuids::uuid& saleID, const std::string& labelData)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(INSERT INTO sale_label VALUES (?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID, labelData));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+std::optional<std::string> pof::SaleManager::LoadLabels(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT labels FROM sale_lable WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::string>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+		else return std::get<0>(*(rel->begin()));
+	}
+
+	return std::nullopt;
+}
+
+bool pof::SaleManager::RemoveLabels(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM sale_label WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 		}
 		mLocalDatabase->finalise(*stmt);

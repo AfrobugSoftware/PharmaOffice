@@ -70,8 +70,12 @@ namespace pof {
 
 		//SAVE SALE
 		void CreateSaveSaleTable();
+		void CreateSaleLabelTable();
 		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
 		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
+		bool SaveLabels(const boost::uuids::uuid& saleID, const std::string& labelData);
+		std::optional<std::string> LoadLabels(const boost::uuids::uuid& saleID);
+		bool RemoveLabels(const boost::uuids::uuid& saleID);
 		bool SaveSale(const boost::uuids::uuid& saleID); //pushes the current sale in mSaleData; 
 		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
 		bool CheckIfSaved(const boost::uuids::uuid& saleID);

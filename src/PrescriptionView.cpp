@@ -60,9 +60,9 @@ void pof::PrescriptionView::CreateToolBar()
 	mPrescriptionDate = new wxDatePickerCtrl(bar, ID_PRESCRIPTION_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	bar->AddControl(mPrescriptionDate, wxT("Prescription Date"));
 	bar->AddSpacer(10);
-	bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add Fake Prescription"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR));
-	bar->AddTool(ID_SUBSCRIBE, wxT("Connect"), wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_TOOLBAR));
-	bar->AddTool(ID_REFRESH, wxT("Refresh"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR));
+	bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add Fake Prescription"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR, wxSize(16,16)));
+	bar->AddTool(ID_SUBSCRIBE, wxT("Connect"), wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_TOOLBAR, wxSize(16,16)));
+	bar->AddTool(ID_REFRESH, wxT("Refresh"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
 	bar->Realize();
 	mPanelManager->AddPane(bar, wxAuiPaneInfo().Name(wxT("Tool")).Caption(wxT("Tool bar")).ToolbarPane().Top()
 		.Resizable().MinSize(wxSize(-1, 30)).DockFixed()

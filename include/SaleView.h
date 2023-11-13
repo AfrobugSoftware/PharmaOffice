@@ -30,6 +30,8 @@
 #include <ranges>
 #include <unordered_map>
 #include <numeric>
+#include <nlohmann/json.hpp>
+
 
 namespace pof
 {
@@ -86,7 +88,8 @@ namespace pof
 		wxIntProperty* stock = nullptr;
 		wxStringProperty* strength = nullptr;
 		wxStringProperty* strength_type = nullptr;
-		wxArrayStringProperty* warning = nullptr;
+		wxEditEnumProperty* warning = nullptr;
+		wxIntProperty* packageSize = nullptr;
 
 
 
@@ -120,6 +123,15 @@ namespace pof
 			ID_FOCUS_SCAN,
 		};
 
+		struct LabelInfo {
+			pof::base::data::text_t mProductName;
+			pof::base::data::text_t mDirForUse;
+			pof::base::data::text_t mWarning;
+			pof::base::data::text_t mStrength;
+			pof::base::data::text_t mStrengthType;
+			std::uint64_t mQuantity = 0; //quantity * package size
+		};
+		std::vector<LabelInfo> mProductLabels;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();
@@ -165,6 +177,7 @@ namespace pof
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);
 		void OnScanBarCode(wxCommandEvent& evt);
+		void OnProductPropertyChanged(wxPropertyGridEvent& evt);
 	
 
 		bool CheckInStock(const pof::base::data::row_t& product);
@@ -176,9 +189,13 @@ namespace pof
 		void LoadProductDetails(const pof::base::data::row_t& product);
 		void OnProductUpdate(pof::base::data::const_iterator iter);
 		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
+		void SaveLabelInfo(const pof::base::data::duuid_t& suid);
+		void ReloadLabelInfo(const pof::base::data::duuid_t& suid);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
+
+		//used to select label data
 
 		DECLARE_EVENT_TABLE();
 	};

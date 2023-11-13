@@ -549,8 +549,10 @@ void pof::Application::CreateTables()
 	mProductManager.CreateWarningTable();
 	mProductManager.CreateExpiredStockTable();
 	mProductManager.CreateActionTable();
+	
 	mSaleManager.CreateSaleTable();
 	mSaleManager.CreateSaveSaleTable();
+	mSaleManager.CreateSaleLabelTable();
 
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();

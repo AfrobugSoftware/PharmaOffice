@@ -531,6 +531,7 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 	else {
 		
 	}
+	UpdateSummary();
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Add product(s) for stock check");
 }
 

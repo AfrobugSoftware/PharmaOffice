@@ -261,11 +261,11 @@ void pof::Printout::SetDefaultFonts()
 		break;
 	}
 
-	mPharmacyNameFont = std::move(wxFont(wxFontInfo(headerSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mHeaderFont = std::move(wxFont(wxFontInfo(headerSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mBodyFont = std::move(wxFont(wxFontInfo(bodySize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mFooterFont = std::move(wxFont(wxFontInfo(footerSize).AntiAliased().Italic().Family(wxFONTFAMILY_SWISS)));
-	mContactFont = std::move(wxFont(wxFontInfo(contactSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
-	mInoiceHeaderFont = std::move(wxFont(wxFontInfo(invoiceHeaderSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mPharmacyNameFont = std::move(wxFont(wxFontInfo(headerSize).Bold().AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
+	mHeaderFont = std::move(wxFont(wxFontInfo(headerSize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
+	mBodyFont = std::move(wxFont(wxFontInfo(bodySize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
+	mFooterFont = std::move(wxFont(wxFontInfo(footerSize).AntiAliased().Italic().Family(wxFONTFAMILY_TELETYPE)));
+	mContactFont = std::move(wxFont(wxFontInfo(contactSize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
+	mInoiceHeaderFont = std::move(wxFont(wxFontInfo(invoiceHeaderSize).Bold().AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
 }
 

@@ -26,6 +26,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
 	EVT_SEARCH(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
+	EVT_PG_CHANGED(pof::SaleView::ID_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnProductPropertyChanged)
 	//EVT_UPDATE_UI(pof::SaleView::ID_ACTIVE_UI_TEXT, pof::SaleView::OnSaleUuidTextUI)
 END_EVENT_TABLE()
 
@@ -98,7 +99,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16,16)), "Product packs");
 	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"), "Print labels of product sold", wxITEM_CHECK);
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"), "Remove product from sale list");
-	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("product view"), wxArtProvider::GetBitmap("pen"), "View details about the product");
+	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("pen"), "View details about the product");
 	
 	mTopTools->Realize();
 
@@ -367,13 +368,14 @@ void pof::SaleView::CreateSearchPopup()
 void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
-	productName = new wxStringProperty("PRODUCT NAME");
-	strength = new wxStringProperty("UNIT STRENGTH");
-	strength_type = new wxStringProperty("STRENGTH TYPE");
-	genArray = new wxStringProperty("PRODUCT GENERIC NAME");
-	dirArray = new wxEditEnumProperty("DIRECTION FOR USE");
-	stock = new wxIntProperty("CURRENT STOCK");
-	warning = new wxArrayStringProperty("WARNING");
+	productName = new wxStringProperty("PRODUCT NAME", "0");
+	strength = new wxStringProperty("UNIT STRENGTH", "1");
+	strength_type = new wxStringProperty("STRENGTH TYPE", "2");
+	genArray = new wxStringProperty("PRODUCT GENERIC NAME", "3");
+	dirArray = new wxEditEnumProperty("DIRECTION FOR USE", "4");
+	stock = new wxIntProperty("CURRENT STOCK", "5");
+	warning = new wxEditEnumProperty("WARNING", "6");
+	packageSize = new wxIntProperty("PACKAGE SIZE", "7");
 
 	stock->Enable(false);
 	//warning->Enable(false);
@@ -385,15 +387,8 @@ void pof::SaleView::CreateProductDetails()
 	mPropertyManager->Append(dirArray);
 	mPropertyManager->Append(stock);
 	mPropertyManager->Append(warning);
+	mPropertyManager->Append(packageSize);
 
-	mProperties.insert({ genArray, [&](const wxVariant& value) {
-				
-	} });
-
-	mProperties.insert({ dirArray, [&](const wxVariant& value) {
-			
-	}});
-	
 	//auto grid = mPropertyManager->GetGrid();
 	mPropertyManager->SetBackgroundColour(*wxWHITE);
 	mPropertyManager->SetCaptionBackgroundColour(wxTheColourDatabase->Find("Aqua"));
@@ -486,6 +481,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 		mDataPane->Layout();
 		mDataPane->Refresh();
 	}
+	mProductLabels.clear();
 	ResetSaleDisplay();
 	mCurSaleuuid = boost::uuids::nil_uuid();
 	SetActiveSaleIdText(mCurSaleuuid);
@@ -555,6 +551,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	wxGetApp().mSaleManager.StoreSale();
 
 	//Print receipt
+	SaveLabelInfo(mCurSaleuuid);
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
 	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
 }
@@ -577,6 +574,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			mDataPane->Layout();
 			mDataPane->Refresh();
 		}
+		mProductLabels.clear(); //remove all the label data
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		mCurSaleuuid = boost::uuids::nil_uuid();
@@ -587,6 +585,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 	case pof::PrintManager::REPRINT_RECEIPT:
 		if (mCurSaleuuid != boost::uuids::nil_uuid()) {
 			status = wxGetApp().mSaleManager.RestoreSaveSale(mCurSaleuuid);
+			wxGetApp().mSaleManager.RemoveLabels(mCurSaleuuid);
 		}
 		else {
 			wxGetApp().mSaleManager.GetSaleData()->Clear();
@@ -689,6 +688,7 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 
 	m_dataViewCtrl1->Freeze();
 	if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+	mProductLabels.erase(std::next(mProductLabels.begin(), idx));
 	wxGetApp().mSaleManager.GetSaleData()->RemoveData(item);
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Refresh();
@@ -835,6 +835,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<5>(prod) * static_cast<double>(std::get<3>(prod));
 
 			CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::PRODUCT_UUID]));
+			mProductLabels.emplace_back(LabelInfo{});
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		UpdateSaleDisplay();
@@ -868,6 +869,8 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 			std::ostringstream str;
 			mCurSaleuuid = dialog.GetSaveSaleId();
 			str << mCurSaleuuid;
+			ReloadLabelInfo(mCurSaleuuid);
+			wxGetApp().mSaleManager.RemoveLabels(mCurSaleuuid);
 			//remove from save
 			wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 			UpdateSaleDisplay();
@@ -1013,6 +1016,7 @@ void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
 	//we have an active sale 
 	if (mCurSaleuuid != boost::uuids::nil_uuid()) {
 		status = wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
+		SaveLabelInfo(mCurSaleuuid);
 		if (!status) {
 			spdlog::error("Failed to save sale for reprint");
 			mInfoBar->ShowMessage("Failed to reprint last sale");
@@ -1021,6 +1025,7 @@ void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
 	}
 	//restore the sale we want to reprint
 	status = wxGetApp().mSaleManager.RestoreLastSale();
+
 	if (!status) {
 		spdlog::error("Failed to save sale for reprint");
 		mInfoBar->ShowMessage("Failed to reprint last sale");
@@ -1164,6 +1169,7 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			v[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(val.first[pof::ProductManager::PRODUCT_UNIT_PRICE]) *
 				static_cast<double>(boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]));
 
+			mProductLabels.emplace_back(LabelInfo{});
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1234,6 +1240,8 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			vS[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]) * 
 					static_cast<double>(boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]));
+			
+			mProductLabels.emplace_back(LabelInfo{});
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1319,6 +1327,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			vS[pof::SaleManager::PRODUCT_QUANTITY] = static_cast<std::uint64_t>(1);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 
+			mProductLabels.emplace_back(LabelInfo{});
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1332,6 +1341,63 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		return;
 	}
 
+
+}
+
+void pof::SaleView::OnProductPropertyChanged(wxPropertyGridEvent& evt)
+{
+	/*
+	* productName = new wxStringProperty("PRODUCT NAME", "0");
+	strength = new wxStringProperty("UNIT STRENGTH", "1");
+	strength_type = new wxStringProperty("STRENGTH TYPE", "2");
+	genArray = new wxStringProperty("PRODUCT GENERIC NAME", "3");
+	dirArray = new wxEditEnumProperty("DIRECTION FOR USE", "4");
+	stock = new wxIntProperty("CURRENT STOCK", "5");
+	warning = new wxEditEnumProperty("WARNING", "6");
+	packageSize = new wxIntProperty("PACKAGE SIZE", "7");
+	*/
+
+	wxPGProperty* props = evt.GetProperty();
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk() || !props || props->IsCategory()) return;
+	try {
+		const size_t n = boost::lexical_cast<size_t>(evt.GetPropertyName());
+		const wxVariant& v = evt.GetPropertyValue();
+		const size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& labelInfo = mProductLabels[idx];
+		switch (n)
+		{
+		case 0:
+			labelInfo.mProductName = std::move(v.GetString().ToStdString());
+			break;
+		case 1:
+			labelInfo.mStrength = std::move(v.GetString().ToStdString());
+			break;
+		case 2:
+			labelInfo.mStrengthType = std::move(v.GetString().ToStdString());
+			break;
+		case 4:
+		{
+			auto& arr = props->GetChoices();
+			labelInfo.mDirForUse = std::move(arr.GetLabel(v.GetInteger()).ToStdString());
+		}
+			break;
+		case 5:
+		{
+			auto& arr = props->GetChoices();
+			labelInfo.mWarning = std::move(arr.GetLabel(v.GetInteger()).ToStdString());
+		}
+			break;
+		case 6:
+			break;
+		default:
+			break;
+		}
+
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 
 }
 
@@ -1383,6 +1449,8 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 					* static_cast<double>(boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]));
 
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(prodIter->first[pof::ProductManager::PRODUCT_UUID]));
+		
+		mProductLabels.emplace_back(LabelInfo{});
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 
 	}
@@ -1428,15 +1496,15 @@ bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
 	}
 	values.Shrink();
 	mCritical.shrink_to_fit();
-	if (!values.empty()) warning->SetValue(wxVariant(std::move(values)));
-	else warning->SetValue(wxVariant{});
+	wxPGChoices choices;
+	choices.Set(values);
+	warning->SetChoices(std::move(choices));
 	if (wxGetApp().bAlertCriticalWarnings && !mCritical.empty()) {
 		auto colorbg = mInfoBar->GetBackgroundColour();
 		mDataPane->Layout();
 		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(mCritical, ",")), wxICON_WARNING);
 		mInfoBar->Layout();
 		mDataPane->Refresh();
-
 	}
 	else {
 		mInfoBar->Dismiss();
@@ -1531,6 +1599,9 @@ void pof::SaleView::LoadProductDetails(const pof::base::data::row_t& product)
 		auto& stren_type = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
 		strength_type->SetValue(stren_type);
 
+		std::uint64_t pk = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
+		packageSize->SetValue(static_cast<int>(pk));
+
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 
 	}
@@ -1590,6 +1661,62 @@ void pof::SaleView::SetActiveSaleIdText(const boost::uuids::uuid& saleId)
 	mBottomTools->Realize();
 	mBottomTools->Refresh();
 	this->Layout();
+}
+
+void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
+{
+	mProductLabels.clear();
+	auto labels = wxGetApp().mSaleManager.LoadLabels(suid);
+	if (!labels.has_value()) {
+		wxMessageBox("Cannot load sale labels", "Sale", wxICON_ERROR | wxOK);
+		return;
+	}
+	nl::json json = nl::json::parse(labels.value());
+	try {
+		if (!json.is_array()) {
+			wxMessageBox("Invalid label format in sale database", "Sale", wxICON_ERROR | wxOK);
+			return;
+		}
+		for (auto iter = json.begin(); iter != json.end(); iter++) {
+			auto& obj = *iter;
+			LabelInfo info;
+			info.mProductName = static_cast<std::string>(obj["productName"]);
+			info.mDirForUse = static_cast<std::string>(obj["dirForUse"]);
+			info.mWarning = static_cast<std::string>(obj["warning"]);
+			info.mQuantity = static_cast<std::uint64_t>(obj["quantity"]);
+			info.mStrength = static_cast<std::string>(obj["strength"]);
+			info.mStrengthType = static_cast<std::string>(obj["strengthType"]);
+
+			mProductLabels.emplace_back(std::move(info));
+		}
+	}
+	catch (nl::json::exception& exp) {
+		spdlog::error(exp.what());
+		return;
+	}
+
+
+}
+
+void pof::SaleView::SaveLabelInfo(const pof::base::data::duuid_t& suid)
+{
+	if (mProductLabels.empty()) return;
+	nl::json arr = nl::json::array();
+	for (const auto& d : mProductLabels) {
+		auto obj = nl::json::object();
+		obj["productName"] = d.mProductName;
+		obj["dirForUse"] = d.mDirForUse;
+		obj["warning"] = d.mWarning;
+		obj["quantity"] = d.mQuantity;
+		obj["strength"] = d.mStrength;
+		obj["strengthType"] = d.mStrengthType;
+
+		arr.push_back(std::move(obj));
+	}
+	if (!wxGetApp().mSaleManager.SaveLabels(suid, arr.dump())) {
+		spdlog::error("Failed to save label information");
+	}
+	spdlog::info(arr.dump());
 }
 
 

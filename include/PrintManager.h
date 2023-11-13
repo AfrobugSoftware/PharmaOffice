@@ -17,6 +17,7 @@ namespace pof {
 		enum {
 			RECEIPT,
 			REPRINT_RECEIPT,
+			LABELS,
 		};
 
 		PrintManager();
