@@ -26,6 +26,7 @@
 #include "SearchPopup.h"
 #include "SaveSaleDialog.h"
 #include "database.h"
+#include "LabelInfo.h"
 
 #include <ranges>
 #include <unordered_map>
@@ -123,15 +124,7 @@ namespace pof
 			ID_FOCUS_SCAN,
 		};
 
-		struct LabelInfo {
-			pof::base::data::text_t mProductName;
-			pof::base::data::text_t mDirForUse;
-			pof::base::data::text_t mWarning;
-			pof::base::data::text_t mStrength;
-			pof::base::data::text_t mStrengthType;
-			std::uint64_t mQuantity = 0; //quantity * package size
-		};
-		std::vector<LabelInfo> mProductLabels;
+		std::vector<pof::LabelInfo> mProductLabels;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();
@@ -187,6 +180,7 @@ namespace pof
 		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);
+		void LoadLabelDetails(LabelInfo& info, const pof::base::data::row_t& product);
 		void OnProductUpdate(pof::base::data::const_iterator iter);
 		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
 		void SaveLabelInfo(const pof::base::data::duuid_t& suid);

@@ -45,6 +45,30 @@ void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 	}else PrintJob(parent, po);
 }
 
+void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent)
+{
+	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
+	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	po->mLabels = labels;
+	po2->mLabels = labels;
+	
+	po->minPage = 1;
+	po->maxPage = labels.size();
+	po->selPageFrom = 1;
+	po->selPageTo = labels.size();
+
+	po2->minPage = 1;
+	po2->maxPage = labels.size();
+	po2->selPageFrom = 1;
+	po2->selPageTo = labels.size();
+
+
+	if (wxGetApp().bShowPreviewOnSale) {
+		Preview(parent, po, po2);
+	}
+	else PrintJob(parent, po);
+}
+
 void pof::PrintManager::PrintJob(wxWindow* parent, wxPrintout* printout)
 {
 	wxPrinter printer(mPrintDialogData.get());

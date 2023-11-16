@@ -1,6 +1,8 @@
 #include "SearchPopup.h"
 BEGIN_EVENT_TABLE(pof::SearchPopup, wxPopupWindow)
 EVT_DATAVIEW_ITEM_ACTIVATED(pof::SearchPopup::ID_DATA_VIEW, pof::SearchPopup::OnDataItemSelected)
+EVT_SET_FOCUS(pof::SearchPopup::OnSetFocus)
+EVT_KILL_FOCUS(pof::SearchPopup::OnKillFocus)
 END_EVENT_TABLE()
 
 
@@ -53,4 +55,17 @@ void pof::SearchPopup::OnDataItemSelected(wxDataViewEvent& evt)
 	sSelectedSignal(mTableModel->GetDatastore()[idx]);
 
 	Dismiss();
+}
+
+void pof::SearchPopup::OnSetFocus(wxFocusEvent& evt)
+{
+	spdlog::info("focus on object");
+	mTable->SetFocus();
+	evt.Skip();
+}
+
+void pof::SearchPopup::OnKillFocus(wxFocusEvent& evt)
+{
+	spdlog::info("focus killed on object");
+	evt.Skip();
 }

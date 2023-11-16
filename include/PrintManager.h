@@ -7,6 +7,7 @@
 #include <wx/msgdlg.h>
 #include <wx/printdlg.h>
 #include "Printout.h"
+#include "LabelInfo.h"
 
 #include <boost/signals2.hpp>
 namespace pof {
@@ -24,9 +25,10 @@ namespace pof {
 		~PrintManager();
 		void PrinterSetup();
 		void PrintSaleReceipt(wxWindow* parent);
+		void PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent);
 		void PrintJob(wxWindow* parent, wxPrintout* printjob);
 		void Preview(wxWindow* parent, wxPrintout* previeout, wxPrintout* printout);
-
+		 
 		size_t gPrintState; 
 		boost::signals2::signal<void(bool, size_t)> printSig;
 		std::unique_ptr<wxPrintDialogData> mPrintDialogData;

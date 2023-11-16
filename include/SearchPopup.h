@@ -24,7 +24,8 @@ namespace pof {
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
 		void OnDataItemSelected(wxDataViewEvent& evt);
-
+		void OnSetFocus(wxFocusEvent& evt);
+		void OnKillFocus(wxFocusEvent& evt);
 
 		wxAuiManager mPopManager;
 		wxDataViewCtrl* mTable = nullptr;

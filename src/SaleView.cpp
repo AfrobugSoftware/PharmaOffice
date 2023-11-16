@@ -97,7 +97,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mTopTools->AddStretchSpacer();
 	
 	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16,16)), "Product packs");
-	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"), "Print labels of product sold", wxITEM_CHECK);
+	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"), "Print labels of product sold");
 	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"), "Remove product from sale list");
 	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("pen"), "View details about the product");
 	
@@ -346,6 +346,10 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 			v[pof::SaleManager::PRODUCT_QUANTITY] = quan;
 			v[pof::SaleManager::PRODUCT_EXT_PRICE] = extPrice;
 			UpdateSaleDisplay();
+
+			//handle productLabelInfo quantity
+			auto& info = mProductLabels[row];
+			info.mQuantity = boost::variant2::get<std::uint64_t>(productIter->first[pof::ProductManager::PRODUCT_PACKAGE_SIZE]) * quan;
 			return true;
 		}
 		catch (const std::exception& exp) {
@@ -552,6 +556,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 
 	//Print receipt
 	SaveLabelInfo(mCurSaleuuid);
+
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
 	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
 }
@@ -744,7 +749,29 @@ void pof::SaleView::OnHideProductViewProperty(wxCommandEvent& evt)
 
 void pof::SaleView::OnPrintAsLabels(wxCommandEvent& evt)
 {
+	//print products as labels
+	if (mProductLabels.empty()) {
+		mInfoBar->ShowMessage("Sale is empty");
+		return;
+	}
+	
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Printing")
+		.Text("Please wait...")
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
 
+
+	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::LABELS;
+	wxGetApp().mPrintManager->PrintLabels(mProductLabels, m_dataViewCtrl1);
 }
 
 void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
@@ -834,8 +861,11 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			vS[pof::SaleManager::PRODUCT_PRICE] = std::get<5>(prod);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = std::get<5>(prod) * static_cast<double>(std::get<3>(prod));
 
+
 			CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::PRODUCT_UUID]));
 			mProductLabels.emplace_back(LabelInfo{});
+			LoadLabelDetails(mProductLabels.back(), *iter);
+			mProductLabels.back().mQuantity *= std::get<3>(prod);
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		UpdateSaleDisplay();
@@ -844,6 +874,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 
 void pof::SaleView::OnFormM(wxCommandEvent& evt)
 {
+	wxMessageBox("Form K is not avaliable in this verision", "Sale", wxICON_INFORMATION | wxOK);
 }
 
 void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
@@ -1085,6 +1116,7 @@ void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
 						mInfoBar->ShowMessage(fmt::format("Failed to reprint sale {}", boost::uuids::to_string(sid)));
 						return;
 					}
+					ReloadLabelInfo(sid);
 					wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
 					wxGetApp().mPrintManager->PrintSaleReceipt(this);
 					return;
@@ -1170,6 +1202,9 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 				static_cast<double>(boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]));
 
 			mProductLabels.emplace_back(LabelInfo{});
+			LoadLabelDetails(mProductLabels.back(), val);
+			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
+
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1242,6 +1277,9 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 					static_cast<double>(boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]));
 			
 			mProductLabels.emplace_back(LabelInfo{});
+			LoadLabelDetails(mProductLabels.back(), row);
+			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]);
+
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1274,7 +1312,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		});
 		if (iter == datastore.end()) {
 
-			wxMessageBox("NO SUCH PRODUCT IN STORE", "SALE PRODUCT", wxICON_WARNING | wxOK);
+			wxMessageBox("Product with barcode does not exists", "SALE PRODUCT", wxICON_WARNING | wxOK);
 			return;
 		}
 		if (CheckExpired(*iter)) {
@@ -1328,6 +1366,8 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
 
 			mProductLabels.emplace_back(LabelInfo{});
+			LoadLabelDetails(mProductLabels.back(), *iter);
+			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]);
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
@@ -1450,7 +1490,9 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(prodIter->first[pof::ProductManager::PRODUCT_UUID]));
 		
+
 		mProductLabels.emplace_back(LabelInfo{});
+		LoadLabelDetails(mProductLabels.back(), *prodIter);
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 
 	}
@@ -1686,6 +1728,7 @@ void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
 			info.mQuantity = static_cast<std::uint64_t>(obj["quantity"]);
 			info.mStrength = static_cast<std::string>(obj["strength"]);
 			info.mStrengthType = static_cast<std::string>(obj["strengthType"]);
+			info.mFormulation = static_cast<std::string>(obj["formulation"]);
 
 			mProductLabels.emplace_back(std::move(info));
 		}
@@ -1696,6 +1739,29 @@ void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
 	}
 
 
+}
+
+void pof::SaleView::LoadLabelDetails(LabelInfo& info, const pof::base::data::row_t& product)
+{
+
+	auto& v = product.first;
+	info.mProductName = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
+		
+	auto& dirForUse = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
+	wxArrayString arrString = SplitIntoArrayString(dirForUse);
+	if (!arrString.empty()) info.mDirForUse = arrString[0].ToStdString();
+
+	info.mStrength = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH]);
+	info.mStrengthType = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+
+	auto warns = wxGetApp().mProductManager.GetWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
+	if (warns && !warns.value().empty()) {
+
+		info.mWarning = (*warns)[0].second;
+	}
+
+	info.mQuantity = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
+	info.mFormulation = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_FORMULATION]);
 }
 
 void pof::SaleView::SaveLabelInfo(const pof::base::data::duuid_t& suid)
@@ -1710,7 +1776,7 @@ void pof::SaleView::SaveLabelInfo(const pof::base::data::duuid_t& suid)
 		obj["quantity"] = d.mQuantity;
 		obj["strength"] = d.mStrength;
 		obj["strengthType"] = d.mStrengthType;
-
+		obj["formulation"] = d.mFormulation;
 		arr.push_back(std::move(obj));
 	}
 	if (!wxGetApp().mSaleManager.SaveLabels(suid, arr.dump())) {

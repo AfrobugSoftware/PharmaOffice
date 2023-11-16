@@ -20,6 +20,7 @@ namespace pof
 		size_t WriteSaleData(double mToLogical, size_t ypos);
 
 		bool DrawSalePrint();
+		bool DrawLabelPrint(int page);
 		void SetDefaultFonts();
 
 		std::string mFooterMessage;
@@ -31,10 +32,16 @@ namespace pof
 		wxFont mContactFont;
 		wxFont mInoiceHeaderFont;
 
-		int leftMargin = 10;
-		int topMargin = 10;
-		int rightMargin = 10;
-
+		int leftMargin = 2;
+		int topMargin = 2;
+		int rightMargin = 2;
+		int pageCount = 1;
+		int minPage = 1;
+		int maxPage = 1;
+		int selPageFrom = 1;
+		int selPageTo = 1;
+		double logUnitsFactor = 0.0;
+		std::vector<LabelInfo> mLabels;
 		wxPrintDialogData* mPrintDialogData;
 	};
 };

@@ -11,14 +11,22 @@ pof::Printout::Printout(wxPrintDialogData* printDlgData, const std::string& titl
 
 bool pof::Printout::OnPrintPage(int page)
 {
-	DrawSalePrint();
+	if (wxGetApp().mPrintManager->gPrintState == pof::PrintManager::LABELS)
+	{
+		DrawLabelPrint(page);
+	}else{
+		DrawSalePrint();
+	}
 	return true;
 }
 
 bool pof::Printout::HasPage(int page)
 {
+	if (wxGetApp().mPrintManager->gPrintState == pof::PrintManager::LABELS)
+	{
+		return (page <= mLabels.size() && page > 0);
+	}
 	return (pageNum == 1);
-
 }
 
 bool pof::Printout::OnBeginDocument(int startPage, int endPage)
@@ -31,11 +39,10 @@ bool pof::Printout::OnBeginDocument(int startPage, int endPage)
 
 void pof::Printout::GetPageInfo(int* minPage, int* maxPage, int* selPageFrom, int* selPageTo)
 {
-	*minPage = 1;
-	*maxPage = 1;
-	*selPageFrom = 1;
-	*selPageTo = 1;
-	//wxPrintout::GetPageInfo(minPage, maxPage, selPageFrom, selPageTo);
+		*minPage = this->minPage;
+		*maxPage = this->maxPage;
+		*selPageFrom = this->selPageFrom;
+		*selPageTo = this->selPageTo;
 }
 
 size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
@@ -224,7 +231,7 @@ bool pof::Printout::DrawSalePrint()
 	GetPageSizePixels(&pageWidth, &pageHeight);
 	
 	double overallScale = scale * w / pageWidth;
-	double logUnitsFactor = ppiPrinterX / (scale * 25.4);
+	logUnitsFactor = ppiPrinterX / (scale * 25.4);
 
 	dc->SetUserScale(overallScale, overallScale);
 
@@ -236,7 +243,92 @@ bool pof::Printout::DrawSalePrint()
 	WriteSaleData(logUnitsFactor, y);
 
 
-	return false;
+	return true;
+}
+
+bool pof::Printout::DrawLabelPrint(int page)
+{
+	wxDC* dc = GetDC();
+
+	int ppiScreenX = 0, ppiScreenY = 0;
+	int ppiPrinterX = 0, ppiPrinterY = 0;
+	GetPPIScreen(&ppiScreenX, &ppiScreenY);
+	GetPPIPrinter(&ppiPrinterX, &ppiPrinterY);
+
+	double scale = double(ppiPrinterX) / ppiScreenX;
+
+	int pageWidth = 0, pageHeight = 0, textX = 0, textY = 0, marginX = 10, marginY = 10;
+	int w = 0, h = 0;
+	dc->GetSize(&w, &h);
+	GetPageSizePixels(&pageWidth, &pageHeight);
+
+	double overallScale = scale * w / pageWidth;
+	logUnitsFactor = ppiPrinterX / (scale * 25.4);
+
+	dc->SetUserScale(overallScale, overallScale);
+
+	dc->SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+	dc->SetBrush(*wxTRANSPARENT_BRUSH);
+
+	auto& info = mLabels[(page - 1)];
+	int pageWidthMM, pageHeightMM;
+	GetPageSizeMM(&pageWidthMM, &pageHeightMM);
+
+
+	int leftMarginLogical = int(logUnitsFactor * leftMargin);
+	int topMarginLogical = int(logUnitsFactor * topMargin);
+	int bottomMarginLogical = int(logUnitsFactor * (pageHeightMM - topMargin));
+	int rightMarginLogical = int(logUnitsFactor * (pageWidthMM - rightMargin));
+	int border = 5;
+	int xPos = 0, yPos = topMarginLogical, xExtent = 0, yExtent = 18;
+	int lineLength = rightMarginLogical - leftMarginLogical;
+	int lineHeight = 18;
+
+	auto date = fmt::format("{:%d-%m-%y}", pof::base::data::clock_t::now());
+
+	wxRect rect(leftMarginLogical, yPos, lineLength, lineHeight);
+	dc->SetFont(mInoiceHeaderFont);
+	dc->DrawRectangle(wxRect(rect.x, rect.y, rect.width, rect.height));
+	dc->DrawLabel(wxGetApp().MainPharmacy->name, rect, wxALIGN_CENTER);
+	
+	dc->GetTextExtent(date, &xExtent, &yExtent);
+	dc->DrawLine(wxPoint((rect.x + rect.width) - xExtent - border , rect.y), wxPoint((rect.x + rect.width) - xExtent - border, rect.y + rect.height));
+	dc->DrawLabel(date, rect, wxALIGN_RIGHT);
+
+	wxRect infoBox; 
+	infoBox.x = rect.x;
+	infoBox.y = rect.y + lineHeight + border;
+	infoBox.width = rect.width;
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+
+	std::transform(info.mFormulation.begin(), info.mFormulation.end(), info.mFormulation.begin(), [&](char c) {
+		return std::tolower(c);
+	});
+	auto st = fmt::format("{}{}", info.mStrength, info.mStrengthType);
+	
+	dc->DrawLabel(fmt::format("Description: {}, {} {}", info.mProductName, st, info.mFormulation), rect, wxALIGN_CENTER);
+
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+
+	dc->DrawLabel(fmt::format("Quantity: {:d}", info.mQuantity), rect, wxALIGN_CENTER);
+
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+
+	dc->DrawLabel(fmt::format("Dosage: {}", info.mDirForUse), rect, wxALIGN_CENTER);
+
+
+	yPos += lineHeight + 10;
+	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+
+	dc->DrawLabel(fmt::format("Warning: {}", info.mWarning), rect, wxALIGN_CENTER);
+
+	infoBox.height = yPos + 5;
+	dc->DrawRectangle(infoBox);
+
+	return true;
 }
 
 void pof::Printout::SetDefaultFonts()
@@ -244,6 +336,7 @@ void pof::Printout::SetDefaultFonts()
 	size_t headerSize = 12, bodySize = 10, footerSize = 10, contactSize = 10, invoiceHeaderSize = 10;
 	if (!mPrintDialogData) return;
 	int ps = mPrintDialogData->GetPrintData().GetPaperId();
+
 	switch (ps)
 	{
 	case wxPAPER_10X14:
@@ -261,11 +354,11 @@ void pof::Printout::SetDefaultFonts()
 		break;
 	}
 
-	mPharmacyNameFont = std::move(wxFont(wxFontInfo(headerSize).Bold().AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
-	mHeaderFont = std::move(wxFont(wxFontInfo(headerSize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
-	mBodyFont = std::move(wxFont(wxFontInfo(bodySize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
-	mFooterFont = std::move(wxFont(wxFontInfo(footerSize).AntiAliased().Italic().Family(wxFONTFAMILY_TELETYPE)));
-	mContactFont = std::move(wxFont(wxFontInfo(contactSize).AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
-	mInoiceHeaderFont = std::move(wxFont(wxFontInfo(invoiceHeaderSize).Bold().AntiAliased().Family(wxFONTFAMILY_TELETYPE)));
+	mPharmacyNameFont = std::move(wxFont(wxFontInfo(headerSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mHeaderFont = std::move(wxFont(wxFontInfo(headerSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mBodyFont = std::move(wxFont(wxFontInfo(bodySize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFooterFont = std::move(wxFont(wxFontInfo(footerSize).AntiAliased().Italic().Family(wxFONTFAMILY_SWISS)));
+	mContactFont = std::move(wxFont(wxFontInfo(contactSize).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mInoiceHeaderFont = std::move(wxFont(wxFontInfo(invoiceHeaderSize).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
 }
 
