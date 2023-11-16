@@ -20,6 +20,7 @@ EVT_LIST_ITEM_RIGHT_CLICK(pof::StockCheck::ID_STOCK_SELECT, pof::StockCheck::OnS
 EVT_MENU(pof::StockCheck::ID_STOCK_CONSUMPTION_PATTERN, pof::StockCheck::OnStockConsumptionPattern)
 EVT_MENU(pof::StockCheck::ID_REMOVE_STOCK, pof::StockCheck::OnRemoveStock)
 EVT_MENU(pof::StockCheck::ID_STOCK_MARK_PROD_AS_COMPLETE, pof::StockCheck::OnMarkAsComplete)
+EVT_MENU(pof::StockCheck::ID_STOCK_UNMARK_AS_COMPLETE, pof::StockCheck::OnUnmarkAsComplete)
 EVT_TOOL(pof::StockCheck::ID_SELECT, pof::StockCheck::OnSelect)
 EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::StockCheck::ID_STOCK_DATA, pof::StockCheck::OnHeaderClicked)
 END_EVENT_TABLE()
@@ -750,9 +751,17 @@ void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)
 
 void pof::StockCheck::OnContextMenu(wxDataViewEvent& evt)
 {
-	if (!evt.GetItem().IsOk()) return;
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
 	wxMenu* menu = new wxMenu;
-	auto mp = menu->Append(ID_STOCK_MARK_PROD_AS_COMPLETE, "Mark product as complete", nullptr);
+	auto& row = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)];
+	std::uint64_t s = boost::variant2::get<std::uint64_t>(row.first[STOCK_STATUS]);
+	if (s == DONE) {
+		auto mp = menu->Append(ID_STOCK_UNMARK_AS_COMPLETE, "Unmark product as complete", nullptr);
+	}
+	else if (s == PENDING) {
+		auto mp = menu->Append(ID_STOCK_MARK_PROD_AS_COMPLETE, "Mark product as complete", nullptr);
+	}
 	auto tt = menu->Append(ID_REMOVE_STOCK, "Remove stock check", nullptr);
 
 	mStockData->PopupMenu(menu);
@@ -851,6 +860,38 @@ void pof::StockCheck::OnMarkAsComplete(wxCommandEvent& evt)
 	}
 	UpdateSummary();
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Marked stock check as complete");
+}
+
+void pof::StockCheck::OnUnmarkAsComplete(wxCommandEvent& evt)
+{
+	auto item = mStockData->GetSelection();
+	if (!item.IsOk()) return;
+	if (date::floor<date::months>(pof::base::data::clock_t::now()) !=
+		date::floor<date::months>(*mSelectedMonth)) {
+		wxMessageBox("Cannot unmark a month that is not the current month", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	mStockData->Freeze();
+	auto& stockCheck = wxGetApp().mProductManager.GetStockCheckData();
+	auto& datastore = stockCheck->GetDatastore();
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(datastore[pof::DataModel::GetIdxFromItem(item)].first[STOCK_PRODUCT_UUID]);
+	if (wxGetApp().mProductManager.UnmarkStockCheckAsDone(puid, *mSelectedMonth)) {
+		boost::variant2::get<std::uint64_t>(datastore[pof::DataModel::GetIdxFromItem(item)].first[STOCK_STATUS]) 
+			= static_cast<std::uint64_t>(PENDING);
+	}
+	else {
+		wxMessageBox("Failed to unmark product as complete", "Stock check", wxICON_INFORMATION | wxOK);
+	}
+	mStockData->Thaw();
+	mStockData->Refresh();
+	UpdateSummary();
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Unmarked stock check as complete");
+
 }
 
 void pof::StockCheck::OnHeaderClicked(wxDataViewEvent& evt)

@@ -286,6 +286,7 @@ namespace pof {
 		bool RemoveStockEntry(const pof::base::data::duuid_t& pid, const pof::base::data::datetime_t& date);
 		bool MarkAllAsDone(pof::base::data::datetime_t month);
 		bool MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
+		bool UnmarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
 		bool CheckIfMonthStarted(const pof::base::data::datetime_t& month);
 		bool CheckIfDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month);
 		std::optional<pof::base::currency> GetShortageCost(pof::base::data::datetime_t month);

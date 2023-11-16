@@ -2179,6 +2179,25 @@ bool pof::ProductManager::MarkStockCheckAsDone(pof::base::data::duuid_t pid, pof
 	return false;
 }
 
+bool pof::ProductManager::UnmarkStockCheckAsDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(UPDATE stock_check SET status = 0 WHERE Months(date) = ? AND prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		auto mth = std::chrono::duration_cast<date::months>(month.time_since_epoch());
+		
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(mth), pid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		mLocalDatabase->finalise(*stmt);
+
+		return status;
+	}
+	return false;
+}
+
 bool pof::ProductManager::CheckIfMonthStarted(const pof::base::data::datetime_t& month)
 {
 	if (mLocalDatabase){

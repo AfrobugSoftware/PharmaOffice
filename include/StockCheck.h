@@ -81,6 +81,7 @@ namespace pof
 					ID_REMOVE_STOCK,
 					ID_STOCK_CONSUMPTION_PATTERN,
 					ID_STOCK_MARK_AS_COMPLETE,
+					ID_STOCK_UNMARK_AS_COMPLETE,
 					ID_STOCK_MARK_PROD_AS_COMPLETE,
 					ID_SELECT,
 			};
@@ -137,6 +138,7 @@ namespace pof
 			void OnStockConsumptionPattern(wxCommandEvent& evt);
 			void OnToolUpdateUI(wxUpdateUIEvent& evt);
 			void OnMarkAsComplete(wxCommandEvent& evt);
+			void OnUnmarkAsComplete(wxCommandEvent& evt);
 			
 			void OnHeaderClicked(wxDataViewEvent& evt);
 			void OnSelect(wxCommandEvent& evt);
