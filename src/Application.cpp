@@ -18,7 +18,24 @@ int test_main(int argc, char** const argv)
 	return 0;
 }
 
+wxArrayString pof::SplitIntoArrayString(const std::string& string)
+{
+	wxArrayString Split;
+	auto pos = string.find_first_of(",");
+	size_t pos2 = 0;
+	if (pos == std::string::npos) {
+		if (!string.empty()) Split.push_back(string);
+		return Split;
+	}
 
+	Split.push_back(std::move(string.substr(0, pos)));
+	while ((pos2 = string.find_first_of(",", pos + 1)) != std::string::npos) {
+		Split.push_back(std::move(string.substr(pos + 1, pos2 - (pos + 1))));
+		pos = pos2;
+	}
+	Split.push_back(std::move(string.substr(pos + 1, string.size() - (pos + 1))));
+	return Split;
+}
 
 pof::Application::Application()
 : gSessionLast(30) {

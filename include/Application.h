@@ -49,6 +49,7 @@ namespace pof {
 
 		return random();
 	}
+	extern wxArrayString SplitIntoArrayString(const std::string& string);
 
 	class Application : public wxApp
 	{

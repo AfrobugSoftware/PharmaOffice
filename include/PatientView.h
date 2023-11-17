@@ -82,6 +82,8 @@ namespace pof {
 			ID_START_DATE_PICKER,
 			ID_STOP_DATE_PICKER,
 			ID_CLEAR_TIMER,
+			ID_ADD_REASON,
+			ID_ADD_OUTCOME,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -142,7 +144,7 @@ namespace pof {
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void RemovePropertyModification();
 		void OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt);
-
+		void OnAddText(wxCommandEvent& evt);
 
 
 		wxAuiManager mManager;

@@ -16,6 +16,8 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_MENU(pof::PatientView::ID_REMOVE_PATIENTS, pof::PatientView::OnRemovePatient)
 	EVT_MENU(pof::PatientView::ID_STOP_PRODUCT, pof::PatientView::OnStopProduct)
 	EVT_MENU(pof::PatientView::ID_REMOVE_PRODUCT, pof::PatientView::OnRemoveMedication)
+	EVT_MENU(pof::PatientView::ID_ADD_OUTCOME, pof::PatientView::OnAddText)
+	EVT_MENU(pof::PatientView::ID_ADD_REASON, pof::PatientView::OnAddText)
 	//search
 	EVT_SEARCH(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchPatient)
 	EVT_SEARCH_CANCEL(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchCleared)
@@ -817,6 +819,8 @@ void pof::PatientView::OnMedicationsContextMenu(wxDataViewEvent& evt)
 	wxMenu* menu = new wxMenu;
 	auto st = menu->Append(ID_STOP_PRODUCT, "Stop medication", nullptr);
 	auto rm = menu->Append(ID_REMOVE_PRODUCT, "Remove medication", nullptr);
+	auto ou = menu->Append(ID_ADD_OUTCOME, "Add outcome", nullptr);
+	auto rs = menu->Append(ID_ADD_REASON, "Add reason", nullptr);
 
 	mCurrentMedicationView->PopupMenu(menu);
 }
@@ -1222,4 +1226,50 @@ void pof::PatientView::RemovePropertyModification()
 void pof::PatientView::OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt)
 {
 	//mPatientDetails->Refresh();
+}
+
+void pof::PatientView::OnAddText(wxCommandEvent& evt)
+{
+	//add reason or out come
+	auto item = mCurrentMedicationView->GetSelection();
+	if (!item.IsOk()) return;
+	wxWindowID d = evt.GetId();
+	mCurrentMedicationView->Freeze();
+	auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
+	switch (d)
+	{
+	case ID_ADD_OUTCOME:
+	{
+		auto& row = datastore[pof::DataModel::GetIdxFromItem(item)];
+		auto& v = boost::variant2::get<pof::base::data::text_t>(row.first[pof::PatientManager::MED_OUTCOME]);
+		auto text = wxGetTextFromUser("Add a possible outcome for this medication", "Add Outcome", v);
+		if (text.empty()) goto exit;
+		
+		row.first[pof::PatientManager::MED_OUTCOME] = text.ToStdString();
+		row.second.second.set(pof::PatientManager::MED_OUTCOME);
+		wxGetApp().mPatientManager.GetPatientMedData()->ItemChanged(item);
+		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, pof::DataModel::GetIdxFromItem(item));
+	}
+		break;
+	case ID_ADD_REASON:
+	{
+		auto& row = datastore[pof::DataModel::GetIdxFromItem(item)];
+		auto& v = boost::variant2::get<pof::base::data::text_t>(row.first[pof::PatientManager::MED_PURPOSE]);
+		auto text = wxGetTextFromUser("Add a possible reason for this medication", "Add Reason", v);
+		if (text.empty()) goto exit;
+
+
+		row.second.second.set(pof::PatientManager::MED_PURPOSE);
+		row.first[pof::PatientManager::MED_PURPOSE] = text.ToStdString();
+
+		wxGetApp().mPatientManager.GetPatientMedData()->ItemChanged(item);
+		wxGetApp().mPatientManager.GetPatientMedData()->Signal(pof::DataModel::Signals::UPDATE, pof::DataModel::GetIdxFromItem(item));
+	}
+	break;
+	default:
+		break;
+	}
+exit:
+	mCurrentMedicationView->Thaw();
+	mCurrentMedicationView->Refresh();
 }
