@@ -492,7 +492,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	if (mInfoBar->IsShown()){
 		mInfoBar->Dismiss();
 	}
-
+	mLocked = false;
 }
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
@@ -559,6 +559,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
 	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
+	mLocked = false;
 }
 
 void pof::SaleView::OnSaleComplete(bool status, size_t printState)
@@ -617,6 +618,7 @@ void pof::SaleView::OnSave(wxCommandEvent& evt)
 		return;
 	}
 	wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
+	SaveLabelInfo(mCurSaleuuid);
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Saved Sale: {}", str.str()));
 	mInfoBar->ShowMessage(fmt::format("{} saved successfully", str.str()), wxICON_INFORMATION);
 }
@@ -776,6 +778,10 @@ void pof::SaleView::OnPrintAsLabels(wxCommandEvent& evt)
 
 void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 {
+	if (mLocked){
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
 	pof::PackView dialog(this, true);
 	if (dialog.ShowModal() == wxID_OK) {
 		wxBusyCursor cursor;
@@ -879,6 +885,10 @@ void pof::SaleView::OnFormM(wxCommandEvent& evt)
 
 void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 {
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
 	auto saveSales = wxGetApp().mSaleManager.GetSavedSales();
 	if (!saveSales.has_value()) {
 		wxMessageBox("Cannot open save sales, critical error, please call admin", "Sales", wxICON_ERROR | wxOK);
@@ -950,6 +960,11 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 {
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
 		wxMessageBox("User account cannot perform this function", "Return", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
 		return;
 	}
 
@@ -1144,6 +1159,11 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 	auto& meta = dat.GetMeta();
 	auto& row = dat.GetSetData();
 
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+
 	if (row.has_value()) {
 		auto& val = row.value();
 		bool status = CheckInStock(val);
@@ -1217,6 +1237,11 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 
 void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 {
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+
 	try {
 		auto& v = row.first;
 		bool status = CheckInStock(row);
@@ -1295,6 +1320,11 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 
 void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 {
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+
 	auto value = evt.GetString().ToStdString();
 	if (value.empty()) return;
 	constexpr auto inrange = [](int c) ->bool {return (c >= -1 && c <= 255); };
@@ -1496,8 +1526,10 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
 
 	}
+	bool ret = !wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty(); 
+	mLocked = ret; // lock sale
 	UpdateSaleDisplay();
-	return true;
+	return ret;
 }
 
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)

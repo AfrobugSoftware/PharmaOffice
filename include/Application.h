@@ -11,6 +11,7 @@
 #include <wx/file.h>
 #include <wx/ffile.h>
 #include <wx/notifmsg.h>
+#include <wx/splash.h>
 
 
 #include <filesystem>
@@ -100,6 +101,8 @@ namespace pof {
 		void GenerateReport(wxDebugReport::Context ctx);
 		virtual void OnFatalException() override;
 		virtual void OnUnhandledException() override;
+
+		void DecorateSplashScreen(wxBitmap& bmp);
 
 		bool bUsingLocalDatabase = true;
 		bool bHighlightLowStock = false;

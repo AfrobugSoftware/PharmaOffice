@@ -231,7 +231,6 @@ void pof::PatientView::CreateViews()
 	mCurrentMedicationView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mCurrentMedicationView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mStockMedCol = mCurrentMedicationView->AppendTextColumn("Start Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendDateColumn("Start Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mCurrentMedicationView->AppendDateColumn("Stop Date", pof::PatientManager::MED_STOP_DATE,  wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
@@ -248,7 +247,6 @@ void pof::PatientView::CreateViews()
 	mMedHistoryView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Outcome", pof::PatientManager::MED_OUTCOME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	mMedHistoryView->AppendTextColumn("Direction For Use", 1000, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Stock", pof::PatientManager::MED_STOCK, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendDateColumn("Started Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	mMedHistoryView->AppendDateColumn("Stopped Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);

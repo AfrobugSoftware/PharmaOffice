@@ -91,6 +91,8 @@ namespace pof
 		wxStringProperty* strength_type = nullptr;
 		wxEditEnumProperty* warning = nullptr;
 		wxIntProperty* packageSize = nullptr;
+		bool mLocked = false;
+		size_t mSaleType = 0;
 
 
 
@@ -124,7 +126,14 @@ namespace pof
 			ID_FOCUS_SCAN,
 		};
 
+		//sale type
+		enum {
+			PATIENT = 1,
+
+		};
+
 		std::vector<pof::LabelInfo> mProductLabels;
+		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t)> mSaleCompleted;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();

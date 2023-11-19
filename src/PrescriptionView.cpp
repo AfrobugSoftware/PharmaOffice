@@ -23,6 +23,7 @@ pof::PrescriptionView::PrescriptionView(wxWindow* parent, wxWindowID id, const w
 	LoadPrescriptions();
 	SetDefaultAuiArt();
 	InitDataView();
+	SetSpecialColumns();
 	mPanelManager->Update();
 }
 
@@ -131,7 +132,7 @@ void pof::PrescriptionView::InitDataView()
 	mDataView->AppendTextColumn("Date issued", PRESCRIPTION_DATE, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 	mDataView->AppendTextColumn("Patient name", PRESCRIPTION_PATIENT_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 	mDataView->AppendTextColumn("Patient Address", PRESCRIPTION_PATIENT_ADDRESS, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
-	mDataView->AppendTextColumn("Prescription status", 11, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
+	mDataView->AppendTextColumn("Prescription status", 1000, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 
 	mPanelManager->AddPane(mDataView, wxAuiPaneInfo().Name("DataView").Caption("Prescriptions").CenterPane().Show());
 }
@@ -141,9 +142,11 @@ void pof::PrescriptionView::SetSpecialColumns()
 	constexpr static const std::array<std::string_view, static_cast<std::underlying_type_t<PrescriptionState>>(PrescriptionState::MAX)> StateToText
 	{ "PENDING", "COMPLETED", "REJECTED", "INVALID", "PARTIAL COMPLETED" };
 	//set upspecial columns
-	mModel->SetSpecialColumnHandler(11, [&](size_t col, size_t index)-> wxVariant {
-		return wxVariant(StateToText[0]); //where would the state come from
+	mModel->SetSpecialColumnHandler(1000, [&](size_t row, size_t col)-> wxVariant {
+		return wxVariant(std::string(StateToText[0])); //where would the state come from
 	});
+
+
 }
 
 void pof::PrescriptionView::SetDefaultAuiArt()

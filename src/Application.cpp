@@ -68,7 +68,11 @@ bool pof::Application::OnInit()
 		mChecker.reset(nullptr);
 		return false;
 	}
-	//SetUseBestVisual(true, true);
+
+	
+
+
+	SetUseBestVisual(true, true);
 
 
 	//load the settings
@@ -79,8 +83,21 @@ bool pof::Application::OnInit()
 	SetUpPaths();
 	wxInitAllImageHandlers();
 	wxArtProvider::Push(new pof::ArtProvider);
-	SetUpColorTable();
+	
+	wxBitmap bitmap = wxArtProvider::GetBitmap("splash");
 
+
+	// we can even draw dynamic artwork onto our splashscreen
+	//DecorateSplashScreen(bitmap);
+
+	//// show the splashscreen
+	//new wxSplashScreen(bitmap,
+	//	wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
+	//	6000, nullptr, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+	//	wxSIMPLE_BORDER | wxSTAY_ON_TOP);
+
+	
+	SetUpColorTable();
 	//do system settings here?
 	wxSystemOptions::SetOption(wxT("msw.remap"), 0);
 	wxSystemOptions::SetOption(wxT("msw.staticbox.optimized-paint"), 0);
@@ -647,6 +664,39 @@ void pof::Application::OnUnhandledException()
 			spdlog::critical(e.what());
 		}
 	}
+}
+
+void pof::Application::DecorateSplashScreen(wxBitmap& bmp)
+{
+	// use a memory DC to draw directly onto the bitmap
+	wxMemoryDC memDc(bmp);
+
+	// draw an orange box (with black outline) at the bottom of the splashscreen.
+	// this box will be 10% of the height of the bitmap, and be at the bottom.
+	const wxRect bannerRect(wxPoint(0, (bmp.GetHeight() / 10) * 9),
+		wxPoint(bmp.GetWidth(), bmp.GetHeight()));
+	wxDCBrushChanger bc(memDc, wxBrush(wxColour(255, 102, 0)));
+	memDc.DrawRectangle(bannerRect);
+	memDc.DrawLine(bannerRect.GetTopLeft(), bannerRect.GetTopRight());
+
+	// dynamically get the wxWidgets version to display
+	wxString description = wxString::Format("PharmaOffice %s", gVersion);
+	// create a copyright notice that uses the year that this file was compiled
+	wxString year(__DATE__);
+	wxString copyrightLabel = wxString::Format("%s%s D-glopa Nigeria limited. %s",
+		wxString::FromUTF8("\xc2\xa9"), year.Mid(year.length() - 4),
+		"All rights reserved.");
+
+	// draw the (white) labels inside of our orange box (at the bottom of the splashscreen)
+	memDc.SetTextForeground(*wxWHITE);
+	// draw the "wxWidget" label on the left side, vertically centered.
+	// note that we deflate the banner rect a little bit horizontally
+	// so that the text has some padding to its left.
+	memDc.DrawLabel(description, bannerRect.Deflate(5, 0), wxALIGN_CENTRE_VERTICAL | wxALIGN_LEFT);
+
+	// draw the copyright label on the right side
+	memDc.SetFont(wxFontInfo(8));
+	memDc.DrawLabel(copyrightLabel, bannerRect.Deflate(5, 0), wxALIGN_CENTRE_VERTICAL | wxALIGN_RIGHT);
 }
 
 pof::Application::clock_t::time_point pof::Application::FromDateTime(const wxDateTime& dt)

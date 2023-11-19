@@ -466,7 +466,7 @@ bool pof::SaleManager::SaveLabels(const boost::uuids::uuid& saleID, const std::s
 std::optional<std::string> pof::SaleManager::LoadLabels(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT labels FROM sale_lable WHERE uuid = ?;)";
+		constexpr const std::string_view sql = R"(SELECT labels FROM sale_label WHERE uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
