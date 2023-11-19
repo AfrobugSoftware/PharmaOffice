@@ -101,7 +101,7 @@ namespace pof
 		std::map<size_t, std::string> mSideEffectWarnings; 
 
 		boost::uuids::random_generator_mt19937 uuidGen;
-		//pof::base::database::stmt_t mExpiredStatemet; 
+		pof::base::currency mCurTotal;
 	public:
 
 		enum {
@@ -129,11 +129,12 @@ namespace pof
 		//sale type
 		enum {
 			PATIENT = 1,
+			PACK,
 
 		};
 
 		std::vector<pof::LabelInfo> mProductLabels;
-		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t)> mSaleCompleted;
+		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t,const pof::base::currency&)> mSaleCompleted;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();

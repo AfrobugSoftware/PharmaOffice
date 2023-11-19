@@ -162,7 +162,7 @@ namespace pof {
 					return on_fail(ec);
 
 				// Set a timeout on the operation
-				m_stream.expires_after(std::chrono::seconds(30));
+				m_stream.expires_after(std::chrono::seconds(60));
 
 				// Make the connection on the IP address we get from a lookup
 				m_stream.async_connect(results,
@@ -175,7 +175,7 @@ namespace pof {
 					return on_fail(ec);
 
 				// Set a timeout on the operation
-				m_stream.expires_after(std::chrono::seconds(30));
+				m_stream.expires_after(std::chrono::seconds(60));
 
 				// Send the HTTP request to the remote host
 				http::async_write(m_stream,
@@ -187,6 +187,8 @@ namespace pof {
 
 				if (ec)
 					return on_fail(ec);
+				
+				m_stream.expires_after(std::chrono::seconds(60));
 
 				// Receive the HTTP response
 				http::async_read(m_stream, m_buffer, m_res,
@@ -247,7 +249,6 @@ namespace pof {
 					m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
 					m_req.set(http::field::content_length, std::to_string(body.size()));
 					m_req.body() = body;
-					m_req.prepare_payload();
 				}
 				else if constexpr (std::is_same_v<request_body, http::file_body>) {
 					//if request is a file body 
@@ -260,7 +261,6 @@ namespace pof {
 					req_.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
 					req_.set(http::field::content_length, std::to_string(req_.body().size()));
 					m_req = std::move(req_);
-					m_req.prepare_payload();
 
 				}
 				else if constexpr (std::is_same_v<request_body, http::empty_body>) {
@@ -271,6 +271,7 @@ namespace pof {
 					m_req.set(http::field::host, host.c_str());
 					m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
 				}
+				m_req.prepare_payload();
 				//ignore all other bodies for now
 			}
 

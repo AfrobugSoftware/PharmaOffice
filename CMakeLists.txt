@@ -10,10 +10,11 @@ set(wxBUILD_SHARED ON)
 set(wxUSE_GUI 1)
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/wxWidgets-3.2.2.1)
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/OpenXLSX)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/mysql)
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
-
+add_definitions(${CONAN_DEFINES})
 
 file(GLOB incs ${PROJECT_SOURCE_DIR}/include/*.h ${PROJECT_SOURCE_DIR}/include/controls/*.h)
 file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/controls/*.cpp)
@@ -21,8 +22,14 @@ file(GLOB srcs ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/control
 if(CMAKE_SYSTEM MATCHES Windows)
     set(APP WIN32)
     add_compile_options(/bigobj)
+    add_compile_options(/Zc:__cplusplus /JMC-)
 elseif()
     set(APP "")
+endif()
+
+#windows application
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/base)
@@ -35,7 +42,7 @@ if(CMAKE_SYSTEM MATCHES Windows)
 endif()
 
 add_executable(pharmaoffice ${APP} ${incs} $<$<BOOL:${WIN32}>:pharmaoffice.rc> ${srcs})
-add_definitions(${CONAN_DEFINES})
+
 ##set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB)
 target_precompile_headers(pharmaoffice PUBLIC ${PROJECT_SOURCE_DIR}/include/PofPch.h)
 target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include)
