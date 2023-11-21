@@ -38,32 +38,33 @@
 using namespace boost::asio::experimental::awaitable_operators;
 using namespace std::literals::chrono_literals;
 constexpr auto tuple_awaitable = boost::asio::as_tuple(boost::asio::use_awaitable);
-
 namespace pof {
 	class databasemysql : private boost::noncopyable
 	{
 	public:
 		using connection_t = boost::mysql::tcp_ssl_connection;
+		using default_token = boost::asio::as_tuple_t<boost::asio::use_awaitable_t<>>;
+		using timer_t = default_token::as_default_on_t<boost::asio::steady_timer>;
 		databasemysql(boost::asio::io_context& ios, boost::asio::ssl::context& ssl);
 
 		boost::asio::awaitable<std::error_code> connect(const std::string& hostname, const std::string& port,
 			const std::string& user, const std::string& pwd);
 		inline connection_t& connection() { return m_connection; }
 		//Adds a query to the queue
+		bool push(std::shared_ptr<dataquerybase> query);
 
 		void setupssl ();
 		boost::asio::awaitable<void> runquery();
-		boost::asio::awaitable<void> watchdog();
 
 
 		//also closes 
 		void disconnect();
 
 	private:
-		std::shared_mutex mDataQueryMutex;
-		std::deque<std::shared_ptr<pof::query<databasemysql>>> mDataQueryQueue;
+		std::shared_mutex m_querymut;
+		std::deque<std::shared_ptr<pof::query<databasemysql>>> m_queryque;
 
-		std::atomic<bool> mRunningStmt;
+		std::atomic<bool> m_isrunning;
 		std::condition_variable mStmtConditionVarible;
 
 		boost::asio::steady_timer m_timer;
