@@ -1250,7 +1250,7 @@ void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
 	v[pof::PoisonBookManager::DATE] = pof::base::data::clock_t::now();
 
 	if (!wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row))){
-		wxMessageBox(fmt::format("Failed", name), "Products", wxICON_INFORMATION | wxOK);
+		wxMessageBox(fmt::format("Failed to create book for {}", name), "Products", wxICON_INFORMATION | wxOK);
 	}
 	else {
 		mInfoBar->ShowMessage(fmt::format("Created controlled book for {}", name));

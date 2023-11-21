@@ -63,6 +63,13 @@ bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
 		> tup;
 		pof::base::build(tup, row);
 		bool status = mLocalDatabase->bind(*stmt, tup);
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	return false;
 }
@@ -164,6 +171,13 @@ bool pof::PoisonBookManager::OnAddRecord(pof::base::data::const_iterator iter)
 		> tup;
 		pof::base::build(tup, *iter);
 		bool status = mLocalDatabase->bind(*stmt, tup);
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	return false;
 }

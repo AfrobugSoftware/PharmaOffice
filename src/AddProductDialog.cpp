@@ -129,6 +129,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
+	ProductClassChoices.Add("CONTROLLED");
 	mClassValue = new wxChoice(mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, ProductClassChoices, 0);
 	mClassValue->SetSelection(0);
 	fgSizer2->Add(mClassValue, 1, wxALL | wxEXPAND, 5);
