@@ -41,6 +41,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_FUNCTION_MARK_UP_PRODUCTS, pof::ProductView::OnMarkUpProducts)
 	EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_EXCEL, pof::ProductView::OnDownloadExcel)
+	EVT_MENU(pof::ProductView::ID_CREATE_CONTROLLED_BOOK, pof::ProductView::OnCreateControlBook)
 
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
@@ -385,7 +386,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
 	}
-
+	auto crb = menu->Append(ID_CREATE_CONTROLLED_BOOK, "Create Controlled Register", nullptr);
 	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
 	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
@@ -1205,6 +1206,55 @@ void pof::ProductView::OnCacheHint(wxDataViewEvent& evt){
 void pof::ProductView::OnStockCheckTimer(wxTimerEvent& evt)
 {
 	mInfoBar->ShowMessage("Stock check is incomplete, please finish stock check before end of month");
+}
+
+void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Product", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+	auto& prow = wxGetApp().mProductManager.GetProductData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)];
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(prow.first[pof::ProductManager::PRODUCT_UUID]);
+	auto& name = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_NAME]);
+	auto& cls = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_CLASS]);
+	
+	if (cls != "CONTROLLED"){
+		wxMessageBox(fmt::format("{} is not a controlled medicaiton", name), "Products", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (wxGetApp().mPoisonBookManager.IsBookCreated(puid)) {
+		wxMessageBox(fmt::format("Controlled book register already created for {}", name), "Products", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	pof::base::data::row_t row;
+	//create the first entry into the book table	
+	auto& v = row.first;
+	auto& p = prow.first;
+
+	v.resize(pof::PoisonBookManager::MAX);
+	v[pof::PoisonBookManager::PUID] = p[pof::ProductManager::PRODUCT_UUID];
+	v[pof::PoisonBookManager::PNAME] = "Entry Stock"s;
+	v[pof::PoisonBookManager::PADDY] = wxGetApp().MainPharmacy->GetAddressAsString();
+	v[pof::PoisonBookManager::PHARMNAME] = fmt::format("{} {}", wxGetApp().MainAccount->lastname,
+		wxGetApp().MainAccount->name);
+	v[pof::PoisonBookManager::ISVERIFED] = static_cast<std::uint64_t>(1);
+	v[pof::PoisonBookManager::QUAN] = static_cast<std::uint64_t>(0);
+	//create with the current stock
+	std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	v[pof::PoisonBookManager::STARTSTOCK] = stock;
+	v[pof::PoisonBookManager::RUNBALANCE] = stock;
+	v[pof::PoisonBookManager::DATE] = pof::base::data::clock_t::now();
+
+	if (!wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row))){
+		wxMessageBox(fmt::format("Failed", name), "Products", wxICON_INFORMATION | wxOK);
+	}
+	else {
+		mInfoBar->ShowMessage(fmt::format("Created controlled book for {}", name));
+	}
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
