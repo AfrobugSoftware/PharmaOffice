@@ -267,6 +267,7 @@ bool pof::Application::CreateMainFrame()
 	spdlog::info(readData.ToStdString());
 	mMainFrame->Perspective(readData.ToStdString());
 
+	CreateMysqlDatabase(); //for testing
 	return mMainFrame->Show();
 }
 
@@ -595,11 +596,20 @@ void pof::Application::CreateTables()
 	mPatientManager.CreatePatientTable();
 }
 
-void pof::Application::ReadSettingsFlags()
+void pof::Application::CreateMysqlDatabase()
 {
-	
+	mMysqlDatabase = std::make_shared<pof::base::databasemysql>(mNetManager.io(),
+		mNetManager.ssl());
+	boost::asio::co_spawn(mNetManager.io(),
+		mMysqlDatabase->connect("localhost"s, "3306"s, "root"s, "Topdollar123"s), [&](std::exception_ptr ptr, std::error_code ec) {
+			spdlog::info("{:ec}", ec);
+		});
 }
 
+void pof::Application::ReadSettingsFlags()
+{
+
+}
 
 void pof::Application::SaveSettingsFlags()
 {

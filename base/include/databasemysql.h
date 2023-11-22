@@ -31,6 +31,7 @@
 #include <condition_variable>
 
 #include "query.h"
+#include "errc.h"
 
 
 
@@ -39,40 +40,42 @@ using namespace boost::asio::experimental::awaitable_operators;
 using namespace std::literals::chrono_literals;
 constexpr auto tuple_awaitable = boost::asio::as_tuple(boost::asio::use_awaitable);
 namespace pof {
-	class databasemysql : private boost::noncopyable
-	{
-	public:
-		using connection_t = boost::mysql::tcp_ssl_connection;
-		databasemysql(boost::asio::io_context& ios, boost::asio::ssl::context& ssl);
+	namespace base {
+		class databasemysql : private boost::noncopyable
+		{
+		public:
+			using connection_t = boost::mysql::tcp_ssl_connection;
+			databasemysql(boost::asio::io_context& ios, boost::asio::ssl::context& ssl);
 
-		boost::asio::awaitable<std::error_code> connect(const std::string& hostname, const std::string& port,
-			const std::string& user, const std::string& pwd);
-		inline connection_t& connection() { return m_connection; }
-		//Adds a query to the queue
-		bool push(std::shared_ptr<pof::query<databasemysql>> query);
+			boost::asio::awaitable<std::error_code> connect(std::string hostname, 
+			std::string port,
+			std::string user, std::string pwd);
+			inline connection_t& connection() { return m_connection; }
+			//Adds a query to the queue
+			bool push(std::shared_ptr<pof::base::query<databasemysql>> query);
 
-		void setupssl ();
-		boost::asio::awaitable<void> runquery();
+			void setupssl();
+			boost::asio::awaitable<void> runquery();
 
 
-		//also closes 
-		void disconnect();
+			//also closes 
+			void disconnect();
 
-	private:
-		std::shared_mutex m_querymut;
-		std::deque<std::shared_ptr<pof::query<databasemysql>>> m_queryque;
+		private:
+			std::shared_mutex m_querymut;
+			std::deque<std::shared_ptr<pof::base::query<databasemysql>>> m_queryque;
 
-		std::atomic<bool> m_isrunning;
-		std::condition_variable mStmtConditionVarible;
+			std::atomic<bool> m_isrunning;
+			std::condition_variable mStmtConditionVarible;
 
-		boost::asio::steady_timer m_timer;
-		connection_t m_connection;
-		boost::asio::ip::tcp::resolver m_resolver;
-	};
+			boost::asio::steady_timer m_timer;
+			connection_t m_connection;
+			boost::asio::ip::tcp::resolver m_resolver;
+		};
 
-	using dataquerybase = pof::query<databasemysql>;
+		using dataquerybase = pof::base::query<databasemysql>;
 
-	template<typename... Args>
-	using datastmtquery = pof::querystmt<databasemysql, Args...>;
-
+		template<typename... Args>
+		using datastmtquery = pof::base::querystmt<databasemysql, Args...>;
+	}
 };

@@ -15,5 +15,5 @@ message(STATUS ${CONAN_INCLUDE_DIRS_DATE})
 
 target_include_directories(base PUBLIC ${PROJECT_SOURCE_DIR}/include ${CONAN_INCLUDE_DIRS_BOOST} ${CONAN_INCLUDE_DIRS_DATE})
 target_link_directories(base PRIVATE ${CONAN_LIB_DIRS_BOOST})
-target_link_libraries(base PRIVATE bbcrypt boost_serialization boost_url boost_iostreams boost_system ${CONAN_LIBS_OPENSSL} ${CONAN_LIBS_ZLIB} ${CONAN_LIBS_FMT} ${CONAN_LIBS_SQLITE3} ${CONAN_LIBS_DATE})
+target_link_libraries(base PRIVATE bbcrypt boost_serialization boost_url boost_iostreams boost_system ${CONAN_LIBS_OPENSSL} ${CONAN_LIBS_ZLIB} ${CONAN_LIBS_FMT} ${CONAN_LIBS_SPDLOG} ${CONAN_LIBS_SQLITE3} ${CONAN_LIBS_DATE})
 target_link_libraries(base PUBLIC bbcrypt)

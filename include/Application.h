@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <netmanager.h>
 #include <database.h>
+#include <databasemysql.h>
 #include <chrono>
 #include <sstream>
 #include <random>
@@ -93,7 +94,9 @@ namespace pof {
 		pof::PatientManager mPatientManager;
 		std::shared_ptr<pof::PrintManager> mPrintManager;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
+		std::shared_ptr<pof::base::databasemysql> mMysqlDatabase;
 
+		void CreateMysqlDatabase();
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
