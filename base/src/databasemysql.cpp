@@ -30,49 +30,27 @@ void pof::databasemysql::setupssl()
 boost::asio::awaitable<void> pof::databasemysql::runquery()
 {
 	for (;;) {
-		std::shared_lock<std::shared_mutex> lock(m_querymut);
+		std::unique_lock<std::shared_mutex> lock(m_querymut);
 		std::shared_ptr<dataquerybase> dq = m_queryque.front();
+		m_queryque.pop_front();
 		lock.unlock();
 		std::error_code ec;
 		try {
-
-			timer_t timer(co_await boost::asio::this_coro::executor);
-			timer.expires_after(1s);
-
-			auto complete = co_await( (*dq)() || timer.async_wait());
-			switch (complete.index())
-			{
-			case 0:
-				timer.cancel();
-				break;
-			case 1:
-				//what happens if we timeout ?
-				//signal the query on timeout ...
-				continue; //
-			default:
-				break;
-			}
-
-			lock.lock();
-			m_queryque.pop_front();
-			if (m_queryque.empty()) break;
-			lock.unlock();
-
-			continue; //run the next query
+			//execute the query
+			co_await (*dq)();
 		}
 		catch (boost::system::system_error& err) {
 			ec = err.code();
-			spdlog::error("{:ec}", ec);
+			//spdlog::error("{:ec}", ec);
 		}
 		catch (std::system_error& exp) {
 			ec = exp.code();
-			spdlog::error("{:ec}", ec);
+			//spdlog::error("{:ec}", ec);
 		}
 
-		std::unique_lock<std::shared_mutex> l(m_querymut);
-		m_queryque.pop_front();
+		
+		std::unique_lock<std::shared_mutex> lk(m_querymut);
 		if (m_queryque.empty()) break;
-		l.unlock();
 	}
 }
 

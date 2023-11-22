@@ -43,15 +43,13 @@ namespace pof {
 	{
 	public:
 		using connection_t = boost::mysql::tcp_ssl_connection;
-		using default_token = boost::asio::as_tuple_t<boost::asio::use_awaitable_t<>>;
-		using timer_t = default_token::as_default_on_t<boost::asio::steady_timer>;
 		databasemysql(boost::asio::io_context& ios, boost::asio::ssl::context& ssl);
 
 		boost::asio::awaitable<std::error_code> connect(const std::string& hostname, const std::string& port,
 			const std::string& user, const std::string& pwd);
 		inline connection_t& connection() { return m_connection; }
 		//Adds a query to the queue
-		bool push(std::shared_ptr<dataquerybase> query);
+		bool push(std::shared_ptr<pof::query<databasemysql>> query);
 
 		void setupssl ();
 		boost::asio::awaitable<void> runquery();
