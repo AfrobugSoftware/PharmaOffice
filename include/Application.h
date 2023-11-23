@@ -97,6 +97,7 @@ namespace pof {
 		std::shared_ptr<pof::base::databasemysql> mMysqlDatabase;
 
 		void CreateMysqlDatabase();
+		void CreateMysqlTables();
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();

@@ -30,7 +30,7 @@ bool pof::base::databasemysql::push(std::shared_ptr<pof::base::query<databasemys
 	if (!is_running) {
 		boost::asio::co_spawn(m_connection.get_executor(), runquery(), boost::asio::detached);
 	}
-	return false;
+	return true;
 }
 
 void pof::base::databasemysql::setupssl()
@@ -42,7 +42,6 @@ boost::asio::awaitable<void> pof::base::databasemysql::runquery()
 	for (;;) {
 		std::unique_lock<std::shared_mutex> lock(m_querymut);
 		std::shared_ptr<dataquerybase> dq = m_queryque.front();
-		m_queryque.pop_front();
 		lock.unlock();
 		std::error_code ec;
 		try {
@@ -60,6 +59,7 @@ boost::asio::awaitable<void> pof::base::databasemysql::runquery()
 
 		
 		std::unique_lock<std::shared_mutex> lk(m_querymut);
+		m_queryque.pop_front();
 		if (m_queryque.empty()) break;
 	}
 }

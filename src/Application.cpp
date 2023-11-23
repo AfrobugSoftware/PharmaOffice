@@ -106,7 +106,7 @@ bool pof::Application::OnInit()
 
 
 	//where do I lunch set up wizard?? 
-	
+
 	if (MainPharmacy->name.empty()){
 		//lunch register pharmacy
 		bool registerd = RegisterPharmacyLocal();
@@ -268,6 +268,7 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame->Perspective(readData.ToStdString());
 
 	CreateMysqlDatabase(); //for testing
+
 	return mMainFrame->Show();
 }
 
@@ -524,59 +525,60 @@ void pof::Application::TestAccountAndPharmacy()
 
 void pof::Application::CreateTables()
 {
-	constexpr const std::string_view users_table = 
-		"CREATE TABLE IF NOT EXISTS USERS (id integer primary key autoincrement, priv integer, name text, last_name text, email text, phonenumber text, regnumber text, username text, password text);";
-	constexpr const std::string_view product_table =
-		"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer, min_stock_count integer, expire_period text, expire_date integer);";
-	constexpr const std::string_view inventory_table =
-		"CREATE TABLE IF NOT EXISTS inventory (id integer, uuid blob, expire_date integer, input_date integer, stock_count integer, cost blob, manufacturer_name text, manufacturer_address_id integer, lot_number text);";
-	constexpr const std::string_view category_table =
-		"CREATE TABLE IF NOT EXISTS category (id integer primary key unique, name text unqiue);";
-	auto stmt = mLocalDatabase->prepare(users_table);
-	if (!stmt.has_value()) {
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
+	if (bUsingLocalDatabase) {
+		constexpr const std::string_view users_table =
+			"CREATE TABLE IF NOT EXISTS USERS (id integer primary key autoincrement, priv integer, name text, last_name text, email text, phonenumber text, regnumber text, username text, password text);";
+		constexpr const std::string_view product_table =
+			"CREATE TABLE IF NOT EXISTS products (uuid blob, serail_num integer, name text, generic_name text, class text, formulation text, strength text, strength_type text, usage_info text, descrip text, health_condition text, unit_price blob, cost_price blob, package_size integer, stock_count integer, side_effects text, barcode text, category integer, min_stock_count integer, expire_period text, expire_date integer);";
+		constexpr const std::string_view inventory_table =
+			"CREATE TABLE IF NOT EXISTS inventory (id integer, uuid blob, expire_date integer, input_date integer, stock_count integer, cost blob, manufacturer_name text, manufacturer_address_id integer, lot_number text);";
+		constexpr const std::string_view category_table =
+			"CREATE TABLE IF NOT EXISTS category (id integer primary key unique, name text unqiue);";
+		auto stmt = mLocalDatabase->prepare(users_table);
+		if (!stmt.has_value()) {
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		if (!mLocalDatabase->execute(*stmt))
+		{
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		mLocalDatabase->finalise(*stmt);
+		stmt = mLocalDatabase->prepare(product_table);
+		if (!stmt.has_value()) {
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		if (!mLocalDatabase->execute(*stmt))
+		{
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		mLocalDatabase->finalise(*stmt);
+		stmt = mLocalDatabase->prepare(inventory_table);
+		if (!stmt.has_value()) {
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		if (!mLocalDatabase->execute(*stmt))
+		{
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		mLocalDatabase->finalise(*stmt);
+		stmt = mLocalDatabase->prepare(category_table);
+		if (!stmt.has_value()) {
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		if (!mLocalDatabase->execute(*stmt))
+		{
+			wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
+			return;
+		}
+		mLocalDatabase->finalise(*stmt);
 	}
-	if (!mLocalDatabase->execute(*stmt))
-	{
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	mLocalDatabase->finalise(*stmt);
-	stmt = mLocalDatabase->prepare(product_table);
-	if (!stmt.has_value()) {
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	if (!mLocalDatabase->execute(*stmt))
-	{
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	mLocalDatabase->finalise(*stmt);
-	stmt = mLocalDatabase->prepare(inventory_table);
-	if (!stmt.has_value()) {
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	if (!mLocalDatabase->execute(*stmt))
-	{
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	mLocalDatabase->finalise(*stmt);
-	stmt = mLocalDatabase->prepare(category_table);
-	if (!stmt.has_value()) {
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	if (!mLocalDatabase->execute(*stmt))
-	{
-		wxMessageBox(mLocalDatabase->err_msg().data(), "CREATE TABLE");
-		return;
-	}
-	mLocalDatabase->finalise(*stmt);
-
 	mAuditManager.CreateAuditTable();
 	mProductManager.CreatePackTable();
 	mProductManager.CreateOrderListTable();
@@ -601,9 +603,57 @@ void pof::Application::CreateMysqlDatabase()
 	mMysqlDatabase = std::make_shared<pof::base::databasemysql>(mNetManager.io(),
 		mNetManager.ssl());
 	boost::asio::co_spawn(mNetManager.io(),
-		mMysqlDatabase->connect("localhost"s, "3306"s, "root"s, "Topdollar123"s), [&](std::exception_ptr ptr, std::error_code ec) {
-			spdlog::info("{:ec}", ec);
-		});
+	mMysqlDatabase->connect("localhost"s, "3306"s, "root"s, "Topdollar123"s), [&](std::exception_ptr ptr, std::error_code ec) {
+		spdlog::info("{:ec}", ec);
+		if (ec) return;
+
+		//open the database
+		auto qptr = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
+		auto qptr2 = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
+		
+			qptr->m_sql = R"(CREATE DATABASE IF NOT EXISTS pharmaoffice;)";
+			qptr2->m_sql = R"(USE pharmaoffice;)";
+			qptr->m_sig.connect([&](std::error_code ec, auto sqpr) {
+				spdlog::info("{:ec}", ec);
+			});
+			qptr2->m_sig.connect([&](std::error_code ec, auto sqpr) {
+				spdlog::info("{:ec}", ec);
+				CreateMysqlTables();
+			});
+			mMysqlDatabase->push(qptr);
+			mMysqlDatabase->push(qptr2);
+	});
+}
+
+void pof::Application::CreateMysqlTables()
+{
+	auto query = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
+	query->m_sql = R"(CREATE TABLE IF NOT EXISTS products (
+		uuid blob, 
+		serail_num integer, 
+		name text, 
+		generic_name text, 
+		class text, 
+		formulation text, 
+		strength text, 
+		strength_type text, 
+		usage_info text, 
+		descrip text, 
+		health_condition text, 
+		unit_price blob, 
+		cost_price blob, 
+		package_size integer, 
+		stock_count integer, 
+		side_effects text, 
+		barcode text, 
+		category integer, 
+		min_stock_count integer, 
+		expire_period text, 
+		expire_date integer);)"s;
+	query->m_sig.connect([&](std::error_code ec, std::shared_ptr<pof::base::query<pof::base::databasemysql>> ptr) {
+		spdlog::info("Created table with: {:ec}", ec);
+	});
+	mMysqlDatabase->push(query);
 }
 
 void pof::Application::ReadSettingsFlags()
