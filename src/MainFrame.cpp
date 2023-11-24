@@ -413,7 +413,7 @@ void pof::MainFrame::SetupAuiTheme()
 void pof::MainFrame::OnAbout(wxCommandEvent& evt)
 {
 	wxAboutDialogInfo info;
-	info.SetName(wxT("D-Glopa PharmaOffice"));
+	info.SetName(wxT("PharmaOffice"));
 	info.SetVersion(wxGetApp().gVersion); //version string need to come from settings
 	info.SetDescription(wxT("Pharmacy mamagement system aid in the managment of pharmaceutical products, sale, transactions, prescription, expiry and so much more"));
 	info.SetCopyright(wxT("(C) 2023 D-Glopa Technologies"));

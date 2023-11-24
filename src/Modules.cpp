@@ -94,7 +94,7 @@ void pof::Modules::OnContextMenu(wxTreeEvent& evt)
 	auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
 	edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
 	auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
-	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_delete"));
+	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_remove"));
 
 	PopupMenu(menu);
 }

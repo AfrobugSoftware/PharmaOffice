@@ -445,6 +445,7 @@ namespace pof {
 
 			bool execute(const query_t& query) const;
 			bool execute(stmt_t stmt) const;
+			bool roll_back(stmt_t stmt); 
 
 			bool begin_trans() const;
 			bool end_trans() const;
@@ -510,11 +511,11 @@ namespace pof {
 					optrel.emplace_back(std::move(tup));
 				}
 				if (ret != SQLITE_DONE) {
-					//SOME ERROR OCCURED ? HOW TO HANDLE
-					sqlite3_step(rollback);
-					reset(stmt); //or finalise
-					reset(begin);
-					reset(rollback);
+					////SOME ERROR OCCURED ? HOW TO HANDLE
+					//sqlite3_step(rollback);
+					//reset(stmt); //or finalise
+					//reset(begin);
+					//reset(rollback);
 					return std::nullopt;
 				}
 

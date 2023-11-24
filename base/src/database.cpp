@@ -239,6 +239,15 @@ bool pof::base::database::execute(stmt_t stmt) const
 	}
 }
 
+bool pof::base::database::roll_back(stmt_t stmt)
+{
+	sqlite3_step(rollback);
+	reset(stmt); //or finalise
+	reset(begin);
+	reset(rollback);
+	return false;
+}
+
 void pof::base::database::clear_bindings(stmt_t stmt) const
 {
 	int ret = sqlite3_clear_bindings(stmt);

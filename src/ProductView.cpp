@@ -1235,19 +1235,16 @@ void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
 	auto& v = row.first;
 	auto& p = prow.first;
 
-	v.resize(pof::PoisonBookManager::MAX);
-	v[pof::PoisonBookManager::PUID] = p[pof::ProductManager::PRODUCT_UUID];
-	v[pof::PoisonBookManager::PNAME] = "Entry Stock"s;
-	v[pof::PoisonBookManager::PADDY] = wxGetApp().MainPharmacy->GetAddressAsString();
-	v[pof::PoisonBookManager::PHARMNAME] = fmt::format("{} {}", wxGetApp().MainAccount->lastname,
-		wxGetApp().MainAccount->name);
-	v[pof::PoisonBookManager::ISVERIFED] = static_cast<std::uint64_t>(1);
-	v[pof::PoisonBookManager::QUAN] = static_cast<std::uint64_t>(0);
+	v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+	v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
+	v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
+	v.push_back(static_cast<std::uint64_t>(1));
+	v.push_back(static_cast<std::uint64_t>(0));
 	//create with the current stock
 	std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-	v[pof::PoisonBookManager::STARTSTOCK] = stock;
-	v[pof::PoisonBookManager::RUNBALANCE] = stock;
-	v[pof::PoisonBookManager::DATE] = pof::base::data::clock_t::now();
+	v.push_back(stock);
+	v.push_back(stock);
+	v.push_back(pof::base::data::clock_t::now());
 
 	if (!wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row))){
 		wxMessageBox(fmt::format("Failed to create book for {}", name), "Products", wxICON_INFORMATION | wxOK);

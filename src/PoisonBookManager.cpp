@@ -34,7 +34,7 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 			quantity integer,
 			start_stock integer,
 			running_balance integer,
-			date integer, 
+			date integer 
 			);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);

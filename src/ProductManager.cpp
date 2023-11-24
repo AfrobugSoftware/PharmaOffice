@@ -1282,44 +1282,49 @@ void pof::ProductManager::StoreProductData(pof::base::data&& data)
 {
 	mProductData->Store(std::forward<pof::base::data>(data));
 }
-
+// AND uuid NOT IN (SELECT uuid FROM inventory WHERE Months(input_date) = ?)
+//this does not make any sense
 void pof::ProductManager::InventoryBroughtForward()
 {
 	if (mLocalDatabase){
+		//why do you need to bring anything forward, to start the inventory with the opening stock, the current stock count
+		constexpr const std::string_view sql = R"(SELECT p.uuid,
+		CASE 
+		WHEN sc.status = 1 THEN sc.check_stock
+		ELSE p.stock_count
+		END
+		FROM products p, stock_check sc
+		WHERE p.uuid = sc.prod_uuid AND Months(sc.date) = ?;)"; //stock check for the last month
 
-		constexpr const std::string_view qSql = R"(SELECT uuid, id, MAX(input_date), expire_date, stock_count
-			 FROM inventory 
-			 WHERE Months(input_date) = ? 
-			 AND uuid NOT IN (SELECT uuid FROM inventory WHERE Months(input_date) = ?)
-			 GROUP BY uuid;)";
-		auto stmt = mLocalDatabase->prepare(qSql);
+		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		auto lastMonth = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch()) - date::months(1);
-		auto thisMonth = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(lastMonth), pof::base::data::datetime_t(thisMonth)));
-		assert(status);
+		mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(lastMonth)));
 
-		auto rel = mLocalDatabase->retrive<
-				pof::base::data::duuid_t,
-				std::uint64_t,
-				pof::base::data::datetime_t,
-				pof::base::data::datetime_t,
-				std::uint64_t>(*stmt);
-		assert(rel);
-		if(rel->empty()) return;
-
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t, std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->roll_back(*stmt);
+			mLocalDatabase->finalise(*stmt);
+			return;
+		}
 		mLocalDatabase->finalise(*stmt);
 
-		constexpr const std::string_view sql = R"(INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?);)";
-		stmt = mLocalDatabase->prepare(sql);
+		 constexpr const std::string_view isql = R"(INSERT INTO inventory
+         (id, uuid, expire_date, input_date, stock_count, cost, manufacturer_name, manufacturer_address_id, lot_number) 
+         VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? ); )";
+		stmt = mLocalDatabase->prepare(isql);
 		assert(stmt);
-		auto& v = rel.value();
-		auto today = pof::base::data::clock_t::now();
-		for (auto& tup : v) {
+
+		bool status = false;
+		for (auto& tup : rel.value()) {
 			//get the next lot number 
 			std::string lotNumber = "0"s;
+			auto expireDate = GetCurrentExpireDate(std::get<0>(tup));
+			if (!expireDate.has_value()) continue;
+
 			if (wxGetApp().bAutomaticBatchNumber) {
-				auto lotNum = wxGetApp().mProductManager.GetLastInventoryBatchNumber(std::get<0>(tup));
+				auto lotNum = GetLastInventoryBatchNumber(std::get<0>(tup));
 				//only work if we get valid data from the database
 				if (lotNum) {
 					auto& v = lotNum.value();
@@ -1336,19 +1341,14 @@ void pof::ProductManager::InventoryBroughtForward()
 					}
 				}
 			}
-
-			status = mLocalDatabase->bind(*stmt, std::make_tuple(std::get<1>(tup) + 1, std::get<0>(tup),
-				std::get<3>(tup), today, std::get<4>(tup), pof::base::data::currency_t{}, "B/F"s, 0, std::move(lotNumber)));
-			assert(status);
-			status = mLocalDatabase->execute(*stmt);
-			assert(status);
-
+			status = mLocalDatabase->bind(*stmt, 
+					std::make_tuple(pof::GenRandomId(), std::get<0>(tup), expireDate.value(),
+						pof::base::data::clock_t::now(), std::get<1>(tup), pof::base::data::currency_t{}, "B/F"s, 0, std::move(lotNumber)));
+			if (!status) continue;
+			mLocalDatabase->execute(*stmt);
 		}
-		mLocalDatabase->finalise(*stmt);
 	}
 }
-
-
 
 //markup is a pecentage in float so markUp = markup/100
 void pof::ProductManager::MarkUpProducts()
