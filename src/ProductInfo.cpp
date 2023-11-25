@@ -96,6 +96,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("CREAM"); //needles, cannula and the rest
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
 	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );

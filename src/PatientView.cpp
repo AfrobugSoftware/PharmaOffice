@@ -23,6 +23,8 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_SEARCH_CANCEL(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchCleared)
 	EVT_TEXT(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchPatient)
 
+	EVT_CHECKBOX(pof::PatientView::ID_REMIND_CHECK, pof::PatientView::OnReminded)
+
 	//dataview
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientsContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsContextMenu)
@@ -111,6 +113,12 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools->AddSeparator();
 	mPatientTools->AddSpacer(5);
 	mPatientTools->AddTool(ID_SALE_PATIENT_MED,"Add Sale", wxArtProvider::GetBitmap("sci"), "Add current medication to sale");
+	mPatientTools->AddSpacer(5);
+
+	mIsReminded = new wxCheckBox(mPatientTools, ID_REMIND_CHECK, "Alert on inactive", wxDefaultPosition, wxDefaultSize, 0);
+	mIsReminded->SetBackgroundColour(*wxWHITE);
+	mPatientTools->AddControl(mIsReminded);
+
 	mPatientTools->AddStretchSpacer();
 	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR, wxSize(16, 16)), "Patient medical details", wxITEM_CHECK);
 	std::bitset<32> bitset(pd->GetState());
@@ -521,7 +529,18 @@ void pof::PatientView::LoadPatientDetails()
 				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_ENTERED_DATE])))));
 	page->GetGrid()->GetProperty("9")->SetValue(wxVariant(wxDateTime(
 				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_MODIFIED_DATE])))));
+	auto addInfo = wxGetApp().mPatientManager.GetAddInfo(
+		boost::variant2::get<pof::base::data::duuid_t>(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]));
+	mCurPatientAddInfo = addInfo.value_or(pof::PatientManager::AddInfo{});
+}
 
+void pof::PatientView::LoadReminded()
+{
+	if (mCurPatientAddInfo.mPatientUid == boost::uuids::nil_uuid()) return;
+	auto iter = mCurPatientAddInfo.mData.find("IsReminded");
+	if (iter != mCurPatientAddInfo.mData.end()) {
+		mIsReminded->SetValue(static_cast<bool>(*iter));
+	}
 }
 
 void pof::PatientView::ShowPatientDetails()
@@ -1270,4 +1289,19 @@ void pof::PatientView::OnAddText(wxCommandEvent& evt)
 exit:
 	mCurrentMedicationView->Thaw();
 	mCurrentMedicationView->Refresh();
+}
+
+void pof::PatientView::OnReminded(wxCommandEvent& evt)
+{
+	if (mCurPatientAddInfo.mPatientUid != boost::uuids::nil_uuid()) {
+		auto iter = mCurPatientAddInfo.mData.find("IsReminded");
+		if (iter != mCurPatientAddInfo.mData.end()) {
+			*iter = evt.IsChecked();
+		}
+	}
+	else {
+		wxMessageBox("Error in loading patient information, please contact D-GLOPA admin", "Patients", wxICON_ERROR | wxOK);
+		mIsReminded->SetValue(false);
+	}
+	
 }

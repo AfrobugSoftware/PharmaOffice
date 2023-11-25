@@ -86,6 +86,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("CREAM");
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
 	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );
 	mFormulationValue->SetBackgroundColour( wxColour( 255, 255, 255 ) );

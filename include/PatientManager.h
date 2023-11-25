@@ -6,12 +6,14 @@
 #include <array>
 #include <set>
 #include <shared_mutex>
+#include <nlohmann/json.hpp>
+
 #include "DataModel.h"
 #include "database.h"
 #include "Account.h"
 #include "Pharmacy.h"
 
-
+namespace nl = nlohmann;
 namespace pof {
 	class PatientManager : private boost::noncopyable
 	{
@@ -70,6 +72,13 @@ namespace pof {
 			MED_MAX,
 		};
 
+
+		//data is a json object that holds the forever changing data for a patient
+		struct AddInfo {
+			pof::base::data::duuid_t mPatientUid;
+			nl::json mData;
+		};
+
 		//public shared globals
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurAccount;
@@ -80,6 +89,7 @@ namespace pof {
 
 		bool CreatePatientTable();
 		bool CreatePatientMedicationTable();
+		bool CreatePatientAddInfoTable();
 
 		std::unique_ptr<pof::DataModel>& GetPatientData();
 		std::unique_ptr<pof::DataModel>& GetPatientMedData();
@@ -100,11 +110,18 @@ namespace pof {
 		bool OnRemoveMedication(pof::base::data::const_iterator iter);
 		bool OnUpdateMedication(pof::base::data::const_iterator iter);
 
+		//curd for add info
+		bool HasAddInfo(const pof::base::data::duuid_t& puid);
+		std::optional<AddInfo> GetAddInfo(const pof::base::data::duuid_t& puid) const;
+		bool SetAddInfo(const AddInfo& info) const;
+		bool UpdateAddInfo(const AddInfo& info) const; 
+		bool RemoveAddInfo(const AddInfo& info) const;
+
 	private:
-		
 		std::unique_ptr<pof::DataModel> mPaitnets;
 		std::unique_ptr<pof::DataModel> mPatientMedications;
 		std::unique_ptr<pof::DataModel> mPatientHistory;
+
 	};
 
 };

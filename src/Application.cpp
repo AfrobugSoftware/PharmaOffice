@@ -594,6 +594,7 @@ void pof::Application::CreateTables()
 
 	mPatientManager.CreatePatientMedicationTable();
 	mPatientManager.CreatePatientTable();
+	mPatientManager.CreatePatientAddInfoTable();
 
 	mPoisonBookManager.CreatePoisonBookTable();
 }

@@ -84,6 +84,7 @@ namespace pof {
 			ID_CLEAR_TIMER,
 			ID_ADD_REASON,
 			ID_ADD_OUTCOME,
+			ID_REMIND_CHECK,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -97,6 +98,11 @@ namespace pof {
 		void StartTimer();
 		void SetupAuiTheme();
 		void LoadPatientDetails();
+
+		//load additional information data
+		void LoadReminded();
+		
+		
 		void ShowPatientDetails();
 		wxBitmap GetPatientBitMap();
 		void SwitchToolBar();
@@ -145,7 +151,7 @@ namespace pof {
 		void RemovePropertyModification();
 		void OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt);
 		void OnAddText(wxCommandEvent& evt);
-
+		void OnReminded(wxCommandEvent& evt);
 
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
@@ -175,9 +181,10 @@ namespace pof {
 		wxStaticText* mDobText = nullptr;
 		wxStaticText* mGenderText = nullptr;
 		wxStaticText* mPhoneText = nullptr;
+		wxCheckBox* mIsReminded = nullptr;
 
 		wxDataViewCtrl* mMedHistoryView;
-
+		pof::PatientManager::AddInfo mCurPatientAddInfo;
 
 		wxTimer mClearTimer;
 		wxPropertyGridManager* mPatientDetails;

@@ -948,6 +948,9 @@ void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
 		wxMessageBox("User account cannot perform this function", "Mark up", wxICON_INFORMATION | wxOK);
 		return;
 	}
+	if (wxMessageBox("Mark up changes the price for all products in the store, are you sure you want to continue?" , "Mark up",
+		wxICON_WARNING | wxYES_NO) == wxNO) return;
+
 	wxGetApp().mProductManager.MarkUpProducts();
 	
 	//refresh the display

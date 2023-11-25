@@ -139,6 +139,23 @@ bool pof::PatientManager::CreatePatientMedicationTable()
 	return false;
 }
 
+bool pof::PatientManager::CreatePatientAddInfoTable()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS patient_addinfo (puid blob unique, info text);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 std::unique_ptr<pof::DataModel>& pof::PatientManager::GetPatientData()
 {
 	return mPaitnets;
@@ -618,5 +635,115 @@ bool pof::PatientManager::OnUpdateMedication(pof::base::data::const_iterator ite
 	}
 	return false;
 }
+
+bool pof::PatientManager::HasAddInfo(const pof::base::data::duuid_t& puid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT 1 FROM patient_addinfo WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		assert(rel);
+		mLocalDatabase->finalise(*stmt);
+		return !rel->empty();
+	}
+	return false;
+}
+
+std::optional<pof::PatientManager::AddInfo>
+		pof::PatientManager::GetAddInfo(const pof::base::data::duuid_t& puid) const
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT * FROM patient_addinfo WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t, std::string>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+
+		AddInfo info;
+		info.mPatientUid = puid;
+		info.mData = nl::json::parse(std::get<1>(*(rel->begin())));
+		return info;
+	}
+	return std::nullopt;
+}
+
+bool pof::PatientManager::SetAddInfo(const AddInfo& info) const
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(INSERT INTO patient_addinfo VALUES (?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(info.mPatientUid, info.mData.dump()));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::PatientManager::UpdateAddInfo(const AddInfo& info) const
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE patient_addinfo SET info = ? WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(info.mData.dump(), info.mPatientUid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::PatientManager::RemoveAddInfo(const AddInfo& info) const
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(DELTE FROM patient_addinfo WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(info.mPatientUid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+
 
 
