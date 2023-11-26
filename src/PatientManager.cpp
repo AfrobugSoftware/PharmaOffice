@@ -758,25 +758,37 @@ bool pof::PatientManager::RemoveAddInfo(const AddInfo& info) const
 	return false;
 }
 
-void pof::PatientManager::EchoText()
+bool pof::PatientManager::CheckIfReminded(pof::base::data::duuid_t& puid)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql= R"(SELECT CheckReminded('This is a test');)";
+		constexpr const std::string_view sql = R"(SELECT CheckRemineded(info) FROM patient_addinfo WHERE puid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		if (!stmt){
-			spdlog::error(mLocalDatabase->err_msg());
-			return;
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		mLocalDatabase->finalise(*stmt);
+		if (!rel || rel->empty()) {
+			return false;
 		}
-		mLocalDatabase->execute(*stmt);
+		return (std::get<0>(*(rel->begin())) == 1);
 	}
+	return false;
 }
 
 void pof::PatientManager::DBFuncISReminded(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
 {
 	auto text = pof::base::database::arg<pof::base::data::text_t>(conn, values);
-	spdlog::info(text);
-
-	pof::base::database::result(conn, text);
+	nl::json obj = nl::json::parse(text);
+	auto iter = obj.find("IsRemineded");
+	if (iter == obj.end()) pof::base::database::result(conn, static_cast<std::uint64_t>(0));
+	else {
+		std::uint64_t ret = 0;
+		if (*iter) ret = 1;
+		pof::base::database::result(conn, ret);
+	}
 }
 
 

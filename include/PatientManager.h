@@ -118,7 +118,7 @@ namespace pof {
 		bool UpdateAddInfo(const AddInfo& info) const; 
 		bool RemoveAddInfo(const AddInfo& info) const;
 
-		void EchoText();
+		bool CheckIfReminded(pof::base::data::duuid_t& puid);
 
 	private:
 		static void DBFuncISReminded(pof::base::database::conn_t conn,
