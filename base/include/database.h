@@ -461,7 +461,7 @@ namespace pof {
 
 
 			template<typename T>
-			inline void result(conn_t conn, const T& ret)
+			static void result(conn_t conn, const T& ret)
 			{
 				static_assert(is_database_type<T>::value, "result type is not a valid database type");
 				if constexpr (std::is_integral_v<T>) {
@@ -490,7 +490,7 @@ namespace pof {
 					sqlite3_result_int64(conn, rep);
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::duuid_t>) {
-					sqlite3_result_blob(conn, ret.data, ret.size(), SQLITE_TRANSIENT);
+					sqlite3_result_blob(conn, reinterpret_cast<void*>(ret.data), ret.size(), SQLITE_TRANSIENT);
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::currency_t>) {
 					sqlite3_result_blob(conn, ret.data().data(), ret.size(), SQLITE_TRANSIENT);
@@ -501,10 +501,87 @@ namespace pof {
 				}
 			}
 
-			template<typename T, size_t P>
-			auto arg(value_arr_t vals) -> T
+			template<typename T, size_t P = 0>
+			static auto arg(conn_t conn, value_arr_t vals) -> T
 			{
-				
+				static_assert(is_database_type<T>::value, "values type is not a valid database type");
+				if constexpr (std::is_integral_v<T>){
+					if(sqlite3_value_type(vals[P]) != SQLITE_INTEGER){
+						sqlite3_result_error(conn, "INVALID INTEGER TYPE", 500);
+					}
+					else {
+						if constexpr (sizeof(T) == 4) {
+							return sqlite3_value_int(vals[P]);
+						}
+						else {
+							return sqlite3_value_int64(vals[P]);
+						}
+					}
+				}
+				else if constexpr (std::is_floating_point_v<T>) {
+					if (sqlite3_value_type(vals[P]) != SQLITE_FLOAT) {
+						sqlite3_result_error(conn, "INVALID FLOATING POINT TYPE", 501);
+					}
+					else {
+						return sqlite3_value_double(vals[P]);
+					}
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::text_t>) {
+					if (sqlite3_value_type(vals[P]) != SQLITE_TEXT) {
+						sqlite3_result_error(conn, "INVALID TEXT TYPE", 502);
+					}
+					else {
+						auto ptr = (const char*)sqlite3_value_text(vals[P]);
+						if (ptr) {
+							 return pof::base::data::text_t(ptr);
+						}
+						else {
+							return pof::base::data::text_t{};
+						}
+					}
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::blob_t>) {
+					if (sqlite3_value_type(vals[P]) != SQLITE_BLOB) {
+						sqlite3_result_error(conn, "INVALID BLOB TYPE", 503);
+					}
+					else {
+						auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+						if (ptr) {
+							const size_t count = sqlite3_value_bytes(vals[P]);
+							return pof::base::data::blob_t(ptr, ptr + count);
+						}
+						else {
+							pof::base::data::blob_t{};
+						}
+					}
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::datetime_t>)
+				{
+					assert(sqlite3_value_type(vals[P]) == SQLITE_INTEGER);
+
+					pof::base::data::datetime_t::duration::rep rep = sqlite3_value_int64(vals[P]);
+					return pof::base::data::datetime_t(rep);
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::duuid_t>) {
+					auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+					pof::base::data::duuid_t duid = {};
+					if (ptr) {
+						std::copy(ptr, duid.size(), duid.begin());
+					}
+					return duid;
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::currency_t>) {
+					auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+					pof::base::data::currency_t cur{};
+					if (ptr) {
+						std::copy(ptr, pof::base::currency::max, cur.data().begin());
+					}
+					return cur;
+				}
+				else if constexpr (std::is_enum_v<T>) {
+					assert(sqlite3_value_type(vals[P]) == SQLITE_INTEGER);
+					return static_cast<T>(sqlite3_value_int(vals[P]));
+				}
 			}
 
 			template<size_t N, std::enable_if_t<std::cmp_greater(N, 1), int> = 0>

@@ -303,6 +303,9 @@ bool pof::Application::OpenLocalDatabase()
 	MainAccount->mLocalDatabase = mLocalDatabase;
 	mPoisonBookManager.mLocalDatabase = mLocalDatabase;
 
+	//db extensions for the different modules
+	mPatientManager.CreateDatabaseFunctions();
+
 	return true;
 }
 

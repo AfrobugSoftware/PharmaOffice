@@ -156,6 +156,20 @@ bool pof::PatientManager::CreatePatientAddInfoTable()
 	return false;
 }
 
+bool pof::PatientManager::CreateDatabaseFunctions()
+{
+	if (mLocalDatabase)
+	{
+		pof::base::func_aggregate isRemindAgg;
+		isRemindAgg.name = "CheckReminded"s;
+		isRemindAgg.arg_count = 1;
+		isRemindAgg.func = &pof::PatientManager::DBFuncISReminded;
+
+		mLocalDatabase->register_func(std::move(isRemindAgg));
+	}
+	return false;
+}
+
 std::unique_ptr<pof::DataModel>& pof::PatientManager::GetPatientData()
 {
 	return mPaitnets;
@@ -742,6 +756,27 @@ bool pof::PatientManager::RemoveAddInfo(const AddInfo& info) const
 		return status;
 	}
 	return false;
+}
+
+void pof::PatientManager::EchoText()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql= R"(SELECT CheckReminded('This is a test');)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		mLocalDatabase->execute(*stmt);
+	}
+}
+
+void pof::PatientManager::DBFuncISReminded(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	auto text = pof::base::database::arg<pof::base::data::text_t>(conn, values);
+	spdlog::info(text);
+
+	pof::base::database::result(conn, text);
 }
 
 

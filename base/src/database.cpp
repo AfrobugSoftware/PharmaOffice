@@ -255,11 +255,11 @@ void pof::base::database::clear_bindings(stmt_t stmt) const
 
 bool pof::base::database::begin_trans() const 
 {
-	const int ret = sqlite3_step(begin_immidiate);
-	if (ret != SQLITE_DONE) {
+	bool ret = (sqlite3_step(begin_immidiate) == SQLITE_DONE);
+	if (!ret) {
 		reset(begin_immidiate);
-		return false;
 	}
+	return ret;
 }
 
 bool pof::base::database::end_trans() const

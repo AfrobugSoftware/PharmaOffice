@@ -90,6 +90,7 @@ namespace pof {
 		bool CreatePatientTable();
 		bool CreatePatientMedicationTable();
 		bool CreatePatientAddInfoTable();
+		bool CreateDatabaseFunctions();
 
 		std::unique_ptr<pof::DataModel>& GetPatientData();
 		std::unique_ptr<pof::DataModel>& GetPatientMedData();
@@ -117,7 +118,13 @@ namespace pof {
 		bool UpdateAddInfo(const AddInfo& info) const; 
 		bool RemoveAddInfo(const AddInfo& info) const;
 
+		void EchoText();
+
 	private:
+		static void DBFuncISReminded(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
+
 		std::unique_ptr<pof::DataModel> mPaitnets;
 		std::unique_ptr<pof::DataModel> mPatientMedications;
 		std::unique_ptr<pof::DataModel> mPatientHistory;

@@ -1303,7 +1303,8 @@ void pof::PatientView::OnReminded(wxCommandEvent& evt)
 		}
 	}
 	else {
-		wxMessageBox("Error in loading patient information, please contact D-GLOPA admin", "Patients", wxICON_ERROR | wxOK);
+		//wxMessageBox("Error in loading patient information, please contact D-GLOPA admin", "Patients", wxICON_ERROR | wxOK);
+		wxGetApp().mPatientManager.EchoText();
 		mIsReminded->SetValue(false);
 	}
 	
