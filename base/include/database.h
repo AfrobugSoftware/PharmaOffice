@@ -404,6 +404,9 @@ namespace pof {
 		class database : public boost::noncopyable {
 		public:
 			using stmt_t = std::add_pointer_t<sqlite3_stmt>;
+			using conn_t = std::add_pointer_t<sqlite3_context>;
+			using value_arr_t = std::add_pointer_t<sqlite3_value*>;
+
 			using stmt_map = std::unordered_map<std::string, stmt_t>;
 			using query_t = std::string;
 
@@ -455,6 +458,54 @@ namespace pof {
 
 			bool backup(const std::filesystem::path& location, const std::function<bool(int)>& progress);
 			bool rollback_data(const std::filesystem::path& location, const std::function<bool(int)>& progress);
+
+
+			template<typename T>
+			inline void result(conn_t conn, const T& ret)
+			{
+				static_assert(is_database_type<T>::value, "result type is not a valid database type");
+				if constexpr (std::is_integral_v<T>) {
+					if constexpr (sizeof(T) == 4) {
+						sqlite3_result_int(conn, ret);
+					}
+					else {
+						sqlite3_result_int64(conn, ret);
+					}
+				}
+				else if constexpr (std::is_floating_point_v<T>)
+				{
+					sqlite3_result_double(conn, ret);
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::text_t> || std::is_same_v<T, pof::base::data::blob_t>) {
+					if (ret.empty()) {
+						sqlite3_result_null(conn);
+					}
+					else {
+						sqlite3_result_text(conn, ret.data(), ret.size(), SQLITE_TRANSIENT);
+					}
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::datetime_t>)
+				{
+					pof::base::data::clock_t::rep rep = ret.time_since_epoch().count();
+					sqlite3_result_int64(conn, rep);
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::duuid_t>) {
+					sqlite3_result_blob(conn, ret.data, ret.size(), SQLITE_TRANSIENT);
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::currency_t>) {
+					sqlite3_result_blob(conn, ret.data().data(), ret.size(), SQLITE_TRANSIENT);
+				
+				}
+				else if constexpr (std::is_enum_v<T>) {
+					sqlite3_result_int(conn, static_cast<int>(ret));
+				}
+			}
+
+			template<typename T, size_t P>
+			auto arg(value_arr_t vals) -> T
+			{
+				
+			}
 
 			template<size_t N, std::enable_if_t<std::cmp_greater(N, 1), int> = 0>
 			auto prepare_multiple(std::string_view sql) const -> std::optional<std::array<stmt_t, N>>

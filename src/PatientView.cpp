@@ -1146,7 +1146,7 @@ void pof::PatientView::OnSellCurrentMedication(wxCommandEvent& evt)
 	wxBusyCursor cursor;
 	if (mMedicationSelections.empty()) {
 		if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty()) {
-			mPatientInfoBar->ShowMessage("Patient medication list is empty", wxICON_INFORMATION);
+			mPatientInfoBar->ShowMessage("Patient active medication list is empty", wxICON_INFORMATION);
 
 		}
 		else if (!fSaleSignal(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore()).value_or(false)) {
@@ -1297,6 +1297,9 @@ void pof::PatientView::OnReminded(wxCommandEvent& evt)
 		auto iter = mCurPatientAddInfo.mData.find("IsReminded");
 		if (iter != mCurPatientAddInfo.mData.end()) {
 			*iter = evt.IsChecked();
+		}
+		else {
+			mCurPatientAddInfo.mData["IsReminded"] = evt.IsChecked();
 		}
 	}
 	else {
