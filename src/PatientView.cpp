@@ -9,6 +9,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_TOOL(pof::PatientView::ID_ADD_PACK, pof::PatientView::OnAddPacks)
 	EVT_TOOL(pof::PatientView::ID_PATIENT_MED_DETAILS, pof::PatientView::OnHidePatientMedicalDetails)
 	EVT_TOOL(pof::PatientView::ID_SALE_PATIENT_MED, pof::PatientView::OnSellCurrentMedication)
+	EVT_TOOL(pof::PatientView::ID_PATIENT_SALE_HIST, pof::PatientView::OnPatientSaleHist)
 	//date events
 	EVT_DATE_CHANGED(pof::PatientView::ID_START_DATE_PICKER, pof::PatientView::OnDateChanged)
 	EVT_DATE_CHANGED(pof::PatientView::ID_STOP_DATE_PICKER, pof::PatientView::OnDateChanged)
@@ -120,6 +121,8 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools->AddControl(mIsReminded);
 
 	mPatientTools->AddStretchSpacer();
+	mPatientTools->AddTool(ID_PATIENT_SALE_HIST, "Sale History", wxArtProvider::GetBitmap("application"), "Patient sale history");
+	mPatientTools->AddSpacer(2);
 	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR, wxSize(16, 16)), "Patient medical details", wxITEM_CHECK);
 	std::bitset<32> bitset(pd->GetState());
 	bitset.set(5);
@@ -529,18 +532,43 @@ void pof::PatientView::LoadPatientDetails()
 				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_ENTERED_DATE])))));
 	page->GetGrid()->GetProperty("9")->SetValue(wxVariant(wxDateTime(
 				pof::base::data::clock_t::to_time_t(boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_MODIFIED_DATE])))));
-	auto addInfo = wxGetApp().mPatientManager.GetAddInfo(
-		boost::variant2::get<pof::base::data::duuid_t>(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]));
-	mCurPatientAddInfo = addInfo.value_or(pof::PatientManager::AddInfo{});
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID]);
+	auto addInfo = wxGetApp().mPatientManager.GetAddInfo(puid);
+	if (!addInfo.has_value()) {
+		//assume that the addinfo for this patient was not created
+		mCurPatientAddInfo.mPatientUid = puid;
+		nl::json obj;
+		try {
+			obj["uuid"] = boost::lexical_cast<std::string>(puid);
+			obj["isReminded"] = false;
+			mCurPatientAddInfo.mData = obj;
+			wxGetApp().mPatientManager.SetAddInfo(mCurPatientAddInfo);
+		}
+		catch (std::exception& exp) {
+			spdlog::critical(exp.what());
+		}
+	}
+	else {
+		mCurPatientAddInfo = addInfo.value();
+	}
+	LoadPatientAddInfo();
 }
 
-void pof::PatientView::LoadReminded()
+void pof::PatientView::LoadPatientAddInfo()
 {
 	if (mCurPatientAddInfo.mPatientUid == boost::uuids::nil_uuid()) return;
-	auto iter = mCurPatientAddInfo.mData.find("IsReminded");
+
+	//check reminded flag
+	auto iter = mCurPatientAddInfo.mData.find("isReminded");
 	if (iter != mCurPatientAddInfo.mData.end()) {
 		mIsReminded->SetValue(static_cast<bool>(*iter));
 	}
+
+
+}
+
+void pof::PatientView::CheckStoppedMedication()
+{
 }
 
 void pof::PatientView::ShowPatientDetails()
@@ -1294,17 +1322,41 @@ exit:
 void pof::PatientView::OnReminded(wxCommandEvent& evt)
 {
 	if (mCurPatientAddInfo.mPatientUid != boost::uuids::nil_uuid()) {
-		auto iter = mCurPatientAddInfo.mData.find("IsReminded");
+		auto iter = mCurPatientAddInfo.mData.find("isReminded");
 		if (iter != mCurPatientAddInfo.mData.end()) {
 			*iter = evt.IsChecked();
 		}
-		else {
-			mCurPatientAddInfo.mData["IsReminded"] = evt.IsChecked();
-		}
+		wxGetApp().mPatientManager.UpdateAddInfo(mCurPatientAddInfo);
 	}
 	else {
 		wxMessageBox("Error in loading patient information, please contact D-GLOPA admin", "Patients", wxICON_ERROR | wxOK);
 		mIsReminded->SetValue(false);
 	}
 	
+}
+
+void pof::PatientView::OnPatientSaleHist(wxCommandEvent& evt)
+{
+	auto rel = wxGetApp().mPatientManager.GetSaleForPatient(mCurPatientAddInfo.mPatientUid);
+	if (!rel.has_value() || rel->empty()) {
+		wxMessageBox("No sale avaliable for patient", "Patients", wxICON_INFORMATION | wxOK);
+		return;
+	}
+}
+
+void pof::PatientView::OnPatientSaleCompleted(const pof::base::data::duuid_t& saleId, size_t type)
+{
+	if (type != 1) return; //not a patient type
+	auto iter = mCurPatientAddInfo.mData.find("saleIds");
+	if (iter == mCurPatientAddInfo.mData.end()) {
+		mCurPatientAddInfo.mData["saleIds"] = nl::json::array();
+		iter = mCurPatientAddInfo.mData.find("saleIds");
+	}
+	try {
+		iter->push_back(boost::lexical_cast<std::string>(saleId));
+		wxGetApp().mPatientManager.UpdateAddInfo(mCurPatientAddInfo);
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 }

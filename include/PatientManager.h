@@ -118,12 +118,25 @@ namespace pof {
 		bool UpdateAddInfo(const AddInfo& info) const; 
 		bool RemoveAddInfo(const AddInfo& info) const;
 
+		//queries that are yet to test 
 		bool CheckIfReminded(pof::base::data::duuid_t& puid);
+		std::optional<pof::base::relation<pof::base::data::duuid_t,
+				pof::base::data::text_t>> GetRecentlyStopMedications(const pof::base::data::duuid_t& puid) const;
+
+		std::optional<pof::base::relation<pof::base::data::text_t, 
+				pof::base::data::datetime_t,
+				std::uint64_t,
+				pof::base::currency>> GetSaleForPatient(const pof::base::data::duuid_t& puid);
 
 	private:
 		static void DBFuncISReminded(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
+		static void DBFuncAddDuration(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
+		static void DBFuncInSale(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
 
 		std::unique_ptr<pof::DataModel> mPaitnets;
 		std::unique_ptr<pof::DataModel> mPatientMedications;

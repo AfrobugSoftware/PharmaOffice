@@ -968,16 +968,17 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 		auto item = m_dataViewCtrl1->GetSelection();
 		if (!item.IsOk()) return;
 		wxBusyCursor cursor;
+		auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
 
 		auto items = wxGetApp().mProductManager.DoExpiredProducts();
 		if (!items.has_value()) return;
 		if (!std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {return item == i; })) {
-			wxMessageBox("Product is not expired", "EXPIRED", wxICON_WARNING | wxOK);
+			wxMessageBox(fmt::format("{} has not expired", name), "EXPIRED", wxICON_WARNING | wxOK);
 			return;
 		}
 
-		size_t idx = pof::DataModel::GetIdxFromItem(item);
-		auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 		pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(datastore[idx].first[pof::ProductManager::PRODUCT_UUID]);
 		std::uint64_t& stockCount = boost::variant2::get<std::uint64_t>(datastore[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 		if (stockCount == 0) return; //cannot move empty stock
@@ -991,8 +992,6 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
 		wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, stockCount), { "uuid", "stock_count" });
-
-		pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(datastore[idx].first[pof::ProductManager::PRODUCT_NAME]);
 		mInfoBar->ShowMessage(fmt::format("{} was moved to expired successfully", name), wxICON_INFORMATION);
 	}
 	else {

@@ -165,7 +165,21 @@ bool pof::PatientManager::CreateDatabaseFunctions()
 		isRemindAgg.arg_count = 1;
 		isRemindAgg.func = &pof::PatientManager::DBFuncISReminded;
 
+
+		pof::base::func_aggregate AddDayDuration;
+		isRemindAgg.name = "AddDays"s;
+		isRemindAgg.arg_count = 2;
+		isRemindAgg.func = &pof::PatientManager::DBFuncAddDuration;
+
+		pof::base::func_aggregate InSale;
+		isRemindAgg.name = "InSale"s;
+		isRemindAgg.arg_count = 2;
+		isRemindAgg.func = &pof::PatientManager::DBFuncInSale;
+
+
 		mLocalDatabase->register_func(std::move(isRemindAgg));
+		mLocalDatabase->register_func(std::move(AddDayDuration));
+		mLocalDatabase->register_func(std::move(InSale));
 	}
 	return false;
 }
@@ -778,17 +792,121 @@ bool pof::PatientManager::CheckIfReminded(pof::base::data::duuid_t& puid)
 	return false;
 }
 
+std::optional<pof::base::relation<pof::base::data::duuid_t, pof::base::data::text_t>> 
+	pof::PatientManager::GetRecentlyStopMedications(const pof::base::data::duuid_t& puid) const
+{
+	if (mLocalDatabase){
+		constexpr const date::days checkduration = date::days(1);
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name 
+		FROM patients pt, products p, medications md
+		WHERE Days(md.stopdate) > ? AND AddDays(md.stopdate, ?) < ? AND p.uuid = md.product_uuid AND pt.uuid = md.patient_uuid AND md.patient_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto today = pof::base::data::clock_t::now();
+		auto dayAhead = date::floor<date::days>(today);
+		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(day),
+			static_cast<std::uint64_t>(checkduration.count()), static_cast<std::uint64_t>(day), puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t, pof::base::data::text_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
+}
+
+std::optional<pof::base::relation<pof::base::data::text_t, pof::base::data::datetime_t, std::uint64_t, pof::base::currency>> pof::PatientManager::GetSaleForPatient(const pof::base::data::duuid_t& puid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.name, s.sale_date, s.product_quantity, s.product_ext_price
+		FROM products p, sales s, (SELECT info FROM patient_addinfo WHERE puid = ?) AS pai
+		WHERE s.product_uuid = p.uuid AND InSale(pai.info, s.uuid) = 1;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::text_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::currency
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
+}
+
 void pof::PatientManager::DBFuncISReminded(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
 {
 	auto text = pof::base::database::arg<pof::base::data::text_t>(conn, values);
 	nl::json obj = nl::json::parse(text);
-	auto iter = obj.find("IsRemineded");
+	auto iter = obj.find("isRemineded");
 	if (iter == obj.end()) pof::base::database::result(conn, static_cast<std::uint64_t>(0));
 	else {
 		std::uint64_t ret = 0;
 		if (*iter) ret = 1;
 		pof::base::database::result(conn, ret);
 	}
+}
+
+//day duration
+void pof::PatientManager::DBFuncAddDuration(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	auto timepoint = pof::base::database::arg<pof::base::data::datetime_t, 0>(conn, values);
+	auto duration = pof::base::database::arg<std::uint64_t, 1>(conn, values);
+
+	timepoint += date::days(duration);
+
+	spdlog::info("Duration: {:d}", duration);
+	spdlog::info("timepoint: {:d}", timepoint.time_since_epoch().count());
+
+	auto day = std::chrono::duration_cast<date::days>(timepoint.time_since_epoch());
+	spdlog::info("Day: {:d}", day);
+	pof::base::database::result(conn,static_cast<std::uint64_t>(day.count()));
+}
+
+void pof::PatientManager::DBFuncInSale(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	auto json = pof::base::database::arg<std::string>(conn, values);
+	auto saleid = pof::base::database::arg<pof::base::data::duuid_t, 1>(conn, values);
+	std::uint64_t ret = 0;
+	try {
+		auto obj = nl::json::parse(json);
+		auto iter = obj.find("saleIds");
+		if (iter == obj.end()) goto exit;
+		auto& arr = *iter;
+		for (auto it = arr.begin(); it != arr.end(); it++) {
+			if (saleid ==
+				boost::lexical_cast<pof::base::data::duuid_t>(static_cast<std::string>(*it))){
+				ret = 1;
+				goto exit;
+			}
+		}
+	}
+	catch (std::exception& exp){
+		spdlog::error(exp.what());
+	}
+exit:
+	pof::base::database::result(conn, ret);
 }
 
 

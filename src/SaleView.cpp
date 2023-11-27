@@ -6,6 +6,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_BUTTON(pof::SaleView::ID_CHECKOUT, pof::SaleView::OnCheckout)
 	EVT_BUTTON(pof::SaleView::ID_CLEAR, pof::SaleView::OnClear)
 	EVT_BUTTON(pof::SaleView::ID_SAVE, pof::SaleView::OnSave)
+
 	EVT_TOOL(pof::SaleView::ID_REMOVE_PRODUCT, pof::SaleView::OnRemoveProduct)
 	EVT_TOOL(pof::SaleView::ID_HIDE_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnHideProductViewProperty)
 	EVT_TOOL(pof::SaleView::ID_PRINT_LABELS, pof::SaleView::OnPrintAsLabels)
@@ -13,9 +14,11 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
 	EVT_TOOL(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
-	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
-	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
 	EVT_TOOL(pof::SaleView::ID_REPRINT, pof::SaleView::OnReturnSale)
+
+	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
+	
+	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -24,8 +27,10 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_START_EDITING(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnValueChanged)
 	EVT_DATAVIEW_SELECTION_CHANGED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
+	
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
 	EVT_SEARCH(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
+	
 	EVT_PG_CHANGED(pof::SaleView::ID_PRODUCT_VIEW_PROPERTY, pof::SaleView::OnProductPropertyChanged)
 	//EVT_UPDATE_UI(pof::SaleView::ID_ACTIVE_UI_TEXT, pof::SaleView::OnSaleUuidTextUI)
 END_EVENT_TABLE()
@@ -492,6 +497,9 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	if (mInfoBar->IsShown()){
 		mInfoBar->Dismiss();
 	}
+
+
+	mSaleType = NONE;
 	mLocked = false;
 }
 
@@ -574,6 +582,11 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			spdlog::error("Printing failed");
 			return;
 		}
+
+		//signal the module that created the sale
+		mSaleCompleted(mCurSaleuuid, mSaleType);
+		mSaleType = NONE;
+
 		wxGetApp().mSaleManager.GetSaleData()->Clear();
 		if (mPropertyManager->IsShown()) {
 			mPropertyManager->Hide();
@@ -607,6 +620,11 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 
 void pof::SaleView::OnSave(wxCommandEvent& evt)
 {
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+
 	std::ostringstream str;
 	str << mCurSaleuuid;
 	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
@@ -617,6 +635,7 @@ void pof::SaleView::OnSave(wxCommandEvent& evt)
 		mInfoBar->ShowMessage(fmt::format("Sale {} already saved", str.str()), wxICON_INFORMATION);
 		return;
 	}
+	mSaleType = NONE;
 	wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
 	SaveLabelInfo(mCurSaleuuid);
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Saved Sale: {}", str.str()));
@@ -660,6 +679,10 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 
 void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 {
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
 	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
@@ -1416,17 +1439,6 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 
 void pof::SaleView::OnProductPropertyChanged(wxPropertyGridEvent& evt)
 {
-	/*
-	* productName = new wxStringProperty("PRODUCT NAME", "0");
-	strength = new wxStringProperty("UNIT STRENGTH", "1");
-	strength_type = new wxStringProperty("STRENGTH TYPE", "2");
-	genArray = new wxStringProperty("PRODUCT GENERIC NAME", "3");
-	dirArray = new wxEditEnumProperty("DIRECTION FOR USE", "4");
-	stock = new wxIntProperty("CURRENT STOCK", "5");
-	warning = new wxEditEnumProperty("WARNING", "6");
-	packageSize = new wxIntProperty("PACKAGE SIZE", "7");
-	*/
-
 	wxPGProperty* props = evt.GetProperty();
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk() || !props || props->IsCategory()) return;
@@ -1528,6 +1540,7 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 	}
 	bool ret = !wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty(); 
 	mLocked = ret; // lock sale
+	mSaleType = PATIENT;
 	UpdateSaleDisplay();
 	return ret;
 }

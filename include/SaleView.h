@@ -128,13 +128,15 @@ namespace pof
 
 		//sale type
 		enum {
-			PATIENT = 1,
-			PACK,
+			NONE = 0,
+			PATIENT,
 
 		};
 
 		std::vector<pof::LabelInfo> mProductLabels;
-		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t,const pof::base::currency&)> mSaleCompleted;
+
+		size_t sSaleType = NONE;
+		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t)> mSaleCompleted;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
 		~SaleView();

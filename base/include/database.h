@@ -560,13 +560,13 @@ namespace pof {
 					assert(sqlite3_value_type(vals[P]) == SQLITE_INTEGER);
 
 					pof::base::data::datetime_t::duration::rep rep = sqlite3_value_int64(vals[P]);
-					return pof::base::data::datetime_t(rep);
+					return pof::base::data::datetime_t(pof::base::data::clock_t::duration(rep));
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::duuid_t>) {
-					auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+					auto ptr = reinterpret_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
 					pof::base::data::duuid_t duid = {};
 					if (ptr) {
-						std::copy(ptr, duid.size(), duid.begin());
+						std::copy(ptr, ptr + duid.size(), duid.begin());
 					}
 					return duid;
 				}

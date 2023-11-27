@@ -85,6 +85,7 @@ namespace pof {
 			ID_ADD_REASON,
 			ID_ADD_OUTCOME,
 			ID_REMIND_CHECK,
+			ID_PATIENT_SALE_HIST,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -98,14 +99,15 @@ namespace pof {
 		void StartTimer();
 		void SetupAuiTheme();
 		void LoadPatientDetails();
-
 		//load additional information data
-		void LoadReminded();
-		
-		
+		void LoadPatientAddInfo(); //use the json to set settings
+
+		void CheckStoppedMedication();
 		void ShowPatientDetails();
 		wxBitmap GetPatientBitMap();
 		void SwitchToolBar();
+		void OnPatientSaleCompleted(const pof::base::data::duuid_t& saleId, size_t type);
+
 		std::set<wxDataViewItem> mMedicationSelections;
 		std::set<wxDataViewItem> mPatientSelections;
 		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
@@ -152,6 +154,7 @@ namespace pof {
 		void OnPatientDetailsUpdateUI(wxUpdateUIEvent& evt);
 		void OnAddText(wxCommandEvent& evt);
 		void OnReminded(wxCommandEvent& evt);
+		void OnPatientSaleHist(wxCommandEvent& evt);
 
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
