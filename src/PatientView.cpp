@@ -564,7 +564,6 @@ void pof::PatientView::LoadPatientAddInfo()
 		mIsReminded->SetValue(static_cast<bool>(*iter));
 	}
 
-
 }
 
 void pof::PatientView::CheckStoppedMedication()
@@ -1337,10 +1336,20 @@ void pof::PatientView::OnReminded(wxCommandEvent& evt)
 
 void pof::PatientView::OnPatientSaleHist(wxCommandEvent& evt)
 {
+	wxBusyCursor cursor;
 	auto rel = wxGetApp().mPatientManager.GetSaleForPatient(mCurPatientAddInfo.mPatientUid);
 	if (!rel.has_value() || rel->empty()) {
 		wxMessageBox("No sale avaliable for patient", "Patients", wxICON_INFORMATION | wxOK);
 		return;
+	}
+	auto& v = rel.value();
+
+	for (auto& tup : v) {
+		spdlog::info("{}\t{:%d-%m-%Y}\t{:d}\t{:cu}", 
+			std::get<0>(tup),
+			std::get<1>(tup),
+			std::get<2>(tup),
+			std::get<3>(tup));
 	}
 }
 
