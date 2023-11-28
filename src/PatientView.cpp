@@ -238,6 +238,7 @@ void pof::PatientView::CreateViews()
 	mMedTools->AddControl(mStopDatePicker);
 	mMedTools->Realize();
 
+
 	mCurrentMedicationView = new wxDataViewCtrl(currentMedPanel, ID_PATIENT_MEDS_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mCurrentMedicationView->AssociateModel(wxGetApp().mPatientManager.GetPatientMedData().get());
 	mCurrentMedicationView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
@@ -248,13 +249,17 @@ void pof::PatientView::CreateViews()
 	mCurrentMedicationView->AppendDateColumn("Stop Date", pof::PatientManager::MED_STOP_DATE,  wxDATAVIEW_CELL_EDITABLE, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 
 	medSz->Add(mMedTools, 0, wxEXPAND | wxALL, 0);
+	medSz->Add(new wxStaticText(currentMedPanel, wxID_ANY, "Patient current medication"), 0, wxEXPAND | wxALL, 5);
 	medSz->Add(mCurrentMedicationView, 1, wxEXPAND | wxALL, 0);
 
 	currentMedPanel->SetSizer(medSz);
 	medSz->SetSizeHints(currentMedPanel);
 	currentMedPanel->Layout();
 
-	mMedHistoryView = new wxDataViewCtrl(mPatientPanel, ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	wxPanel* HisMedPanel = new wxPanel(mPatientPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxSizer* medHisSz = new wxBoxSizer(wxVERTICAL);
+
+	mMedHistoryView = new wxDataViewCtrl(HisMedPanel, ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mMedHistoryView->AssociateModel(wxGetApp().mPatientManager.GetPatientHistotyData().get());
 	mMedHistoryView->AppendTextColumn("Medication", pof::PatientManager::MED_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
 	mMedHistoryView->AppendTextColumn("Reason", pof::PatientManager::MED_PURPOSE, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
@@ -263,10 +268,16 @@ void pof::PatientView::CreateViews()
 	mMedHistoryView->AppendDateColumn("Started Date", pof::PatientManager::MED_START_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	mMedHistoryView->AppendDateColumn("Stopped Date", pof::PatientManager::MED_STOP_DATE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
+	medHisSz->Add(new wxStaticText(HisMedPanel, wxID_ANY, "Patient medication history"), 0, wxEXPAND | wxALL, 5);
+	medHisSz->Add(mMedHistoryView, 1, wxEXPAND | wxALL, 0);
+
+	HisMedPanel->SetSizer(medHisSz);
+	medHisSz->SetSizeHints(HisMedPanel);
+	HisMedPanel->Layout();
 
 	mCurrentMedicationView->Show();
 	mMedHistoryView->Show();
-	mPatientPanel->SplitHorizontally(currentMedPanel, mMedHistoryView);
+	mPatientPanel->SplitHorizontally(currentMedPanel, HisMedPanel);
 
 	sz->Add(mPatientInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
 	sz->Add(mPatientPanel, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 0));
