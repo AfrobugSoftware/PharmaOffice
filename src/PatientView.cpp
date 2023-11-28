@@ -59,6 +59,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	CreateSpecialCols();
 	CreatePatientSummaryPopUp();
 	CreatePatientDetailsPane();
+	CreateSaleHistoryView();
 
 	mManager.Update();
 }
@@ -441,6 +442,60 @@ void pof::PatientView::CreateSpecialCols()
 	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOP_DATE, std::move(stopDateHandler2));;
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOCK, std::move(stockHandler));;
 
+}
+
+void pof::PatientView::CreateSaleHistoryView()
+{
+	wxPanel* panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
+
+
+	mSalePanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
+
+	mSaleQuanTotal = new wxStaticText(mSalePanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mSaleQuanTotal->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mSaleQuanTotal->Wrap(-1);
+	bSizer4->Add(mSaleQuanTotal, 0, wxALL, 5);
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSalePanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mSaleAmountTotal = new wxStaticText(mSalePanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mSaleAmountTotal->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mSaleAmountTotal->Wrap(-1);
+	bSizer4->Add(mSaleAmountTotal, 0, wxALL, 5);
+
+	mSalePanel->SetSizer(bSizer4);
+	mSalePanel->Layout();
+	bSizer4->Fit(mSalePanel);
+
+	mSaleListCtrl = new wxListCtrl(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxNO_BORDER | wxLC_HRULES | wxLC_VRULES);
+
+	mSaleListCtrl->AppendColumn("Product", wxLIST_FORMAT_LEFT, 230);
+	mSaleListCtrl->AppendColumn("Date", wxLIST_FORMAT_LEFT, 150);
+	mSaleListCtrl->AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 150);
+	mSaleListCtrl->AppendColumn("Amount", wxLIST_FORMAT_LEFT, 150);
+
+	wxItemAttr attr;
+	attr.SetBackgroundColour(*wxBLACK);
+	attr.SetFont(wxFontInfo().Bold().AntiAliased());
+	mSaleListCtrl->SetHeaderAttr(attr);
+
+
+
+	sz->Add(mSaleListCtrl, 1, wxEXPAND | wxALL, 0);
+	sz->Add(mSalePanel, 0, wxEXPAND | wxALL, 2);
+
+	panel->SetSizer(sz);
+	sz->SetSizeHints(panel);
+	panel->Layout();
+
+	mManager.AddPane(panel, wxAuiPaneInfo().Name("SaleHistory").Caption("Sale History").Hide());
 }
 
 void pof::PatientView::CreatePatientDetailsPane()
@@ -1343,14 +1398,59 @@ void pof::PatientView::OnPatientSaleHist(wxCommandEvent& evt)
 		return;
 	}
 	auto& v = rel.value();
-
+	pof::base::currency totalAmount;
+	std::uint64_t totalQuantity = 0;
+	size_t i = 0;
+	mSaleListCtrl->DeleteAllItems();
 	for (auto& tup : v) {
-		spdlog::info("{}\t{:%d-%m-%Y}\t{:d}\t{:cu}", 
-			std::get<0>(tup),
-			std::get<1>(tup),
-			std::get<2>(tup),
-			std::get<3>(tup));
+		wxListItem item;
+
+		item.SetColumn(0);
+		item.SetId(i);
+		item.SetText(std::get<0>(tup));
+		item.SetMask(wxLIST_MASK_TEXT);
+		mSaleListCtrl->InsertItem(item);
+
+		item.SetColumn(1);
+		item.SetId(i);
+		item.SetText(fmt::format("{:%d/%m/%Y}",std::get<1>(tup)));
+		item.SetMask(wxLIST_MASK_TEXT);
+		mSaleListCtrl->SetItem(item);
+
+		item.SetColumn(2);
+		item.SetId(i);
+		item.SetText(std::to_string(std::get<2>(tup)));
+		totalQuantity += std::get<2>(tup);
+		item.SetMask(wxLIST_MASK_TEXT);
+		mSaleListCtrl->SetItem(item);
+
+		item.SetColumn(3);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", std::get<3>(tup)));
+		totalAmount += std::get<3>(tup);
+		item.SetMask(wxLIST_MASK_TEXT);
+		mSaleListCtrl->SetItem(item);
+
+		i++;
 	}
+	mSalePanel->Freeze();
+	mSaleQuanTotal->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
+	mSaleAmountTotal->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+	mSalePanel->Thaw();
+	mSalePanel->Layout();
+	mSalePanel->Refresh();
+
+	ShowSaleHistory();
+}
+
+void pof::PatientView::ShowSaleHistory()
+{
+	auto& pane = mManager.GetPane("SaleHistory");
+	if (pane.IsOk()) {
+		pane.Float().BestSize(600, 600).Center()
+			.TopDockable(false).BottomDockable(false).LeftDockable(false).RightDockable(false).Show();
+	}
+	mManager.Update();
 }
 
 void pof::PatientView::OnPatientSaleCompleted(const pof::base::data::duuid_t& saleId, size_t type)

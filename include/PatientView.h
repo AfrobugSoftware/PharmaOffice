@@ -95,6 +95,7 @@ namespace pof {
 		void CreatePatientSummaryPopUp();
 		void CreatePatientDetailsPane();
 		void CreateSpecialCols();
+		void CreateSaleHistoryView();
 
 		void StartTimer();
 		void SetupAuiTheme();
@@ -155,6 +156,7 @@ namespace pof {
 		void OnAddText(wxCommandEvent& evt);
 		void OnReminded(wxCommandEvent& evt);
 		void OnPatientSaleHist(wxCommandEvent& evt);
+		void ShowSaleHistory();
 
 		wxAuiManager mManager;
 		wxPanel* mPanel = nullptr;
@@ -168,6 +170,11 @@ namespace pof {
 		wxInfoBar* mPatientInfoBar = nullptr;
 		wxDatePickerCtrl* mStartDatePicker = nullptr;
 		wxDatePickerCtrl* mStopDatePicker = nullptr;
+		
+		wxListCtrl* mSaleListCtrl = nullptr;
+		wxStaticText* mSaleQuanTotal = nullptr;
+		wxStaticText* mSaleAmountTotal = nullptr;
+		wxPanel* mSalePanel = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;
