@@ -27,10 +27,17 @@
 #include <wx/timer.h>
 
 #include "PoisonBookManager.h"
+#include "controls/ThumbnailCtrl.h"
+
 
 namespace pof{
 	class PoisonBookView : wxPanel {
 	public:
+		enum {
+			ID_OPEN_BOOK = wxID_HIGHEST + 10,
+
+		};
+
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PoisonBookView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
 		~PoisonBookView();
@@ -38,6 +45,13 @@ namespace pof{
 		void CreateToolBars();
 		void CreateViews();
 		void CreateSpecialCols();
+
+
+	private:
+		wxAuiManager mManager;
+		ThumbnailCtrl* mThumbCtrl = nullptr;
+		wxDataViewCtrl* mBookData = nullptr;
+		wxSimplebook* mBook = nullptr;
 
 	};
 }
