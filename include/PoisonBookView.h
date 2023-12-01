@@ -28,30 +28,62 @@
 
 #include "PoisonBookManager.h"
 #include "controls/ThumbnailCtrl.h"
+#include "SearchProduct.h"
 
 
 namespace pof{
-	class PoisonBookView : wxPanel {
+	class PoisonBookView : public wxPanel {
 	public:
 		enum {
-			ID_OPEN_BOOK = wxID_HIGHEST + 10,
+			EMPTY = 0,
+			THUMBNAIL_SELECT,
+			BOOK_VIEW,
+		};
 
+		enum {
+			ID_OPEN_BOOK = wxID_HIGHEST + 10,
+			ID_CLEAR_TIMER,
+			ID_BOOK,
+			ID_THUMBNAIL,
+			ID_BOOKLIST,
+			ID_TOOLBAR,
+			ID_ADD_PRODUCT,
+			ID_SEARCH,
 		};
 
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PoisonBookView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
-		~PoisonBookView();
+		virtual ~PoisonBookView();
 
 		void CreateToolBars();
 		void CreateViews();
 		void CreateSpecialCols();
+		void CreateEmptyBookPane();
 
+		void LoadBooks();
+		void LoadBookValues();
+		void SetupAuiTheme();
 
 	private:
+		void OnBookActivated(wxListEvent& evt);
+		void OnBookSelected(ThumbnailEvent& evt);
+		void OnAddProduct(wxCommandEvent& evt);
+		void OnSearch(wxCommandEvent& evt);
+		void OnSearchCleared(wxCommandEvent& evt);
+		void OnAuiThemeChange();
+
+
 		wxAuiManager mManager;
+		
+		wxPanel* mEmpty = nullptr;
 		ThumbnailCtrl* mThumbCtrl = nullptr;
+		wxListCtrl* mBookList = nullptr;
 		wxDataViewCtrl* mBookData = nullptr;
 		wxSimplebook* mBook = nullptr;
+		wxTimer mClearTimer;
+		wxAuiToolBar* mToolbar = nullptr;
+		wxSearchCtrl* mSearchbar = nullptr;
 
+		DECLARE_EVENT_TABLE()
 	};
 }

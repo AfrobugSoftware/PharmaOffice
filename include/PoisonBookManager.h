@@ -22,7 +22,6 @@ namespace pof {
 			STARTSTOCK,
 			RUNBALANCE,
 			DATE,
-			INFO,
 			MAX
 		};
 

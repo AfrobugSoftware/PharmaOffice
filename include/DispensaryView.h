@@ -57,7 +57,7 @@ namespace pof {
 		};
 
 		DispensaryView(wxWindow* parent, wxWindowID id);
-		~DispensaryView();
+		virtual ~DispensaryView();
 
 		void OnAuiThemeChange();
 		void SetupAuiTheme();

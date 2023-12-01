@@ -38,12 +38,15 @@ class ImageThumbnailItem : public ThumbnailItem
 public:
 	ImageThumbnailItem(const wxString& filename = wxEmptyString)
 		:ThumbnailItem(filename)
-	{}
+	{
+		mCachedBitmap = wxArtProvider::GetBitmap("product");
+	}
 	virtual bool Load(ThumbnailCtrl* control, bool forcedLoad) override;
 	virtual bool Draw(wxDC& dc, ThumbnailCtrl* control, const wxRect& rect, int style) override;
 protected:
 	wxBitmap mCachedBitmap;
 };
+
 
 
 WX_DECLARE_OBJARRAY(ThumbnailItem, ThumbnailItemArray);

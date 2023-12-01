@@ -114,7 +114,7 @@ namespace pof
 			void SwitchToolBar(int page);
 			void AddSpecialCols();
 			virtual bool TransferDataFromWindow() override;
-			~StockCheck();
+			virtual ~StockCheck();
 
 			std::set<wxDataViewItem> mSelections;
 		protected:

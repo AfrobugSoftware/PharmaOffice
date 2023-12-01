@@ -46,7 +46,7 @@ namespace pof {
 		};
 
 		Warning(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Warnings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(780, 459), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
-		~Warning();
+		virtual ~Warning();
 
 		void OnAdd(wxCommandEvent& evt);
 		void OnContextMenu(wxListEvent& evt);

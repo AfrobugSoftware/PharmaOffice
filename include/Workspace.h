@@ -42,7 +42,7 @@ namespace pof {
 		using signal_t = boost::signals2::signal<void(Notif notif, size_t page)>;
 
 		Workspace(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(829, 644), long style = wxTAB_TRAVERSAL);
-		~Workspace();
+		virtual ~Workspace();
 
 		wxAuiNotebook& GetWorkspacebook() { return *mWorkspacebook; }
 		size_t GetLastPage() const { return mWorkspacebook->GetPageCount() - 1; }

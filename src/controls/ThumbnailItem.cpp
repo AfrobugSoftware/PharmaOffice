@@ -49,54 +49,22 @@ bool ThumbnailItem::DrawBackground(wxDC& dc, ThumbnailCtrl* control, const wxRec
 		colour = focusedColour;
 	else colour = unfocusedColour;
 
+	wxPen pen(*wxBLACK);
+	dc.SetPen(pen);
 	if (style & TH_SELECTED)
 	{
 		wxBrush brush(colour);
-		wxPen pen(colour);
 		dc.SetBrush(brush);
-		dc.SetPen(pen);
 	}
 	else
 	{
 		wxBrush brush(Unselectedbackground);
-		wxPen pen(Unselectedbackground);
 		dc.SetBrush(brush);
-		dc.SetPen(pen);
 	}
 
-	dc.DrawRoundedRectangle(rect, 0.5);
-	if (style & TH_TAGGED)
-	{
-		wxPen  TagPen(control->GetTagColour());
-		dc.SetPen(TagPen);
-
-		dc.DrawLine(rect.GetRight(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
-		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
-
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetTop());
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft(), rect.GetBottom());
-	}
-	else if (style & TH_SELECTED)
-	{
-		dc.SetPen(*wxWHITE_PEN);
-		dc.DrawLine(rect.GetRight(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
-		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
-
-		dc.SetPen(*wxBLACK_PEN);
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetTop());
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft(), rect.GetBottom());
-	}
-	else
-	{
-		dc.SetPen(*wxBLACK_PEN);
-		dc.DrawLine(rect.GetRight(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
-		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
-
-		dc.SetPen(*wxWHITE_PEN);
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetTop());
-		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetLeft(), rect.GetBottom());
-	}
-
+	dc.DrawRoundedRectangle(rect, 5);
+	dc.DrawRectangle(ImageRect);
+	
 	wxString filename = mFilename;
 	if (!filename.IsEmpty() && (control->GetWindowStyle() & TH_TEXT_LABEL))
 	{
@@ -109,7 +77,7 @@ bool ThumbnailItem::DrawBackground(wxDC& dc, ThumbnailCtrl* control, const wxRec
 
 		wxRect frect; 
 		frect.x = rect.x + Margin;
-		frect.y = rect.y + rect.height - (rect.height - ImageRect.height) / 2 + Margin;
+		frect.y = rect.y + rect.height - (rect.height - ImageRect.height) + Margin;
 		frect.width = rect.width - 2 * Margin;
 		frect.height = (rect.height - ImageRect.height) / 2 - 2 * Margin;
 
@@ -117,7 +85,7 @@ bool ThumbnailItem::DrawBackground(wxDC& dc, ThumbnailCtrl* control, const wxRec
 		dc.GetTextExtent(filename, &textw, &texth);
 
 		dc.SetClippingRegion(frect);
-		int x = frect.x + wxMax(0, (frect.width - textw) / 2);
+		int x = frect.x + 5; // +wxMax(0, (frect.width - textw) / 2);
 		int y = frect.y;
 		dc.DrawText(filename, x, y);
 		dc.DestroyClippingRegion();
@@ -133,19 +101,6 @@ bool ThumbnailItem::DrawBackground(wxDC& dc, ThumbnailCtrl* control, const wxRec
 			dc.DrawBitmap(tag, x, y);
 		}
 	}
-	if (style & TH_IS_FOCUSED)
-	{
-		wxPen dottenPen(control->GetFocusRectColour(), 1, wxDOT);
-		dc.SetPen(dottenPen);
-		dc.SetBrush(*wxTRANSPARENT_BRUSH);
-		wxRect rect = ImageRect;
-		rect.x--;
-		rect.y--;
-		rect.height += 2;
-		rect.width += 2;
-		dc.DrawRoundedRectangle(rect, 0.5);
-	}
-
 	return true;
 }
 

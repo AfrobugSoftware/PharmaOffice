@@ -49,7 +49,7 @@ namespace pof {
 		};
 
 		SaveSaleDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Save Sale"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(780, 459), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
-		~SaveSaleDialog();
+		virtual ~SaveSaleDialog();
 		bool LoadSaveSales(const pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>& relation);
 		void OnContextMenu(wxListEvent& evt);
 		void OnRemove(wxCommandEvent& evt);

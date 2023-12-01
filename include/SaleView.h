@@ -139,7 +139,7 @@ namespace pof
 		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t)> mSaleCompleted;
 
 		SaleView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
-		~SaleView();
+		virtual ~SaleView();
 		void SetupDropTarget();
 
 		void CreateSpecialColumnHandlers();

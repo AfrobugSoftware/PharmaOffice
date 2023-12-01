@@ -21,6 +21,7 @@
 #include "AuditView.h"
 #include "PrescriptionView.h"
 #include "PatientView.h"
+#include "PoisonBookView.h"
 
 #include <Data.h>
 #include <data_tuple.h>
@@ -68,6 +69,7 @@ namespace pof {
 			ID_PRESCRIPTION_VIEW,
 			ID_AUDIT_VIEW,
 			ID_PATIENT_VIEW,
+			ID_POISONBOOK_VIEW,
 			//MENUS
 			ID_PAGER,
 			ID_MENU_VIEW_SHOW_MODULES,
@@ -164,6 +166,7 @@ namespace pof {
 		pof::PrescriptionView* mPrescriptionView = nullptr;
 		pof::AuditView* mAuditView = nullptr;
 		pof::PatientView* mPatientView = nullptr;
+		pof::PoisonBookView* mPoisonBookView = nullptr;
 
 		std::chrono::system_clock::time_point mExpireWatchTime;
 		DECLARE_EVENT_TABLE()

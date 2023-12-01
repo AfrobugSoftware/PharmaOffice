@@ -586,10 +586,9 @@ bool ThumbnailCtrl::GetItemRectImage(int item, wxRect& rect, bool transform)
 	rect.width = mThumbnailImageSize.x;
 	rect.height = mThumbnailImageSize.y;
 
-	rect.x = OutterRect.x + (OutterRect.width - rect.width) / 2;
-	rect.y = OutterRect.y + (OutterRect.height - rect.height) / 2;
+	rect.x = OutterRect.x; // +(OutterRect.width - rect.width);
+	rect.y = OutterRect.y; // +(OutterRect.height - rect.height);
 
-	if ((GetWindowStyle() & TH_EXTENSION_LABEL) == 0) rect.y -= mTextHeight / 2;
 	return true;
 
 }
@@ -840,8 +839,8 @@ void ThumbnailCtrl::OnPaint(wxPaintEvent& event)
 			if (isFocused) style |= TH_FOCUSED;
 			if (isFocused && i == mFocusItem) style |= TH_IS_FOCUSED;
 
-			GetItemRect(i, untransformedRect, false);
-			GetItemRectImage(i, untransformedImageRect, false);
+			GetItemRect(i, untransformedRect, true);
+			GetItemRectImage(i, untransformedImageRect, true);
 
 			DrawItemBackground(i, dc, untransformedRect, untransformedImageRect, style);
 			DrawItem(i, dc, untransformedImageRect, style);
@@ -874,6 +873,12 @@ void ThumbnailCtrl::OnLeftClick(wxMouseEvent& event)
 		cmdEvent.SetIndex(n);
 		cmdEvent.SetFlags(flags);
 		GetEventHandler()->ProcessEvent(cmdEvent);
+	}
+	else {
+		int x = GetSelection();
+		if (x != wxNOT_FOUND) {
+			Select(x, false);
+		}
 	}
 
 
@@ -1034,18 +1039,7 @@ void ThumbnailCtrl::CalculateOverallThumbnailSize()
 	dc.SetFont(GetFont());
 	dc.GetTextExtent(wxT("X"), &w, &mTextHeight);
 
-	//From left to right Margin - ImageSize - margin
-	mThumbnailOverallSize.x = mThumbnailImageSize.x + mMargin * 2;
-	
-	//From top to bottom: margin, text + margin (if TH_EXTENTION_LABEL), image, text ,margin
-	if (GetWindowStyle() & TH_EXTENSION_LABEL)
-	{
-		mThumbnailOverallSize.y = mMargin * 4 + mTextHeight * 2 + mThumbnailImageSize.y;
-	}
-	else
-	{
-		mThumbnailOverallSize.y = mMargin * 3 + mTextHeight + mThumbnailImageSize.y;
-	}
+	mThumbnailOverallSize.y = mMargin * 4 + mTextHeight * 3 + mThumbnailImageSize.y;
 }
 
 void ThumbnailCtrl::DoSelection(int n, int flags)

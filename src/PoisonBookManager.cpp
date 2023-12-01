@@ -50,7 +50,7 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		std::tuple <
@@ -61,7 +61,6 @@ bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
-			pof::base::data::text_t,
 			pof::base::data::datetime_t
 		> tup;
 		pof::base::build(tup, row);
@@ -94,7 +93,6 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid)
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
-			pof::base::data::text_t,
 			pof::base::data::datetime_t
 		>(*stmt);
 		if (!rel.has_value()) {
@@ -135,7 +133,6 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid, cons
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
-			pof::base::data::text_t,
 			pof::base::data::datetime_t
 		>(*stmt);
 		if (!rel.has_value()) {
@@ -161,7 +158,7 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid, cons
 bool pof::PoisonBookManager::OnAddRecord(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		std::tuple <
@@ -172,7 +169,6 @@ bool pof::PoisonBookManager::OnAddRecord(pof::base::data::const_iterator iter)
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
-			pof::base::data::text_t,
 			pof::base::data::datetime_t
 		> tup;
 		pof::base::build(tup, *iter);
@@ -216,7 +212,7 @@ bool pof::PoisonBookManager::OnUpdateRecord(pof::base::data::const_iterator iter
 {
 	if(mLocalDatabase){
 		constexpr static std::array<std::string_view, MAX> colName = {
-				"puid", "patient_name", "patient_addy", "pharmacist_name", "is_verified" ,"quantity", "start_stock", "running_balance", "info", "date"
+				"puid", "patient_name", "patient_addy", "pharmacist_name", "is_verified" ,"quantity", "start_stock", "running_balance", "date"
 		};
 		std::ostringstream os;
 		std::vector<size_t> upIdx;

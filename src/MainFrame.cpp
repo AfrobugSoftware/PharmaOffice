@@ -224,6 +224,7 @@ void pof::MainFrame::CreateModules()
 	mModules->mModuleViews.insert({ mModules->mPrescriptions, mPrescriptionView });
 	mModules->mModuleViews.insert({ mModules->mAuditTrails, mAuditView });
 	mModules->mModuleViews.insert({ mModules->mPaitents,  mPatientView });
+	mModules->mModuleViews.insert({ mModules->mPoisionBook, mPoisonBookView });
 
 	//load cat to modules
 	auto& cat = wxGetApp().mProductManager.GetCategories();
@@ -262,7 +263,7 @@ void pof::MainFrame::CreateViews()
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mAuditView = new pof::AuditView(workspaceBook, ID_AUDIT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPatientView = new pof::PatientView(workspaceBook, ID_PATIENT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-
+	mPoisonBookView = new pof::PoisonBookView(workspaceBook, ID_POISONBOOK_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
 	mPatientView->fSaleSignal.connect(std::bind_front(&pof::SaleView::OnAddMedicationsToSale,mSaleView));

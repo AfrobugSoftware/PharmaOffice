@@ -55,7 +55,7 @@ namespace pof
 	public:
 
 		PackView(wxWindow* parent, bool showSale = false, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(957, 542), long style = wxDEFAULT_DIALOG_STYLE);
-		~PackView();
+		virtual ~PackView();
 
 		enum {
 			ID_PACK_SELECT = wxID_HIGHEST + 10,

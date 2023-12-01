@@ -61,7 +61,7 @@ namespace pof {
 
 
 		SignInDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(848, 584), long style = wxDEFAULT_DIALOG_STYLE);
-		~SignInDialog();
+		virtual ~SignInDialog();
 	
 		inline constexpr const std::string& GetUserData() const { return mUserData; }
 		inline bool GetKeepSignedIn() const { return mKeepMeSigned->IsChecked(); }
