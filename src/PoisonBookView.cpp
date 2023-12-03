@@ -4,6 +4,11 @@ BEGIN_EVENT_TABLE(pof::PoisonBookView, wxPanel)
 	EVT_LIST_ITEM_ACTIVATED(pof::PoisonBookView::ID_BOOKLIST, pof::PoisonBookView::OnBookActivated)
 	
 	EVT_TOOL(pof::PoisonBookView::ID_ADD_PRODUCT, pof::PoisonBookView::OnAddProduct)
+	EVT_TOOL(wxID_BACKWARD, pof::PoisonBookView::OnBack)
+
+	EVT_DATE_CHANGED(pof::PoisonBookView::ID_DATE_PICKER, pof::PoisonBookView::OnDateChanged)
+
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PoisonBookView::ID_BOOKDATA, pof::PoisonBookView::OnContextMenu)
 
 
 	EVT_SEARCH(pof::PoisonBookView::ID_SEARCH, pof::PoisonBookView::OnSearch)
@@ -23,8 +28,10 @@ pof::PoisonBookView::PoisonBookView(wxWindow* parent, wxWindowID id, const wxPoi
 
 	mBook = new wxSimplebook(this, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 	CreateToolBars();
+	CreateBookToolBar();
 	CreateEmptyBookPane();
 	CreateViews();
+	CreateDataView();
 
 
 
@@ -51,10 +58,24 @@ void pof::PoisonBookView::CreateToolBars()
 	mToolbar->AddControl(mSearchbar, "Search bar");
 
 	mToolbar->AddStretchSpacer();
-	mToolbar->AddTool(ID_ADD_PRODUCT, "Open Book", wxArtProvider::GetBitmap("action_add"));
+	mToolbar->AddTool(ID_ADD_PRODUCT, "Create New Book", wxArtProvider::GetBitmap("action_add"));
 
 	mToolbar->Realize();
 	mManager.AddPane(mToolbar, wxAuiPaneInfo().Name("Tools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+}
+
+void pof::PoisonBookView::CreateBookToolBar()
+{
+	mBookbar =  new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mBookbar->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to poison books");
+	mBookbar->AddSeparator();
+		
+	mBookbar->AddStretchSpacer();
+	mDateCtrl = new wxDatePickerCtrl(mBookbar, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
+	mBookbar->AddControl(mDateCtrl, "Date");
+	mBookbar->Realize();
+	mManager.AddPane(mBookbar, wxAuiPaneInfo().Name("BookTools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
+
 }
 
 void pof::PoisonBookView::CreateViews()
@@ -97,8 +118,49 @@ void pof::PoisonBookView::CreateViews()
 
 }
 
+void pof::PoisonBookView::CreateDataView()
+{
+	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
+
+	mTextPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxSizer* tsz = new wxBoxSizer(wxHORIZONTAL);
+
+	mProductName = new wxStaticText(mTextPanel, wxID_ANY, wxEmptyString);
+	mProductName->SetFont(wxFontInfo().AntiAliased());
+	mProductName->SetBackgroundColour(*wxWHITE);
+
+	mInfoBar = new wxInfoBar(panel);
+
+	mBookData = new wxDataViewCtrl(panel, ID_BOOKDATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
+	mBookData->AssociateModel(wxGetApp().mPoisonBookManager.GetBook().get());
+
+	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+
+	tsz->Add(mProductName, 0, wxALL | wxEXPAND, 5);
+	tsz->AddStretchSpacer();
+
+
+	mTextPanel->SetSizer(tsz);
+	tsz->SetSizeHints(mTextPanel);
+	mTextPanel->Layout();
+
+	sz->Add(mInfoBar, 0, wxALL | wxEXPAND, 2);
+	sz->Add(mTextPanel, 0, wxALL | wxEXPAND, 2);
+	sz->Add(new wxStaticLine(panel, wxID_ANY), 0, wxALL | wxEXPAND, 2);
+	sz->Add(mBookData, 1, wxALL | wxEXPAND, 2);
+
+	panel->SetSizer(sz);
+	sz->SetSizeHints(panel);
+	panel->Layout();
+
+	mBook->AddPage(panel, "bookdata", false);
+}
+
 void pof::PoisonBookView::CreateSpecialCols()
 {
+
 }
 
 void pof::PoisonBookView::CreateEmptyBookPane()
@@ -166,11 +228,12 @@ void pof::PoisonBookView::LoadBooks()
 	size_t i = 0;
 	for (auto& tup : books.value())
 	{
-		std::string string = fmt::format("{}{}\n{}", std::get<0>(tup),
-			std::get<1>(tup), std::get<2>(tup));
+		std::string string = fmt::format("{}{}\n{}", std::get<1>(tup),
+			std::get<2>(tup), std::get<3>(tup));
 		wxListItem item;
 		item.SetId(i);
 		item.SetText(string);
+		item.SetData(new pof::base::data::duuid_t(std::get<0>(tup)));
 		item.SetImage(0);
 		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
 		
@@ -182,11 +245,23 @@ void pof::PoisonBookView::LoadBooks()
 
 void pof::PoisonBookView::LoadBookValues()
 {
+
 }
 
 void pof::PoisonBookView::OnBookActivated(wxListEvent& evt)
 {
-	wxMessageBox("Message");
+	const wxListItem& item = evt.GetItem();
+	auto puid = reinterpret_cast<boost::uuids::uuid*>(item.GetData());
+	auto text = item.GetText().ToStdString();
+	if (!puid) return;
+
+	mBookData->Freeze();
+	LoadProductName(text);
+	wxGetApp().mPoisonBookManager.LoadBook(*puid);
+	mBookData->Thaw();
+
+	SwitchToolBar();
+	mBook->SetSelection(BOOK_VIEW);
 }
 
 void pof::PoisonBookView::OnBookSelected(ThumbnailEvent& evt)
@@ -197,7 +272,61 @@ void pof::PoisonBookView::OnAddProduct(wxCommandEvent& evt)
 {
 	pof::SearchProduct dialog(this);
 	if (dialog.ShowModal() == wxID_OK) {
-		wxMessageBox("Added message");
+		if (dialog.HasMultipleSelections()) {
+			//cannot open a book for multiple selections
+			wxMessageBox("Multple product selected, cannot open book for more than one product at a time", "Poison book", wxICON_INFORMATION | wxOK);
+			return;
+		}
+		auto& prow = dialog.GetSelectedProduct();
+		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(prow.first[pof::ProductManager::PRODUCT_UUID]);
+		auto& name = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_NAME]);
+		auto& cls = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_CLASS]);
+
+		if (cls != "CONTROLLED") {
+			wxMessageBox(fmt::format("{} is not a controlled medicaiton", name), "Products", wxICON_INFORMATION | wxOK);
+			return;
+		}
+
+		if (wxGetApp().mPoisonBookManager.IsBookCreated(puid)) {
+			wxMessageBox(fmt::format("Controlled book register already created for {}", name), "Products", wxICON_INFORMATION | wxOK);
+			return;
+		}
+		pof::base::data::row_t row;
+		//create the first entry into the book table	
+		auto& v = row.first;
+		auto& p = prow.first;
+
+		v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+		v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
+		v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
+		v.push_back(static_cast<std::uint64_t>(1));
+		v.push_back(static_cast<std::uint64_t>(0));
+		//create with the current stock
+		std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		v.push_back(stock);
+		v.push_back(stock);
+		v.push_back(pof::base::data::clock_t::now());
+
+		if (!wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row))) {
+			wxMessageBox(fmt::format("Failed to create book for {}", name), "Products", wxICON_INFORMATION | wxOK);
+		}
+
+		//add the one
+		auto& formulation = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_FORMULATION]);
+		auto string = fmt::format("{}\n{}", name, formulation);
+
+		mBookList->Freeze();
+		size_t i = mBookList->GetItemCount();
+		wxListItem item;
+		item.SetId(i);
+		item.SetText(string);
+		item.SetData(new pof::base::data::duuid_t(puid));
+		item.SetImage(0);
+		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
+
+		mBookList->InsertItem(std::move(item));
+		mBookList->EnsureVisible(i);
+		mBookList->Thaw();
 	}
 }
 
@@ -215,9 +344,59 @@ void pof::PoisonBookView::OnAuiThemeChange()
 	pof::AuiTheme::Update(auiArtProvider);
 }
 
+void pof::PoisonBookView::OnBack(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+
+	mBook->SetSelection(THUMBNAIL_SELECT);
+	SwitchToolBar();
+}
+
+void pof::PoisonBookView::OnDateChanged(wxDateEvent& evt)
+{
+
+}
+
+void pof::PoisonBookView::OnContextMenu(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	wxMenu* menu = new wxMenu;
+	auto r = menu->Append(ID_VERIFY, "Verify entry");
+
+	mBookData->PopupMenu(menu);
+}
+
 void pof::PoisonBookView::SetupAuiTheme()
 {
 	auto auiArtProvider = mManager.GetArtProvider();
 	pof::AuiTheme::Update(auiArtProvider);
 	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::PoisonBookView::OnAuiThemeChange, this));
+}
+
+void pof::PoisonBookView::SwitchToolBar()
+{
+	auto& topPane = mManager.GetPane("Tools");
+	auto& pPane = mManager.GetPane("BookTools");
+	if (!topPane.IsOk() || !pPane.IsOk()) return;
+	if (pPane.IsShown()) {
+		topPane.Show();
+		pPane.Hide();
+	}
+	else {
+		pPane.Show();
+		topPane.Hide();
+	}
+	mManager.Update();
+}
+
+void pof::PoisonBookView::LoadProductName(const std::string& name)
+{
+	auto panel = mBook->GetPage(BOOK_VIEW);
+	panel->Freeze();
+	mProductName->SetLabelText(name);
+	panel->Thaw();
+	panel->Layout();
+	panel->Refresh();
 }

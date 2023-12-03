@@ -3,9 +3,9 @@
 
 pof::PoisonBookManager::PoisonBookManager()
 {
-	mPosionBook = std::make_unique<pof::DataModel>();
+	mPoisonBook = std::make_unique<pof::DataModel>();
 
-	mPosionBook->Adapt<
+	mPoisonBook->Adapt<
 		pof::base::data::duuid_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
@@ -13,7 +13,6 @@ pof::PoisonBookManager::PoisonBookManager()
 		std::uint64_t,
 		std::uint64_t,
 		std::uint64_t,
-		pof::base::data::text_t,
 		pof::base::data::datetime_t
 	>();
 }
@@ -102,14 +101,14 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid)
 		}
 		mLocalDatabase->finalise(*stmt);
 		if (rel->empty()) return false;
-		mPosionBook->Clear();
-		mPosionBook->GetDatastore().tab().reserve(rel.value().size());
+		mPoisonBook->Clear();
+		mPoisonBook->GetDatastore().tab().reserve(rel.value().size());
 		for (const auto& tup : rel.value()){
 			pof::base::data::row_t row;
 			row.first = pof::base::make_row_from_tuple(tup);
-			mPosionBook->EmplaceData(std::move(row));
+			mPoisonBook->EmplaceData(std::move(row));
 		}
-		mPosionBook->GetDatastore().shrink_to_fit();
+		mPoisonBook->GetDatastore().shrink_to_fit();
 		return true;
 	}
 	return false;
@@ -142,14 +141,14 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid, cons
 		}
 		mLocalDatabase->finalise(*stmt);
 		if (rel->empty()) return false;
-		mPosionBook->Clear();
-		mPosionBook->GetDatastore().tab().reserve(rel.value().size());
+		mPoisonBook->Clear();
+		mPoisonBook->GetDatastore().tab().reserve(rel.value().size());
 		for (const auto& tup : rel.value()) {
 			pof::base::data::row_t row;
 			row.first = pof::base::make_row_from_tuple(tup);
-			mPosionBook->EmplaceData(std::move(row));
+			mPoisonBook->EmplaceData(std::move(row));
 		}
-		mPosionBook->GetDatastore().shrink_to_fit();
+		mPoisonBook->GetDatastore().shrink_to_fit();
 		return true;
 	}
 	return false;
@@ -237,7 +236,7 @@ bool pof::PoisonBookManager::OnUpdateRecord(pof::base::data::const_iterator iter
 		}
 		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[PUID]);
 		size_t i = 1;
-		auto& meta = mPosionBook->GetDatastore().get_metadata();
+		auto& meta = mPoisonBook->GetDatastore().get_metadata();
 		auto& v = iter->first;
 		for (size_t d : upIdx) {
 			auto kind = meta[d];
@@ -270,14 +269,15 @@ bool pof::PoisonBookManager::OnUpdateRecord(pof::base::data::const_iterator iter
 	return false;
 }
 
-std::optional<pof::base::relation<std::string,std::string, std::string>> pof::PoisonBookManager::GetBooks()
+std::optional<pof::base::relation<pof::base::data::duuid_t,std::string,std::string, std::string>> pof::PoisonBookManager::GetBooks()
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT DISTINCT p.name, p.strength, p.formulation  FROM products p, poison_book pb WHERE p.uuid = pb.puid;)";
+		constexpr const std::string_view sql = R"(SELECT DISTINCT pb.puid, p.name, p.strength, p.formulation  FROM products p, poison_book pb WHERE p.uuid = pb.puid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
 			std::string,
 			std::string,
 			std::string

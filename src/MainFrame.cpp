@@ -275,6 +275,7 @@ void pof::MainFrame::CreateViews()
 	mPrescriptionView->Hide();
 	mAuditView->Hide();
 	mPatientView->Hide();
+	mPoisonBookView->Hide();
 }
 
 void pof::MainFrame::CreateWelcomePage()

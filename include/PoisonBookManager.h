@@ -37,15 +37,15 @@ namespace pof {
 		bool OnAddRecord(pof::base::data::const_iterator iter);
 		bool OnRemoveRecord(pof::base::data::const_iterator iter);
 		bool OnUpdateRecord(pof::base::data::const_iterator iter);
-		std::optional<pof::base::relation<std::string, std::string, std::string>> GetBooks();
+		std::optional<pof::base::relation<pof::base::data::duuid_t, std::string, std::string, std::string>> GetBooks();
 	
 		bool IsBookCreated(const pof::base::data::duuid_t& puid);
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 
-		inline std::unique_ptr<pof::DataModel>& GetBook() { return mPosionBook; }
+		inline std::unique_ptr<pof::DataModel>& GetBook() { return mPoisonBook; }
 	private:
-		std::unique_ptr<pof::DataModel> mPosionBook;
+		std::unique_ptr<pof::DataModel> mPoisonBook;
 	};
 
 };

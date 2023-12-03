@@ -49,6 +49,9 @@ namespace pof{
 			ID_TOOLBAR,
 			ID_ADD_PRODUCT,
 			ID_SEARCH,
+			ID_DATE_PICKER,
+			ID_BOOKDATA,
+			ID_VERIFY,
 		};
 
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
@@ -56,14 +59,17 @@ namespace pof{
 		virtual ~PoisonBookView();
 
 		void CreateToolBars();
+		void CreateBookToolBar();
 		void CreateViews();
+		void CreateDataView();
 		void CreateSpecialCols();
 		void CreateEmptyBookPane();
 
 		void LoadBooks();
 		void LoadBookValues();
 		void SetupAuiTheme();
-
+		void SwitchToolBar();
+		void LoadProductName(const std::string& name);
 	private:
 		void OnBookActivated(wxListEvent& evt);
 		void OnBookSelected(ThumbnailEvent& evt);
@@ -71,7 +77,10 @@ namespace pof{
 		void OnSearch(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnAuiThemeChange();
+		void OnBack(wxCommandEvent& evt);
+		void OnDateChanged(wxDateEvent& evt);
 
+		void OnContextMenu(wxDataViewEvent& evt);
 
 		wxAuiManager mManager;
 		
@@ -82,7 +91,12 @@ namespace pof{
 		wxSimplebook* mBook = nullptr;
 		wxTimer mClearTimer;
 		wxAuiToolBar* mToolbar = nullptr;
+		wxAuiToolBar* mBookbar = nullptr;
 		wxSearchCtrl* mSearchbar = nullptr;
+		wxDatePickerCtrl* mDateCtrl = nullptr;
+		wxInfoBar* mInfoBar = nullptr;
+		wxStaticText* mProductName = nullptr;
+		wxPanel* mTextPanel = nullptr;
 
 		DECLARE_EVENT_TABLE()
 	};
