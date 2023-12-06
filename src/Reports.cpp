@@ -6,6 +6,9 @@ BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
 EVT_TOOL(pof::ReportsDialog::ID_EXCEL, pof::ReportsDialog::OnDownloadExcel)
 EVT_DATE_CHANGED(pof::ReportsDialog::ID_EOD_DATE, pof::ReportsDialog::OnDateChange)
+EVT_BUTTON(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdSearch)
+EVT_SEARCH_CANCEL(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdCleared)
+
 EVT_LIST_ITEM_RIGHT_CLICK(pof::ReportsDialog::ID_REPORT_LIST, pof::ReportsDialog::OnEodRightClick)
 END_EVENT_TABLE()
 
@@ -447,6 +450,46 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 	}
 }
 
+void pof::ReportsDialog::OnSaleIdSearch(wxCommandEvent& evt)
+{
+	auto string = mSaleIdSearch->GetValue().ToStdString();
+	if (string.empty()) return;
+	bool fail = false;
+	try {
+		boost::uuids::uuid suid = boost::lexical_cast<boost::uuids::uuid>(string);
+		auto dt = wxGetApp().mSaleManager.GetSaleDate(suid);
+		if (!dt.has_value()) {
+			wxMessageBox("Invalid receipt id", "Reports", wxICON_INFORMATION | wxOK);
+			return;
+		}
+		mSelectDay = dt.value() - date::days(1); //why is it one day ahead
+
+		m_panel5->Freeze();
+		mListReport->Freeze();
+		mListReport->ClearAll();
+		
+		LoadEndOFDay();
+		mEodDate->SetValue(pof::base::data::clock_t::to_time_t(mSelectDay));
+		mListReport->Thaw();
+		mListReport->Refresh();
+		m_panel5->Thaw();
+		m_panel5->Refresh();
+		mSaleIdSearch->Clear();
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		fail = true;
+	}
+	if(fail) 
+		wxMessageBox("Invalid receipt id", "Reports", wxICON_INFORMATION | wxOK);
+	
+}
+
+void pof::ReportsDialog::OnSaleIdCleared(wxCommandEvent& evt)
+{
+	evt.Skip();
+}
+
 void pof::ReportsDialog::CreateToolBar()
 {
 	text = new wxStaticText(mTools, wxID_ANY, wxEmptyString);
@@ -477,6 +520,13 @@ void pof::ReportsDialog::CreateComsumptionPatternToolBar()
 
 void pof::ReportsDialog::CreateEODToolBar()
 {
+	mSaleIdSearch = new wxTextCtrl(mTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
+	mSaleIdSearch->SetHint("Search eod by receipt id");
+
+	mTools->AddControl(mSaleIdSearch);
+	mTools->AddControl(new wxButton(mTools, ID_SEARCH_SALEID, "Search"), "Text");
+	mTools->AddStretchSpacer();
+
 	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxArtProvider::GetBitmap("application"), "Show/Hide the receipt ID", wxITEM_CHECK);
 	mTools->AddSpacer(5);
 	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);

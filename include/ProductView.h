@@ -87,7 +87,8 @@ namespace pof
 			ID_MOVE_PRODUCT_STOCK,
 			ID_DOWNLOAD_EXCEL,
 			ID_STOCK_CHECK_TIMER,
-			ID_CREATE_CONTROLLED_BOOK, 
+			ID_CREATE_CONTROLLED_BOOK,
+			ID_ADD_VARIANT,
 		};
 
 		size_t mRowHeights;
@@ -176,6 +177,7 @@ namespace pof
 		void OnCacheHint(wxDataViewEvent& evt);
 		void OnStockCheckTimer(wxTimerEvent& evt);
 		void OnCreateControlBook(wxCommandEvent& evt);
+		void OnAddVariant(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

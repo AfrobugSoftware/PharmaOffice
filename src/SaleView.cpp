@@ -896,6 +896,9 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			LoadLabelDetails(mProductLabels.back(), *iter);
 			mProductLabels.back().mQuantity *= std::get<3>(prod);
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+			size_t count = wxGetApp().mSaleManager.GetSaleData()->GetDatastore().size();
+			m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
+
 		}
 		UpdateSaleDisplay();
 	}
@@ -1249,6 +1252,9 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(row));
+
+			size_t count = wxGetApp().mSaleManager.GetSaleData()->GetDatastore().size();
+			m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
@@ -1329,6 +1335,9 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]);
 
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+
+			size_t count = wxGetApp().mSaleManager.GetSaleData()->GetDatastore().size();
+			m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
@@ -1422,6 +1431,9 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			LoadLabelDetails(mProductLabels.back(), *iter);
 			mProductLabels.back().mQuantity *= boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]);
 			wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+
+			size_t count = wxGetApp().mSaleManager.GetSaleData()->GetDatastore().size();
+			m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
@@ -1536,6 +1548,9 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 		mProductLabels.emplace_back(LabelInfo{});
 		LoadLabelDetails(mProductLabels.back(), *prodIter);
 		wxGetApp().mSaleManager.GetSaleData()->EmplaceData(std::move(rowSale));
+
+		size_t count = wxGetApp().mSaleManager.GetSaleData()->GetDatastore().size();
+		m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 
 	}
 	bool ret = !wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty(); 

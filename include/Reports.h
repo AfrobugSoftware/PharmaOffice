@@ -23,6 +23,7 @@
 #include <OpenXLSX.hpp>
 #include <wx/simplebook.h>
 #include <wx/clipbrd.h>
+#include <wx/srchctrl.h>
 
 namespace excel = OpenXLSX;
 namespace pof
@@ -44,6 +45,7 @@ namespace pof
 		wxPanel* mEmptyEod = nullptr;
 		wxStaticText* mTotalQuantity = nullptr;
 		wxStaticText* mTotalAmount = nullptr;
+		wxTextCtrl* mSaleIdSearch = nullptr;
 		
 		wxPanel* mCSPanel = nullptr;
 		wxStaticText* mTotalClosingStock = nullptr;
@@ -73,7 +75,7 @@ namespace pof
 			ID_SHOW_SALE_ID,
 			ID_REPORT_LIST,
 			ID_COPY_RECIEPT_ID,
-
+			ID_SEARCH_SALEID,
 		};
 
 		enum {
@@ -105,6 +107,8 @@ namespace pof
 		void OnDateChange(wxDateEvent& evt);
 		void OnEodRightClick(wxListEvent& evt);
 
+		void OnSaleIdSearch(wxCommandEvent& evt);
+		void OnSaleIdCleared(wxCommandEvent& evt);
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();

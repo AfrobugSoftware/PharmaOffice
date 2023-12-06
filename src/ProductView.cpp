@@ -42,6 +42,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_MOVE_PRODUCT_STOCK, pof::ProductView::OnMoveExpiredStock)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_EXCEL, pof::ProductView::OnDownloadExcel)
 	EVT_MENU(pof::ProductView::ID_CREATE_CONTROLLED_BOOK, pof::ProductView::OnCreateControlBook)
+	EVT_MENU(pof::ProductView::ID_ADD_VARIANT, pof::ProductView::OnAddVariant)
 
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
@@ -274,7 +275,8 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 			wxGetApp().mProductManager.GetInventory()->StoreData(std::move(productinvenopt.value()));
 		}
 		const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
-		m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count), mProductNameCol);
+		m_dataViewCtrl1->SetFocus();
+		m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created A product");
 	}
@@ -374,6 +376,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 		auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	}
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add stock", nullptr);
+	auto var = menu->Append(ID_ADD_VARIANT, "Add variant", nullptr);
 	menu->AppendSeparator();
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
 
@@ -1254,6 +1257,18 @@ void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
 	else {
 		mInfoBar->ShowMessage(fmt::format("Created controlled book for {}", name));
 	}
+}
+
+void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+
+	wxDialog dialog;
+	
+
+	if (dialog.ShowModal() == wxID_CANCEL) return;
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

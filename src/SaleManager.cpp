@@ -695,3 +695,27 @@ std::optional<std::tuple<std::uint64_t, pof::base::data::currency_t>> pof::SaleM
 	}
 	return std::nullopt;
 }
+
+std::optional<pof::base::data::datetime_t> pof::SaleManager::GetSaleDate(const pof::base::data::duuid_t& suid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT sale_date FROM sales WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+		}
+		mLocalDatabase->finalise(*stmt);
+		
+		return rel->empty() ? std::nullopt : std::make_optional(std::get<0>(*(rel->begin())));
+
+	}
+	return std::nullopt;
+}

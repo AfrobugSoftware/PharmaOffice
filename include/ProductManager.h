@@ -147,6 +147,13 @@ namespace pof {
 			std::uint64_t //EXPIRE DATE
 		> ;
 
+		using prodvariant_t = std::tuple<
+			pof::base::data::text_t, //FORMULATION
+			pof::base::data::text_t, // STRENGTH
+			pof::base::data::text_t, // STRENGTH TYPE
+			std::uint64_t //PACAKGE SIZE
+		>;
+
 		~ProductManager();
 		ProductManager();
 	
