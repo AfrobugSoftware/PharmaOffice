@@ -95,6 +95,9 @@ void pof::SearchProduct::CreateToolBar()
 	FormulationChoices.Add("IM");
 	FormulationChoices.Add("EMULSION");
 	FormulationChoices.Add("COMSUMABLE");
+	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
+	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+
 
 	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, wxSize(200, -1), FormulationChoices);
 	mFormulationFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {

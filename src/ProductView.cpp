@@ -1263,11 +1263,18 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 {
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
+
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Add variant", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+	auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
+	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(891, 323), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
-	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(891, 423));
-
-	dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
 	wxDialog* d = std::addressof(dialog);
 
@@ -1285,7 +1292,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	TitleText->SetFont(wxFontInfo().Bold().AntiAliased());
 	bSizer2->Add(TitleText, 1, wxALL, 5);
 
-	auto m_staticText18 = new wxStaticText(m_panel1, wxID_ANY, wxT("Creates a product with different variation"), wxDefaultPosition, wxDefaultSize, 0);
+	auto m_staticText18 = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Create different variation for {}", name), wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText18->Wrap(-1);
 	bSizer2->Add(m_staticText18, 0, wxALL, 5);
 
@@ -1311,33 +1318,76 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	fgSizer2->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
 	//name entries
-	wxArrayString genChoies;
-	genChoies.Add("Female");
-	genChoies.Add("Male");
-	genChoies.Add("Not specified");
+	wxArrayString FormulationChoices;
+	FormulationChoices.Add("TABLET");
+	FormulationChoices.Add("CAPSULE");
+	FormulationChoices.Add("SOLUTION");
+	FormulationChoices.Add("SUSPENSION");
+	FormulationChoices.Add("IV");
+	FormulationChoices.Add("IM");
+	FormulationChoices.Add("EMULSION");
+	FormulationChoices.Add("CREAM");
+	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	FormulationChoices.Add("POWDER"); //needles, cannul
+	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
 
 	auto formulationLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0);
 	formulationLabel->Wrap(-1);
 	fgSizer2->Add(formulationLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-
-	auto formulation = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, genChoies);
+	auto formulation = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices);
+	formulation->SetSelection(0);
 	fgSizer2->Add(formulation, 0, wxALL | wxEXPAND, 5);
 
-	
+	auto strength = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Strength"), wxDefaultPosition, wxDefaultSize, 0);
+	strength->Wrap(-1);
+	fgSizer2->Add(strength, 0, wxALL, 5);
 
+	auto strengthvalue = new wxTextCtrl(m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	strengthvalue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	strengthvalue->SetMaxLength(250);
+	fgSizer2->Add(strengthvalue, 1, wxALL | wxEXPAND, 5);
 
+	auto strengthtypelabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Strength Type"), wxDefaultPosition, wxDefaultSize, 0);
+	strengthtypelabel->Wrap(-1);
+	fgSizer2->Add(strengthtypelabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxArrayString StrengthChoices;
+	StrengthChoices.Add("g");
+	StrengthChoices.Add("mg");
+	StrengthChoices.Add("mcg");
+
+	StrengthChoices.Add("L");
+	StrengthChoices.Add("ml");
+	StrengthChoices.Add("ml");
+
+	StrengthChoices.Add("%v/v");
+	StrengthChoices.Add("%w/v");
+
+	StrengthChoices.Add("mol");
+	StrengthChoices.Add("mmol");
+
+	auto strengthtype = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, StrengthChoices);
+	strengthtype->SetSelection(1);
+	fgSizer2->Add(strengthtype, 1, wxALL | wxEXPAND, 5);
+
+	auto packsizelabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Package Size"), wxDefaultPosition, wxDefaultSize, 0);
+	packsizelabel->Wrap(-1);
+	fgSizer2->Add(packsizelabel, 0, wxALL, 5);
+
+	auto packsize = new wxSpinCtrl(m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxALIGN_LEFT, 0, 999999999);
+	fgSizer2->Add(packsize, 1, wxALL | wxEXPAND, 5);
 
 
 	m_scrolledWindow2->SetSizer(fgSizer2);
 	m_scrolledWindow2->Layout();
 	fgSizer2->Fit(m_scrolledWindow2);
-	sbSizer7->Add(m_scrolledWindow2, 1, wxEXPAND | wxALL, 5);
+	sbSizer7->Add(m_scrolledWindow2, 0, wxEXPAND | wxALL, 5);
 
 	m_panel4->SetSizer(sbSizer7);
 	m_panel4->Layout();
 	sbSizer7->Fit(m_panel4);
-	bSizer3->Add(m_panel4, 0, wxEXPAND | wxALL, 5);
+	bSizer3->Add(m_panel4, 1, wxEXPAND | wxALL, 5);
 
 	m_panel2->SetSizer(bSizer3);
 	m_panel2->Layout();
@@ -1357,7 +1407,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	m_sdbSizer2->AddButton(m_sdbSizer2Cancel);
 	m_sdbSizer2->Realize();
 
-	bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 15);
+	bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 5);
 
 	m_panel7->SetSizer(bSizer4);
 	m_panel7->Layout();
@@ -1367,7 +1417,6 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	d->SetSizer(bSizer1);
 	d->Layout();
 	d->Center(wxBOTH);
-
 	wxIcon appIcon;
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	d->SetIcon(appIcon);
@@ -1375,6 +1424,37 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	if (dialog.ShowModal() == wxID_CANCEL) return;
 
 	//transfer to from window
+	pof::base::data::row_t newprod;
+	auto& v = newprod.first;
+	auto& p = prod.first;
+
+	v.resize(pof::ProductManager::PRODUCT_MAX);
+	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
+	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
+	v[pof::ProductManager::PRODUCT_NAME] = p[pof::ProductManager::PRODUCT_NAME];
+	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = p[pof::ProductManager::PRODUCT_GENERIC_NAME];
+	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[formulation->GetSelection()].ToStdString());
+	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(0);
+	v[pof::ProductManager::PRODUCT_CLASS] = p[pof::ProductManager::PRODUCT_CLASS];
+	v[pof::ProductManager::PRODUCT_BARCODE] = ""s;
+	v[pof::ProductManager::PRODUCT_COST_PRICE] = p[pof::ProductManager::PRODUCT_COST_PRICE];
+	v[pof::ProductManager::PRODUCT_UNIT_PRICE] = p[pof::ProductManager::PRODUCT_UNIT_PRICE];
+	v[pof::ProductManager::PRODUCT_USAGE_INFO] = p[pof::ProductManager::PRODUCT_USAGE_INFO];
+	v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = p[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS];
+	v[pof::ProductManager::PRODUCT_DESCRIP] = p[pof::ProductManager::PRODUCT_DESCRIP];
+	v[pof::ProductManager::PRODUCT_STRENGTH] = strengthvalue->GetValue().ToStdString();
+	v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = std::move(strengthtype->GetStringSelection().ToStdString());
+	v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(packsize->GetValue());
+	v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = p[pof::ProductManager::PRODUCT_SIDEEFFECTS];
+	v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
+	v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = static_cast<std::uint64_t>(0);
+	v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = ""s;
+	v[pof::ProductManager::PRODUCT_CATEGORY] = p[pof::ProductManager::PRODUCT_CATEGORY];
+
+	wxGetApp().mProductManager.GetProductData()->StoreData(std::move(newprod));
+	const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
+	m_dataViewCtrl1->SetFocus();
+	m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
