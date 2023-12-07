@@ -1265,10 +1265,116 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	if (!item.IsOk()) return;
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 
-	wxDialog dialog;
+	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(891, 423));
+
+	dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	dialog.SetBackgroundColour(*wxWHITE);
+	wxDialog* d = std::addressof(dialog);
+
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m_panel1 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	m_panel1->SetBackgroundColour(wxColour(255, 255, 255));
+
+	wxBoxSizer* bSizer2;
+	bSizer2 = new wxBoxSizer(wxVERTICAL);
+
+	auto TitleText = new wxStaticText(m_panel1, wxID_ANY, wxT("Add Product Variation"), wxDefaultPosition, wxDefaultSize, 0);
+	TitleText->Wrap(-1);
+	TitleText->SetFont(wxFontInfo().Bold().AntiAliased());
+	bSizer2->Add(TitleText, 1, wxALL, 5);
+
+	auto m_staticText18 = new wxStaticText(m_panel1, wxID_ANY, wxT("Creates a product with different variation"), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText18->Wrap(-1);
+	bSizer2->Add(m_staticText18, 0, wxALL, 5);
+
+	m_panel1->SetSizer(bSizer2);
+	m_panel1->Layout();
+	bSizer2->Fit(m_panel1);
+
+	bSizer1->Add(m_panel1, 0, wxEXPAND | wxALL, 5);
+
+	auto m_panel2 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer3;
+	bSizer3 = new wxBoxSizer(wxVERTICAL);
+
+	auto m_panel4 = new wxPanel(m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	
+	wxStaticBoxSizer* sbSizer7 = new wxStaticBoxSizer(new wxStaticBox(m_panel4, wxID_ANY, wxT("Product Details")), wxVERTICAL);
+
+	auto m_scrolledWindow2 = new wxPanel(sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxFlexGridSizer* fgSizer2;
+	fgSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
+	fgSizer2->AddGrowableCol(1);
+	fgSizer2->SetFlexibleDirection(wxBOTH);
+	fgSizer2->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+	//name entries
+	wxArrayString genChoies;
+	genChoies.Add("Female");
+	genChoies.Add("Male");
+	genChoies.Add("Not specified");
+
+	auto formulationLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0);
+	formulationLabel->Wrap(-1);
+	fgSizer2->Add(formulationLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	auto formulation = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, genChoies);
+	fgSizer2->Add(formulation, 0, wxALL | wxEXPAND, 5);
+
 	
 
+
+
+
+	m_scrolledWindow2->SetSizer(fgSizer2);
+	m_scrolledWindow2->Layout();
+	fgSizer2->Fit(m_scrolledWindow2);
+	sbSizer7->Add(m_scrolledWindow2, 1, wxEXPAND | wxALL, 5);
+
+	m_panel4->SetSizer(sbSizer7);
+	m_panel4->Layout();
+	sbSizer7->Fit(m_panel4);
+	bSizer3->Add(m_panel4, 0, wxEXPAND | wxALL, 5);
+
+	m_panel2->SetSizer(bSizer3);
+	m_panel2->Layout();
+	bSizer3->Fit(m_panel2);
+
+	bSizer1->Add(m_panel2, 1, wxEXPAND | wxALL, 5);
+
+
+	auto m_panel7 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxVERTICAL);
+
+	auto m_sdbSizer2 = new wxStdDialogButtonSizer();
+	auto m_sdbSizer2OK = new wxButton(m_panel7, wxID_OK);
+	m_sdbSizer2->AddButton(m_sdbSizer2OK);
+	auto m_sdbSizer2Cancel = new wxButton(m_panel7, wxID_CANCEL);
+	m_sdbSizer2->AddButton(m_sdbSizer2Cancel);
+	m_sdbSizer2->Realize();
+
+	bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 15);
+
+	m_panel7->SetSizer(bSizer4);
+	m_panel7->Layout();
+	bSizer4->Fit(m_panel7);
+	bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
+
+	d->SetSizer(bSizer1);
+	d->Layout();
+	d->Center(wxBOTH);
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	d->SetIcon(appIcon);
+
 	if (dialog.ShowModal() == wxID_CANCEL) return;
+
+	//transfer to from window
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

@@ -73,7 +73,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
 	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
-	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product Details"), wxT("Product Details") ) ); 
+	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product details"), wxT("Product Details") ) ); 
 	mNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("NAME"), wxPG_LABEL) );
 	m_propertyGridPage1->SetPropertyHelpString( mNameItem, wxT("The product brand name") );
 	mGenericNameItem = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("GENERIC NAME"), wxPG_LABEL ) );
@@ -103,7 +103,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 
 
-	mMoreProductInfo = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("MORE PRODUCT INFORMATION"), wxT("More Product Information") ) ); 
+	mMoreProductInfo = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("More product information"), wxT("More Product Information") ) ); 
 	mDirForUse = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("DIRECTION FOR USE"), wxPG_LABEL ));
 	m_propertyGridPage1->SetPropertyHelpString( mDirForUse, wxT("Information of usage. This would be printed on the label when sold over the counter") );
 	mHealthCond = m_propertyGridPage1->Append( new wxArrayStringProperty( wxT("HEALTH CONDITIONS"), wxPG_LABEL));
@@ -144,7 +144,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mExpDatePeriod = m_propertyGridPage1->Append( new wxEnumProperty( wxT("EXPIRE PERIOD"), wxPG_LABEL, ExpChoices) );
 	m_propertyGridPage1->SetPropertyHelpString( mExpDatePeriod, wxT("Select the period in which the expire alert defines") );
 	
-	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("SALE"), wxT("Sale") )); 
+	mSaleSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Sale"), wxT("Sale") )); 
 
 	mUnitPrice = m_propertyGridPage1->Append( new wxFloatProperty( wxT("UNIT PRICE"), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString( mUnitPrice, wxT("Sale price per package size of the product\n") );
