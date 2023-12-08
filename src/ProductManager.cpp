@@ -2782,6 +2782,42 @@ bool pof::ProductManager::UpdateWarnLevel(const pof::base::data::duuid_t& pid, s
 	return false;
 }
 
+bool pof::ProductManager::DuplicateWarning(const pof::base::data::duuid_t& frompid, pof::base::data::duuid_t& topid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM warning WHERE prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(frompid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::text_t
+		>(*stmt);
+		assert(rel);
+		mLocalDatabase->finalise(*stmt);
+		stmt.emplace();
+
+		if (rel->empty()) return false;
+
+		constexpr const std::string_view sql1 = R"(INSERT INTO warning VALUES (?,?,?);)";
+		for (auto& tup : *rel){
+			std::get<0>(tup) = topid;
+		}
+		stmt = mLocalDatabase->prepare(sql1);
+		assert(stmt);
+
+		status = mLocalDatabase->store(*stmt, std::move(rel.value()));
+		mLocalDatabase->finalise(*stmt);
+
+		return status;
+	}
+	return false;
+}
+
 void pof::ProductManager::CreateActionTable()
 {
 	if (mLocalDatabase){

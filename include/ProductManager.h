@@ -332,7 +332,7 @@ namespace pof {
 		std::optional<std::vector<std::pair<size_t, std::string>>> GetWarning(const pof::base::data::duuid_t& pid);
 		bool RemoveWarning(const pof::base::data::duuid_t& pid, const std::string& message); //uses both as the key
 		bool UpdateWarnLevel(const pof::base::data::duuid_t& pid, std::uint64_t level, const std::string& message);
-
+		bool DuplicateWarning(const pof::base::data::duuid_t& frompid, pof::base::data::duuid_t& topid);
 		//product search filters
 
 		//actions are things done in the month

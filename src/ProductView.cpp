@@ -370,26 +370,26 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	if (!mActiveCategory.empty()) {
 		auto cat = menu->Append(wxID_ANY, "Move to category", catSub);
 		auto remvcat = menu->Append(ID_REMOVE_FROM_CATEGORY, fmt::format("Remove from \'{}\'", mActiveCategory), nullptr);
-		remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
+		//remvcat->SetBitmap(wxArtProvider::GetBitmap("action_remove"));
 	}
 	else {
 		auto cat = menu->Append(wxID_ANY, "Add to category", catSub);
 	}
 	auto inven = menu->Append(ID_ADD_INVENTORY, "Add stock", nullptr);
-	auto var = menu->Append(ID_ADD_VARIANT, "Add variant", nullptr);
 	menu->AppendSeparator();
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
+	auto var = menu->Append(ID_ADD_VARIANT, "Create variant", nullptr);
+	auto crb = menu->Append(ID_CREATE_CONTROLLED_BOOK, "Create Controlled Register", nullptr);
 
 	menu->AppendSeparator();
 	if (mSelections.empty()) {
-		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
+		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 	}
 	else {
-		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
+		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 	}
-	auto crb = menu->Append(ID_CREATE_CONTROLLED_BOOK, "Create Controlled Register", nullptr);
 	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
 	remv->SetBitmap(wxArtProvider::GetBitmap(wxART_DELETE));
 	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
@@ -1272,7 +1272,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
 	auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
-	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(891, 323), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(591, 353), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1295,6 +1295,9 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	auto m_staticText18 = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Create different variation for {}", name), wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText18->Wrap(-1);
 	bSizer2->Add(m_staticText18, 0, wxALL, 5);
+
+	auto warn = new wxCheckBox(m_panel1, wxID_ANY, fmt::format("Add warnings"));
+	bSizer2->Add(warn, 0, wxEXPAND | wxALL, 5);
 
 	m_panel1->SetSizer(bSizer2);
 	m_panel1->Layout();
@@ -1451,10 +1454,20 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = ""s;
 	v[pof::ProductManager::PRODUCT_CATEGORY] = p[pof::ProductManager::PRODUCT_CATEGORY];
 
+	if (warn->GetValue()){
+		wxGetApp().mProductManager.DuplicateWarning(
+			boost::variant2::get<pof::base::data::duuid_t>(p[pof::ProductManager::PRODUCT_UUID]),
+			boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
+	}
+
+
 	wxGetApp().mProductManager.GetProductData()->StoreData(std::move(newprod));
 	const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
 	m_dataViewCtrl1->SetFocus();
 	m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
+
+	mInfoBar->ShowMessage(fmt::format("Sucessfully create a variation for {}", name), wxICON_INFORMATION);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Created a variation for {}", name));
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
