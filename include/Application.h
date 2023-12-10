@@ -126,6 +126,8 @@ namespace pof {
 		bool bShowPrintPrompt = true;
 		bool bAutomaticBatchNumber = true;
 		bool bNotifyStockCheckInComplete = true;
+		bool bAllowSellControlledMed = true;
+		bool bAlwaysCreateEntryIntoRegister = false;
 
 		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;

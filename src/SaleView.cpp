@@ -498,7 +498,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 		mInfoBar->Dismiss();
 	}
 
-
+	std::get<2>(mPosionBookDetails) = false;
 	mSaleType = NONE;
 	mLocked = false;
 }
@@ -597,6 +597,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		mCurSaleuuid = boost::uuids::nil_uuid();
+		std::get<2>(mPosionBookDetails) = false;
 		SetActiveSaleIdText(mCurSaleuuid);
 		mInfoBar->ShowMessage("Sale complete");
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Sale {} completed", os.str()));
@@ -1293,6 +1294,9 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 				return;
 			}
 		}
+
+		if (!CheckControlled(row)) return;
+
 		std::optional<pof::base::data::iterator> iterOpt;
 		if (( iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
 		{
@@ -1649,6 +1653,147 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 		return false;
 	}
 	return true;
+}
+
+
+bool pof::SaleView::CheckControlled(const pof::base::data::row_t& product)
+{
+	auto& v = product.first;
+	try {
+		auto& cass = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_CLASS]);
+		auto& name = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
+		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
+		//check the privilage
+		bool c = (cass == "CONTROLLED");
+		if (c) {
+			if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) 
+				 && !wxGetApp().bAllowSellControlledMed){
+				wxMessageBox("User account cannot sell controlled medications", "Sales", wxICON_INFORMATION | wxOK);
+				return false;
+			}
+			if (!wxGetApp().mPoisonBookManager.IsBookCreated(puid)) {
+				wxMessageBox(fmt::format("No controlled drug register created for {}", name), "Sales", wxICON_WARNING | wxOK);
+				return false;
+			}
+			if (wxGetApp().bAlwaysCreateEntryIntoRegister || wxMessageBox(fmt::format("{} is a controlled drug, do you want to create an entry into the poison book register?", name), "Sales", wxICON_INFORMATION | wxYES_NO) == wxYES) {
+				//create a dialog if we have not before on this sale
+				if (!std::get<2>(mPosionBookDetails)) {
+				
+					wxDialog dialog(this, wxID_ANY, "Add Control drug entry", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+
+					//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+					dialog.SetBackgroundColour(*wxWHITE);
+					wxDialog* d = std::addressof(dialog);
+
+					wxBoxSizer* bSizer1;
+					bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+					wxPanel* m_panel1 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+					m_panel1->SetBackgroundColour(wxColour(255, 255, 255));
+
+					wxBoxSizer* bSizer2;
+					bSizer2 = new wxBoxSizer(wxVERTICAL);
+
+					auto TitleText = new wxStaticText(m_panel1, wxID_ANY, wxT("Please enter poision book details"), wxDefaultPosition, wxDefaultSize, 0);
+					TitleText->Wrap(-1);
+					TitleText->SetFont(wxFontInfo().Bold().AntiAliased());
+					bSizer2->Add(TitleText, 0, wxALL, 5);
+
+					auto m_panel4 = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+
+					wxStaticBoxSizer* sbSizer7 = new wxStaticBoxSizer(new wxStaticBox(m_panel4, wxID_ANY, wxT("Patient Details")), wxVERTICAL);
+
+
+					auto m_scrolledWindow2 = new wxPanel(sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+					wxFlexGridSizer* fgSizer2;
+					fgSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
+					fgSizer2->AddGrowableCol(1);
+					fgSizer2->SetFlexibleDirection(wxBOTH);
+					fgSizer2->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+					auto patientName = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Patient Name"), wxDefaultPosition, wxDefaultSize, 0);
+					patientName->Wrap(-1);
+					fgSizer2->Add(patientName, 0, wxALL, 5);
+
+					auto patientNameValue = new wxTextCtrl(m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+					patientNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+					patientNameValue->SetMaxLength(250);
+					fgSizer2->Add(patientNameValue, 1, wxALL | wxEXPAND, 5);
+
+
+					auto patientAddress = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Patient Address"), wxDefaultPosition, wxDefaultSize, 0);
+					patientAddress->Wrap(-1);
+					fgSizer2->Add(patientAddress, 0, wxALL, 5);
+
+					auto patientAddressValue = new wxTextCtrl(m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+					patientAddressValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+					patientAddressValue->SetMaxLength(250);
+					fgSizer2->Add(patientAddressValue, 1, wxALL | wxEXPAND, 5);
+
+					m_scrolledWindow2->SetSizer(fgSizer2);
+					m_scrolledWindow2->Layout();
+					fgSizer2->Fit(m_scrolledWindow2);
+					sbSizer7->Add(m_scrolledWindow2, 0, wxEXPAND | wxALL, 5);
+
+
+					m_panel4->SetSizer(sbSizer7);
+					m_panel4->Layout();
+					sbSizer7->Fit(m_panel4);
+					
+					bSizer2->Add(m_panel4, 1, wxEXPAND | wxALL, 5);
+
+					m_panel1->SetSizer(bSizer2);
+					m_panel1->Layout();
+					bSizer2->Fit(m_panel1);
+
+					bSizer1->Add(m_panel1, 1, wxEXPAND | wxALL, 5);
+
+
+					auto m_panel7 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+					wxBoxSizer* bSizer4;
+					bSizer4 = new wxBoxSizer(wxVERTICAL);
+
+					auto m_sdbSizer2 = new wxStdDialogButtonSizer();
+					auto m_sdbSizer2OK = new wxButton(m_panel7, wxID_OK);
+					m_sdbSizer2->AddButton(m_sdbSizer2OK);
+					auto m_sdbSizer2Cancel = new wxButton(m_panel7, wxID_CANCEL);
+					m_sdbSizer2->AddButton(m_sdbSizer2Cancel);
+					m_sdbSizer2->Realize();
+					bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 5);
+
+
+
+					m_panel7->SetSizer(bSizer4);
+					m_panel7->Layout();
+					bSizer4->Fit(m_panel7);
+
+					bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
+
+
+					d->SetSizer(bSizer1);
+					d->Layout();
+					d->Center(wxBOTH);
+					wxIcon appIcon;
+					appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+					d->SetIcon(appIcon);
+
+					if(d->ShowModal() == wxID_CANCEL) return false;
+					
+					std::get<0>(mPosionBookDetails) = patientNameValue->GetValue().ToStdString();
+					std::get<1>(mPosionBookDetails) = patientAddressValue->GetValue().ToStdString();
+				}
+				std::get<2>(mPosionBookDetails) = true;
+				return true;
+			}
+		}
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+		return false;
+	}
+
+
+	return false;
 }
 
 std::optional<pof::base::data::iterator> pof::SaleView::CheckAlreadyAdded(const pof::base::data::text_t& productName)

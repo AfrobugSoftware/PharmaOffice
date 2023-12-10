@@ -189,6 +189,7 @@ namespace pof
 		bool CheckProductWarning(const pof::base::data::duuid_t& pid);
 		bool CheckProductClass(const pof::base::data::row_t& product);
 		bool CheckExpired(const pof::base::data::row_t& product);
+		bool CheckControlled(const pof::base::data::row_t& product);
 		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);
@@ -200,7 +201,7 @@ namespace pof
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
-
+		std::tuple<std::string, std::string, bool> mPosionBookDetails;
 		//used to select label data
 
 		DECLARE_EVENT_TABLE();
