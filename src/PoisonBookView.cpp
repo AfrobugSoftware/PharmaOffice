@@ -10,6 +10,7 @@ BEGIN_EVENT_TABLE(pof::PoisonBookView, wxPanel)
 
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PoisonBookView::ID_BOOKDATA, pof::PoisonBookView::OnContextMenu)
 
+	EVT_MENU(pof::PoisonBookView::ID_VERIFY, pof::PoisonBookView::OnVerify)
 
 	EVT_SEARCH(pof::PoisonBookView::ID_SEARCH, pof::PoisonBookView::OnSearch)
 	EVT_TEXT(pof::PoisonBookView::ID_SEARCH, pof::PoisonBookView::OnSearch)
@@ -36,6 +37,9 @@ pof::PoisonBookView::PoisonBookView(wxWindow* parent, wxWindowID id, const wxPoi
 
 
 	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CenterPane().CaptionVisible(false).Show());
+	wxGetApp().mPoisonBookManager.GetBook()->ConnectSlot([&](pof::base::data::const_iterator iter) {
+		LoadBooks();
+	}, pof::DataModel::Signals::STORE_LOAD);
 	LoadBooks(); //do not think I would leave this here
 	SetupAuiTheme();
 	mManager.Update();
@@ -135,8 +139,12 @@ void pof::PoisonBookView::CreateDataView()
 	mBookData = new wxDataViewCtrl(panel, ID_BOOKDATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	mBookData->AssociateModel(wxGetApp().mPoisonBookManager.GetBook().get());
 
-	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Date"), pof::PoisonBookManager::DATE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Patient name"), pof::PoisonBookManager::PNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Patient Address"), pof::PoisonBookManager::PADDY, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
+	mBookData->AppendTextColumn(wxT("Pharmacist"), pof::PoisonBookManager::PHARMNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
 	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 
 	tsz->Add(mProductName, 0, wxALL | wxEXPAND, 5);
 	tsz->AddStretchSpacer();
@@ -226,6 +234,7 @@ void pof::PoisonBookView::LoadBooks()
 	if (books->empty()) return;
 
 	size_t i = 0;
+	mBookList->ClearAll();
 	for (auto& tup : books.value())
 	{
 		std::string string = fmt::format("{}{}\n{}", std::get<1>(tup),
@@ -297,6 +306,7 @@ void pof::PoisonBookView::OnAddProduct(wxCommandEvent& evt)
 		auto& p = prow.first;
 
 		v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+		v.push_back("ENTRY"s);
 		v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
 		v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
 		v.push_back(static_cast<std::uint64_t>(1));
@@ -354,6 +364,18 @@ void pof::PoisonBookView::OnBack(wxCommandEvent& evt)
 
 void pof::PoisonBookView::OnDateChanged(wxDateEvent& evt)
 {
+
+}
+
+void pof::PoisonBookView::OnVerify(wxCommandEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)){
+		wxMessageBox("User account cannot verify a poison book entry", "Poison book", wxICON_WARNING | wxOK);
+		return;
+	}
+	auto item = mBookData->GetSelection();
+	if (!item.IsOk()) return;
+
 
 }
 

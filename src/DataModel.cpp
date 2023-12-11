@@ -583,7 +583,10 @@ void pof::DataModel::ReloadSet()
 void pof::DataModel::Signal(Signals sig, size_t i) const
 {
 	auto iter = std::next(datastore->begin(), i);
-	if (iter == std::end(*datastore)) return;
+	
+	//skip loaded, you want a reload the whole store on an empty dataset
+	if(sig != Signals::STORE_LOAD)
+		if (iter == std::end(*datastore)) return;
 
 	mSignals[static_cast<size_t>(sig)](iter);
 }

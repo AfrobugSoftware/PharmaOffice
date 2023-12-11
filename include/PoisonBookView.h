@@ -79,6 +79,7 @@ namespace pof{
 		void OnAuiThemeChange();
 		void OnBack(wxCommandEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
+		void OnVerify(wxCommandEvent& evt);
 
 		void OnContextMenu(wxDataViewEvent& evt);
 

@@ -522,7 +522,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		});
 	}
 	catch (const std::exception& exp) {
-		wxMessageBox(exp.what(), "FATAL ERROR", wxICON_ERROR | wxOK);
+		wxMessageBox(exp.what(), "Fatal error", wxICON_ERROR | wxOK);
 		spdlog::error(exp.what());
 		return;
 	}
@@ -544,6 +544,12 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
 			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
 		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+
+		if (!mPosionBookEntries.empty()) {
+			auto poiter = mPosionBookEntries.find(puid);
+			if (poiter == mPosionBookEntries.end()) continue;
+			poiter->second.first[pof::PoisonBookManager::RUNBALANCE] = v[pof::ProductManager::PRODUCT_STOCK_COUNT];
+		}
 	};
 	wxIcon cop;
 	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
@@ -586,7 +592,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		//signal the module that created the sale
 		mSaleCompleted(mCurSaleuuid, mSaleType);
 		mSaleType = NONE;
-
+		StorePoisonBookEnteries(); //store entries if any
 		wxGetApp().mSaleManager.GetSaleData()->Clear();
 		if (mPropertyManager->IsShown()) {
 			mPropertyManager->Hide();
@@ -875,6 +881,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 					boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) 
 					continue;
 			}
+			CheckControlled(*iter);
 
 			if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 				mCurSaleuuid = uuidGen();
@@ -1211,6 +1218,9 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue",
 				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
 		}
+
+		CheckControlled(val);
+
 		std::optional<pof::base::data::iterator> iterOpt;
 		auto& v = val.first;
 		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
@@ -1295,7 +1305,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			}
 		}
 
-		if (!CheckControlled(row)) return;
+		CheckControlled(row);
 
 		std::optional<pof::base::data::iterator> iterOpt;
 		if (( iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
@@ -1393,6 +1403,8 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
 				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO)) return;
 		}
+
+		CheckControlled(*iter);
 		auto& v = iter->first;
 		std::optional<pof::base::data::iterator> iterOpt;
 		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
@@ -1529,6 +1541,8 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 			continue;
 		}
+		
+		CheckControlled(*prodIter);
 
 		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 			mCurSaleuuid = uuidGen();
@@ -1666,6 +1680,7 @@ bool pof::SaleView::CheckControlled(const pof::base::data::row_t& product)
 		//check the privilage
 		bool c = (cass == "CONTROLLED");
 		if (c) {
+			wxBusyCursor cusor;
 			if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) 
 				 && !wxGetApp().bAllowSellControlledMed){
 				wxMessageBox("User account cannot sell controlled medications", "Sales", wxICON_INFORMATION | wxOK);
@@ -1783,6 +1798,22 @@ bool pof::SaleView::CheckControlled(const pof::base::data::row_t& product)
 					std::get<1>(mPosionBookDetails) = patientAddressValue->GetValue().ToStdString();
 				}
 				std::get<2>(mPosionBookDetails) = true;
+				pof::base::data::row_t prec; 
+				auto& v = prec.first;
+				v.resize(pof::PoisonBookManager::MAX);
+
+				v[pof::PoisonBookManager::PUID] = puid;
+				v[pof::PoisonBookManager::PNAME] = std::get<0>(mPosionBookDetails);
+				v[pof::PoisonBookManager::PADDY] = std::get<1>(mPosionBookDetails);
+				v[pof::PoisonBookManager::PHARMNAME] = ""s;
+				v[pof::PoisonBookManager::ISVERIFED] = static_cast<std::uint64_t>(0);
+				v[pof::PoisonBookManager::QUAN] = static_cast<std::uint64_t>(0);
+				v[pof::PoisonBookManager::STARTSTOCK] = static_cast<std::uint64_t>(0);
+				v[pof::PoisonBookManager::RUNBALANCE] = static_cast<std::uint64_t>(0);
+				v[pof::PoisonBookManager::DATE] = pof::base::data::clock_t::now();
+				
+				mPosionBookEntries.insert(std::make_pair(puid, std::move(prec)));
+				mInfoBar->ShowMessage(fmt::format("Posion book entry for {} successful", name));
 				return true;
 			}
 		}
@@ -1944,6 +1975,23 @@ void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
 	}
 
 
+}
+
+void pof::SaleView::StorePoisonBookEnteries()
+{
+	if (mPosionBookEntries.empty()) return;
+	auto& saledata = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
+
+	for (auto& s : saledata) {
+		auto& p = boost::variant2::get<pof::base::data::duuid_t>(s.first[pof::SaleManager::PRODUCT_UUID]);
+		auto iter = mPosionBookEntries.find(p);
+		if (iter == mPosionBookEntries.end()) continue;
+		auto& v = iter->second.first;
+
+		v[pof::PoisonBookManager::QUAN] = boost::variant2::get<std::uint64_t>(s.first[pof::SaleManager::PRODUCT_QUANTITY]);
+
+		wxGetApp().mPoisonBookManager.GetBook()->StoreData(std::move(iter->second));
+	}
 }
 
 void pof::SaleView::LoadLabelDetails(LabelInfo& info, const pof::base::data::row_t& product)

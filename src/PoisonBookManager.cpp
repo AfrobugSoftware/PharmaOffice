@@ -9,12 +9,17 @@ pof::PoisonBookManager::PoisonBookManager()
 		pof::base::data::duuid_t,
 		pof::base::data::text_t,
 		pof::base::data::text_t,
+		pof::base::data::text_t,
 		std::uint64_t,
 		std::uint64_t,
 		std::uint64_t,
 		std::uint64_t,
 		pof::base::data::datetime_t
 	>();
+
+	mPoisonBook->ConnectSlot(std::bind_front(&pof::PoisonBookManager::OnAddRecord, this), pof::DataModel::Signals::STORE);
+	mPoisonBook->ConnectSlot(std::bind_front(&pof::PoisonBookManager::OnRemoveRecord, this), pof::DataModel::Signals::REMOVED);
+	mPoisonBook->ConnectSlot(std::bind_front(&pof::PoisonBookManager::OnUpdateRecord, this), pof::DataModel::Signals::UPDATE);
 }
 
 pof::PoisonBookManager::~PoisonBookManager()
@@ -34,7 +39,6 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 			quantity integer,
 			start_stock integer,
 			running_balance integer,
-			info text,
 			date integer 
 			);)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -56,6 +60,7 @@ bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
+			pof::base::data::text_t,
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
@@ -70,6 +75,7 @@ bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
 			spdlog::error(mLocalDatabase->err_msg());
 		}
 		mLocalDatabase->finalise(*stmt);
+		mPoisonBook->Signal(pof::DataModel::Signals::STORE_LOAD, 0); // USED TO SIGNAL A RELOAD OF BOOKS
 		return status;
 	}
 	return false;
@@ -86,6 +92,7 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid)
 
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,
+			pof::base::data::text_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
 			std::uint64_t,
@@ -128,6 +135,7 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid, cons
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
+			pof::base::data::text_t,
 			std::uint64_t,
 			std::uint64_t,
 			std::uint64_t,
@@ -157,11 +165,12 @@ bool pof::PoisonBookManager::LoadBook(const pof::base::data::duuid_t& puid, cons
 bool pof::PoisonBookManager::OnAddRecord(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO poison_book VALUES (?,?,?,?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		std::tuple <
 			pof::base::data::duuid_t,
+			pof::base::data::text_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t,
 			std::uint64_t,

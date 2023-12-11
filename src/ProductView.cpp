@@ -1241,6 +1241,7 @@ void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
 	auto& p = prow.first;
 
 	v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+	v.push_back("ENTRY"s);
 	v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
 	v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
 	v.push_back(static_cast<std::uint64_t>(1));

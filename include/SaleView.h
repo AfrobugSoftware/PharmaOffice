@@ -198,11 +198,14 @@ namespace pof
 		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
 		void SaveLabelInfo(const pof::base::data::duuid_t& suid);
 		void ReloadLabelInfo(const pof::base::data::duuid_t& suid);
+		void StorePoisonBookEnteries();
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
 		std::tuple<std::string, std::string, bool> mPosionBookDetails;
+		std::unordered_map<pof::base::data::duuid_t, pof::base::data::row_t> mPosionBookEntries;
 		//used to select label data
+
 
 		DECLARE_EVENT_TABLE();
 	};
