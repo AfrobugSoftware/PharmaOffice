@@ -167,6 +167,7 @@ namespace pof
 		void LoadInventoryByDate(const pof::base::data::datetime_t& dt);
 		void LoadHistoryByDate(const pof::base::data::datetime_t& dt);
 		void UpdateWarnings();
+		bool iscontrolled = false;
 		back_signal_t mBackSignal;
 		update_signal_t mUpdatePropertySignal;
 		pof::base::data::row_t mProductData;

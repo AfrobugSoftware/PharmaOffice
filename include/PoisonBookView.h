@@ -52,6 +52,7 @@ namespace pof{
 			ID_DATE_PICKER,
 			ID_BOOKDATA,
 			ID_VERIFY,
+			ID_RESET,
 		};
 
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
@@ -80,6 +81,7 @@ namespace pof{
 		void OnBack(wxCommandEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
 		void OnVerify(wxCommandEvent& evt);
+		void OnReset(wxCommandEvent& evt);
 
 		void OnContextMenu(wxDataViewEvent& evt);
 

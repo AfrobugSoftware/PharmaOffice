@@ -138,7 +138,7 @@ namespace pof
 		inline void SetDataViewFont(const wxFont& font) { mDataViewFont = font; }
 
 		void ReloadProductView();
-
+		void CreateAccTable();
 		//events
 		void OnResize(wxSizeEvent& evt);
 		void OnAuiThemeChange();

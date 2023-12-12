@@ -370,7 +370,23 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 void pof::SaleView::CreateSearchPopup()
 {
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
-	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"NAME", pof::ProductManager::PRODUCT_NAME}, {"COST", pof::ProductManager::PRODUCT_UNIT_PRICE} }, {275, 100});
+	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"Name", pof::ProductManager::PRODUCT_NAME}, 
+			{"Formulation", pof::ProductManager::PRODUCT_FORMULATION}, 
+			{"Strength", pof::ProductManager::PRODUCT_STRENGTH}, 
+			{"Package size", pof::ProductManager::PRODUCT_PACKAGE_SIZE}, 
+			{"Cost", pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
+			{275, 100, 100, 100, 100});
+	pof::DataModel::SpeicalColHandler_t spl;
+	spl.first = [sd = sharedData](size_t row, size_t col) -> wxVariant {
+		auto& st = boost::variant2::get<pof::base::data::text_t>((*sd)[row].first[pof::ProductManager::PRODUCT_STRENGTH]);
+		auto& stt = boost::variant2::get<pof::base::data::text_t>((*sd)[row].first[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+		if (stt == "NOT SPECIFIED") return ""s;
+
+		auto string = fmt::format("{}{}", st, stt);
+		return string;
+	};
+
+	mSearchPopup->PushSpecialCol(std::move(spl), pof::ProductManager::PRODUCT_STRENGTH);
 	mSearchPopup->sSelectedSignal.connect(std::bind_front(&pof::SaleView::OnSearchPopup, this));
 }
 
@@ -675,7 +691,7 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	wxSize sz = mProductNameValue->GetClientSize();
 
 	mSearchPopup->SetPosition(wxPoint{ pos.x, pos.y + sz.y  + 5});
-	mSearchPopup->SetSize(wxSize(sz.x + 100, 600));
+	mSearchPopup->SetSize(wxSize(sz.x + 700, 400));
 
 	//mSearchPopup->Show();
 	mSearchPopup->CaptureFocus();

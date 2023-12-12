@@ -21,6 +21,8 @@ namespace pof {
 
 		void SearchString(size_t col, const std::string& searchString);
 		void CaptureFocus();
+		void PushSpecialCol(pof::DataModel::SpeicalColHandler_t&& spc,
+			size_t col);
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
 		void OnDataItemSelected(wxDataViewEvent& evt);

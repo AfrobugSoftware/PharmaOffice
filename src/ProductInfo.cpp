@@ -426,6 +426,19 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		return;
 	}
 
+	iscontrolled = false;
+	if (mPropertyUpdate.has_value()){
+		if (boost::variant2::holds_alternative<pof::base::data::text_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_CLASS])) {
+			iscontrolled = boost::variant2::get<pof::base::data::text_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_CLASS])
+				== "CONTROLLED";
+		}
+		
+	}
+	if (!iscontrolled){
+		std::string cls = boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_CLASS]);
+		iscontrolled = cls == "CONTROLLED";
+	}
+
 	pof::InventoryDialog dialog(nullptr);
 	dialog.mProductUuid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
 	if (dialog.ShowModal() == wxID_OK) {
@@ -451,11 +464,45 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 				Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT];
 		}
 
+
+		//update a controlled medicaiton
+		if (iscontrolled) {
+			pof::base::data::row_t row;
+			//create the first entry into the book table	
+			auto& v = row.first;
+			auto& p = mProductData.first;
+
+			v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+			v.push_back("ENTRY"s);
+			v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
+			v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
+			v.push_back(static_cast<std::uint64_t>(1));
+			v.push_back(static_cast<std::uint64_t>(0));
+			//create with the current stock
+			std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT]) 
+				+ boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+			v.push_back(stock);
+			v.push_back(stock);
+			v.push_back(pof::base::data::clock_t::now());
+
+			if (!wxGetApp().mPoisonBookManager.IsBookCreated(dialog.mProductUuid)) {
+				//create book ?
+				wxMessageBox("No book created for controlled medication, a new book would be created to track this inventory", "Inventory", wxICON_INFORMATION | wxOK);
+				wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row));
+			}
+			else {
+				//add as normal
+				wxGetApp().mPoisonBookManager.GetBook()->StoreData(std::move(row));
+			}
+		}
+
+
 		//cost
 		mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_COST_PRICE);
 		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_COST_PRICE] =
 			Inven.first[pof::ProductManager::INVENTORY_COST];
 		mCostPrice->SetValue(wxVariant(static_cast<float>(boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]))));
+
 
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory with batch {} to {}",
 			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
@@ -463,7 +510,11 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 
 		//refresh inventory view
-
+		
+		//force and update to the system when we add an inventory
+		mUpdatePropertySignal(mPropertyUpdate.value());
+		mPropertyUpdate = {};
+		RemovePropertyModification();
 	}
 	else {
 		//rejected

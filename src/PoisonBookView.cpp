@@ -5,6 +5,7 @@ BEGIN_EVENT_TABLE(pof::PoisonBookView, wxPanel)
 	
 	EVT_TOOL(pof::PoisonBookView::ID_ADD_PRODUCT, pof::PoisonBookView::OnAddProduct)
 	EVT_TOOL(wxID_BACKWARD, pof::PoisonBookView::OnBack)
+	EVT_BUTTON(pof::PoisonBookView::ID_ADD_PRODUCT, pof::PoisonBookView::OnAddProduct)
 
 	EVT_DATE_CHANGED(pof::PoisonBookView::ID_DATE_PICKER, pof::PoisonBookView::OnDateChanged)
 
@@ -41,6 +42,10 @@ pof::PoisonBookView::PoisonBookView(wxWindow* parent, wxWindowID id, const wxPoi
 		LoadBooks();
 	}, pof::DataModel::Signals::STORE_LOAD);
 	LoadBooks(); //do not think I would leave this here
+	if(!mBookList->IsEmpty())
+		mBook->SetSelection(THUMBNAIL_SELECT);
+
+
 	SetupAuiTheme();
 	mManager.Update();
 }
@@ -77,6 +82,8 @@ void pof::PoisonBookView::CreateBookToolBar()
 	mBookbar->AddStretchSpacer();
 	mDateCtrl = new wxDatePickerCtrl(mBookbar, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
 	mBookbar->AddControl(mDateCtrl, "Date");
+	mBookbar->AddSpacer(2);
+	mBookbar->AddTool(ID_RESET, "Reset", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16, 16)), "Reset date search");
 	mBookbar->Realize();
 	mManager.AddPane(mBookbar, wxAuiPaneInfo().Name("BookTools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 
@@ -102,7 +109,7 @@ void pof::PoisonBookView::CreateViews()
 	tsz->SetSizeHints(textPanel);
 	textPanel->Layout();
 
-	mBookList = new wxListCtrl(panel, ID_BOOKLIST, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER);
+	mBookList = new wxListCtrl(panel, ID_BOOKLIST, wxDefaultPosition, wxDefaultSize, wxLC_ICON | wxLC_ALIGN_TOP | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxNO_BORDER);
 	wxImageList* imagelist = new wxImageList(40, 40);
 	imagelist->Add(wxArtProvider::GetBitmap("product"));
 	mBookList->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
@@ -143,8 +150,8 @@ void pof::PoisonBookView::CreateDataView()
 	mBookData->AppendTextColumn(wxT("Patient name"), pof::PoisonBookManager::PNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 	mBookData->AppendTextColumn(wxT("Patient Address"), pof::PoisonBookManager::PADDY, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
 	mBookData->AppendTextColumn(wxT("Pharmacist"), pof::PoisonBookManager::PHARMNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
-	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
-	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 
 	tsz->Add(mProductName, 0, wxALL | wxEXPAND, 5);
 	tsz->AddStretchSpacer();
@@ -198,6 +205,12 @@ void pof::PoisonBookView::CreateEmptyBookPane()
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
+	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Create new book");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
@@ -249,7 +262,7 @@ void pof::PoisonBookView::LoadBooks()
 		mBookList->InsertItem(std::move(item));
 		i++;
 	}
-	mBook->SetSelection(THUMBNAIL_SELECT);
+
 }
 
 void pof::PoisonBookView::LoadBookValues()
@@ -377,6 +390,10 @@ void pof::PoisonBookView::OnVerify(wxCommandEvent& evt)
 	if (!item.IsOk()) return;
 
 
+}
+
+void pof::PoisonBookView::OnReset(wxCommandEvent& evt)
+{
 }
 
 void pof::PoisonBookView::OnContextMenu(wxDataViewEvent& evt)

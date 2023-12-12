@@ -77,7 +77,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateAttibutes();
 	CreateSpecialCols();
 	Style();
-
+	CreateAccTable();
 	//load base data
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
@@ -160,6 +160,21 @@ void pof::ProductView::ReloadProductView()
 	mActiveCategory.clear();
 	m_searchCtrl1->SetDescriptiveText("Search for products");
 	wxGetApp().mProductManager.GetProductData()->Reload();
+}
+
+void pof::ProductView::CreateAccTable()
+{
+	wxAcceleratorEntry entries[5];
+	entries[0].Set(wxACCEL_CTRL, (int)'A', ID_ADD_PRODUCT);
+	entries[1].Set(wxACCEL_CTRL, (int)'R', ID_REMOVE_PRODUCT);
+	entries[2].Set(wxACCEL_CTRL, (int)'O', ID_ORDER_LIST);
+	entries[3].Set(wxACCEL_CTRL, (int)'E', ID_REPORTS_ENDOFDAY);
+	entries[4].Set(wxACCEL_CTRL, (int)'C', ID_SHOW_COST_PRICE);
+
+
+
+	wxAcceleratorTable accel(5, entries);
+	this->SetAcceleratorTable(accel);
 }
 
 void pof::ProductView::OnResize(wxSizeEvent& evt)
