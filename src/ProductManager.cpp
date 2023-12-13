@@ -1488,7 +1488,7 @@ std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> p
 std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data::datetime_t dt)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price, s.uuid
+		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price, s.uuid, s.sale_payment_type
 		FROM sales s, products p
 		WHERE s.product_uuid = p.uuid AND Days(s.sale_date) = ? ORDER BY s.sale_date;  )";
 		
@@ -1512,7 +1512,8 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data:
 			pof::base::data::text_t,
 			std::uint64_t,
 			pof::base::data::currency_t,
-			pof::base::data::duuid_t
+			pof::base::data::duuid_t,
+			pof::base::data::text_t
 		>(*stmt);
 		if (!rel.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());
@@ -1528,7 +1529,8 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data:
 			pof::base::data::kind::text,
 			pof::base::data::kind::uint64,
 			pof::base::data::kind::currency,
-			pof::base::data::kind::uuid
+			pof::base::data::kind::uuid,
+			pof::base::data::kind::text
 		});
 		auto& v = rel.value();
 		data.reserve(v.size());

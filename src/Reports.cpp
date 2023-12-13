@@ -223,13 +223,13 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 	mTools->Realize();
 	mTools->Refresh();
 
-	report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 230);
-	report.AppendColumn("CLOSING STOCK", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("EXPIRED STOCK", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("INVENTORY IN", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("AMOUNT IN", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("INVENTORY OUT", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("AMOUNT OUT", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 230);
+	report.AppendColumn("Closing stock", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Expired stock", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Inventory in", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Amount in", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Inventory out", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Amount out", wxLIST_FORMAT_LEFT, 150);
 
 	wxItemAttr attr;
 	attr.SetBackgroundColour(*wxBLACK);
@@ -327,13 +327,14 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 
 		//make the columns
-		report.AppendColumn("TIME", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("PRODUCT NAME", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("QUANTITY", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("AMOUNT", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("Time", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
+		report.AppendColumn("Payment opiton", wxLIST_FORMAT_LEFT, 100);
 
 		if (bShowSaleID) {
-			report.AppendColumn("RECIEPT ID", wxLIST_FORMAT_CENTER, 205);
+			report.AppendColumn("Reciept id", wxLIST_FORMAT_CENTER, 205);
 		}
 
 		size_t i = 0;
@@ -370,8 +371,14 @@ bool pof::ReportsDialog::LoadEndOFDay()
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.SetItem(item);
 
+			item.SetColumn(4);
+			item.SetId(i);
+			item.SetText(boost::variant2::get<pof::base::data::text_t>(v[6]));
+			item.SetMask(wxLIST_MASK_TEXT);
+			report.SetItem(item);
+
 			if (bShowSaleID){
-				item.SetColumn(4);
+				item.SetColumn(5);
 				item.SetId(i);
 				item.SetText(boost::uuids::to_string(boost::variant2::get<boost::uuids::uuid>(v[5])));
 				item.SetMask(wxLIST_MASK_TEXT);

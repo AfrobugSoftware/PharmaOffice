@@ -91,6 +91,7 @@ namespace pof
 		wxStringProperty* strength_type = nullptr;
 		wxEditEnumProperty* warning = nullptr;
 		wxIntProperty* packageSize = nullptr;
+		wxChoice* mPaymentTypes = nullptr;
 		bool mLocked = false;
 		size_t mSaleType = 0;
 
@@ -124,6 +125,7 @@ namespace pof
 			ID_RETURN_SALE,
 			ID_FUNCTIONS,
 			ID_FOCUS_SCAN,
+			ID_PAYMENT_TYPE,
 		};
 
 		//sale type
@@ -205,7 +207,7 @@ namespace pof
 		std::tuple<std::string, std::string, bool> mPosionBookDetails;
 		std::unordered_map<pof::base::data::duuid_t, pof::base::data::row_t> mPosionBookEntries;
 		//used to select label data
-
+		wxArrayString paymentTypes;
 
 		DECLARE_EVENT_TABLE();
 	};

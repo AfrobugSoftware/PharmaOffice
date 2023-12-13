@@ -114,6 +114,34 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16,16)), "Reprint a sale")->SetHasDropDown(true);
 	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
 	mBottomTools->AddSpacer(5);
+	//look for how to make this more dynamic
+	auto pt = new wxStaticText(mBottomTools, wxID_ANY, "Payment option:");
+	pt->SetBackgroundColour(*wxWHITE);
+	mBottomTools->AddControl(pt);
+	mBottomTools->AddSpacer(5);
+
+	paymentTypes.push_back("Cash");
+	paymentTypes.push_back("Transfer");
+	paymentTypes.push_back("POS");
+	paymentTypes.push_back("No payment option");
+
+	mPaymentTypes = new wxChoice(mBottomTools, ID_PAYMENT_TYPE, wxDefaultPosition, wxSize(150, 20), paymentTypes);
+	mPaymentTypes->SetSelection(paymentTypes.size() - 1);
+	mPaymentTypes->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mPaymentTypes);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = mPaymentTypes->GetStringSelection();
+		if (!sel.IsEmpty()) {
+			dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+		}
+	});
+	mBottomTools->AddControl(mPaymentTypes, "Payment type");
 	mBottomTools->AddStretchSpacer();
 
 	mBottomTools->AddSpacer(5);
@@ -510,6 +538,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	ResetSaleDisplay();
 	mCurSaleuuid = boost::uuids::nil_uuid();
 	SetActiveSaleIdText(mCurSaleuuid);
+	mPaymentTypes->SetSelection(paymentTypes.size() - 1);
 	if (mInfoBar->IsShown()){
 		mInfoBar->Dismiss();
 	}
@@ -529,6 +558,13 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("Sale is empty");
 		return;
 	}
+
+	if (mPaymentTypes->GetSelection() == (paymentTypes.size() - 1)){
+		wxMessageBox("Please select a payment option for this sale", "Sale", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxGetApp().mSaleManager.mCurPaymentType = paymentTypes[mPaymentTypes->GetSelection()].ToStdString();
+
 	pof::base::currency totalAmount;
 	try {
 		totalAmount = std::accumulate(dataStore.begin(),
@@ -619,6 +655,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		mCurSaleuuid = boost::uuids::nil_uuid();
+		mPaymentTypes->SetSelection(paymentTypes.size() - 1);
 		std::get<2>(mPosionBookDetails) = false;
 		SetActiveSaleIdText(mCurSaleuuid);
 		mInfoBar->ShowMessage("Sale complete");
