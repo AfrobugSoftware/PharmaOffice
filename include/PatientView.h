@@ -53,6 +53,13 @@ namespace pof {
 		enum : std::uint8_t {
 			PATIENT_SELECT = 0,
 			PATIENT_VIEW,
+			PATIENT_EMPTY,
+		};
+
+		enum : std::uint8_t {
+			MED_VIEW = 0,
+			MED_EMPTY,
+
 		};
 
 		enum {
@@ -96,6 +103,8 @@ namespace pof {
 		void CreatePatientDetailsPane();
 		void CreateSpecialCols();
 		void CreateSaleHistoryView();
+		void CreateEmptyPanel();
+		void CreateEmptyMedsPanel();
 
 		void StartTimer();
 		void SetupAuiTheme();
@@ -166,6 +175,7 @@ namespace pof {
 		wxAuiToolBar* mMedTools = nullptr;
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
+		wxSimplebook* mBookMeds = nullptr;
 		wxAuiToolBarItem* pd = nullptr;
 		wxInfoBar* mPatientInfoBar = nullptr;
 		wxDatePickerCtrl* mStartDatePicker = nullptr;
@@ -175,6 +185,8 @@ namespace pof {
 		wxStaticText* mSaleQuanTotal = nullptr;
 		wxStaticText* mSaleAmountTotal = nullptr;
 		wxPanel* mSalePanel = nullptr;
+		wxPanel* mEmpty = nullptr;
+		wxPanel* mEmptyMeds = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

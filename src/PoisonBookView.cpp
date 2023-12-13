@@ -233,7 +233,7 @@ void pof::PoisonBookView::CreateEmptyBookPane()
 	mEmpty->SetSizer(bSizer6);
 	mEmpty->Layout();
 
-	mBook->AddPage(mEmpty, "Empty", true);
+	mBook->AddPage(mEmpty, "Empty", false);
 }
 
 void pof::PoisonBookView::LoadBooks()

@@ -3,6 +3,9 @@
 
 BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
 EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
+EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
 EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
 END_EVENT_TABLE()
@@ -21,6 +24,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( wxSize( -1,40 ) );
+	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
 	mTopTools->AddStretchSpacer();
 	m_tool11 = mTopTools->AddTool( wxID_ANY, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
@@ -32,31 +36,36 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER|wxTAB_TRAVERSAL );
+	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER|wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxHORIZONTAL );
 	
 	bSizer4->AddStretchSpacer();
 	
 	m_staticText1 = new wxStaticText( m_panel4, wxID_ANY, wxT("Total Orders:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText1->SetFont(wxFont(wxFontInfo(10).Bold()));
+	m_staticText1->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	m_staticText1->Wrap( -1 );
 	bSizer4->Add( m_staticText1, 0, wxALL, 5 );
 	
 	m_staticText2 = new wxStaticText( m_panel4, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText2->SetFont(wxFont(wxFontInfo(10)));
+	m_staticText2->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	m_staticText2->Wrap( -1 );
 	bSizer4->Add( m_staticText2, 0, wxALL, 5 );
 	
-	
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(m_panel4, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
 	
 	m_staticText3 = new wxStaticText( m_panel4, wxID_ANY, wxT("Order Cost: "), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText3->SetFont(wxFont(wxFontInfo(10).Bold()));
+	m_staticText3->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	m_staticText3->Wrap( -1 );
 	bSizer4->Add( m_staticText3, 0, wxALL, 5 );
 	
 	m_staticText4 = new wxStaticText(m_panel4, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
-	m_staticText4->SetFont(wxFont(wxFontInfo(10)));
+	m_staticText4->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	m_staticText4->Wrap( -1 );
 	bSizer4->Add( m_staticText4, 0, wxALL, 5 );
 	
@@ -120,10 +129,6 @@ void pof::OrderListView::CreateEmptyPanel()
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxVERTICAL);
 
-	wxPanel* m4 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxBoxSizer* bSizer7;
-	bSizer7 = new wxBoxSizer(wxVERTICAL);
-
 	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer8;
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
@@ -138,12 +143,18 @@ void pof::OrderListView::CreateEmptyPanel()
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
-	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("Order list is empty"), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No product in order list"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add product");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
@@ -164,14 +175,9 @@ void pof::OrderListView::CreateEmptyPanel()
 	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
 
 
-	m4->SetSizer(bSizer7);
-	m4->Layout();
-	bSizer7->Fit(m4);
-	bSizer6->Add(m4, 1, wxEXPAND | wxALL, 0);
-
-
 	mEmpty->SetSizer(bSizer6);
 	mEmpty->Layout();
+
 }
 
 void pof::OrderListView::CreateSpeicalCol()
@@ -232,7 +238,7 @@ void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
 	wxMenu* menu = new wxMenu;
 	auto remv = menu->Append(ID_REMOVE_ORDER, "Remove Order");
 	remv->SetBackgroundColour(*wxWHITE);
-	remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
+	//remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
 	PopupMenu(menu);
 }
 
@@ -249,6 +255,48 @@ void pof::OrderListView::OnRemoveOrder(wxCommandEvent& evt)
 	wxGetApp().mProductManager.RemvFromOrderList(uid);
 	orderList->RemoveData(item);
 	UpdateTexts();
+}
+
+void pof::OrderListView::OnAddProduct(wxCommandEvent& evt)
+{
+	pof::SearchProduct dialog(this);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+	wxBusyCursor cursor;
+	mOrderView->Freeze();
+	if (dialog.HasMultipleSelections())
+	{
+		auto vec = dialog.GetSelectedProducts();
+		
+		for (auto& p : vec){
+			auto& row = p.get();
+			pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+			//check if already exisits
+			if (std::any_of(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& row) -> bool {
+				return uuid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+			})){
+				//skip
+				continue;
+			}
+			wxGetApp().mProductManager.AddToOrderList(uuid, 1);
+		}
+	}
+	else {
+		auto& row =  dialog.GetSelectedProduct();
+		pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		//check if already exisits
+		if (std::any_of(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& row) -> bool {
+			return uuid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+			})) {
+			//skip
+			return;
+		}
+		wxGetApp().mProductManager.AddToOrderList(uuid, 1);
+	}
+
+	wxGetApp().mProductManager.LoadOrderList();
+	UpdateTexts();
+	mOrderView->Thaw();
 }
 
 void pof::OrderListView::UpdateTexts()

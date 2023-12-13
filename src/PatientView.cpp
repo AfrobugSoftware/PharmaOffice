@@ -26,6 +26,9 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 
 	EVT_CHECKBOX(pof::PatientView::ID_REMIND_CHECK, pof::PatientView::OnReminded)
 
+	EVT_BUTTON(pof::PatientView::ID_ADD_PATIENTS, pof::PatientView::OnAddPatient)
+	EVT_BUTTON(pof::PatientView::ID_ADD_PRODUCT, pof::PatientView::OnAddMedication)
+
 	//dataview
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientsContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsContextMenu)
@@ -60,6 +63,13 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	CreatePatientSummaryPopUp();
 	CreatePatientDetailsPane();
 	CreateSaleHistoryView();
+	CreateEmptyPanel();
+	CreateEmptyMedsPanel();
+
+	//check if we have nothing to display 
+	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
+		mBook->SetSelection(PATIENT_EMPTY);
+
 
 	mManager.Update();
 }
@@ -210,7 +220,10 @@ void pof::PatientView::CreateViews()
 	mPatientPanel = new wxSplitterWindow(panel, ID_PATIENT_PANEL, wxDefaultPosition, wxDefaultSize, wxSP_3D | wxSP_LIVE_UPDATE |
 		wxCLIP_CHILDREN | wxNO_BORDER/* | wxSP_NO_XP_THEME */);
 	//wxSizer* sz = new wxBoxSizer(wxVERTICAL);
-	wxPanel* currentMedPanel = new wxPanel(mPatientPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+
+	mBookMeds = new wxSimplebook(mPatientPanel, wxID_ANY);
+
+	wxPanel* currentMedPanel = new wxPanel(mBookMeds, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxSizer* medSz = new wxBoxSizer(wxVERTICAL);
 
 	mMedTools = new wxAuiToolBar(currentMedPanel, ID_PATIENT_TOOLS, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
@@ -256,6 +269,8 @@ void pof::PatientView::CreateViews()
 	medSz->SetSizeHints(currentMedPanel);
 	currentMedPanel->Layout();
 
+	mBookMeds->AddPage(currentMedPanel, "Current medication panel", false);
+
 	wxPanel* HisMedPanel = new wxPanel(mPatientPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxSizer* medHisSz = new wxBoxSizer(wxVERTICAL);
 
@@ -277,7 +292,7 @@ void pof::PatientView::CreateViews()
 
 	mCurrentMedicationView->Show();
 	mMedHistoryView->Show();
-	mPatientPanel->SplitHorizontally(currentMedPanel, HisMedPanel);
+	mPatientPanel->SplitHorizontally(mBookMeds, HisMedPanel);
 
 	sz->Add(mPatientInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
 	sz->Add(mPatientPanel, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 0));
@@ -509,6 +524,122 @@ void pof::PatientView::CreateSaleHistoryView()
 	mManager.AddPane(panel, wxAuiPaneInfo().Name("SaleHistory").Caption("Sale History").Hide());
 }
 
+void pof::PatientView::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No patients in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_ADD_PATIENTS);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add patient");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	mBook->AddPage(mEmpty, "Empty", false);
+}
+
+void pof::PatientView::CreateEmptyMedsPanel()
+{
+	mEmptyMeds = new wxPanel(mBookMeds, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmptyMeds, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No medication for patient"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add medication");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmptyMeds->SetSizer(bSizer6);
+	mEmptyMeds->Layout();
+
+	mBookMeds->AddPage(mEmptyMeds, "Empty mediactions", false);
+}
+
 void pof::PatientView::CreatePatientDetailsPane()
 {
 	mPatientDetails = new wxPropertyGridManager(this, ID_MED_DETAILS,
@@ -708,6 +839,10 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	
 	LoadPatientDetails();
 	mBook->SetSelection(PATIENT_VIEW);
+	mBookMeds->SetSelection(MED_VIEW);
+
+	if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
+		mBookMeds->SetSelection(MED_EMPTY);
 }
 
 void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
@@ -721,6 +856,9 @@ void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 		auto& exp = ap.GetPatientData();
 		wxGetApp().mPatientManager.GetPatientData()->StoreData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
 	}
+
+	if (mBook->GetSelection() == PATIENT_EMPTY)
+		mBook->SetSelection(PATIENT_SELECT);
 }
 
 void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
@@ -745,6 +883,10 @@ void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 	}
 	mPatientSelect->Thaw();
 	mPatientSelect->Refresh();
+
+	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
+		mBook->SetSelection(PATIENT_EMPTY);
+
 }
 
 void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
@@ -826,6 +968,9 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 	}
 	mCurrentMedicationView->Thaw();
 	mCurrentMedicationView->Refresh();
+
+	if (!wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
+		mBookMeds->SetSelection(MED_VIEW);
 }
 
 void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
@@ -927,10 +1072,11 @@ void pof::PatientView::OnMedicationsContextMenu(wxDataViewEvent& evt)
 	if (!evt.GetItem().IsOk()) return;
 
 	wxMenu* menu = new wxMenu;
-	auto st = menu->Append(ID_STOP_PRODUCT, "Stop medication", nullptr);
-	auto rm = menu->Append(ID_REMOVE_PRODUCT, "Remove medication", nullptr);
+	//auto st = menu->Append(ID_STOP_PRODUCT, "Stop medication", nullptr);
 	auto ou = menu->Append(ID_ADD_OUTCOME, "Add outcome", nullptr);
 	auto rs = menu->Append(ID_ADD_REASON, "Add reason", nullptr);
+	menu->AppendSeparator();
+	auto rm = menu->Append(ID_REMOVE_PRODUCT, "Remove medication", nullptr);
 
 	mCurrentMedicationView->PopupMenu(menu);
 }

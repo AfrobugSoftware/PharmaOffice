@@ -18,6 +18,7 @@
 #include <wx/dialog.h>
 #include <wx/simplebook.h>
 
+#include "SearchProduct.h"
 
 namespace pof
 {
@@ -48,7 +49,8 @@ namespace pof
 			ID_ORDER_VIEW = wxID_HIGHEST + 40,
 			ID_PRINT_ORDER,
 			ID_REMOVE_ORDER,
-			ID_PLACE
+			ID_PLACE,
+			ID_ADD_PRODUCT,
 		};
 
 		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
@@ -59,6 +61,7 @@ namespace pof
 		void OnPrintOrder(wxCommandEvent& evt);
 		void OnContexMenu(wxDataViewEvent& evt);
 		void OnRemoveOrder(wxCommandEvent& evt);
+		void OnAddProduct(wxCommandEvent& evt);
 
 		void UpdateTexts();
 		DECLARE_EVENT_TABLE()
