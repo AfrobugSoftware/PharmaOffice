@@ -852,10 +852,10 @@ void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
 		return;
 	}
 	pof::AddPatient ap(this, wxID_ANY, "Add Patients");
-	if (ap.ShowModal() == wxID_OK) {
-		auto& exp = ap.GetPatientData();
-		wxGetApp().mPatientManager.GetPatientData()->StoreData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
-	}
+	if (ap.ShowModal() == wxID_CANCEL) return;
+
+	auto& exp = ap.GetPatientData();
+	wxGetApp().mPatientManager.GetPatientData()->StoreData(std::move(const_cast<pof::base::data::row_t&&>(exp)));
 
 	if (mBook->GetSelection() == PATIENT_EMPTY)
 		mBook->SetSelection(PATIENT_SELECT);

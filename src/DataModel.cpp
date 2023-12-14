@@ -150,6 +150,14 @@ void pof::DataModel::StoreData(pof::base::data::row_t&& r)
 	mSignals[static_cast<size_t>(Signals::STORE)](std::next(datastore->begin(), count - 1));
 }
 
+void pof::DataModel::UpdateItem(const wxDataViewItem& item)
+{
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	mSignals[static_cast<size_t>(Signals::UPDATE)](std::next(datastore->begin(), idx));
+
+	ItemChanged(item);
+}
+
 void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 {
 	if (items.empty()) return;

@@ -88,6 +88,9 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
 	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+
 	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );
 	mFormulationValue->SetBackgroundColour( wxColour( 255, 255, 255 ) );
@@ -113,7 +116,6 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	StrengthChoices.Add("mcg");
 
 	StrengthChoices.Add("L");
-	StrengthChoices.Add("ml");
 	StrengthChoices.Add("ml");
 
 	StrengthChoices.Add("%v/v");

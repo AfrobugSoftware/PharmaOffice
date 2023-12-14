@@ -840,6 +840,38 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT])
 			+ boost::variant2::get<std::uint64_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 
+		std::string cls = boost::variant2::get<pof::base::data::text_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_CLASS]);
+		if (cls == "CONTROLLED"){
+			//product is a controlled medication
+			pof::base::data::row_t row;
+			//create the first entry into the book table	
+			auto& v = row.first;
+			auto& p = pd->GetDatastore()[idx].first;
+
+			v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+			v.push_back("ENTRY"s);
+			v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
+			v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
+			v.push_back(static_cast<std::uint64_t>(1));
+			v.push_back(static_cast<std::uint64_t>(0));
+			//create with the current stock
+			std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT])
+				+ boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+			v.push_back(stock);
+			v.push_back(stock);
+			v.push_back(pof::base::data::clock_t::now());
+
+			if (!wxGetApp().mPoisonBookManager.IsBookCreated(dialog.mProductUuid)) {
+				//create book ?
+				wxMessageBox("No book created for controlled medication, a new book would be created to track this inventory", "Inventory", wxICON_INFORMATION | wxOK);
+				wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row));
+			}
+			else {
+				//add as normal
+				wxGetApp().mPoisonBookManager.GetBook()->StoreData(std::move(row));
+			}
+		}
+
 		mProductinfo->SignalUpdate(mPropertyUpdate);
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 
@@ -1288,7 +1320,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
 	auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
-	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(591, 353), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(591, 383), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1335,6 +1367,15 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	fgSizer2->AddGrowableCol(1);
 	fgSizer2->SetFlexibleDirection(wxBOTH);
 	fgSizer2->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+	
+	auto productname = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Product name"), wxDefaultPosition, wxDefaultSize, 0);
+	productname->Wrap(-1);
+	fgSizer2->Add(productname, 0, wxALL, 5);
+
+	auto productnamevalue = new wxTextCtrl(m_scrolledWindow2, wxID_ANY, name, wxDefaultPosition, wxDefaultSize, 0);
+	productnamevalue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	productnamevalue->SetMaxLength(250);
+	fgSizer2->Add(productnamevalue, 1, wxALL | wxEXPAND, 5);
 
 	//name entries
 	wxArrayString FormulationChoices;
@@ -1349,6 +1390,9 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
 	FormulationChoices.Add("POWDER"); //needles, cannul
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+
 
 	auto formulationLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0);
 	formulationLabel->Wrap(-1);
@@ -1450,7 +1494,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	v.resize(pof::ProductManager::PRODUCT_MAX);
 	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
-	v[pof::ProductManager::PRODUCT_NAME] = p[pof::ProductManager::PRODUCT_NAME];
+	v[pof::ProductManager::PRODUCT_NAME] = productnamevalue->GetValue().ToStdString();
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = p[pof::ProductManager::PRODUCT_GENERIC_NAME];
 	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[formulation->GetSelection()].ToStdString());
 	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(0);

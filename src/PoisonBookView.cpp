@@ -34,7 +34,7 @@ pof::PoisonBookView::PoisonBookView(wxWindow* parent, wxWindowID id, const wxPoi
 	CreateEmptyBookPane();
 	CreateViews();
 	CreateDataView();
-
+	CreateSpecialCols();
 
 
 	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CenterPane().CaptionVisible(false).Show());
@@ -147,6 +147,7 @@ void pof::PoisonBookView::CreateDataView()
 	mBookData->AssociateModel(wxGetApp().mPoisonBookManager.GetBook().get());
 
 	mBookData->AppendTextColumn(wxT("Date"), pof::PoisonBookManager::DATE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mBookData->AppendBitmapColumn(wxT("Verified"), pof::PoisonBookManager::ISVERIFED, wxDATAVIEW_CELL_INERT, 60, wxALIGN_CENTER);
 	mBookData->AppendTextColumn(wxT("Patient name"), pof::PoisonBookManager::PNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 	mBookData->AppendTextColumn(wxT("Patient Address"), pof::PoisonBookManager::PADDY, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
 	mBookData->AppendTextColumn(wxT("Pharmacist"), pof::PoisonBookManager::PHARMNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
@@ -175,8 +176,24 @@ void pof::PoisonBookView::CreateDataView()
 
 void pof::PoisonBookView::CreateSpecialCols()
 {
-
+	pof::DataModel::SpeicalColHandler_t col;
+	col.first = [&](size_t r, size_t c) -> wxVariant {
+		auto& datastore = wxGetApp().mPoisonBookManager.GetBook()->GetDatastore();
+		std::uint64_t i =  boost::variant2::get<std::uint64_t>(datastore[r].first[c]);
+		switch (i)
+		{
+		case 0:
+			return wxVariant(wxArtProvider::GetBitmap("action_remove"));
+		case 1:
+			return wxVariant(wxArtProvider::GetBitmap("login"));
+		default:
+			break;
+		}
+	};
+	
+	wxGetApp().mPoisonBookManager.GetBook()->SetSpecialColumnHandler(pof::PoisonBookManager::ISVERIFED, std::move(col));
 }
+
 
 void pof::PoisonBookView::CreateEmptyBookPane()
 {
@@ -388,8 +405,25 @@ void pof::PoisonBookView::OnVerify(wxCommandEvent& evt)
 	}
 	auto item = mBookData->GetSelection();
 	if (!item.IsOk()) return;
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mPoisonBookManager.GetBook()->GetDatastore()[idx];
 
+	if (boost::variant2::get<std::uint64_t>(row.first[pof::PoisonBookManager::ISVERIFED]) == 1){
+		wxMessageBox("Entry has already been verified", "Posion book", wxICON_INFORMATION | wxOK);
+		return;
+	}
 
+	auto& v = row.first;
+	auto& up = row.second.second;
+
+	v[pof::PoisonBookManager::ISVERIFED] = static_cast<std::uint64_t>(1);
+	v[pof::PoisonBookManager::PHARMNAME] = fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name);
+
+	up.set(pof::PoisonBookManager::ISVERIFED);
+	up.set(pof::PoisonBookManager::PHARMNAME);
+
+	wxGetApp().mPoisonBookManager.GetBook()->UpdateItem(item);
+	up.reset();
 }
 
 void pof::PoisonBookView::OnReset(wxCommandEvent& evt)

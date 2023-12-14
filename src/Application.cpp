@@ -78,7 +78,7 @@ bool pof::Application::OnInit()
 	//load the settings
 	LoadSettings();
 
-	gVersion = "1.0.5 pre beta";
+	gVersion = "1.0.7 pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();

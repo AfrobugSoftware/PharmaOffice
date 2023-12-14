@@ -86,6 +86,7 @@ namespace pof {
 		//emplace but also writes to the database
 		void Store(pof::base::data&& d); 
 		void StoreData(pof::base::data::row_t&& r);
+		void UpdateItem(const wxDataViewItem& item);
 
 		void Reload(const std::vector<wxDataViewItem>& items);
 		void StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
