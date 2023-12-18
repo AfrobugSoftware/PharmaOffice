@@ -271,7 +271,7 @@ namespace pof {
 		//reports
 		std::optional<pof::base::data> GetEndOfDay(pof::base::data::datetime_t day);
 		std::optional<pof::base::data> GetConsumptionPattern(pof::base::data::datetime_t month);
-
+		std::optional<pof::base::data> GetEndOfMonth(pof::base::data::datetime_t month);
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpireProductPeriod();
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();

@@ -1680,6 +1680,59 @@ std::optional<pof::base::data> pof::ProductManager::GetConsumptionPattern(pof::b
 	return std::nullopt;
 }
 
+std::optional<pof::base::data> pof::ProductManager::GetEndOfMonth(pof::base::data::datetime_t m)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price, s.uuid, s.sale_payment_type
+		FROM sales s, products p
+		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;  )";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		assert(status);
+
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::duuid_t,
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		pof::base::data data;
+		data.set_metadata({
+			pof::base::data::kind::uuid,
+			pof::base::data::kind::datetime,
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency,
+			pof::base::data::kind::uuid,
+			pof::base::data::kind::text
+			});
+		auto& v = rel.value();
+		data.reserve(v.size());
+		for (auto& tup : v) {
+			data.insert(pof::base::make_row_from_tuple(tup));
+		}
+		data.shrink_to_fit();
+		return data;
+
+	}
+	return std::nullopt;
+}
+
 std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpireProductPeriod()
 {
 	if (mLocalDatabase){

@@ -215,7 +215,7 @@ void pof::PoisonBookView::CreateEmptyBookPane()
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
-	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No book created for controlled medications"), wxDefaultPosition, wxDefaultSize, 0);

@@ -37,6 +37,7 @@
 #include "PrintManager.h"
 #include "PatientManager.h"
 #include "PoisonBookManager.h"
+#include "PharmacySetupWizard.h"
 
 namespace js = nlohmann;
 namespace fs = std::filesystem;
@@ -146,6 +147,7 @@ namespace pof {
 		void ShowPharmacySettings(wxPropertySheetDialog& sd);
 		void ShowAccountSettings(wxPropertySheetDialog& sd);
 		void ShowSaleSettings(wxPropertySheetDialog& sd);
+
 	
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
@@ -155,6 +157,7 @@ namespace pof {
 		pof::MainFrame* mMainFrame;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
+		pof::PharmacySetupWizard* wizard = nullptr;
 
 	};
 };

@@ -186,8 +186,9 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 		SetTitle("Consumption Pattern");
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
+	case pof::ReportsDialog::ReportType::EOM:
+		SetTitle("Reports");
 		ret = LoadEndOFDay();
-		SetTitle("End Of Day");
 		mSPanel->Show();
 		break;
 	default:
@@ -296,7 +297,18 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 bool pof::ReportsDialog::LoadEndOFDay()
 {
-	auto data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+
+	std::optional<pof::base::data> data = std::nullopt;
+	std::string tt; 
+
+	if (mCurReportType == ReportType::EOD){
+		data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+		tt = fmt::format("End of day for {:%d/%m/%Y}", mSelectDay);
+	} else if (mCurReportType == ReportType::EOM){
+		data = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
+		tt = fmt::format("End of month for {:%m/%Y}", mSelectDay);
+	}
+
 	if (!data.has_value()) return false;
 
 	if (data->empty()) {
@@ -315,7 +327,6 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		std::uint64_t totalQuan = 0;
 
 		mTools->Freeze();
-		std::string tt = fmt::format("End of day for {:%d/%m/%Y}", mSelectDay);
 		text->SetFont(wxFontInfo().AntiAliased().Bold().Italic());
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
@@ -395,6 +406,11 @@ bool pof::ReportsDialog::LoadEndOFDay()
 	return true;
 }
 
+bool pof::ReportsDialog::LoadEndOfMonth()
+{
+	return false;
+}
+
 void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 {
 }
@@ -420,15 +436,35 @@ void pof::ReportsDialog::OnReportSelectSelected(wxListEvent& evt)
 
 void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 {
-	mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-	m_panel5->Freeze();
-	mListReport->Freeze();
-	mListReport->ClearAll();
-	LoadEndOFDay();
-	mListReport->Thaw();
-	mListReport->Refresh();
-	m_panel5->Thaw();
-	m_panel5->Refresh();
+	if (mCurReportType == ReportType::EOD) {
+		mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
+		m_panel5->Freeze();
+		mListReport->Freeze();
+		mListReport->ClearAll();
+		LoadEndOFDay();
+		mListReport->Thaw();
+		mListReport->Refresh();
+		m_panel5->Thaw();
+		m_panel5->Refresh();
+	}
+	else if (mCurReportType == ReportType::EOM){
+		auto set = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
+		set += date::days(1); //correct for time zone
+		
+		if (date::floor<date::months>(mSelectDay) == date::floor<date::months>(set)) return;
+		auto w = date::floor<date::months>(mSelectDay);
+		auto q = date::floor<date::months>(set);
+
+		mSelectDay = set;
+		m_panel5->Freeze();
+		mListReport->Freeze();
+		mListReport->ClearAll();
+		LoadEndOFDay();
+		mListReport->Thaw();
+		mListReport->Refresh();
+		m_panel5->Thaw();
+		m_panel5->Refresh();
+	}
 }
 
 void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
@@ -508,6 +544,7 @@ void pof::ReportsDialog::CreateToolBar()
 	case ReportType::COMSUMPTION_PATTARN:
 		CreateComsumptionPatternToolBar();
 		break;
+	case ReportType::EOM:
 	case ReportType::EOD:
 		CreateEODToolBar();
 		break;

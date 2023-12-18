@@ -86,8 +86,7 @@ namespace pof
 			wxPGChoices FormulationChoices;
 			wxPGChoices ExpChoices;
 			wxPGChoices StrengthChoices;
-
-
+			wxPanel* mEmpty = nullptr;
 			DECLARE_EVENT_TABLE();
 
 		public:
@@ -100,7 +99,8 @@ namespace pof
 			//pages
 			enum {
 				PAGE_INVENTORY = 0,
-				PAGE_SALE_HIST
+				PAGE_SALE_HIST,
+				PAGE_EMPTY,
 			};
 
 			using back_signal_t = boost::signals2::signal<void(void)>;
@@ -133,14 +133,11 @@ namespace pof
 			void CreateNameToProductElemTable();
 
 
-			void m_splitter1OnIdle( wxIdleEvent& )
-			{
-				m_splitter1->SetSashPosition( 450 );
-				m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ProductInfo::m_splitter1OnIdle ), NULL, this );
-			}
+			void m_splitter1OnIdle(wxIdleEvent&);
 	protected:
 		void CreateInventoryView();
 		void CreateHistoryView();
+		void CreateEmptyPanel();
 
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void OnGoBack(wxCommandEvent& evt);

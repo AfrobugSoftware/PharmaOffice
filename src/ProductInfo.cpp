@@ -16,6 +16,8 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
+	EVT_BUTTON(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
+
 END_EVENT_TABLE()
 
 pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
@@ -56,10 +58,13 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
 	InventoryView = new wxDataViewCtrl( mBook, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES);
 	mHistView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
-	mBook->AddPage(InventoryView, wxEmptyString, true);
+	mBook->AddPage(InventoryView, wxEmptyString, false);
 	mBook->AddPage(mHistView, wxEmptyString, false);
 	CreateInventoryView();
 	CreateHistoryView();
+	CreateEmptyPanel();
+	mBook->AddPage(mEmpty, wxEmptyString, false);
+
 	bSizer2->Add( mBook , wxSizerFlags().Expand().Proportion(1));
 	
 	m_panel1->SetSizer( bSizer2 );
@@ -194,7 +199,7 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		auto& Name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
 		if (Name.empty()) return; //nothing to load
 
-		mProductNameText->SetLabel(fmt::format("{} - INVENTORY HISTORY", Name));
+		mProductNameText->SetLabel(fmt::format("{} - Inventory history", Name));
 
 		//should get data from the server on the selected product 
 		
@@ -213,6 +218,11 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 		}
 		mInventoryDate->SetRange(wxDateTime(std::chrono::system_clock::to_time_t(firstMonth.value())), wxDateTime::Now());
 		mInventoryDate->SetValue(wxDateTime::Now());
+
+		if (Model->GetDatastore().empty())
+			mBook->SetSelection(PAGE_EMPTY);
+		else
+			mBook->SetSelection(PAGE_INVENTORY);
 
  	}
 	catch (const std::exception& exp) {
@@ -327,6 +337,12 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
 }
 
+void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)
+{
+	m_splitter1->SetSashPosition(550);
+	m_splitter1->Disconnect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+}
+
 void pof::ProductInfo::CreateInventoryView()
 {
 	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());
@@ -360,6 +376,63 @@ void pof::ProductInfo::CreateHistoryView()
 	mHistView->AppendTextColumn(wxT("Date"), pof::SaleManager::HIST_DATE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mHistView->AppendTextColumn(wxT("Quantity Sold"), pof::SaleManager::HIST_QUANTITY, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mHistView->AppendTextColumn(wxT("Price"), pof::SaleManager::HIST_EXTPRICE, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+}
+
+void pof::ProductInfo::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No transaction avaliable for product"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_TOOL_ADD_INVENTORY);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add stock");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
 }
 
 void pof::ProductInfo::RemoveCheckedState(wxAuiToolBarItem* item)
@@ -744,11 +817,11 @@ void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 {
 	if(evt.IsChecked() && !m_splitter1->IsSplit()){
 		//m_panel2->SetSize(wxSize(400, -1));
-		m_panel2->Layout();
 		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
-		m_splitter1->SetSashGravity(1.0);
+		//m_splitter1->SetSashGravity(1.0);
+		m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
 		m_splitter1->Update();
-		//m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+		m_panel2->Layout();
 	}
 	else {
 		m_splitter1->Unsplit();
@@ -757,14 +830,20 @@ void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 
 void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 {
-	InventoryView->Freeze();
 	if (evt.IsChecked()) {
 		pof::base::data::duuid_t& puid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+		wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
 		if (wxGetApp().mSaleManager.GetProductHistory()->GetDatastore().empty()) {
-			wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
+			//uncheck
+			std::bitset<32> bitset(mProductHist->GetState());
+			bitset.set(5, false);
+			mProductHist->SetState(bitset.to_ulong());
+			wxMessageBox("No sale history for the product", "Product", wxICON_INFORMATION | wxOK);
 		}
-		wxGetApp().mSaleManager.GetProductHistory()->Reload();
-		mBook->SetSelection(PAGE_SALE_HIST);
+		else {
+			wxGetApp().mSaleManager.GetProductHistory()->Reload();
+			mBook->SetSelection(PAGE_SALE_HIST);
+		}
 	}
 	else {
 		wxGetApp().mSaleManager.GetProductHistory()->Clear();
@@ -775,12 +854,11 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 			mProductHist->SetState(bitset.to_ulong());
 		}
 
+		InventoryView->Freeze();
 		wxGetApp().mProductManager.GetInventory()->Reload();
+		InventoryView->Thaw();
 		mBook->SetSelection(PAGE_INVENTORY);
 	}
-	InventoryView->Thaw();
-	InventoryView->Refresh();
-	InventoryView->Update();
 }
 
 void pof::ProductInfo::OnDateChange(wxDateEvent& evt)

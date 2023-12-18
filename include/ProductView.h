@@ -89,6 +89,7 @@ namespace pof
 			ID_STOCK_CHECK_TIMER,
 			ID_CREATE_CONTROLLED_BOOK,
 			ID_ADD_VARIANT,
+			ID_REPORTS_EOM,
 		};
 
 		size_t mRowHeights;
@@ -178,6 +179,7 @@ namespace pof
 		void OnStockCheckTimer(wxTimerEvent& evt);
 		void OnCreateControlBook(wxCommandEvent& evt);
 		void OnAddVariant(wxCommandEvent& evt);
+		void OnEndOfMonth(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

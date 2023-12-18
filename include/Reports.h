@@ -87,6 +87,7 @@ namespace pof
 		{
 			COMSUMPTION_PATTARN,
 			EOD,
+			EOM,
 		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_DIALOG_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
@@ -99,6 +100,7 @@ namespace pof
 		//different report loading function
 		bool LoadConsumptionPattern(pof::base::data::datetime_t month);
 		bool LoadEndOFDay();
+		bool LoadEndOfMonth();
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);

@@ -33,6 +33,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 	EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 	EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
 	EVT_MENU(pof::ProductView::ID_SHOW_COST_PRICE, pof::ProductView::OnShowCostPrice)
@@ -292,6 +293,8 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 		const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
 		m_dataViewCtrl1->SetFocus();
 		m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
+		m_dataViewCtrl1->Select(pof::DataModel::GetItemFromIdx(count - 1));
+
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created A product");
 	}
@@ -884,8 +887,8 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 {
 	if (evt.IsDropDownClicked()) {
 		wxMenu* menu = new wxMenu;
-		menu->Append(ID_REPORTS_ENDOFDAY, "End Of Day", nullptr);
-		menu->Append(ID_REPORTS_CONSUMPTION_PATTERN, "Consumption pattern", nullptr);
+		menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
+		menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
 
 
 		m_auiToolBar1->PopupMenu(menu);
@@ -899,13 +902,13 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 	{
 		wxMessageBox("Please complete stock check before generating consumption pattern for this month", "Reports", wxICON_INFORMATION | wxOK);
 	}*/
-	pof::ReportsDialog dialog(this, wxID_ANY, wxEmptyString);
+	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
 	if(dialog.LoadReport(pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
-	pof::ReportsDialog dialog(this, wxID_ANY, wxEmptyString);
+	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
 	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOD, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
@@ -969,6 +972,9 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	wxBusyCursor cursor;
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
+
+	if (wxMessageBox(fmt::format("Are you sure you want to mark-up to {:.2f}% of the cost price?", wxGetApp().mProductManager.gMarkup * 100.0f), "Products",
+		wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 
@@ -1320,7 +1326,12 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
 	auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
-	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(591, 383), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	double temp = 0.0f;
+	auto& price = boost::variant2::get<pof::base::data::currency_t>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+	wxFloatingPointValidator<double> val(2, &temp, wxNUM_VAL_ZERO_AS_BLANK);
+	val.SetRange(0, 999999999999);
+
+	wxDialog dialog(this, wxID_ANY, "Add variation", wxDefaultPosition, wxSize(591, 413), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1441,6 +1452,13 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	auto packsize = new wxSpinCtrl(m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxALIGN_LEFT, 0, 999999999);
 	fgSizer2->Add(packsize, 1, wxALL | wxEXPAND, 5);
 
+	auto salepricelabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Sale Price"), wxDefaultPosition, wxDefaultSize, 0);
+	salepricelabel->Wrap(-1);
+	fgSizer2->Add(salepricelabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	auto saleprice = new wxTextCtrl(m_scrolledWindow2, wxID_ANY, fmt::format("{:cu}", price), wxDefaultPosition, wxDefaultSize, 0);
+	saleprice->SetValidator(val);
+	fgSizer2->Add(saleprice, 0, wxALL | wxEXPAND, 5);
 
 	m_scrolledWindow2->SetSizer(fgSizer2);
 	m_scrolledWindow2->Layout();
@@ -1501,7 +1519,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	v[pof::ProductManager::PRODUCT_CLASS] = p[pof::ProductManager::PRODUCT_CLASS];
 	v[pof::ProductManager::PRODUCT_BARCODE] = ""s;
 	v[pof::ProductManager::PRODUCT_COST_PRICE] = p[pof::ProductManager::PRODUCT_COST_PRICE];
-	v[pof::ProductManager::PRODUCT_UNIT_PRICE] = p[pof::ProductManager::PRODUCT_UNIT_PRICE];
+	v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::data::currency_t(saleprice->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_USAGE_INFO] = p[pof::ProductManager::PRODUCT_USAGE_INFO];
 	v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = p[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS];
 	v[pof::ProductManager::PRODUCT_DESCRIP] = p[pof::ProductManager::PRODUCT_DESCRIP];
@@ -1525,9 +1543,16 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
 	m_dataViewCtrl1->SetFocus();
 	m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
+	m_dataViewCtrl1->Select(pof::DataModel::GetItemFromIdx(count - 1));
 
 	mInfoBar->ShowMessage(fmt::format("Sucessfully create a variation for {}", name), wxICON_INFORMATION);
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Created a variation for {}", name));
+}
+
+void pof::ProductView::OnEndOfMonth(wxCommandEvent& evt)
+{
+	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
+	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOM, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
