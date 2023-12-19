@@ -119,6 +119,7 @@ namespace pof
 				ID_DATE,
 				ID_INVEN_MENU_REMOVE,
 				ID_WARNINGS = 9000,
+				ID_RESET,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -154,6 +155,7 @@ namespace pof
 		void OnRemoveInventory(wxCommandEvent& evt);
 		void OnInvenContextMenu(wxDataViewEvent& evt);
 		void OnWarnings(wxCommandEvent& evt);
+		void OnReset(wxCommandEvent& evt);
 
 
 		void RemovePropertyModification();

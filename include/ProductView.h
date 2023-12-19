@@ -111,6 +111,7 @@ namespace pof
 		wxDataViewColumn* mProductFormulation = nullptr;
 		wxDataViewColumn* mStockLevel = nullptr;
 		wxDataViewColumn* mSelectionCol = nullptr;
+		wxPanel* mEmpty = nullptr;
 		wxTimer mStockCheckTimer;
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
@@ -140,6 +141,7 @@ namespace pof
 
 		void ReloadProductView();
 		void CreateAccTable();
+		void CreateEmptyPanel();
 		//events
 		void OnResize(wxSizeEvent& evt);
 		void OnAuiThemeChange();
@@ -206,6 +208,7 @@ namespace pof
 		void DoBroughtForward();
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void CheckIfStockCheckIsComplete();
+		void CheckEmpty();
 	private:
 		DECLARE_EVENT_TABLE()
 

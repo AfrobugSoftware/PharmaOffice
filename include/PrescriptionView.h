@@ -77,6 +77,7 @@ namespace pof {
 		void CreateDispensaryView();
 		void CreateDispensaryToolBar();
 		void CreatePrescriptionSourceChoice();
+		void CreateEmptyPanel();
 		void InitDataView();
 		void SetSpecialColumns();
 		void SetDefaultAuiArt();
@@ -112,7 +113,7 @@ namespace pof {
 
 		std::unique_ptr<wxAuiManager> mPanelManager;
 		wxDatePickerCtrl* mPrescriptionDate;
-
+		wxPanel* mEmpty;
 
 		wxDataViewCtrl* mDataView;
 		pof::DispensaryView* mDispensaryView;

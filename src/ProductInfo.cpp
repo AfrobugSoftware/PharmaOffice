@@ -7,12 +7,17 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_GO_BACK, pof::ProductInfo::OnGoBack)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 	EVT_TOOL(pof::ProductInfo::ID_SHOW_PRODUCT_SALE_HISTORY, pof::ProductInfo::OnShowProducSaleHistory)
+	
 	EVT_PG_CHANGED(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanged)
 	EVT_PG_CHANGING(pof::ProductInfo::ID_PROPERTY_GRID, pof::ProductInfo::OnPropertyChanging)
+	
 	EVT_SPLITTER_UNSPLIT(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnUnspilt)
 	EVT_SPLITTER_DCLICK(pof::ProductInfo::ID_SPLIT_WINDOW, pof::ProductInfo::OnSashDoubleClick)
+	
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
 	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
+	EVT_TOOL(pof::ProductInfo::ID_RESET, pof::ProductInfo::OnReset)
+
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
@@ -53,6 +58,8 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	
 	m_auiToolBar1->AddControl(mInventoryDate);
+	m_auiToolBar1->AddSpacer(5);
+	m_auiToolBar1->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REFRESH, wxART_TOOLBAR, wxSize(16,16)),"Reset date filter");
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
@@ -817,9 +824,10 @@ void pof::ProductInfo::OnShowProductInfo(wxCommandEvent& evt)
 {
 	if(evt.IsChecked() && !m_splitter1->IsSplit()){
 		//m_panel2->SetSize(wxSize(400, -1));
-		m_splitter1->SplitVertically(m_panel1, m_panel2, 0);
-		//m_splitter1->SetSashGravity(1.0);
-		m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+		//m_splitter1->Connect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
+		//m_splitter1->SetSashPosition(50);
+		m_splitter1->SetSashGravity(1.0);
+		m_splitter1->SplitVertically(m_panel1, m_panel2, -450);
 		m_splitter1->Update();
 		m_panel2->Layout();
 	}
@@ -935,6 +943,35 @@ void pof::ProductInfo::OnWarnings(wxCommandEvent& evt)
 	pof::Warning warn(this);
 	warn.LoadWarnings(boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
 	warn.ShowModal();
+}
+
+void pof::ProductInfo::OnReset(wxCommandEvent& evt)
+{
+	int sel = mBook->GetSelection();
+	pof::base::data::duuid_t& puid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+	switch (sel)
+	{
+	case PAGE_EMPTY:
+		break;
+	case PAGE_SALE_HIST:
+		mHistView->Freeze();
+		wxGetApp().mSaleManager.GetProductHistory()->Clear();
+		wxGetApp().mSaleManager.LoadProductSaleHistory(puid);
+		mHistView->Thaw();
+		mInventoryDate->SetValue(wxDateTime::Now());
+		//wxGetApp().mSaleManager.GetProductHistory()->Reload();
+		break;
+	case PAGE_INVENTORY:
+		InventoryView->Freeze();
+		wxGetApp().mProductManager.GetInventory()->Clear();
+		wxGetApp().mProductManager.LoadInventoryData(puid);
+		InventoryView->Thaw();
+		mInventoryDate->SetValue(wxDateTime::Now());
+		mInventoryDate->Update();
+		break;
+	default:
+		break;
+	}
 }
 
 void pof::ProductInfo::RemovePropertyModification()

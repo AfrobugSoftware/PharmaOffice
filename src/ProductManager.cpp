@@ -864,6 +864,26 @@ bool pof::ProductManager::RemoveProductInMedication(pof::base::data::const_itera
 	return false;
 }
 
+bool pof::ProductManager::RemoveProductInPoisonBook(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM poison_book WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(boost::variant2::get<boost::uuids::uuid>(iter->first[pof::ProductManager::PRODUCT_UUID])));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 
 bool pof::ProductManager::OnStoreProductData(pof::base::data::const_iterator iter)
 {

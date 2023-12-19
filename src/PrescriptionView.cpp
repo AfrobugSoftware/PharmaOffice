@@ -20,6 +20,7 @@ pof::PrescriptionView::PrescriptionView(wxWindow* parent, wxWindowID id, const w
 	CreateToolBar();
 	CreateDispensaryView();
 	CreateDispensaryToolBar();
+	CreateEmptyPanel();
 	LoadPrescriptions();
 	SetDefaultAuiArt();
 	InitDataView();
@@ -60,14 +61,14 @@ void pof::PrescriptionView::CreateToolBar()
 	bar->AddStretchSpacer();
 	mPrescriptionDate = new wxDatePickerCtrl(bar, ID_PRESCRIPTION_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	bar->AddControl(mPrescriptionDate, wxT("Prescription Date"));
-	bar->AddSpacer(10);
-	bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add Fake Prescription"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR, wxSize(16,16)));
+	bar->AddSpacer(2);
+	//bar->AddTool(ID_ADD_PRESCRIPTION, wxT("Add Fake Prescription"), wxArtProvider::GetBitmap(wxART_PLUS, wxART_TOOLBAR, wxSize(16,16)));
 	bar->AddTool(ID_SUBSCRIBE, wxT("Connect"), wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_TOOLBAR, wxSize(16,16)));
 	bar->AddTool(ID_REFRESH, wxT("Refresh"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
 	bar->Realize();
 	mPanelManager->AddPane(bar, wxAuiPaneInfo().Name(wxT("Tool")).Caption(wxT("Tool bar")).ToolbarPane().Top()
 		.Resizable().MinSize(wxSize(-1, 30)).DockFixed()
-		.LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+		.LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 }
 
 void pof::PrescriptionView::LoadPrescriptions()
@@ -108,6 +109,65 @@ void pof::PrescriptionView::CreatePrescriptionSourceChoice()
 
 }
 
+void pof::PrescriptionView::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, fmt::format("Prescription service is not avaliable in PharmaOffice {}", wxGetApp().gVersion), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	/*wxButton* btn = new wxButton(m7, ID_TOOL_ADD_INVENTORY);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add stock");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);*/
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	mPanelManager->AddPane(mEmpty, wxAuiPaneInfo().Name("Empty").Caption("Dispensary").CenterPane().Show());
+
+}
+
 void pof::PrescriptionView::InitDataView()
 {
 	//create the columns For the data
@@ -134,7 +194,7 @@ void pof::PrescriptionView::InitDataView()
 	mDataView->AppendTextColumn("Patient Address", PRESCRIPTION_PATIENT_ADDRESS, wxDATAVIEW_CELL_INERT, 150, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 	mDataView->AppendTextColumn("Prescription status", 1000, wxDATAVIEW_CELL_INERT, -1, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE);
 
-	mPanelManager->AddPane(mDataView, wxAuiPaneInfo().Name("DataView").Caption("Prescriptions").CenterPane().Show());
+	mPanelManager->AddPane(mDataView, wxAuiPaneInfo().Name("DataView").Caption("Prescriptions").CenterPane().Hide());
 }
 
 void pof::PrescriptionView::SetSpecialColumns()

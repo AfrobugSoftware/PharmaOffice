@@ -21,6 +21,9 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
 
+	//button
+	EVT_BUTTON(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
+
 
 	//Search
 	EVT_SEARCH(pof::ProductView::ID_SEARCH, pof::ProductView::OnSearchProduct)
@@ -83,7 +86,9 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
 
-	DoBroughtForward();
+	//DoBroughtForward();
+
+	CheckEmpty();
 	m_mgr.Update();
 }
 
@@ -165,17 +170,77 @@ void pof::ProductView::ReloadProductView()
 
 void pof::ProductView::CreateAccTable()
 {
-	wxAcceleratorEntry entries[5];
+	wxAcceleratorEntry entries[6];
 	entries[0].Set(wxACCEL_CTRL, (int)'A', ID_ADD_PRODUCT);
 	entries[1].Set(wxACCEL_CTRL, (int)'R', ID_REMOVE_PRODUCT);
 	entries[2].Set(wxACCEL_CTRL, (int)'O', ID_ORDER_LIST);
 	entries[3].Set(wxACCEL_CTRL, (int)'E', ID_REPORTS_ENDOFDAY);
+	entries[3].Set(wxACCEL_CTRL, (int)'M', ID_REPORTS_EOM);
 	entries[4].Set(wxACCEL_CTRL, (int)'C', ID_SHOW_COST_PRICE);
 
 
 
-	wxAcceleratorTable accel(5, entries);
+	wxAcceleratorTable accel(6, entries);
 	this->SetAcceleratorTable(accel);
+}
+
+void pof::ProductView::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No product in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add product");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	m_mgr.AddPane(mEmpty, wxAuiPaneInfo().Name("Empty").CenterPane().CaptionVisible(false).Hide());
+
 }
 
 void pof::ProductView::OnResize(wxSizeEvent& evt)
@@ -298,6 +363,7 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created A product");
 	}
+	CheckEmpty(); 
 }
 
 void pof::ProductView::OnAddCategory(wxCommandEvent& evt)
@@ -486,7 +552,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 			showFailedStatus(); return;
 		}
 
-		stop = dlg.Update(65, "Removing product from expired");
+		stop = dlg.Update(65, "Removing product from patients");
 		status = wxGetApp().mProductManager.RemoveProductInMedication(next);
 		if (!stop || !status) {
 			showFailedStatus(); return;
@@ -500,6 +566,12 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 		stop = dlg.Update(80, "Removing product from saved sale");
 		status = wxGetApp().mSaleManager.RemoveProductSaveSale(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
+
+		stop = dlg.Update(90, "Removing product from posion book");
+		status = wxGetApp().mProductManager.RemoveProductInPoisonBook(next);
 		if (!stop || !status) {
 			showFailedStatus(); return;
 		}
@@ -592,6 +664,11 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 					showFailedStatus(name); continue;
 				}
 
+				status = wxGetApp().mProductManager.RemoveProductInPoisonBook(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
 				items.push_back(item);
 				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
 				count++;
@@ -614,6 +691,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 			wxMessageBox("Critial error in remove multiple products", "Critical error", wxICON_INFORMATION | wxOK);
 		}
 	}
+	CheckEmpty();
 }
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
@@ -953,7 +1031,7 @@ void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
 void pof::ProductView::OnSCFunction(wxCommandEvent& evt)
 {
 	//we need a stock check dialog
-	pof::StockCheck dialog(this);
+	pof::StockCheck dialog(nullptr, wxID_ANY);
 	//dialog.Center(wxBOTH);
 	dialog.ShowModal();
 }
@@ -1545,7 +1623,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 	m_dataViewCtrl1->Select(pof::DataModel::GetItemFromIdx(count - 1));
 
-	mInfoBar->ShowMessage(fmt::format("Sucessfully create a variation for {}", name), wxICON_INFORMATION);
+	mInfoBar->ShowMessage(fmt::format("Sucessfully created a variation for {}", name), wxICON_INFORMATION);
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Created a variation for {}", name));
 }
 
@@ -1897,6 +1975,22 @@ void pof::ProductView::CheckIfStockCheckIsComplete()
 		}else{
 			mStockCheckTimer.Stop();
 		}
+	}
+}
+
+void pof::ProductView::CheckEmpty()
+{
+	auto& e = m_mgr.GetPane("Empty");
+	auto& d = m_mgr.GetPane("DataView");
+	if (!d.IsOk() && !e.IsOk()) return;
+
+	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()){
+		e.Show();
+		d.Hide();
+	}
+	else {
+		e.Hide();
+		d.Show();
 	}
 }
 

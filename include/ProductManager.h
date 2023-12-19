@@ -186,6 +186,7 @@ namespace pof {
 		bool RemoveProductInPacks(pof::base::data::const_iterator iter);
 		bool RemoveProductInExpiredStock(pof::base::data::const_iterator iter);
 		bool RemoveProductInMedication(pof::base::data::const_iterator iter);
+		bool RemoveProductInPoisonBook(pof::base::data::const_iterator iter);
 
 		//the first arg is the uuid
 		template<typename... Args>
