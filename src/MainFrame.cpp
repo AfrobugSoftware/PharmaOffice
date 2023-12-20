@@ -266,6 +266,7 @@ void pof::MainFrame::CreateViews()
 	mPoisonBookView = new pof::PoisonBookView(workspaceBook, ID_POISONBOOK_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
+	mProductView->removeSignal.connect(std::bind_front(&pof::PoisonBookView::OnProductRemoved, mPoisonBookView));
 	mPatientView->fSaleSignal.connect(std::bind_front(&pof::SaleView::OnAddMedicationsToSale,mSaleView));
 
 	mSaleView->mSaleCompleted.connect(std::bind_front(&pof::PatientView::OnPatientSaleCompleted, mPatientView));

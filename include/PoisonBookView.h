@@ -71,6 +71,7 @@ namespace pof{
 		void SetupAuiTheme();
 		void SwitchToolBar();
 		void LoadProductName(const std::string& name);
+		void OnProductRemoved(pof::base::data::const_iterator iter);
 	private:
 		void OnBookActivated(wxListEvent& evt);
 		void OnBookSelected(ThumbnailEvent& evt);
@@ -84,7 +85,6 @@ namespace pof{
 		void OnReset(wxCommandEvent& evt);
 
 		void OnContextMenu(wxDataViewEvent& evt);
-
 		wxAuiManager mManager;
 		
 		wxPanel* mEmpty = nullptr;
@@ -100,6 +100,7 @@ namespace pof{
 		wxInfoBar* mInfoBar = nullptr;
 		wxStaticText* mProductName = nullptr;
 		wxPanel* mTextPanel = nullptr;
+		wxListItem mSelItem;
 
 		DECLARE_EVENT_TABLE()
 	};

@@ -301,6 +301,7 @@ void pof::PoisonBookView::OnBookActivated(wxListEvent& evt)
 
 	SwitchToolBar();
 	mBook->SetSelection(BOOK_VIEW);
+	mSelItem = item;
 }
 
 void pof::PoisonBookView::OnBookSelected(ThumbnailEvent& evt)
@@ -439,6 +440,28 @@ void pof::PoisonBookView::OnContextMenu(wxDataViewEvent& evt)
 	auto r = menu->Append(ID_VERIFY, "Verify entry");
 
 	mBookData->PopupMenu(menu);
+}
+
+void pof::PoisonBookView::OnProductRemoved(pof::base::data::const_iterator iter)
+{
+	if (mBookList->IsEmpty()) return;
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::PRODUCT_UUID]);
+	auto& cls = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_CLASS]);
+	if (cls != "CONTROLLED") return;
+
+	int sel = mBook->GetSelection();
+	if (sel == BOOK_VIEW){
+		auto p = reinterpret_cast<pof::base::data::duuid_t*>(mSelItem.GetData());
+		if (p) {
+			if (*p == puid) {
+				//if we are removing the product of the selected book go back to thumbnail
+				mBook->SetSelection(THUMBNAIL_SELECT);
+			}
+		}
+	}
+
+	//reload books, because this wxListCtrl api is so stupid, there is no mechanism to iterate through all the items
+	LoadBooks();
 }
 
 void pof::PoisonBookView::SetupAuiTheme()

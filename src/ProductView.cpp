@@ -578,6 +578,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 		dlg.Update(100, "Finishing...");
 		m_dataViewCtrl1->Freeze();
+		removeSignal(next);
 		wxGetApp().mProductManager.GetProductData()->RemoveData(item);
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
@@ -668,7 +669,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 				if (!status) {
 					showFailedStatus(name); continue;
 				}
-
+				removeSignal(next);
 				items.push_back(item);
 				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
 				count++;
@@ -1115,7 +1116,11 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 
 		pof::base::data::duuid_t& pid = boost::variant2::get<pof::base::data::duuid_t>(datastore[idx].first[pof::ProductManager::PRODUCT_UUID]);
 		std::uint64_t& stockCount = boost::variant2::get<std::uint64_t>(datastore[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-		if (stockCount == 0) return; //cannot move empty stock
+		//cannot move empty stock
+		if (stockCount == 0) {
+			wxMessageBox(fmt::format("{} has no stock to move", name), "Product", wxICON_INFORMATION | wxOK);
+			return;
+		} 
 
 		wxGetApp().mProductManager.MoveStockToExpire(pid, stockCount);
 		//zero out the stock that was moved
