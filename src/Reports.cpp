@@ -338,7 +338,12 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 
 		//make the columns
-		report.AppendColumn("Time", wxLIST_FORMAT_LEFT, 200);
+		if (mCurReportType == ReportType::EOM){
+			report.AppendColumn("Day", wxLIST_FORMAT_LEFT, 200);
+		}
+		else {
+			report.AppendColumn("Time", wxLIST_FORMAT_LEFT, 200);
+		}
 		report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
 		report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
@@ -355,7 +360,13 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(0);
 			item.SetId(i);
-			item.SetText(fmt::format("{:%H:%M:%S}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+			if (mCurReportType == ReportType::EOM)
+			{
+				item.SetText(fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+			}
+			else {
+				item.SetText(fmt::format("{:%H:%M:%S}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+			}
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);
 

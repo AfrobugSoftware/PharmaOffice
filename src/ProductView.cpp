@@ -170,17 +170,18 @@ void pof::ProductView::ReloadProductView()
 
 void pof::ProductView::CreateAccTable()
 {
-	wxAcceleratorEntry entries[6];
+	wxAcceleratorEntry entries[7];
 	entries[0].Set(wxACCEL_CTRL, (int)'A', ID_ADD_PRODUCT);
 	entries[1].Set(wxACCEL_CTRL, (int)'R', ID_REMOVE_PRODUCT);
 	entries[2].Set(wxACCEL_CTRL, (int)'O', ID_ORDER_LIST);
 	entries[3].Set(wxACCEL_CTRL, (int)'E', ID_REPORTS_ENDOFDAY);
 	entries[3].Set(wxACCEL_CTRL, (int)'M', ID_REPORTS_EOM);
 	entries[4].Set(wxACCEL_CTRL, (int)'C', ID_SHOW_COST_PRICE);
+	entries[4].Set(wxACCEL_CTRL, (int)'S', ID_ADD_INVENTORY);
 
 
 
-	wxAcceleratorTable accel(6, entries);
+	wxAcceleratorTable accel(7, entries);
 	this->SetAcceleratorTable(accel);
 }
 

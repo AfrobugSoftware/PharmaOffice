@@ -41,7 +41,9 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1 = new wxAuiToolBar( this , wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
 	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
 	
-	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Back", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back to product list", wxITEM_NORMAL);
+	m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddSpacer(2);
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
@@ -597,10 +599,16 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		mUpdatePropertySignal(mPropertyUpdate.value());
 		mPropertyUpdate = {};
 		RemovePropertyModification();
+		
+		int sel = mBook->GetSelection();
+		if (sel == PAGE_EMPTY) {
+			mBook->SetSelection(PAGE_INVENTORY);
+		}
 	}
 	else {
 		//rejected
 	}
+
 }
 
 static std::string JoinArrayList(const wxVariant& Value) {
