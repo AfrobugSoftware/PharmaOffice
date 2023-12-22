@@ -19,6 +19,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_MENU(pof::PatientView::ID_REMOVE_PRODUCT, pof::PatientView::OnRemoveMedication)
 	EVT_MENU(pof::PatientView::ID_ADD_OUTCOME, pof::PatientView::OnAddText)
 	EVT_MENU(pof::PatientView::ID_ADD_REASON, pof::PatientView::OnAddText)
+	EVT_MENU(pof::PatientView::ID_PIN_PATIENT, pof::PatientView::OnPinPatient)
 	//search
 	EVT_SEARCH(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchPatient)
 	EVT_SEARCH_CANCEL(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchCleared)
@@ -66,7 +67,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	CreateEmptyPanel();
 	CreateEmptyMedsPanel();
 
-	//check if we have nothing to display 
+	//check if we have nothing to display
 	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
 		mBook->SetSelection(PATIENT_EMPTY);
 
@@ -697,6 +698,7 @@ Adults over age 65: 96.4°F (35.8°C) to 98.3°F (36.8°C).)");
 	mManager.AddPane(mPatientDetails, wxAuiPaneInfo().Name("PatientDetails").Caption("Details").Row(1).Right().CaptionVisible(false).MinSize(350, -1).Hide());
 }
 
+
 void pof::PatientView::StartTimer()
 {
 	//restart timer if it is running
@@ -1062,8 +1064,9 @@ void pof::PatientView::OnPatientsContextMenu(wxDataViewEvent& evt)
 {
 	if (!evt.GetItem().IsOk()) return;
 	wxMenu* menu = new wxMenu;
+	auto pin = menu->Append(ID_PIN_PATIENT, "Pin to module", nullptr);
+	menu->AppendSeparator();
 	auto rm = menu->Append(ID_REMOVE_PATIENTS, "Remove patient", nullptr);
-
 	mPatientSelect->PopupMenu(menu);
 }
 
@@ -1142,6 +1145,7 @@ void pof::PatientView::OnBack(wxCommandEvent& evt)
 		pane.Hide();
 		mManager.Update();
 	}
+	mCurrentPatient = std::nullopt;
 	mPatientInfoBar->Dismiss();
 	SwitchToolBar();
 	mBook->SetSelection(PATIENT_SELECT);
@@ -1600,6 +1604,32 @@ void pof::PatientView::OnPatientSaleHist(wxCommandEvent& evt)
 	ShowSaleHistory();
 }
 
+void pof::PatientView::OnPinPatient(wxCommandEvent& evt)
+{
+	auto item = mPatientSelect->GetSelection();
+	if (!item.IsOk()) return;
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mPatientManager.GetPatientData()->GetDatastore()[idx];
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::PatientManager::PATIENT_UUID]);
+	auto& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::PatientManager::PATIENT_NAME]);
+	auto& lastname = boost::variant2::get<pof::base::data::text_t>(row.first[pof::PatientManager::PATIENT_LAST_NAME]);
+
+	auto info = wxGetApp().mPatientManager.GetAddInfo(puid);
+	if (!info.has_value()) return;
+	auto pin = info->mData.find("isPinned");
+	
+	//check if already pined
+	if (pin != info->mData.end() && static_cast<bool>(*pin)) {
+		wxMessageBox(fmt::format("{} {} is already pinned to modules", lastname, name), "Patients", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	(*info).mData["isPinned"] = true;
+	wxGetApp().mPatientManager.UpdateAddInfo(info.value());
+
+	wxGetApp().mMainFrame->PinPatient(puid, lastname + " " + name);
+}
+
 void pof::PatientView::ShowSaleHistory()
 {
 	auto& pane = mManager.GetPane("SaleHistory");
@@ -1626,3 +1656,66 @@ void pof::PatientView::OnPatientSaleCompleted(const pof::base::data::duuid_t& sa
 		spdlog::error(exp.what());
 	}
 }
+
+void pof::PatientView::OnPatientPinSelected(const pof::base::data::duuid_t& puid)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	auto& pane = mManager.GetPane("PatientDetails");
+	if (pane.IsOk()) {
+		std::bitset<32> bitset(pd->GetState());
+		if (bitset.test(5)) {
+			pane.Show();
+			mManager.Update();
+		}
+	}
+
+	if (mCurrentPatient.has_value()){
+		if (boost::variant2::get<pof::base::data::duuid_t>(mCurrentPatient.value().get().first[pof::PatientManager::PATIENT_UUID])
+			== puid) {
+			return;
+		}
+	}
+	else {
+		SwitchToolBar();
+	}
+
+	auto iter = std::ranges::find_if(
+		wxGetApp().mPatientManager.GetPatientData()->GetDatastore(),
+		[&](const pof::base::data::row_t& row) -> bool {
+			return puid ==
+			boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::PatientManager::PATIENT_UUID]);
+		});
+
+	if (iter == wxGetApp().mPatientManager.GetPatientData()->GetDatastore().end()) return;
+
+	mCurrentPatient.emplace(*iter);
+	auto& v = mCurrentPatient.value().get().first;
+	mCurrentMedicationView->Freeze();
+	wxGetApp().mPatientManager.LoadPatientMedication(puid);
+	wxGetApp().mPatientManager.LoadPatientHistory(puid);
+	mCurrentMedicationView->Thaw();
+	mCurrentMedicationView->Refresh();
+	mCurrentMedicationView->SetFocus();
+
+	mSPanel->Freeze();
+	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
+	mDobText->SetLabelText(fmt::format("Date of birth:  {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
+	mPhoneText->SetLabelText(fmt::format("Phone no: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER])));
+	mSPanel->Thaw();
+	mSPanel->Layout();
+	mSPanel->Refresh();
+
+	LoadPatientDetails();
+	mBook->SetSelection(PATIENT_VIEW);
+	mBookMeds->SetSelection(MED_VIEW);
+
+	if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
+		mBookMeds->SetSelection(MED_EMPTY);
+}
+

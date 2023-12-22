@@ -69,9 +69,17 @@ namespace pof {
 
 		};
 
+		class mixin : public wxTreeItemData, public pof::base::data::duuid_t
+		{
+		public:
+			mixin(const pof::base::data::duuid_t& d) : pof::base::data::duuid_t(d) {}
+			virtual ~mixin() {}
+		};
+
 		using signal_t = boost::signals2::signal<void(const_iterator, Evt)>;
 		using childtree_signal_t = boost::signals2::signal<void(const std::string&)>;
 		using childEditTree_signal_t = boost::signals2::signal<void(const std::string&, const std::string&)>;
+		using patientChildSignal = boost::signals2::signal<void(const pof::base::data::duuid_t&)>;
 
 		Modules(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(248, 680), long style = wxNO_BORDER | wxTAB_TRAVERSAL);
 		virtual ~Modules();
@@ -86,12 +94,12 @@ namespace pof {
 		const_iterator::value_type GetModuleItem(wxTreeItemId item) const;
 		void ReloadAccountDetails();
 
-		bool CheckPrivilage();
 		inline void SetImageList(wxImageList* imglist) { mModuleTree->SetImageList(imglist); }
 		boost::signals2::connection SetSlot(signal_t::slot_type&& slot);
 		boost::signals2::connection SetChildTreeSlot(childtree_signal_t::slot_type&& slot);
 		boost::signals2::connection SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot);
 		boost::signals2::connection SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot);
+		boost::signals2::connection SetPatientChildSlot(patientChildSignal::slot_type&& slot);
 	protected:
 		void OnActivated(wxTreeEvent& evt);
 		void OnSelected(wxTreeEvent& evt);
@@ -109,6 +117,9 @@ namespace pof {
 		void SetupFont();
 		void AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img = -1);
 		void RemoveChildTreeId(const std::string& name);
+
+		void AppendPatientChild(const pof::base::data::duuid_t& puid, const std::string& name, int img = -1);
+		void RemovePatientChild(const std::string& name);
 	private:
 		friend class MainFrame;
 		std::array<wxFont, 3> mFonts;
@@ -142,9 +153,11 @@ namespace pof {
 		childtree_signal_t mChildSignal;
 		childtree_signal_t mChildRemoveSignal;
 		childEditTree_signal_t mChildEditedSignal;
+		patientChildSignal mPatientChildSignal;
 
 		std::unordered_map<wxTreeItemId, wxWindow*> mModuleViews;
 		std::vector<wxTreeItemId> mChildId; //used for childs
+		std::set<wxTreeItemId> mPatientChildren; 
 		DECLARE_EVENT_TABLE()
 	};
 }

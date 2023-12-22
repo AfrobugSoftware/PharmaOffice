@@ -176,10 +176,15 @@ bool pof::PatientManager::CreateDatabaseFunctions()
 		isRemindAgg.arg_count = 2;
 		isRemindAgg.func = &pof::PatientManager::DBFuncInSale;
 
+		pof::base::func_aggregate isPinned;
+		isRemindAgg.name = "IsPinned"s;
+		isRemindAgg.arg_count = 1;
+		isRemindAgg.func = &pof::PatientManager::DBFuncIsPinned;
 
 		mLocalDatabase->register_func(std::move(isRemindAgg));
 		mLocalDatabase->register_func(std::move(AddDayDuration));
 		mLocalDatabase->register_func(std::move(InSale));
+		mLocalDatabase->register_func(std::move(isPinned));
 	}
 	return false;
 }
@@ -855,6 +860,38 @@ std::optional<pof::base::relation<pof::base::data::text_t, pof::base::data::date
 	return std::nullopt;
 }
 
+std::optional<std::vector<std::tuple<pof::base::data::duuid_t, std::string>>> pof::PatientManager::GetPinnedList()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, p.lastname  
+		FROM patients p, patient_addinfo pai
+		WHERE p.uuid = pai.puid AND isPinned(pai.info) = 1;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		std::vector < std::tuple<pof::base::data::duuid_t, std::string>> ret;
+		ret.reserve(rel->size());
+		for (auto& tup : *rel){
+			ret.emplace_back(std::make_tuple(
+				std::get<0>(tup),
+				std::get<2>(tup) + " " + std::get<1>(tup)
+			));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+
 void pof::PatientManager::DBFuncISReminded(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
 {
 	auto text = pof::base::database::arg<pof::base::data::text_t>(conn, values);
@@ -903,6 +940,23 @@ void pof::PatientManager::DBFuncInSale(pof::base::database::conn_t conn, int arg
 		}
 	}
 	catch (std::exception& exp){
+		spdlog::error(exp.what());
+	}
+exit:
+	pof::base::database::result(conn, ret);
+}
+
+void pof::PatientManager::DBFuncIsPinned(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	auto json = pof::base::database::arg<std::string>(conn, values);
+	std::uint64_t ret = 0;
+	try {
+		auto obj = nl::json::parse(json);
+		auto iter = obj.find("isPinned");
+		if (iter == obj.end()) goto exit;
+		ret = static_cast<bool>(*iter) ? 1 : 0 ;
+	}
+	catch (const std::exception& exp){
 		spdlog::error(exp.what());
 	}
 exit:

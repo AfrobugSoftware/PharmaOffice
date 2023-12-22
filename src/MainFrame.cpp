@@ -92,6 +92,13 @@ void pof::MainFrame::UpdateWelcomePage()
 	mWelcomePage->Refresh();
 }
 
+void pof::MainFrame::PinPatient(const pof::base::data::duuid_t& puid, const std::string& name)
+{
+	mModules->Freeze();
+	mModules->AppendPatientChild(puid, name);
+	mModules->Thaw();
+}
+
 void pof::MainFrame::CreateMenuBar()
 {
 	constexpr const size_t MenuCount = 8;
@@ -214,6 +221,8 @@ void pof::MainFrame::CreateModules()
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 	mModules->SetChildTreeEditSlot(std::bind_front(&pof::ProductView::OnCategoryEdited, mProductView));
+	mModules->SetPatientChildSlot(std::bind_front(&pof::PatientView::OnPatientPinSelected, mPatientView));
+
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());
@@ -232,6 +241,9 @@ void pof::MainFrame::CreateModules()
 		auto& name = boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]);
 		mProductView->CategoryAddSignal(name);
 	});
+
+	//load pinned patients
+	LoadPinnedPatients();
 }
 
 void pof::MainFrame::CreateWorkSpace()
@@ -405,6 +417,16 @@ void pof::MainFrame::CreateSelectList()
 
 	mSelectList->InsertItem(item);
 	mSelectList->Bind(wxEVT_LIST_ITEM_ACTIVATED, std::bind_front(&pof::MainFrame::OnWelcomePageSelect, this));
+}
+
+void pof::MainFrame::LoadPinnedPatients()
+{
+	auto pp = wxGetApp().mPatientManager.GetPinnedList();
+	if (!pp.has_value() || pp->empty()) return;
+
+	for (const auto& tup : pp.value()) {
+		PinPatient(std::get<0>(tup), std::get<1>(tup));
+	}
 }
 
 void pof::MainFrame::SetupAuiTheme()

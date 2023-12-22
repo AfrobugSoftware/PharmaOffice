@@ -117,6 +117,7 @@ namespace pof {
 		bool SetAddInfo(const AddInfo& info) const;
 		bool UpdateAddInfo(const AddInfo& info) const; 
 		bool RemoveAddInfo(const AddInfo& info) const;
+		
 
 		//queries that are yet to test 
 		bool CheckIfReminded(pof::base::data::duuid_t& puid);
@@ -128,6 +129,9 @@ namespace pof {
 				std::uint64_t,
 				pof::base::currency>> GetSaleForPatient(const pof::base::data::duuid_t& puid);
 
+		std::optional<std::vector < std::tuple<pof::base::data::duuid_t, std::string>> >
+			GetPinnedList();
+
 	private:
 		static void DBFuncISReminded(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
@@ -136,6 +140,9 @@ namespace pof {
 			int arg, pof::base::database::value_arr_t values);
 
 		static void DBFuncInSale(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
+		static void DBFuncIsPinned(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
 		std::unique_ptr<pof::DataModel> mPaitnets;

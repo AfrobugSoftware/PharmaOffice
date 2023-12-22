@@ -149,12 +149,13 @@ namespace pof {
 		void ShowSaleSettings(wxPropertySheetDialog& sd);
 
 	
+		//allow main frame to be visable through out the system
+		pof::MainFrame* mMainFrame;
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 
 		std::unique_ptr<wxSingleInstanceChecker> mChecker; //only one instance of the application 
 
-		pof::MainFrame* mMainFrame;
 		fs::path mAsserts;
 		fs::path mModules; //plugin 
 		pof::PharmacySetupWizard* wizard = nullptr;

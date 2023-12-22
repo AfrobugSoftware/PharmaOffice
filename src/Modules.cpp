@@ -28,6 +28,14 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 			auto string = mModuleTree->GetItemText(item).ToStdString();
 			mChildSignal(std::move(string));
 		}
+		else {
+			//check for patients
+			auto foundpat = mPatientChildren.find(item);
+			if (foundpat != mPatientChildren.end()){
+				auto puid = dynamic_cast<pof::base::data::duuid_t*>(mModuleTree->GetItemData(item));
+				if(puid) mPatientChildSignal(*puid);
+			}
+		}
 		return;
 	}
 	mSig(winIter, Evt::ACTIVATED);
@@ -88,15 +96,26 @@ void pof::Modules::OnContextMenu(wxTreeEvent& evt)
 {
 	auto itemID = evt.GetItem();
 	auto iter = std::ranges::find(mChildId, itemID);
-	if (iter == std::end(mChildId)) return; //only for child ids
+	if (iter != std::end(mChildId))
+	{	//only for child ids
+		wxMenu* menu = new wxMenu;
+		auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
+		edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
+		auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
+		remove->SetBitmap(pof::ArtProvider::GetBitmap("action_remove"));
+		PopupMenu(menu);
 
-	wxMenu* menu = new wxMenu;
-	auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
-	edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
-	auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
-	remove->SetBitmap(pof::ArtProvider::GetBitmap("action_remove"));
+	}
+	else {
+		auto patient = mPatientChildren.find(itemID);
+		if (patient != mPatientChildren.end())
+		{
+			wxMenu* menu = new wxMenu;
+			auto up = menu->Append(wxID_ANY, "Unpin", nullptr);
 
-	PopupMenu(menu);
+			PopupMenu(menu);
+		}
+	}
 }
 
 void pof::Modules::OnBeginEditLabel(wxTreeEvent& evt)
@@ -194,6 +213,27 @@ void pof::Modules::RemoveChildTreeId(const std::string& name)
 	if (found != mChildId.end()) {
 		mModuleTree->Delete(*found);
 		mChildId.erase(found);
+	}
+}
+
+void pof::Modules::AppendPatientChild(const pof::base::data::duuid_t& data,const std::string& name, int img)
+{
+	auto id = mModuleTree->AppendItem(mPaitents, name, 3);
+	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemData(id, new mixin(data));
+	mPatientChildren.insert(id);
+}
+
+void pof::Modules::RemovePatientChild(const std::string& name)
+{
+	if (name.empty()) return;
+	auto found = std::ranges::find_if(mPatientChildren, [&](const wxTreeItemId& item) -> bool {
+		const auto str = mModuleTree->GetItemText(item).ToStdString();
+	return str == name;
+	});
+	if (found != mPatientChildren.end()) {
+		mModuleTree->Delete(*found);
+		mPatientChildren.erase(found);
 	}
 }
 
@@ -398,4 +438,9 @@ boost::signals2::connection pof::Modules::SetChildTreeRemoveSlot(childtree_signa
 boost::signals2::connection pof::Modules::SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot)
 {
 	return mChildEditedSignal.connect(std::forward<childEditTree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetPatientChildSlot(patientChildSignal::slot_type&& slot)
+{
+	return mPatientChildSignal.connect(std::forward<patientChildSignal::slot_type>(slot));
 }

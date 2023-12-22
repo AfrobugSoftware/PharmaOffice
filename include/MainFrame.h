@@ -102,6 +102,7 @@ namespace pof {
 		std::string Perspective();
 		void Perspective(const std::string& pers);
 		void UpdateWelcomePage();
+		void PinPatient(const pof::base::data::duuid_t& puid, const std::string& name);
 		std::shared_ptr<pof::Account> mAccount;
 	protected:
 		void CreateMenuBar();
@@ -115,6 +116,7 @@ namespace pof {
 		void CreateWelcomePage();
 		void CreateSelectList();
 
+		void LoadPinnedPatients();
 		void SetupAuiTheme();
 
 		void OnAbout(wxCommandEvent& evt);
@@ -160,6 +162,7 @@ namespace pof {
 		std::unique_ptr<wxImageList> mImageList = nullptr;
 		std::shared_ptr<wxTextCtrl> mLogView = nullptr;
 		wxStaticText* pharmName = nullptr; //update the pharm name in the welcome page
+		
 		//views
 		pof::ProductView* mProductView = nullptr;
 		pof::SaleView* mSaleView = nullptr;
