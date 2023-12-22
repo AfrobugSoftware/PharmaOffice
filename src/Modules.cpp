@@ -27,6 +27,7 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 		if (found != mChildId.end()) {
 			auto string = mModuleTree->GetItemText(item).ToStdString();
 			mChildSignal(std::move(string));
+			winIter = mModuleViews.find(mProducts);
 		}
 		else {
 			//check for patients
@@ -34,8 +35,10 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 			if (foundpat != mPatientChildren.end()){
 				auto puid = dynamic_cast<pof::base::data::duuid_t*>(mModuleTree->GetItemData(item));
 				if(puid) mPatientChildSignal(*puid);
+				winIter = mModuleViews.find(mPaitents);
 			}
 		}
+		mSig(winIter, Evt::CHILD_ACTIVATED);
 		return;
 	}
 	mSig(winIter, Evt::ACTIVATED);

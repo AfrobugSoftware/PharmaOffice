@@ -50,6 +50,7 @@ namespace pof {
 
 		enum class Evt {
 			ACTIVATED,
+			CHILD_ACTIVATED,
 			COLLAPASED,
 			SEL_CHANGED,
 			DRAG_END

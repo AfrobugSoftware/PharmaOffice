@@ -888,6 +888,7 @@ void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt
 {
 	int sel = wxNOT_FOUND;
 	switch (notif) {
+	case Modules::Evt::CHILD_ACTIVATED:
 	case Modules::Evt::ACTIVATED:
 		mWorkspace->AddSpace(win->second, mModules->GetText(win), mModules->GetImage(win)); //where are the windows kept and created
 		sel = mPager->GetSelection();
