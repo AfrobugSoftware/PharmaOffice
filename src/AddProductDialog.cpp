@@ -90,6 +90,8 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
 	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
 	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
+
 
 	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );

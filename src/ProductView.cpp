@@ -1487,6 +1487,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
 	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
 	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
 
 
 	auto formulationLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0);

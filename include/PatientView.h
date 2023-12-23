@@ -119,6 +119,7 @@ namespace pof {
 		void SwitchToolBar();
 		void OnPatientSaleCompleted(const pof::base::data::duuid_t& saleId, size_t type);
 		void OnPatientPinSelected(const pof::base::data::duuid_t& puid);
+		void OnPatientUnpin(const pof::base::data::duuid_t& puid);
 
 		std::set<wxDataViewItem> mMedicationSelections;
 		std::set<wxDataViewItem> mPatientSelections;

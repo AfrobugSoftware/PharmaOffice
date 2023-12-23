@@ -1719,3 +1719,20 @@ void pof::PatientView::OnPatientPinSelected(const pof::base::data::duuid_t& puid
 		mBookMeds->SetSelection(MED_EMPTY);
 }
 
+void pof::PatientView::OnPatientUnpin(const pof::base::data::duuid_t& puid)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	auto info = wxGetApp().mPatientManager.GetAddInfo(puid);
+	if (!info.has_value()) return;
+	auto pin = info->mData.find("isPinned");
+	if (pin != info->mData.end()) {
+		*pin = false;
+	}
+
+	wxGetApp().mPatientManager.UpdateAddInfo(info.value());
+}
+

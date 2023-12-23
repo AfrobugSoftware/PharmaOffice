@@ -222,7 +222,7 @@ void pof::MainFrame::CreateModules()
 	mModules->SetChildTreeRemoveSlot(std::bind_front(&pof::ProductView::OnCategoryRemoved, mProductView));
 	mModules->SetChildTreeEditSlot(std::bind_front(&pof::ProductView::OnCategoryEdited, mProductView));
 	mModules->SetPatientChildSlot(std::bind_front(&pof::PatientView::OnPatientPinSelected, mPatientView));
-
+	mModules->SetPatientChildRemvSlot(std::bind_front(&pof::PatientView::OnPatientUnpin, mPatientView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
 		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());

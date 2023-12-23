@@ -114,6 +114,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
 	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
 	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
 
 	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));

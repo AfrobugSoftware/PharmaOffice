@@ -14,6 +14,7 @@ BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
 	//context menus
 	EVT_MENU(pof::Modules::CONTEXT_MENU_EDIT, pof::Modules::OnContextEdit)
 	EVT_MENU(pof::Modules::CONTEXT_MENU_REMOVE, pof::Modules::OnContextRemove)
+	EVT_MENU(pof::Modules::UNPIN_PATIENT, pof::Modules::OnUnpinPatient)
 END_EVENT_TABLE()
 
 
@@ -114,7 +115,7 @@ void pof::Modules::OnContextMenu(wxTreeEvent& evt)
 		if (patient != mPatientChildren.end())
 		{
 			wxMenu* menu = new wxMenu;
-			auto up = menu->Append(wxID_ANY, "Unpin", nullptr);
+			auto up = menu->Append(UNPIN_PATIENT, "Unpin", nullptr);
 
 			PopupMenu(menu);
 		}
@@ -192,6 +193,24 @@ void pof::Modules::OnContextRemove(wxCommandEvent& evt)
 		mModuleTree->Delete(item);
 	}
 }
+
+void pof::Modules::OnUnpinPatient(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+
+	auto foundpat = mPatientChildren.find(item);
+	if (foundpat != mPatientChildren.end()) {
+		
+		auto puid = dynamic_cast<pof::base::data::duuid_t*>(mModuleTree->GetItemData(item));
+		if (puid) mPatientChildRemvSignal(*puid);
+		
+		mPatientChildren.erase(foundpat);
+		mModuleTree->Delete(item);
+		mModuleTree->Refresh();
+	}
+}
+
 
 void pof::Modules::SetupFont()
 {

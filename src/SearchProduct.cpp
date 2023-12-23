@@ -99,6 +99,7 @@ void pof::SearchProduct::CreateToolBar()
 	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
 	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
 	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
 
 
 	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, wxSize(200, -1), FormulationChoices);

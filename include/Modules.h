@@ -67,6 +67,7 @@ namespace pof {
 			CONTEXT_MENU_EDIT = wxID_HIGHEST + 1,
 			CONTEXT_MENU_REMOVE,
 			CONTEXT_MENU_ADD_PROPERTIES,
+			UNPIN_PATIENT,
 
 		};
 
@@ -101,6 +102,11 @@ namespace pof {
 		boost::signals2::connection SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot);
 		boost::signals2::connection SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot);
 		boost::signals2::connection SetPatientChildSlot(patientChildSignal::slot_type&& slot);
+		boost::signals2::connection SetPatientChildRemvSlot(patientChildSignal::slot_type&& slot)
+		{
+			return mPatientChildRemvSignal.connect(std::forward<patientChildSignal::slot_type>(slot));
+
+		}
 	protected:
 		void OnActivated(wxTreeEvent& evt);
 		void OnSelected(wxTreeEvent& evt);
@@ -114,6 +120,7 @@ namespace pof {
 		//menu handlers
 		void OnContextEdit(wxCommandEvent& evt);
 		void OnContextRemove(wxCommandEvent& evt);
+		void OnUnpinPatient(wxCommandEvent& evt);
 
 		void SetupFont();
 		void AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img = -1);
@@ -155,6 +162,7 @@ namespace pof {
 		childtree_signal_t mChildRemoveSignal;
 		childEditTree_signal_t mChildEditedSignal;
 		patientChildSignal mPatientChildSignal;
+		patientChildSignal mPatientChildRemvSignal;
 
 		std::unordered_map<wxTreeItemId, wxWindow*> mModuleViews;
 		std::vector<wxTreeItemId> mChildId; //used for childs
