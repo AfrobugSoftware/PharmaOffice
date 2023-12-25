@@ -244,6 +244,7 @@ void pof::Modules::AppendPatientChild(const pof::base::data::duuid_t& data,const
 	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemData(id, new mixin(data));
 	mPatientChildren.insert(id);
+	mModuleTree->Expand(mPaitents);
 }
 
 void pof::Modules::RemovePatientChild(const std::string& name)

@@ -62,6 +62,12 @@ namespace pof {
 
 		};
 
+		enum : std::uint8_t
+		{
+			MED_HIST_VIEW = 0,
+			MED_HIST_EMPTY,
+		};
+
 		enum {
 			ID_SEARCH_BAR = wxID_HIGHEST + 2000,
 			ID_PATIENT_VIEW,
@@ -94,6 +100,7 @@ namespace pof {
 			ID_REMIND_CHECK,
 			ID_PATIENT_SALE_HIST,
 			ID_PIN_PATIENT,
+			ID_BOOK_MEDS_HIST,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -106,6 +113,7 @@ namespace pof {
 		void CreateSaleHistoryView();
 		void CreateEmptyPanel();
 		void CreateEmptyMedsPanel();
+		void CreateEmptyMedHistPanel();
 
 		void StartTimer();
 		void SetupAuiTheme();
@@ -181,6 +189,7 @@ namespace pof {
 		wxSearchCtrl* mPaitentSearch = nullptr;
 		wxSimplebook* mBook = nullptr;
 		wxSimplebook* mBookMeds = nullptr;
+		wxSimplebook* mBookMedsHist = nullptr;
 		wxAuiToolBarItem* pd = nullptr;
 		wxInfoBar* mPatientInfoBar = nullptr;
 		wxDatePickerCtrl* mStartDatePicker = nullptr;
@@ -192,6 +201,7 @@ namespace pof {
 		wxPanel* mSalePanel = nullptr;
 		wxPanel* mEmpty = nullptr;
 		wxPanel* mEmptyMeds = nullptr;
+		wxPanel* mEmptyMedsHist = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

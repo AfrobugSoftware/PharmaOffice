@@ -47,6 +47,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_EXCEL, pof::ProductView::OnDownloadExcel)
 	EVT_MENU(pof::ProductView::ID_CREATE_CONTROLLED_BOOK, pof::ProductView::OnCreateControlBook)
 	EVT_MENU(pof::ProductView::ID_ADD_VARIANT, pof::ProductView::OnAddVariant)
+	EVT_MENU(pof::ProductView::ID_STORE_SUMMARY, pof::ProductView::OnStoreSummary)
 
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
@@ -1014,6 +1015,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 			wxMenu* catMenu = new wxMenu;
 			auto ctp = menu->Append(wxID_ANY, "Category functions", catMenu);
 		}
+		auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
 		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Download as excel", nullptr);
 		m_auiToolBar1->PopupMenu(menu);
 	}
@@ -1638,6 +1640,72 @@ void pof::ProductView::OnEndOfMonth(wxCommandEvent& evt)
 {
 	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
 	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOM, pof::base::data::clock_t::now())) dialog.ShowModal();
+}
+
+void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
+{
+	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()) {
+		wxMessageBox("Store is empty, please add products to see summary", "Products", wxICON_INFORMATION | wxOK);
+		return;
+	}
+		
+	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, wxSize(591, 413), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+
+	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	dialog.SetBackgroundColour(*wxWHITE);
+	wxDialog* d = std::addressof(dialog);
+
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m_panel1 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	m_panel1->SetBackgroundColour(wxColour(255, 255, 255));
+
+	wxBoxSizer* bSizer2;
+	bSizer2 = new wxBoxSizer(wxVERTICAL);
+
+
+	auto TitleText = new wxStaticText(m_panel1, wxID_ANY, wxT("Store summary:"), wxDefaultPosition, wxDefaultSize, 0);
+	TitleText->Wrap(-1);
+	TitleText->SetFont(wxFontInfo().Bold().AntiAliased());
+	bSizer2->Add(TitleText, 0, wxEXPAND | wxALL, 5);
+
+	//total product
+	auto totalProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Products: {:d}",
+			wxGetApp().mProductManager.GetProductData()->GetDatastore().size()), wxDefaultPosition, wxDefaultSize, 0);
+	totalProducts->Wrap(-1);
+	totalProducts->SetFont(wxFontInfo().AntiAliased());
+	bSizer2->Add(totalProducts, 0, wxALL | wxEXPAND, 5);
+
+	auto exp = wxGetApp().mProductManager.DoExpiredProducts();
+	auto os = wxGetApp().mProductManager.DoOutOfStock();
+
+	auto totalExpProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total expired products: {:d}", exp.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
+	totalExpProducts->Wrap(-1);
+	totalExpProducts->SetFont(wxFontInfo().AntiAliased());
+	bSizer2->Add(totalExpProducts, 0, wxALL | wxEXPAND, 5);
+
+	auto totalOsProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Out of stock products: {:d}", os.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
+	totalOsProducts->Wrap(-1);
+	totalOsProducts->SetFont(wxFontInfo().AntiAliased());
+	bSizer2->Add(totalOsProducts, 0, wxALL | wxEXPAND, 5);
+
+
+
+	m_panel1->SetSizer(bSizer2);
+	m_panel1->Layout();
+	bSizer2->Fit(m_panel1);
+
+	bSizer1->Add(m_panel1, 1, wxEXPAND | wxALL, 5);
+
+	d->SetSizer(bSizer1);
+	d->Layout();
+	d->Center(wxBOTH);
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	d->SetIcon(appIcon);
+
+	d->ShowModal();
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

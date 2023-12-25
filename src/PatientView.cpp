@@ -66,6 +66,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	CreateSaleHistoryView();
 	CreateEmptyPanel();
 	CreateEmptyMedsPanel();
+	CreateEmptyMedHistPanel();
 
 	//check if we have nothing to display
 	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
@@ -223,6 +224,7 @@ void pof::PatientView::CreateViews()
 	//wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 
 	mBookMeds = new wxSimplebook(mPatientPanel, wxID_ANY);
+	mBookMedsHist = new wxSimplebook(mPatientPanel, wxID_ANY);
 
 	wxPanel* currentMedPanel = new wxPanel(mBookMeds, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxSizer* medSz = new wxBoxSizer(wxVERTICAL);
@@ -272,7 +274,7 @@ void pof::PatientView::CreateViews()
 
 	mBookMeds->AddPage(currentMedPanel, "Current medication panel", false);
 
-	wxPanel* HisMedPanel = new wxPanel(mPatientPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxPanel* HisMedPanel = new wxPanel(mBookMedsHist, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxSizer* medHisSz = new wxBoxSizer(wxVERTICAL);
 
 	mMedHistoryView = new wxDataViewCtrl(HisMedPanel, ID_PATIENT_HISTORY_VIEW, wxDefaultPosition, wxSize(-1, -1), wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
@@ -291,9 +293,11 @@ void pof::PatientView::CreateViews()
 	medHisSz->SetSizeHints(HisMedPanel);
 	HisMedPanel->Layout();
 
+	mBookMedsHist->AddPage(HisMedPanel, "History", false);
+
 	mCurrentMedicationView->Show();
 	mMedHistoryView->Show();
-	mPatientPanel->SplitHorizontally(mBookMeds, HisMedPanel);
+	mPatientPanel->SplitHorizontally(mBookMeds, mBookMedsHist);
 
 	sz->Add(mPatientInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
 	sz->Add(mPatientPanel, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 0));
@@ -641,6 +645,59 @@ void pof::PatientView::CreateEmptyMedsPanel()
 	mBookMeds->AddPage(mEmptyMeds, "Empty mediactions", false);
 }
 
+void pof::PatientView::CreateEmptyMedHistPanel()
+{
+	mEmptyMedsHist = new wxPanel(mBookMedsHist, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmptyMedsHist, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No medication history for patient"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmptyMedsHist->SetSizer(bSizer6);
+	mEmptyMedsHist->Layout();
+
+	mBookMedsHist->AddPage(mEmptyMedsHist, "Empty", false);
+}
+
 void pof::PatientView::CreatePatientDetailsPane()
 {
 	mPatientDetails = new wxPropertyGridManager(this, ID_MED_DETAILS,
@@ -842,9 +899,12 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	LoadPatientDetails();
 	mBook->SetSelection(PATIENT_VIEW);
 	mBookMeds->SetSelection(MED_VIEW);
+	mBookMedsHist->SetSelection(MED_HIST_VIEW);
 
 	if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
-		mBookMeds->SetSelection(MED_EMPTY);
+		 mBookMeds->SetSelection(MED_EMPTY);
+	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		 mBookMedsHist->SetSelection(MED_HIST_EMPTY);
 }
 
 void pof::PatientView::OnAddPatient(wxCommandEvent& evt)
@@ -888,7 +948,8 @@ void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 
 	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
 		mBook->SetSelection(PATIENT_EMPTY);
-
+	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		mBookMedsHist->SetSelection(MED_HIST_EMPTY);
 }
 
 void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
@@ -973,6 +1034,8 @@ void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 
 	if (!wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
 		mBookMeds->SetSelection(MED_VIEW);
+	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		mBookMedsHist->SetSelection(MED_HIST_EMPTY);
 }
 
 void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
@@ -1013,6 +1076,10 @@ void pof::PatientView::OnAddPacks(wxCommandEvent& evt)
 	mPatientInfoBar->ShowMessage(fmt::format("Added {:d} products from pack to patient", values.size()));
 	StartTimer();
 
+	if (!wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
+		mBookMeds->SetSelection(MED_VIEW);
+	if (!wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		mBookMedsHist->SetSelection(MED_HIST_VIEW);
 }
 
 void pof::PatientView::OnRemoveMedication(wxCommandEvent& evt)
@@ -1038,6 +1105,11 @@ void pof::PatientView::OnRemoveMedication(wxCommandEvent& evt)
 	mCurrentMedicationView->Refresh();
 	mCurrentMedicationView->SetFocus();
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Removed product from medication");
+
+	if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
+		mBookMeds->SetSelection(MED_EMPTY);
+	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		mBookMedsHist->SetSelection(MED_HIST_EMPTY);
 }
 
 void pof::PatientView::OnSelectCol(wxCommandEvent& evt)
@@ -1714,9 +1786,13 @@ void pof::PatientView::OnPatientPinSelected(const pof::base::data::duuid_t& puid
 	LoadPatientDetails();
 	mBook->SetSelection(PATIENT_VIEW);
 	mBookMeds->SetSelection(MED_VIEW);
+	mBookMedsHist->SetSelection(MED_HIST_VIEW);
 
 	if (wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore().empty())
 		mBookMeds->SetSelection(MED_EMPTY);
+
+	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
+		mBookMedsHist->SetSelection(MED_HIST_EMPTY);
 }
 
 void pof::PatientView::OnPatientUnpin(const pof::base::data::duuid_t& puid)
