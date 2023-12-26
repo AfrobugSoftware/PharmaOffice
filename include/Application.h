@@ -57,6 +57,11 @@ namespace pof {
 	class Application : public wxApp
 	{
 	public:
+		enum {
+			ID_DELETE_ACCOUNT = wxID_HIGHEST + 2,
+			ID_RESET_ACCOUNT,
+		};
+
 		using signoutsig_t = boost::signals2::signal<void(void)>;
 		using clock_t = std::chrono::system_clock;
 
@@ -149,6 +154,10 @@ namespace pof {
 		void ShowSaleSettings(wxPropertySheetDialog& sd);
 
 	
+		//settings callback
+		void OnResetAccount(wxCommandEvent& evt);
+		void OnDeleteAccount(wxCommandEvent& evt);
+
 		//allow main frame to be visable through out the system
 		pof::MainFrame* mMainFrame;
 	private:

@@ -60,6 +60,21 @@ namespace pof {
 			return priv.test(std::underlying_type_t<Privilage>(p));
 		}
 
+		//queries
+		std::optional<pof::base::relation<
+				std::uint64_t,
+				std::uint64_t,
+				pof::base::data::text_t,
+				pof::base::data::text_t,
+				pof::base::data::text_t,
+				pof::base::data::text_t,
+				pof::base::data::text_t,
+				pof::base::data::text_t
+			>> GetUsers() const;
+
+		//deactivate an account
+		bool DeactivateAccount(const std::string& username) const;
+
 		//log out
 
 		//session

@@ -83,6 +83,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateSpecialCols();
 	Style();
 	CreateAccTable();
+	CreateEmptyPanel();
 	//load base data
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
@@ -206,7 +207,7 @@ void pof::ProductView::CreateEmptyPanel()
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
-	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("supplement-bottle"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No product in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
@@ -2057,7 +2058,7 @@ void pof::ProductView::CheckEmpty()
 {
 	auto& e = m_mgr.GetPane("Empty");
 	auto& d = m_mgr.GetPane("DataView");
-	if (!d.IsOk() && !e.IsOk()) return;
+	if (!d.IsOk() || !e.IsOk()) return;
 
 	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()){
 		e.Show();

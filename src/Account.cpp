@@ -44,6 +44,44 @@ bool pof::Account::CreateAccountInfoTable()
 	return false;
 }
 
+std::optional<pof::base::relation<
+	std::uint64_t,
+	std::uint64_t,
+	pof::base::data::text_t,
+	pof::base::data::text_t,
+	pof::base::data::text_t,
+	pof::base::data::text_t,
+	pof::base::data::text_t,
+	pof::base::data::text_t
+	>> pof::Account::GetUsers() const {
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM USERS;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	
+	return std::nullopt;
+	}
+
 bool pof::Account::CreateAccountInfo()
 {
 	if (mLocalDatabase)
@@ -66,6 +104,28 @@ bool pof::Account::CreateAccountInfo()
 	}
 	return false;
 }
+
+bool pof::Account::DeactivateAccount(const std::string& username) const
+{
+	if (username.empty()) return false;
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM USERS WHERE username = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(username));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+ 
 
 bool pof::Account::CreateSessionTable()
 {

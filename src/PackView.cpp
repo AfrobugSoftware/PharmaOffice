@@ -16,6 +16,9 @@ EVT_LIST_ITEM_ACTIVATED(pof::PackView::ID_PACK_SELECT, pof::PackView::OnPackActi
 EVT_LIST_END_LABEL_EDIT(pof::PackView::ID_PACK_SELECT, pof::PackView::OnEditPackName)
 EVT_LIST_ITEM_RIGHT_CLICK(pof::PackView::ID_PACK_SELECT, pof::PackView::OnRightClick)
 
+EVT_BUTTON(pof::PackView::ID_TOOL_ADD_PRODUCT_PACK, pof::PackView::OnAddProductPack)
+EVT_BUTTON(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
+
 EVT_MENU(pof::PackView::ID_RENAME_PACK, pof::PackView::OnRenamePack)
 EVT_MENU(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
 END_EVENT_TABLE()
@@ -123,8 +126,8 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	bSizer3->Fit( mPackData );
 
 	CreateEmptyPackPanel();
-
-	mBook->AddPage(mPackView, wxT("pack view"), true); //1
+	CreateEmptyPanel();
+	mBook->AddPage(mPackView, wxT("pack view"), false); //1
 	mBook->AddPage( mPackData, wxT("pack data"), false ); //2
 	mBook->AddPage(mEmptyPack, wxT("empty pack"), false); //3
 	
@@ -192,6 +195,14 @@ void pof::PackView::CreateEmptyPackPanel()
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
+	
+	wxButton* btn = new wxButton(m7, ID_TOOL_ADD_PRODUCT_PACK);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add product to pack");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
@@ -213,6 +224,64 @@ void pof::PackView::CreateEmptyPackPanel()
 
 	mEmptyPack->SetSizer(bSizer6);
 	mEmptyPack->Layout();
+}
+
+void pof::PackView::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No packs created in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	wxButton* btn = new wxButton(m7, ID_TOOL_ADD_PACK);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Create new pack");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	mBook->AddPage(mEmpty, "Empty", true);
 }
 
 void pof::PackView::CreatePackTools()
@@ -317,7 +386,7 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 	mPackModel->Clear();
 
 	if (packRelation.value().empty()) {
-		mBook->SetSelection(3); //show empty pack
+		mBook->SetSelection(PACK_PRODUCT_EMPTY); //show empty pack
 		return; 
 	}
 	for (auto& pk : *packRelation) {
@@ -335,8 +404,14 @@ void pof::PackView::OnPackActivate(wxListEvent& evt)
 		mPackModel->EmplaceData(std::move(row));
 	}
 	UpdateTotals();
-	mCurPackId = id;
-	mBook->SetSelection(2); //show the pack view
+	if (!mPackModel->GetDatastore().empty())
+	{
+		mCurPackId = id;
+		mBook->SetSelection(PACK_DATA); //show the pack view
+	}
+	else {
+		mBook->SetSelection(PACK_PRODUCT_EMPTY); //show the pack view
+	}
 }
 
 void pof::PackView::OnEditPackName(wxListEvent& evt)
@@ -410,6 +485,12 @@ void pof::PackView::OnAddPack(wxCommandEvent& evt)
 		if (!wxGetApp().mProductManager.CreatePack(std::move(pdesc))) {
 			wxMessageBox("Error creating pack", "PACK", wxICON_ERROR | wxOK);
 		}
+		mBook->SetSelection(PACK_VIEW);
+	}
+
+
+	if (mPackSelect->IsEmpty()){
+		mBook->SetSelection(PACK_EMPTY);
 	}
 }
 
@@ -421,6 +502,11 @@ void pof::PackView::OnRemovePack(wxCommandEvent& evt)
 {
 	if (wxMessageBox("Are you sure you want to remove pack?", "PACK", wxICON_QUESTION | wxYES_NO) == wxNO) return;
 	wxGetApp().mProductManager.RemovePack(*mCurPackId);
+
+	mPackSelect->ClearAll();
+	LoadPackDescSelect();
+
+	if (mPackSelect->IsEmpty()) mBook->SetSelection(PACK_EMPTY);
 }
 
 void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
@@ -497,12 +583,11 @@ void pof::PackView::OnAddProductPack(wxCommandEvent& evt)
 			mPackModel->EmplaceData(std::move(r));
 		}
 		UpdateTotals();
-		if (mBook->GetSelection() != 2) {
-
-			mBook->SetSelection(2);
-		}
+		mBook->SetSelection(PACK_DATA);
 	}
-
+	if (mPackModel->GetDatastore().empty()){
+		mBook->SetSelection(PACK_PRODUCT_EMPTY);
+	}
 }
 
 void pof::PackView::OnRemoveProductPack(wxCommandEvent& evt)
@@ -519,7 +604,7 @@ void pof::PackView::OnRemoveProductPack(wxCommandEvent& evt)
 
 	mPackModel->RemoveData(item);
 	if (datastore.empty()) {
-		mBook->SetSelection(3);
+		mBook->SetSelection(PACK_PRODUCT_EMPTY);
 	}
 	else {
 		UpdateTotals();
@@ -529,7 +614,12 @@ void pof::PackView::OnRemoveProductPack(wxCommandEvent& evt)
 void pof::PackView::OnBack(wxCommandEvent& evt)
 {
 	CreateTopTools();
-	mBook->SetSelection(1);
+	if (mPackSelect->IsEmpty())
+	{
+		mBook->SetSelection(PACK_PRODUCT_EMPTY);
+	}else{
+		mBook->SetSelection(PACK_VIEW);
+	}
 }
 
 void pof::PackView::OnSalePack(wxCommandEvent& evt)
@@ -614,6 +704,8 @@ void pof::PackView::LoadPackDescSelect()
 	mPackSelect->Thaw();
 	mPackSelect->Refresh();
 	mPackSelect->Update();
+
+	mBook->SetSelection(PACK_VIEW);
 }
 
 void pof::PackView::LoadPackModel()

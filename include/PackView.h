@@ -37,6 +37,7 @@ namespace pof
 		wxSimplebook* mBook;
 		wxPanel* mPackView;
 		wxPanel* mEmptyPack;
+		wxPanel* mEmpty;
 		wxListCtrl* mPackSelect;
 		wxPanel* mPackData;
 		wxDataViewCtrl* m_dataViewCtrl3;
@@ -53,6 +54,12 @@ namespace pof
 		wxStaticText* mPackText = nullptr;
 		wxAuiToolBarItem* mTextItem = nullptr;
 	public:
+		enum {
+			PACK_EMPTY = 1,
+			PACK_VIEW,
+			PACK_DATA,
+			PACK_PRODUCT_EMPTY,
+		};
 
 		PackView(wxWindow* parent, bool showSale = false, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(957, 542), long style = wxDEFAULT_DIALOG_STYLE);
 		virtual ~PackView();
@@ -79,6 +86,7 @@ namespace pof
 
 	protected:
 		void CreateEmptyPackPanel();
+		void CreateEmptyPanel(); //
 		void CreatePackTools();
 		void CreateTopTools(); //naming is hard
 		void CreateSpeicalCols();

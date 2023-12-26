@@ -807,6 +807,10 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp10 = grid->Append(new wxBoolProperty("Alert critical warnings", "10", bAlertCriticalWarnings));	
 	auto pp11 = grid->Append(new wxBoolProperty("Automatic batch number generation", "11", bAutomaticBatchNumber));	
 	auto pp12 = grid->Append(new wxBoolProperty("Notify stock check before end of month", "12", bNotifyStockCheckInComplete));	
+	auto pp13 = grid->Append(new wxBoolProperty("Allow sale of controlled medication", "13", bAllowSellControlledMed));	
+	auto pp14 = grid->Append(new wxBoolProperty("Create poison book entry for each controlled drug sale", "14", bAlwaysCreateEntryIntoRegister));	
+	
+	
 	if (mLocalDatabase){
 		pp0->Enable(false);
 	}
@@ -823,6 +827,8 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp10, "Alert critical warnings on sale");
 	grid->SetPropertyHelpString(pp11, "Allow PharmaOffice to generate batch number for inventory entry");
 	grid->SetPropertyHelpString(pp12, "Notify the user of stock check incomplete 5 days before end of month");
+	grid->SetPropertyHelpString(pp13, "Allow users that are not pharmacist to sell controlled medications and enter in to the register");
+	grid->SetPropertyHelpString(pp14, "Create posion book entry for the medications that are controlled");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -880,6 +886,12 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 				break;
 			case 12:
 				bNotifyStockCheckInComplete = v.GetBool();
+				break;
+			case 13:
+				bAllowSellControlledMed = v.GetBool();
+				break;
+			case 14:
+				bAlwaysCreateEntryIntoRegister = v.GetBool();
 				break;
 			default:
 				evt.Skip();
@@ -1107,8 +1119,11 @@ void pof::Application::ShowAccountSettings(wxPropertySheetDialog& sd)
 		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
 		tool->AddStretchableSpace();
 		tool->AddSeparator();
-		tool->AddTool(wxID_ANY, "Reset password", wxArtProvider::GetBitmap("application"));
-		tool->AddTool(wxID_ANY, "Delete Account", wxArtProvider::GetBitmap("action_delete"));
+		tool->AddTool(ID_RESET_ACCOUNT, "Reset password", wxArtProvider::GetBitmap("application"));
+		tool->AddTool(ID_DELETE_ACCOUNT, "Delete Account", wxArtProvider::GetBitmap("action_delete"));
+		tool->Bind(wxEVT_TOOL, std::bind_front(&pof::Application::OnResetAccount, this), ID_RESET_ACCOUNT);
+		tool->Bind(wxEVT_TOOL, std::bind_front(&pof::Application::OnDeleteAccount, this), ID_DELETE_ACCOUNT);
+		
 		tool->Realize();
 		mSettingProperties[2]->Update();
 	}
@@ -1290,4 +1305,16 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	bSizer5->Fit(mSettingProperties[3]);
 	panel->SetSizer(bSizer5);
 	panel->Layout();
+}
+
+void pof::Application::OnResetAccount(wxCommandEvent& evt)
+{
+
+
+}
+void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
+	if (wxMessageBox("Are you sure you want to delete account", "Application", wxICON_WARNING | wxYES_NO)
+		== wxNO) return;
+
+
 }
