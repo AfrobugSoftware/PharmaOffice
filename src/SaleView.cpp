@@ -167,10 +167,10 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
 
 
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRODUCT NAME"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
-	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("QUANTITY"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
-	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("PRICE"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
-	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("EXT PRICE"), pof::SaleManager::PRODUCT_EXT_PRICE);
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
+	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Quantity"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
+	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Price"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Extact Price"), pof::SaleManager::PRODUCT_EXT_PRICE);
 	
 	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, wxSize(400, -1),
 		wxPG_SPLITTER_AUTO_CENTER | wxPG_STATIC_SPLITTER);

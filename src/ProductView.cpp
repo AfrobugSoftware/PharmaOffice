@@ -782,7 +782,9 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 	RemoveCheckedState(mOutOfStockItem);
 	RemoveCheckedState(mExpireProductItem);
 
-	pof::DataModel* datam = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()) return;
+
+	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
 	assert(datam != nullptr);
 	m_dataViewCtrl1->Freeze();
 	std::string search = evt.GetString().ToStdString();
