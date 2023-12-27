@@ -81,6 +81,7 @@ namespace pof
 		wxInfoBar* mInfoBar = nullptr;
 		wxStaticText* mActiveSaleId = nullptr;
 		wxAuiToolBarItem* mActiveSaleTextItem = nullptr;
+		wxAuiToolBarItem* mReprintItem = nullptr;
 
 		//product properties
 		wxStringProperty* productName = nullptr;

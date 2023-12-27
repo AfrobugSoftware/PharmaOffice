@@ -103,6 +103,7 @@ namespace pof
 		wxAuiToolBarItem* mOutOfStockItem = nullptr;
 		wxAuiToolBarItem* mExpireProductItem = nullptr;
 		wxAuiToolBarItem* mReportItem = nullptr;
+		wxAuiToolBarItem* mFuncDropItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;

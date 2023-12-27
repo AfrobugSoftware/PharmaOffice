@@ -974,8 +974,10 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 		menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
 		menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
 
+		wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
+		wxSize sz = mReportItem->GetSizerItem()->GetSize();
 
-		m_auiToolBar1->PopupMenu(menu);
+		m_auiToolBar1->PopupMenu(menu, wxPoint{pos.x, pos.y + sz.y + 2});
 	}
 }
 
@@ -1020,7 +1022,12 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		}
 		auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
 		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Download as excel", nullptr);
-		m_auiToolBar1->PopupMenu(menu);
+		
+
+		wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
+		wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
+
+		m_auiToolBar1->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 	}
 }
 
@@ -1901,7 +1908,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddSpacer(2);
 	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("file"), wxT("Store reports"));
 	mReportItem->SetHasDropDown(true);
-	auto mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
+	mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
 	mFuncDropItem->SetHasDropDown(true);
 	m_auiToolBar1->AddSeparator();
 

@@ -111,7 +111,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
-	mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16,16)), "Reprint a sale")->SetHasDropDown(true);
+	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Reprint a sale");
+	mReprintItem->SetHasDropDown(true);
 	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
 	mBottomTools->AddSpacer(5);
 	//look for how to make this more dynamic
@@ -1237,7 +1238,10 @@ void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
 	else {
 		wxMenu* menu = new wxMenu;
 		auto rr = menu->Append(ID_REPRINT_LAST_SALE, "Reprint Last Sale", nullptr);
-		mBottomTools->PopupMenu(menu);
+		wxPoint pos = mReprintItem->GetSizerItem()->GetPosition();
+		wxSize sz = mReprintItem->GetSizerItem()->GetSize();
+
+		mBottomTools->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 	}
 }
 
