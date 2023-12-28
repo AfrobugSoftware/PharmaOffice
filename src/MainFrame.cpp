@@ -24,6 +24,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE, pof::MainFrame::OnSaleAlerts)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_BACKUP, pof::MainFrame::OnBackupData)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_ROLLBACK, pof::MainFrame::OnRollbackData)
+	EVT_MENU(pof::MainFrame::ID_IMPORT_FORMULARY, pof::MainFrame::OnImportFormulary)
+	EVT_MENU(pof::MainFrame::ID_EXPORT_FORMULARY, pof::MainFrame::OnExportFormulary)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -166,6 +168,11 @@ void pof::MainFrame::CreateMenuBar()
 	Menus[2]->Append(ID_MENU_PRODUCT_SAVE, "Save\tCtrl-S", nullptr);
 	Menus[2]->Append(ID_MENU_PRODUCT_LOAD, "Load\tCtrl-L", nullptr);
 #endif // DEBUG
+
+	//formulary
+	Menus[3]->Append(ID_IMPORT_FORMULARY, "Import", nullptr);
+	Menus[3]->Append(ID_EXPORT_FORMULARY, "Export", nullptr);
+
 
 	//view
 #ifdef _DEBUG
@@ -882,6 +889,86 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 		wxMessageBox(fmt::format("Successfully roll back database to {}", fullPath.string()), "Roll back data", wxICON_INFORMATION | wxOK);
 	}
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Rolled back database");
+}
+
+void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
+{
+}
+
+void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
+{
+	std::string exportname = fmt::format("{}-formulary.form", wxGetApp().MainPharmacy->GetName());
+	const auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (datastore.empty()){
+		wxMessageBox("Products is empty, please add products to store to create formulary", "Formulary", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Export formulary", wxEmptyString, exportname, "formulary files (*.form)|*.form",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = fs::path(dialog.GetPath().ToStdString());
+	std::ofstream file(filename);
+
+	if (!file.is_open()) {
+		wxMessageBox(fmt::format("Failed to open {} to save formulary", filename.string()), "Formulary", wxICON_ERROR | wxOK);
+		spdlog::error("Failed to open {}", filename.string());
+		return;
+	}
+	wxProgressDialog dlg("Saving formulary", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	const auto& cats = wxGetApp().mProductManager.GetCategories();
+	const size_t count = datastore.size();
+
+	nl::json form = nl::json::object();
+	nl::json header = nl::json::object();
+	nl::json products = nl::json::array();
+
+	
+	header["pharmacy"] = wxGetApp().MainPharmacy->GetName();
+	header["address"] = wxGetApp().MainPharmacy->GetAddressAsString();
+	header["product_count"] = count;
+
+	float pg = 0.0f;
+	int i = 0;
+	for (const auto& row : datastore){
+		nl::json prod = nl::json::object();
+		const auto& v = row.first;
+		
+		prod["name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
+		prod["generic_name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
+		prod["class"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_CLASS]);
+		prod["formulation"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_FORMULATION]);
+		prod["strength"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH]);
+		prod["strength_type"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+		prod["usage_info"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
+		prod["description"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_DESCRIP]);
+		prod["health_conditions"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS]);
+		prod["unit_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
+		prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		prod["size_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
+		
+
+		auto iter = std::ranges::find_if(cats, [&](const pof::base::data::row_t& r) -> bool {
+			return boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_CATEGORY])
+			== boost::variant2::get<std::uint64_t>(r.first[pof::ProductManager::CATEGORY_ID]);
+		});
+		if(iter != cats.end())
+			prod["category"] = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::CATEGORY_NAME]);
+
+
+		products.emplace_back(std::move(prod));
+
+		pg = static_cast<float>(((float)i / (float)count) * 100.f);
+		i++;
+		dlg.Update(pg);
+	}
+
+	form["header"] = header;
+	form["products"] = products;
+
+	file << form.dump();
+	file.close();
+	wxMessageBox(fmt::format("Created {}", filename.string()), "Formulary", wxICON_INFORMATION | wxOK);
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

@@ -93,6 +93,8 @@ namespace pof {
 			ID_MENU_PRODUCT_SALE_ALERTS_EXPIRE,
 			ID_MENU_PHARMACY_BACKUP,
 			ID_MENU_PHARMACY_ROLLBACK,
+			ID_IMPORT_FORMULARY,
+			ID_EXPORT_FORMULARY,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -143,6 +145,8 @@ namespace pof {
 		void OnImportJson(wxCommandEvent& evt);
 		void OnBackupData(wxCommandEvent& evt);
 		void OnRollbackData(wxCommandEvent& evt);
+		void OnImportFormulary(wxCommandEvent& evt);
+		void OnExportFormulary(wxCommandEvent& evt);
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);

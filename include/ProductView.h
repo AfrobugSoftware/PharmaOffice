@@ -91,6 +91,7 @@ namespace pof
 			ID_ADD_VARIANT,
 			ID_REPORTS_EOM,
 			ID_STORE_SUMMARY,
+	
 		};
 
 		size_t mRowHeights;
@@ -187,6 +188,7 @@ namespace pof
 		void OnAddVariant(wxCommandEvent& evt);
 		void OnEndOfMonth(wxCommandEvent& evt);
 		void OnStoreSummary(wxCommandEvent& evt);
+	
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
