@@ -904,7 +904,7 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 	auto accountPriv = wxGetApp().MainAccount->priv;
 	auto& productManager = wxGetApp().mProductManager;
 	if (!accountPriv.test(p) && !accountPriv.test(m)) {
-		wxMessageBox("This account do not have the privilage to remove an inventory entry", "INVENTORY", wxICON_WARNING | wxOK);
+		wxMessageBox("This account do not have the privilage to remove an inventory entry", "Inventory", wxICON_WARNING | wxOK);
 		return;
 	}
 	auto item = InventoryView->GetSelection();
@@ -915,7 +915,15 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 	std::uint64_t& id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
 	
 	if (id != productManager.GetLastInventoryId(uid)){
-		wxMessageBox("Can only remove the most recently entered inventory", "INVENTORY", wxICON_WARNING | wxOK);
+		wxMessageBox("Can only remove the most recently entered inventory", "Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	//check if we have sold from this inventory
+	std::uint64_t invenstock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+	std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	if (std::signbit(static_cast<float>(presentStock - invenstock))){
+		wxMessageBox("Removing inventory would result in an invalid stock count as products have been sold from inventory", "Inventory", wxICON_INFORMATION | wxOK);
 		return;
 	}
 
@@ -936,6 +944,10 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	productManager.RemoveInventoryData(iter);
 	productManager.GetInventory()->RemoveData(item);
+
+	wxBusyCursor cursor;
+	mUpdatePropertySignal(mPropertyUpdate.value());
+	mPropertyUpdate = {};
 }
 
 void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)

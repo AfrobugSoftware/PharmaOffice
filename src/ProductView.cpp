@@ -2,6 +2,8 @@
 //#include "Application.h"
 #include "PofPch.h"
 
+#include <cmath>
+
 BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_SIZE(pof::ProductView::OnResize)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::ProductView::ID_DATA_VIEW, pof::ProductView::OnProductActivated)
@@ -48,6 +50,8 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_CREATE_CONTROLLED_BOOK, pof::ProductView::OnCreateControlBook)
 	EVT_MENU(pof::ProductView::ID_ADD_VARIANT, pof::ProductView::OnAddVariant)
 	EVT_MENU(pof::ProductView::ID_STORE_SUMMARY, pof::ProductView::OnStoreSummary)
+	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
+	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
@@ -470,10 +474,12 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 
 	menu->AppendSeparator();
 	if (mSelections.empty()) {
+		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, "Increase price", nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 	}
 	else {
+		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, fmt::format("Increase {:d} product prices", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 	}
@@ -482,7 +488,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	cat->SetBitmap(wxArtProvider::GetBitmap("folder_files"));
 	inven->SetBitmap(wxArtProvider::GetBitmap("file"));*/
 
-	PopupMenu(menu);
+	m_dataViewCtrl1->PopupMenu(menu);
 }
 
 void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
@@ -1021,6 +1027,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 			auto ctp = menu->Append(wxID_ANY, "Category functions", catMenu);
 		}
 		auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
+		auto inc = menu->Append(ID_INCR_PRICE, "Increase store prices", nullptr);
 		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Download as excel", nullptr);
 		
 
@@ -1716,6 +1723,95 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	d->SetIcon(appIcon);
 
 	d->ShowModal();
+}
+
+void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
+{
+	int id = evt.GetId();
+	auto str = wxGetTextFromUser("Please enter the pecentage you want to increae the price by (%)\nFor example 2% would increase N100 to N102.", "Increase price");
+	if (str.empty()) return;
+	float percent = 0.0f;
+	try {
+		percent = boost::lexical_cast<float>(str);
+	}
+	catch (std::exception& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Invalid input", "Increase price", wxICON_ERROR | wxOK);
+		return;
+	}
+	switch (id)
+	{
+	case ID_INCR_PRICE:
+	{
+		wxProgressDialog dlg("Increasing prices", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		int i = 0;
+		int pg = 0;
+
+		auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+		const size_t count = datastore.size();
+		for (auto& prod : datastore){
+			pof::base::currency& price =
+				boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+			pof::base::data::duuid_t& uuid =
+				boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+				
+			//round up ??
+			price += price * static_cast<double>((percent * 0.001f));
+
+			wxGetApp().mProductManager.GetProductData()->ItemChanged(pof::DataModel::GetItemFromIdx(i));
+			pg = static_cast<float>(((float)i / (float)count) * 100.f);
+			i++;
+			dlg.Update(pg);
+		}
+		wxMessageBox("Successfully increased store prices", "Increase price", wxICON_INFORMATION | wxOK);
+		m_dataViewCtrl1->SetFocus();
+	}
+		break;
+	case ID_INCR_PRODUCT_PRICE:
+	{
+		wxBusyCursor cursor;
+		if (!mSelections.empty())
+		{
+			for (const auto& item : mSelections)
+			{
+				const size_t idx = pof::DataModel::GetIdxFromItem(item);
+				auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+
+				pof::base::currency& price =
+					boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+				pof::base::data::duuid_t& uuid =
+					boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+
+				//round up ??
+				price += price * static_cast<double>((percent * 0.001f));
+				wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
+
+
+			}
+			wxMessageBox(fmt::format("Successfully increased {:d} store prices", mSelections.size()), "Increase price", wxICON_INFORMATION | wxOK);
+
+		}
+		else {
+			auto item = m_dataViewCtrl1->GetSelection();
+			if (!item.IsOk()) return;
+			
+			const size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& prod = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+
+			pof::base::currency& price =
+				boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+			pof::base::data::duuid_t& uuid =
+				boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+
+			//round up ??
+			price += price * std::ceil(static_cast<double>((percent * 0.001f)));
+			wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
+
+		}
+	}
+		m_dataViewCtrl1->SetFocus();
+		break;
+	}
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)

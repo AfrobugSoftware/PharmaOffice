@@ -524,6 +524,12 @@ bool pof::DataModel::SetValue(const wxVariant& variant, const wxDataViewItem& it
 	return true;
 }
 
+void pof::DataModel::RebaseDatastore(std::shared_ptr<pof::base::data> st)
+{
+	datastore = st;
+	Reload();
+}
+
 bool pof::DataModel::RemoveData(const wxDataViewItem& item)
 {
 	size_t idx = GetIdxFromItem(item);

@@ -77,6 +77,8 @@ namespace pof {
 
 		inline bool HasMultipleSelections() const { return !mSelectedProducts.empty(); }
 
+		inline pof::DataModel* GetDataModel() { return mModel; }
+		inline wxChoice* GetCategoryFilter{ return mCategoryFilter; }
 		const pof::base::data::row_t& GetSelectedProduct() const;
 		const std::vector<std::reference_wrapper<pof::base::data::row_t>> GetSelectedProducts() const;
 	protected:

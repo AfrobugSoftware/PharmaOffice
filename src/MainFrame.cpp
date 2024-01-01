@@ -893,6 +893,105 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 
 void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 {
+	const auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (!datastore.empty()) {
+		if(wxMessageBox("Products is not empty, importing a formulary might create duplicate products,\ndo you wish to continue?", "Formulary", wxICON_WARNING | wxYES_NO) == wxNO)
+			return;
+	}
+	wxFileDialog fileDialog(this, "Formulary Import", wxEmptyString, wxEmptyString, "form files (*.form)|*.form",
+		wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (fileDialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = fs::path(fileDialog.GetPath().ToStdString());
+	if (filename.extension().string() != ".form"){
+		wxMessageBox(fmt::format("{} is not a formulary file", filename.string()), "Formulary", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	std::ifstream file(filename);
+	std::stringstream data;
+	data << file.rdbuf();
+
+
+
+	int i = 0;
+	int pg = 0;
+
+	try {
+		const nl::json form = nl::json::parse(data.str());
+		const nl::json header = form["header"];
+		const nl::json products = form["products"];
+		const size_t count = static_cast<std::uint64_t>(header["product_count"]);
+		std::chrono::system_clock::time_point p(std::chrono::system_clock::duration(static_cast<std::uint64_t>(header["timestamp"])));
+
+		wxMessageBox(fmt::format("Importing formulary\nName: {}\nAddress: {}\nDate created: {:%d:%m:%Y}\nProducts count: {:d}",
+			static_cast<std::string>(header["pharmacy"]),
+			static_cast<std::string>(header["address"]),
+			p,
+			count), "Formulary import", wxICON_INFORMATION | wxOK);
+		wxProgressDialog dlg("Loading formulary", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		std::map<std::string, int> cats;
+		int catmap = 0;
+		auto selector = std::make_shared<pof::base::data>(); // select products from formulary
+		selector->set_metadata(wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata());
+		selector->reserve(count);
+		for (const auto& prod : products) {
+			pof::base::data::row_t row;
+			row.first.resize(pof::ProductManager::PRODUCT_MAX);
+			auto& v = row.first;
+			v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator{}();
+			v[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
+			v[pof::ProductManager::PRODUCT_NAME] = static_cast<std::string>(prod["name"]);
+			v[pof::ProductManager::PRODUCT_GENERIC_NAME] = static_cast<std::string>(prod["generic_name"]);
+			v[pof::ProductManager::PRODUCT_CLASS] = static_cast<std::string>(prod["class"]);
+			v[pof::ProductManager::PRODUCT_FORMULATION] = static_cast<std::string>(prod["formulation"]);
+			v[pof::ProductManager::PRODUCT_STRENGTH] = static_cast<std::string>(prod["strength"]);
+			v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = static_cast<std::string>(prod["strength_type"]);
+			v[pof::ProductManager::PRODUCT_USAGE_INFO] = static_cast<std::string>(prod["usage_info"]);
+			v[pof::ProductManager::PRODUCT_DESCRIP] = static_cast<std::string>(prod["description"]);
+			v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = static_cast<std::string>(prod["health_conditions"]);
+			std::string_view price = static_cast<std::string>(prod["unit_price"]);
+			v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::currency(std::string(price.begin() + 1, price.end()));
+			v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::currency{};
+			v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(prod["package_size"]);
+			v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
+			v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = static_cast<std::string>(prod["side_effects"]);
+			auto catiter = prod.find("category");
+			if (catiter != prod.end()) {
+				auto found = cats.find(static_cast<std::string>(*catiter));
+				if (found != cats.end())
+				{
+					v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(found->second);
+				}
+				else {
+					cats.insert(std::make_pair(static_cast<std::string>(*catiter), catmap));
+					catmap++;
+				}
+			}
+
+			selector->tab().emplace_back(std::move(row));
+			pg = static_cast<float>(((float)i / (float)count) * 90.f);
+			i++;
+			dlg.Update(pg);
+		}
+
+		pof::SearchProduct productselect(this, wxID_ANY, "Formulary product select - Please select products from formulary to add to store");
+		productselect.GetDataModel()->RebaseDatastore(selector);
+
+		auto choicefilter = productselect.GetCategoryFilter();
+		choicefilter->Clear(); //clear the cateoty
+
+
+
+		if (productselect.ShowModal() == wxID_CANCEL) return;
+
+
+	}
+	catch (nl::json::exception& exp){
+		wxMessageBox(fmt::format("Invalid formulary in file, inalid error", "Formulary", wxICON_ERROR | wxOK));
+		spdlog::error(exp.what());
+		return;
+	}
+
 }
 
 void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
@@ -904,7 +1003,7 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 		return;
 	}
 
-	wxFileDialog dialog(this, "Export formulary", wxEmptyString, exportname, "formulary files (*.form)|*.form",
+	wxFileDialog dialog(this, "Formulary export", wxEmptyString, exportname, "formulary files (*.form)|*.form",
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() == wxID_CANCEL) return;
 	auto filename = fs::path(dialog.GetPath().ToStdString());
@@ -927,6 +1026,7 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 	header["pharmacy"] = wxGetApp().MainPharmacy->GetName();
 	header["address"] = wxGetApp().MainPharmacy->GetAddressAsString();
 	header["product_count"] = count;
+	header["timestamp"] = static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
 
 	float pg = 0.0f;
 	int i = 0;
@@ -944,8 +1044,8 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 		prod["description"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_DESCRIP]);
 		prod["health_conditions"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS]);
 		prod["unit_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
-		prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-		prod["size_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
+		prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
+		prod["side_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
 		
 
 		auto iter = std::ranges::find_if(cats, [&](const pof::base::data::row_t& r) -> bool {
@@ -966,9 +1066,10 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 	form["header"] = header;
 	form["products"] = products;
 
-	file << form.dump();
+	file << form.dump(5);
 	file.close();
 	wxMessageBox(fmt::format("Created {}", filename.string()), "Formulary", wxICON_INFORMATION | wxOK);
+	mProductView->SetFocus();
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

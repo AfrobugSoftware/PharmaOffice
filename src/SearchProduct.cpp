@@ -302,6 +302,7 @@ void pof::SearchProduct::OnFilter(wxCommandEvent& evt)
 	{
 	//filter the store with the category them the formulation.
 		auto& categories = wxGetApp().mProductManager.GetCategories();
+		//auto categories = mCategoryFilter->GetStrings();
 		auto iter = std::ranges::find_if(categories, [&](const pof::base::data::row_t& row) -> bool {
 			return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == mCategoryName);
 			});

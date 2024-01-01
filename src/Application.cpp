@@ -501,7 +501,7 @@ bool pof::Application::SignIn()
 			if (bKeepMeSignedIn){
 				MainAccount->InsertSession(); //starts new session
 			}
-			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed in at {:%d/%M/%Y %H:%M:%S}", MainAccount->username, MainAccount->signintime));
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed in at {:%d/%m/%Y %H:%M:%S}", MainAccount->username, MainAccount->signintime));
 			return true;
 		}
 		else {
