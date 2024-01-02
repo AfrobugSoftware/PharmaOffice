@@ -923,7 +923,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		const size_t count = static_cast<std::uint64_t>(header["product_count"]);
 		std::chrono::system_clock::time_point p(std::chrono::system_clock::duration(static_cast<std::uint64_t>(header["timestamp"])));
 
-		wxMessageBox(fmt::format("Importing formulary\nName: {}\nAddress: {}\nDate created: {:%d:%m:%Y}\nProducts count: {:d}",
+		wxMessageBox(fmt::format("Importing formulary\nName: {}\n\nAddress: {}\n\nDate created: {:%d:%m:%Y}\n\nProducts count: {:d}",
 			static_cast<std::string>(header["pharmacy"]),
 			static_cast<std::string>(header["address"]),
 			p,
@@ -983,7 +983,29 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 
 
 		if (productselect.ShowModal() == wxID_CANCEL) return;
+		dlg.Destroy();
 
+
+		dlg.Create("Loading formulary into store", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		if (productselect.HasMultipleSelections())
+		{
+			auto products = productselect.GetSelectedProducts();
+			for (const auto& prod : products){
+
+
+
+
+
+				pg = static_cast<float>(((float)i / (float)count) * 90.f);
+				i++;
+				dlg.Update(pg);
+			}
+			wxMessageBox(fmt::format("Added {:d} products to the store from {} formulary", products.size(), static_cast<std::string>(header["pharmacy"])),
+				"Formulary", wxICON_INFORMATION | wxOK);
+		}
+		else {
+			//single product selected by double click on the product or add product
+		}
 
 	}
 	catch (nl::json::exception& exp){
