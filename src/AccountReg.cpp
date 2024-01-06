@@ -250,6 +250,7 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.email = email;
 	mAccount.phonenumber = phone;
 	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 
+	mAccount.SetSecurityQuestion(pof::Account::mSecurityQuestions[sel].ToStdString(), mSecurityAnswer->GetValue().ToStdString());
 	return true;
 }
 
