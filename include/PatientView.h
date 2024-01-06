@@ -101,6 +101,7 @@ namespace pof {
 			ID_PATIENT_SALE_HIST,
 			ID_PIN_PATIENT,
 			ID_BOOK_MEDS_HIST,
+			ID_OPEN_PATIENT,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -177,6 +178,7 @@ namespace pof {
 		void OnReminded(wxCommandEvent& evt);
 		void OnPatientSaleHist(wxCommandEvent& evt);
 		void OnPinPatient(wxCommandEvent& evt);
+		void OnOpenPatient(wxCommandEvent& evt);
 
 		void ShowSaleHistory();
 

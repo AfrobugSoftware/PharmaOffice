@@ -322,7 +322,7 @@ bool pof::Account::AddNewRole(const Privilage& p)
 	return true;
 }
 
-std::string pof::Account::GetSecurityQuestion(const std::string& un)
+std::optional<std::string> pof::Account::GetSecurityQuestion(const std::string& un)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT ui.sec_question 
@@ -335,11 +335,15 @@ std::string pof::Account::GetSecurityQuestion(const std::string& un)
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<pof::base::data::text_t>(*stmt);
-		assert(rel.has_value() && !rel->empty());
+		if (rel.has_value())
+		{
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
 		mLocalDatabase->finalise(*stmt);
 		return std::get<0>(*rel->begin());
 	}
-	return std::string();
+	return std::nullopt;
 }
 
 std::uint64_t pof::Account::GetLastId() const

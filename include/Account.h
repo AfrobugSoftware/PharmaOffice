@@ -95,12 +95,13 @@ namespace pof {
 		bool CheckForUsername(const std::string& usersname);
 		bool ChangePassword(const std::string& newPass);
 		bool AddNewRole(const Privilage& p);
-		std::string GetSecurityQuestion(const std::string& username);
+		std::optional<std::string> GetSecurityQuestion(const std::string& username);
 		std::uint64_t GetLastId() const;
 		bool DeleteAccount();
 		bool UpdateAccount();
 		void SetSignInTime();
 		void SetSecurityQuestion(const std::string& question, const std::string& answer);
+		
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		signal_t signOutSig;
 		signal_t updateSig;
