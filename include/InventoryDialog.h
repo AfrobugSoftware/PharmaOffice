@@ -15,7 +15,7 @@ namespace pof {
 	class InventoryDialog : public wxDialog
 	{
 	public:
-		InventoryDialog(wxWindow* parent);
+		InventoryDialog(wxWindow* parent, const pof::base::data::duuid_t& uid);
 
 		virtual bool TransferDataFromWindow() override;
 		virtual bool TransferDataToWindow() override;
@@ -32,14 +32,15 @@ namespace pof {
 		void CreateDialog();
 		void SizeDialog();
 
-		wxStaticText* texts[8];
-		wxSpinCtrl* mQuantityInControl;
-		wxSpinCtrl* mCostControl;
-		wxDatePickerCtrl* mExpiryDate;
-		wxTextCtrl* mBatchNumber;
-		wxTextCtrl* mManufactureName;
-		wxBitmapButton* mCalenderButton;
-		wxButton* mOkCancel[2];
+		wxStaticText* texts[8] = {0};
+		wxSpinCtrl* mQuantityInControl = nullptr;
+		wxSpinCtrl* mCostControl = nullptr;
+		wxDatePickerCtrl* mExpiryDate = nullptr;
+		wxTextCtrl* mBatchNumber = nullptr;
+		//wxTextCtrl* mManufactureName = nullptr;
+		wxBitmapButton* mCalenderButton = nullptr;
+		wxButton* mOkCancel[2] = {0};
+		wxComboBox* mManufacturersName = nullptr;
 		pof::base::data::row_t mInventoryData;
 
 	private:
@@ -47,6 +48,7 @@ namespace pof {
 		void OnCancel(wxCommandEvent& evt);
 		void OnCalendar(wxCommandEvent& evt);
 
+		wxArrayString SetupManufacturerName();
 
 		DECLARE_EVENT_TABLE()
 

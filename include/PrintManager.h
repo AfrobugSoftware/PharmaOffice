@@ -25,6 +25,7 @@ namespace pof {
 		~PrintManager();
 		void PrinterSetup();
 		void PrintSaleReceipt(wxWindow* parent);
+		void PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrintout* preview);
 		void PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent);
 		void PrintJob(wxWindow* parent, wxPrintout* printjob);
 		void Preview(wxWindow* parent, wxPrintout* previeout, wxPrintout* printout);

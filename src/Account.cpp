@@ -1,5 +1,7 @@
 #include "Account.h"
 
+wxArrayString pof::Account::mSecurityQuestions = {};
+
 pof::Account::Account()
 {
 	sessionDuration = date::days(5); //session lasts for 5 days
@@ -481,4 +483,13 @@ bool pof::Account::ValidateCredentials(const std::string& uname, const std::stri
 	if (uname.empty() || password.empty()) return false;
 	if (uname != username) return false;
 	return bcrypt::validatePassword(password, passhash);
+}
+
+void pof::Account::CreateSecurityQuestions() {
+	mSecurityQuestions.push_back("What was the name of your first school teacher?");
+	mSecurityQuestions.push_back("What year did you enter college?");
+	mSecurityQuestions.push_back("What is your grandmother’s maiden name?");
+	mSecurityQuestions.push_back("What color do you like the most?");
+	mSecurityQuestions.push_back("What’s your favorite artist?");
+	mSecurityQuestions.push_back("What book do you recommend to your friends?");
 }

@@ -231,6 +231,7 @@ namespace pof {
 		std::optional<std::uint64_t> GetLastInventoryId(const pof::base::data::duuid_t& uid);
 		std::optional<pof::base::data::datetime_t> GetLastInventoryDate(const pof::base::data::duuid_t& uid);
 		std::optional<pof::base::data::text_t> GetLastInventoryBatchNumber(const pof::base::data::duuid_t& uid);
+		std::optional<pof::base::data::text_t> GetLastInventorySupplierName(const pof::base::data::duuid_t& uid);
 
 		void AddCategory(const std::string& name);
 		void RemoveCategory(const std::string& name);

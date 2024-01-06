@@ -9,8 +9,9 @@ EVT_BUTTON(wxID_CANCEL, InventoryDialog::OnCancel)
 EVT_BUTTON(InventoryDialog::ID_CALENDAR, InventoryDialog::OnCalendar)
 END_EVENT_TABLE()
 
-pof::InventoryDialog::InventoryDialog(wxWindow* parent)
-: wxDialog(parent, wxID_ANY, "Add Stock", wxDefaultPosition, wxSize(591, 348), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL) {
+pof::InventoryDialog::InventoryDialog(wxWindow* parent, const pof::base::data::duuid_t& uid)
+: wxDialog(parent, wxID_ANY, "Add Stock", wxDefaultPosition, wxSize(591, 348), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL),
+	mProductUuid(uid){
 	CreateDialog();
 	SizeDialog();
 }
@@ -31,7 +32,7 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 		return false;
 	}
 	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
-	mInventoryData.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = mManufactureName->GetValue().ToStdString();
+	mInventoryData.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = mManufacturersName->GetValue().ToStdString();
 	return true;
 }
 
@@ -95,8 +96,12 @@ void pof::InventoryDialog::CreateDialog()
 	mExpiryDate->SetRange(wxDateTime::Now(), wxDateTime{});
 	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
 	mBatchNumber->SetValidator(wxTextValidator{ wxFILTER_DIGITS  | wxFILTER_EMPTY});
-	mManufactureName = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
-	mManufactureName->SetValidator(wxTextValidator{  wxFILTER_EMPTY });
+	//mManufactureName = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
+	//mManufactureName->SetValidator(wxTextValidator{  wxFILTER_EMPTY });
+
+	auto choices = SetupManufacturerName();
+	mManufacturersName = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, choices);
+	mManufacturersName->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 }
 
 void pof::InventoryDialog::SizeDialog()
@@ -131,7 +136,7 @@ void pof::InventoryDialog::SizeDialog()
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[6], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mManufactureName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mManufacturersName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
 	flexSizer->AddStretchSpacer();
 
 	boxSizer->Add(texts[0], wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
@@ -175,5 +180,17 @@ void pof::InventoryDialog::OnCancel(wxCommandEvent& evt)
 void pof::InventoryDialog::OnCalendar(wxCommandEvent& evt)
 {
 	
+}
+
+wxArrayString pof::InventoryDialog::SetupManufacturerName()
+{
+	wxArrayString ret;
+	auto supname = wxGetApp().mProductManager.GetLastInventorySupplierName(mProductUuid);
+	if (supname.has_value() && supname.value() != "ENTRY" && !supname.value().empty()){
+		ret.push_back(supname.value());
+	}
+	ret.push_back("ENTRY");
+
+	return ret;
 }
 

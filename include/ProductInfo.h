@@ -105,7 +105,7 @@ namespace pof
 
 			using back_signal_t = boost::signals2::signal<void(void)>;
 			using update_signal_t = boost::signals2::signal<void(const PropertyUpdate&)>;
-
+			using stock_remv_signal = boost::signals2::signal<void(const pof::base::data::duuid_t&, std::uint64_t)>;
 
 			enum {
 				ID_DATA_VIEW,
@@ -135,6 +135,8 @@ namespace pof
 
 
 			void m_splitter1OnIdle(wxIdleEvent&);
+
+			stock_remv_signal mStockRemvSig;
 	protected:
 		void CreateInventoryView();
 		void CreateHistoryView();

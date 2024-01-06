@@ -894,6 +894,8 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 {
 	const auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto& categories = wxGetApp().mProductManager.GetCategories();
+
 	if (!datastore.empty()) {
 		if(wxMessageBox("Products is not empty, importing a formulary might create duplicate products,\ndo you wish to continue?", "Formulary", wxICON_WARNING | wxYES_NO) == wxNO)
 			return;
@@ -931,6 +933,11 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		wxProgressDialog dlg("Loading formulary", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 		std::map<std::string, int> cats;
 		int catmap = 0;
+		if (!categories.empty()) {
+			auto& v = categories.back();
+			catmap = boost::variant2::get<std::uint64_t>(v.first[pof::ProductManager::CATEGORY_ID]);
+			catmap++;
+		}
 		auto selector = std::make_shared<pof::base::data>(); // select products from formulary
 		selector->set_metadata(wxGetApp().mProductManager.GetProductData()->GetDatastore().get_metadata());
 		selector->reserve(count);
@@ -963,8 +970,25 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 					v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(found->second);
 				}
 				else {
-					cats.insert(std::make_pair(static_cast<std::string>(*catiter), catmap));
-					catmap++;
+					pof::base::data::const_iterator ii =
+						std::ranges::find_if(categories, [&](const pof::base::data::row_t& row) -> bool {
+						return boost::variant2::get<std::string>(row.first[pof::ProductManager::CATEGORY_NAME])
+						== static_cast<std::string>(*catiter);
+					});
+					if ( ii != categories.end())
+					{
+						//category already exists in the app 
+						/*cats.insert(std::make_pair( static_cast<std::string>(*catiter), 
+							 boost::variant2::get<std::uint64_t>(ii->first[pof::ProductManager::CATEGORY_ID])));*/
+						v[pof::ProductManager::PRODUCT_CATEGORY] =
+							boost::variant2::get<std::uint64_t>(ii->first[pof::ProductManager::CATEGORY_ID]);
+					}
+					else {
+						auto [f, x] = cats.insert(std::make_pair(static_cast<std::string>(*catiter), catmap));
+						v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(f->second);
+						catmap++;
+					}
+
 				}
 			}
 
@@ -987,6 +1011,20 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 
 
 		dlg.Create("Loading formulary into store", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		//import categories first
+		for (auto& c : cats){
+			mProductView->CategoryAddSignal(c.first);
+
+
+			pof::base::data::row_t row;
+			row.first.push_back(c.second);
+			row.first.push_back(c.first);
+			categories.insert(std::move(row));
+
+			wxGetApp().mProductManager.AddCategory(c.first);
+		}
+
+
 		if (productselect.HasMultipleSelections())
 		{
 			auto products = productselect.GetSelectedProducts();

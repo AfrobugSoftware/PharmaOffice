@@ -524,8 +524,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		iscontrolled = cls == "CONTROLLED";
 	}
 
-	pof::InventoryDialog dialog(nullptr);
-	dialog.mProductUuid = boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+	pof::InventoryDialog dialog(nullptr, boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
@@ -874,7 +873,11 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 		InventoryView->Freeze();
 		wxGetApp().mProductManager.GetInventory()->Reload();
 		InventoryView->Thaw();
-		mBook->SetSelection(PAGE_INVENTORY);
+
+		if (wxGetApp().mProductManager.GetInventory()->GetDatastore().empty())
+			mBook->SetSelection(PAGE_EMPTY);
+		else
+			mBook->SetSelection(PAGE_INVENTORY);
 	}
 }
 
@@ -922,32 +925,24 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 	//check if we have sold from this inventory
 	std::uint64_t invenstock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
 	std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-	if (std::signbit(static_cast<float>(presentStock - invenstock))){
+	float fpt = (static_cast<float>(presentStock) - static_cast<float>(invenstock));
+	if (std::signbit(fpt)){
 		wxMessageBox("Removing inventory would result in an invalid stock count as products have been sold from inventory", "Inventory", wxICON_INFORMATION | wxOK);
 		return;
 	}
 
-	if (!mPropertyUpdate.has_value()) {
-		mPropertyUpdate.emplace();
-		mPropertyUpdate->mUpdatedElementsValues.first.resize(pof::ProductManager::PRODUCT_MAX);
-		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_UUID] =
-			mProductData.first[pof::ProductManager::PRODUCT_UUID];
-	}
-	mPropertyUpdate->mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
-	mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
-		boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
-		- boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+	wxBusyCursor curor;
+	mStockRemvSig(uid, static_cast<std::uint64_t>(presentStock - invenstock));
 
-	
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory with batch {} from {}", 
 			boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
 			boost::variant2::get<pof::base::data::text_t>(mProductData.first[pof::ProductManager::PRODUCT_NAME])));
 	productManager.RemoveInventoryData(iter);
 	productManager.GetInventory()->RemoveData(item);
 
-	wxBusyCursor cursor;
-	mUpdatePropertySignal(mPropertyUpdate.value());
-	mPropertyUpdate = {};
+	if (productManager.GetInventory()->GetDatastore().empty()){
+		mBook->SetSelection(PAGE_EMPTY);
+	}
 }
 
 void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)

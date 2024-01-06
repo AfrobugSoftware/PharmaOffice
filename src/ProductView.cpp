@@ -52,7 +52,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_STORE_SUMMARY, pof::ProductView::OnStoreSummary)
 	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
-
+	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -165,6 +165,13 @@ void pof::ProductView::SetupDataViewStyle()
 	m_dataViewCtrl1->SetFont(mDataViewFont);
 	m_dataViewCtrl1->SetHeaderAttr(mHeaderAttr);
 	m_dataViewCtrl1->SetRowHeight(mRowHeights);
+}
+
+bool pof::ProductView::ProductAdd(pof::base::data::row_t&& productRow)
+{
+	wxGetApp().mProductManager.GetProductData()->StoreData(std::forward<pof::base::data::row_t>(productRow));
+
+	return false;
 }
 
 void pof::ProductView::ReloadProductView()
@@ -455,6 +462,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 {
 	if (!m_dataViewCtrl1->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
+	auto open = menu->Append(ID_OPEN_PRODUCT_INFO, "Open product", nullptr);
 	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
@@ -917,8 +925,7 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 	}
 
 
-	pof::InventoryDialog dialog(nullptr);
-	dialog.mProductUuid = boost::variant2::get<pof::base::data::duuid_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID]);
+	pof::InventoryDialog dialog(nullptr, boost::variant2::get<pof::base::data::duuid_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID]));
 	if (dialog.ShowModal() == wxID_OK) {
 		auto& Inven = dialog.GetData();
 		Inven.first[pof::ProductManager::INVENTORY_PRODUCT_UUID] = pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID];
@@ -1814,6 +1821,18 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnOpenProductInfo(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	const size_t idx = pof::DataModel::GetIdxFromItem(item);
+	const pof::base::data::row_t& row = datastore[idx];
+	mProductinfo->Load(row);
+	SwapCenterPane(true);
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -1842,10 +1861,28 @@ void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpda
 	int idx = std::distance(DataStore.begin(), Iter);
 	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
 	DataStore.set_state(idx,pof::base::data::state::MODIFIED);
-	
+	Iter->second.second.reset();
+
 	std::string& name = boost::variant2::get<pof::base::data::text_t>(Iter->first[pof::ProductManager::PRODUCT_NAME]);
 	mInfoBar->ShowMessage(fmt::format("{} is updated sucessfully", name), wxICON_INFORMATION);
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated {} product information", name));
+}
+
+void pof::ProductView::OnProductStockRemoved(const pof::base::data::duuid_t& uuid,std::uint64_t newstock)
+{
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+
+	auto iter = std::find_if(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& elem) -> bool {
+			return  boost::variant2::get<pof::base::data::duuid_t>(elem.first[pof::ProductManager::PRODUCT_UUID]) == uuid;
+	});
+
+	if (iter != datastore.end()) {
+		iter->first[pof::ProductManager::PRODUCT_STOCK_COUNT] = newstock;
+		iter->second.second.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+		int idx = std::distance(datastore.begin(), iter);
+		wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+		iter->second.second.reset();
+	}
 }
 
 //remove this one, use only activated 
@@ -2048,6 +2085,7 @@ void pof::ProductView::CreateProductInfo()
 	mProductinfo = new pof::ProductInfo(this, ID_PRODUCTINFO);
 	mProductinfo->AttachBackSlot([&]() { SwapCenterPane(false); });
 	mProductinfo->AttachPropertyUpdateSlot(std::bind_front(&pof::ProductView::OnProductInfoUpdated, this));
+	mProductinfo->mStockRemvSig.connect(std::bind_front(&pof::ProductView::OnProductStockRemoved, this));
 
 	m_mgr.AddPane(mProductinfo, wxAuiPaneInfo().Name("ProductInfo").CenterPane().Hide());
 

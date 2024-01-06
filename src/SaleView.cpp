@@ -322,6 +322,11 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	/*this->Bind(wxEVT_UPDATE_UI, [&](wxUpdateUIEvent& evt) {
 		UpdateSaleDisplay();
 	});*/
+
+	//load receipt style
+	auto ap = wxGetApp().GetAssertsPath() / "boostrap.css";
+	std::fstream file(ap, std::ios::in);
+	if(file.is_open()) receiptcss << file.rdbuf();
 }
 
 pof::SaleView::~SaleView()
@@ -625,7 +630,8 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	SaveLabelInfo(mCurSaleuuid);
 
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
-	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
+	wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
+	//wxGetApp().mPrintManager->PrintSaleReceiptHtml(CreateHtmlReciept(), CreateHtmlReciept());
 	mLocked = false;
 }
 
@@ -2049,6 +2055,63 @@ void pof::SaleView::StorePoisonBookEnteries()
 
 		wxGetApp().mPoisonBookManager.GetBook()->StoreData(std::move(iter->second));
 	}
+}
+
+wxHtmlPrintout* pof::SaleView::CreateHtmlReciept()
+{
+	auto htmlprintout = new wxHtmlPrintout("Receipt");
+	std::stringstream out; 
+
+	html::Document document("Reciept");
+	html::Div main("container");
+
+
+	document.head() << HTML::Meta("utf-8")
+		<< HTML::Meta("viewport", "width=device-width, initial-scale=1, shrink-to-fit=no");
+	auto ap = wxGetApp().GetAssertsPath();
+	ap /= "bootstrap.css";
+
+	document.head() << HTML::Style(receiptcss.str().c_str());
+	document.head() << HTML::Style(".navbar{margin-bottom:20px;}");
+
+	// Body
+	document.body().cls("bg-light");
+
+
+	main << HTML::Header1("Welcome to HTML").id("anchor_link_1");
+	main << "Text directly in the body.";
+	main << HTML::Text("Text directly in the body. ") << HTML::Text("Text directly in the body.") << HTML::Break()
+		<< HTML::Text("Text directly in the body.");
+	main << HTML::Paragraph("This is the way to go for a big text in a multi-line paragraph.");
+	main << HTML::Link("Google", "http://google.com").cls("my_style");
+	main << (HTML::Paragraph("A paragraph. ").style("font-family:arial")
+		<< HTML::Text("Text child.") << HTML::Break() << HTML::Text("And more text."));
+
+	main << (HTML::List()
+		<< (HTML::ListItem("Text item"))
+		<< (HTML::ListItem() << HTML::Link("Github Link", "http://srombauts.github.io").title("SRombaut's Github home page"))
+		<< (HTML::ListItem() << (HTML::List()
+			<< HTML::ListItem("val1")
+			<< HTML::ListItem("val2"))));
+
+	main << (HTML::Table().cls("table table-hover table-sm")
+		<< HTML::Caption("Table caption")
+		<< (HTML::Row() << HTML::ColHeader("A") << HTML::ColHeader("B"))
+		<< (HTML::Row() << HTML::Col("Cell_11") << HTML::Col("Cell_12"))
+		<< (HTML::Row() << HTML::Col("Cell_21") << (HTML::Col() << HTML::Link("Wikipedia", "https://www.wikipedia.org/")))
+		<< (HTML::Row() << HTML::Col("") << HTML::Col("Cell_32")));
+
+	main << HTML::Small("Copyright Sebastien Rombauts @ 2017-2021");
+
+	main << HTML::Link().id("anchor_link_2");
+
+	// TODO HTML::Form(), InputCheckbox() etc
+
+	document << std::move(main);
+
+	out << document;
+	htmlprintout->SetHtmlText(out.str());
+	return htmlprintout;
 }
 
 void pof::SaleView::LoadLabelDetails(LabelInfo& info, const pof::base::data::row_t& product)

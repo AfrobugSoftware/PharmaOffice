@@ -107,6 +107,8 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	mPhoneNoValue->SetMaxLength(11);
 	fgSizer1->Add( mPhoneNoValue, 0, wxALL|wxEXPAND, 5 );
 	
+	
+
 	mPasswordLabel = new wxStaticText( m_scrolledWindow1, wxID_ANY, wxT("Password"), wxDefaultPosition, wxDefaultSize, 0 );
 	mPasswordLabel->Wrap( -1 );
 	fgSizer1->Add( mPasswordLabel, 0, wxALL, 5 );
@@ -144,7 +146,26 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	m_radioBox2 = new wxRadioBox( m_scrolledWindow1, wxID_ANY, wxT("Phamacist role"), wxDefaultPosition, wxDefaultSize, m_radioBox2NChoices, m_radioBox2Choices, 1, wxRA_SPECIFY_COLS );
 	fgSizer1->Add( m_radioBox2, 0, wxALL|wxEXPAND, 5 );
 	
-	
+
+	auto m_panel4 = new wxPanel(m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxStaticBoxSizer* sbSizer7;
+	sbSizer7 = new wxStaticBoxSizer(new wxStaticBox(m_panel4, wxID_ANY, wxT("Security questions")), wxVERTICAL);
+
+	mSecurityQuestions = new wxChoice(sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, pof::Account::mSecurityQuestions, 0);
+	mSecurityQuestions->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	sbSizer7->Add(mSecurityQuestions, 0, wxALL | wxEXPAND, 5);
+
+	mSecurityAnswer = new wxTextCtrl(sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mSecurityAnswer->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	sbSizer7->Add(mSecurityAnswer, 0, wxALL | wxEXPAND, 5);
+
+	m_panel4->SetSizer(sbSizer7);
+	m_panel4->Layout();
+	sbSizer7->Fit(m_panel4);
+
+	fgSizer1->Add(0, 0, 1, wxEXPAND, 5);
+	fgSizer1->Add(m_panel4, 0, wxALL | wxEXPAND, 5);
+
 	bSizer4->Add( fgSizer1, 1, wxALL|wxEXPAND, 10 );
 	
 	
@@ -214,6 +235,12 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 		wxMessageBox("Phone number is not complete, please enter valid phone number", "Registation", wxICON_WARNING | wxOK);
 		return false;
 	}
+	sel = mSecurityQuestions->GetSelection();
+	if (sel == wxNOT_FOUND)	{
+		wxMessageBox("Please select a security question for your account", "Registration", wxICON_WARNING | wxOK);
+		return false;
+	}
+
 
 	mAccount.accountID = mAccount.GetLastId() + 1;
 	mAccount.name = mFirstNameValue->GetValue().ToStdString();
@@ -223,7 +250,6 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.email = email;
 	mAccount.phonenumber = phone;
 	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 
-	
 	return true;
 }
 

@@ -46,7 +46,7 @@ namespace pof {
 		wxButton* mLogOn;
 		wxButton* mSignup;
 		wxPanel* mPharmacySignupPanel;
-		wxHyperlinkCtrl* mLoginPharmacyLink;
+		wxHyperlinkCtrl* mForgotPasswordLink;
 		wxHyperlinkCtrl* mHelpLink;
 		wxPanel* m_panel4;
 
@@ -68,6 +68,8 @@ namespace pof {
 	protected:
 		void onLogon(wxCommandEvent& evt);
 		void onSignup(wxCommandEvent& evt);
+		void OnForgotPassword(wxCommandEvent& evt);
+		void OnHelp(wxCommandEvent& evt);
 
 		bool ValidateLocal();
 		bool ValidateGlobal(); 

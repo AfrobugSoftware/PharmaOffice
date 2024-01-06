@@ -47,4 +47,4 @@ add_executable(pharmaoffice ${APP} ${incs} $<$<BOOL:${WIN32}>:pharmaoffice.rc> $
 target_precompile_headers(pharmaoffice PUBLIC ${PROJECT_SOURCE_DIR}/include/PofPch.h)
 target_include_directories(pharmaoffice PUBLIC ${CONAN_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include)
 target_link_directories(pharmaoffice PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/wxWidgets-3.2.2.1/lib/vc_x64_dll)
-target_link_libraries(pharmaoffice PUBLIC base formulary OpenXLSX wx::aui wx::propgrid wx::qa wx::net wx::core wx::base ${CONAN_LIBS})
+target_link_libraries(pharmaoffice PUBLIC base formulary OpenXLSX wx::aui wx::html wx::propgrid wx::qa wx::net wx::core wx::base ${CONAN_LIBS})

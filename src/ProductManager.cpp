@@ -1065,6 +1065,31 @@ std::optional<pof::base::data::text_t> pof::ProductManager::GetLastInventoryBatc
 	return std::nullopt;
 }
 
+std::optional<pof::base::data::text_t> pof::ProductManager::GetLastInventorySupplierName(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT manufacturer_name, MAX(input_date) FROM inventory WHERE uuid = ? LIMIT 1;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::string, pof::base::data::datetime_t>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt; //should never be empty
+		return std::get<0>(*(rel->begin()));
+
+	}
+	return std::nullopt;
+}
+
 void pof::ProductManager::AddCategory(const std::string& name)
 {
 	if (name.empty()) return;
@@ -1080,7 +1105,8 @@ void pof::ProductManager::AddCategory(const std::string& name)
 		}
 
 		auto& r = mCategories.back().first;
-		std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
+		//std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]); 
 		bool status = mLocalDatabase->bind(CategoryStoreStmt, std::tie(id, name));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());

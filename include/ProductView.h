@@ -93,6 +93,7 @@ namespace pof
 			ID_STORE_SUMMARY,
 			ID_INCR_PRICE,
 			ID_INCR_PRODUCT_PRICE,
+			ID_OPEN_PRODUCT_INFO,
 		};
 
 		size_t mRowHeights;
@@ -140,6 +141,8 @@ namespace pof
 		void SaveColumnWidths();
 		void SetupAuiTheme();
 		void SetupDataViewStyle();
+
+		bool ProductAdd(pof::base::data::row_t&& productRow);
 
 		inline void SetHeaderAttr(const wxItemAttr& attr) { mHeaderAttr = attr; }
 		inline void SetDataViewRowHeight(size_t rowHeight) { mRowHeights = rowHeight; }
@@ -190,12 +193,14 @@ namespace pof
 		void OnEndOfMonth(wxCommandEvent& evt);
 		void OnStoreSummary(wxCommandEvent& evt);
 		void OnIncrPrice(wxCommandEvent& evt);
+		void OnOpenProductInfo(wxCommandEvent& evt);
 	
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
 
 		void OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate&);
+		void OnProductStockRemoved(const pof::base::data::duuid_t& uuid, std::uint64_t newstock);
 		void OnCategorySelected(const std::string& name);
 		void ShowCostPriceColumn();
 		void HideCostPriceColumn();

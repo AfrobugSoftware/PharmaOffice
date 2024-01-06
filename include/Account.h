@@ -59,6 +59,7 @@ namespace pof {
 		inline bool TestPriv(Privilage p) const {
 			return priv.test(std::underlying_type_t<Privilage>(p));
 		}
+		static wxArrayString mSecurityQuestions;
 
 		//queries
 		std::optional<pof::base::relation<
@@ -87,6 +88,9 @@ namespace pof {
 
 		bool CreateAccountInfoTable();
 		bool CreateAccountInfo();
+		
+		static void CreateSecurityQuestions();
+
 		bool ValidateCredentials(const std::string& username, const std::string& password);
 		bool CheckForUsername(const std::string& usersname);
 		bool ChangePassword(const std::string& newPass);

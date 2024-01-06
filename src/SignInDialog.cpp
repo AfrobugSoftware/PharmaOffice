@@ -102,8 +102,8 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 
 	bSizer7->Add(0,0, 1, wxEXPAND, 5);
 
-	mLoginPharmacyLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Log In Pharmacy"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
-	bSizer7->Add(mLoginPharmacyLink, 0, wxALL, 5);
+	mForgotPasswordLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Forgot password"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+	bSizer7->Add(mForgotPasswordLink, 0, wxALL, 5);
 
 	mHelpLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Help"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 	bSizer7->Add(mHelpLink, 0, wxALL, 5);

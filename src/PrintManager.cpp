@@ -43,6 +43,17 @@ void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 	if (wxGetApp().bShowPreviewOnSale){
 		Preview(parent, po, po2);
 	}else PrintJob(parent, po);
+
+	//delete po;
+	//delete po2;
+}
+
+void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrintout* preview)
+{
+	if (wxGetApp().bShowPreviewOnSale) {
+		Preview(nullptr, print, preview);
+	}
+	else PrintJob(nullptr, print);
 }
 
 void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent)

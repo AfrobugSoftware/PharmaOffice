@@ -39,6 +39,8 @@ namespace pof {
 		wxTextCtrl* mUserNameValue;
 		wxStaticText* mAccountTypeLabel;
 		wxChoice* mAccountType;
+		wxChoice* mSecurityQuestions;
+		wxTextCtrl* mSecurityAnswer;
 		wxStaticText* mEmailLabel;
 		wxTextCtrl* mEmailValue;
 		wxStaticText* mPhoneNo;
