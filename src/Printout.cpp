@@ -91,6 +91,8 @@ void pof::Printout::PerformPageSetup(bool showSetup)
 			bottomMargin = marginBottomRight.y;
 		}
 	}
+
+	spdlog::info("Paper type {:d}", m_paper_type);
 }
 
 size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
@@ -104,13 +106,14 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 
 	//dc->SetFont(mPharmacyNameFont);
 	wxString name(wxT("Bits"));
-	wxFont font(wxFONTSIZE_X_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
 
 	dc->SetFont(font);
 
 
 	wxCoord xExtent = 0, yExtent = 0;
 	dc->GetTextExtent(text, &xExtent, &yExtent);
+	lineHeight = yExtent;
 
 	dc->DrawText(text, lineLength / 2 - xExtent / 2 , yPos + border);
 
@@ -179,7 +182,8 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	int border = 5;
 	int xPos = 0, yPos = y, xExtent = 0, yExtent = 18;
 	int lineLength = m_coord_system_width; //rightMarginLogical - leftMarginLogical;
-	int lineHeight = 18;
+	dc->GetTextExtent("X", &xExtent, &yExtent);
+	int lineHeight = yExtent;
 
 	//tite
 	wxRect rect(xPos + border, yPos, lineLength, lineHeight - border);
@@ -196,7 +200,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	auto& cachefont = dc->GetFont();
 
 	wxString name(wxT("Bits"));
-	wxFont font(wxFONTSIZE_XX_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT,false, name);
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT,false, name);
 
 	dc->SetFont(font);
 
@@ -262,6 +266,166 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	return yPos;
 }
 
+size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
+{
+	auto& app = wxGetApp();
+
+	int border = 0;
+	int xPos = leftMargin, yPos = topMargin;
+	int lineLength = m_coord_system_width;
+	int lineHeight = 18;
+
+	//dc->SetFont(mPharmacyNameFont);
+	wxString name(wxT("Bits"));
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
+
+	dc->SetFont(font);
+
+
+	wxCoord xExtent = 0, yExtent = 0;
+	dc->GetTextExtent(text, &xExtent, &yExtent);
+	lineHeight = yExtent;
+
+	dc->DrawText(text, lineLength / 2 - xExtent / 2, yPos + border);
+
+	std::string addy = app.MainPharmacy->GetAddressAsString();
+	yPos += lineHeight + border;
+	dc->GetTextExtent(addy, &xExtent, &yExtent);
+	dc->DrawText(addy, lineLength / 2 - xExtent / 2, yPos + border);
+
+	//print contact
+	std::string contact = app.MainPharmacy->GetContactAsString();
+	yPos += yExtent + border;
+	dc->GetTextExtent(contact, &xExtent, &yExtent);
+	dc->DrawText(contact, lineLength / 2 - xExtent / 2, yPos + border);
+
+
+
+	//dc->SetFont(mBodyFont);
+	//date/time
+	yPos += yExtent + border + 5;
+	wxRect rect(xPos, yPos, lineLength, lineHeight);
+	pof::base::data::datetime_t& date = boost::variant2::get<pof::base::data::datetime_t>(
+		(wxGetApp().mSaleManager.GetSaleData()->GetDatastore().begin())->first[pof::SaleManager::SALE_DATE]);
+
+	dc->DrawLabel(fmt::format("{:%Y-%m-%d %H:%M:%S}", date), rect, wxALIGN_LEFT);
+
+	//account name and status
+	yPos += yExtent + border;
+	rect.SetPosition(wxPoint(xPos, yPos));
+	auto& acc = wxGetApp().MainAccount;
+	std::string accName = fmt::format("{} {}", acc->lastname, acc->name);
+	dc->DrawLabel(accName, rect, wxALIGN_LEFT);
+
+	//sale id
+	yPos += yExtent + border;
+	pof::base::data::duuid_t& d = boost::variant2::get<pof::base::data::duuid_t>(
+		(wxGetApp().mSaleManager.GetSaleData()->GetDatastore().begin())->first[pof::SaleManager::SALE_UUID]);
+	std::stringstream os;
+	os << d;
+	rect.SetPosition(wxPoint(xPos, yPos));
+	dc->DrawLabel(fmt::format("id: {}", os.str()), rect, wxALIGN_LEFT);
+
+	yPos += yExtent + border;
+
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
+	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+
+	//draw titile
+	const std::string title = "INVOICE";
+	dc->GetTextExtent(title, &xExtent, &yExtent);
+	yPos += border + 20;
+	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->DrawText(title, lineLength / 2 - xExtent / 2, yPos);
+
+	yPos += yExtent + border + 20;
+
+	return yPos;
+}
+
+size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
+{
+	wxDC* dc = GetDC();
+	auto& saleData = wxGetApp().mSaleManager.GetSaleData();
+
+	int border = 5;
+	int xPos = 0, yPos = y, xExtent = 0, yExtent = 18;
+	int lineLength = m_coord_system_width; //rightMarginLogical - leftMarginLogical;
+	dc->GetTextExtent("X", &xExtent, &yExtent);
+	
+	int lineHeight = yExtent;
+
+	//tite
+	wxRect rect(xPos + border, yPos, lineLength, lineHeight - border);
+
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(xPos + border, yPos + border));
+
+	//dc->SetFont(mBodyFont);
+	auto& cachefont = dc->GetFont();
+
+	wxString name(wxT("Bits"));
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT, false, name);
+
+	dc->SetFont(font);
+
+	pof::base::currency totalAmount;
+	for (auto& r : saleData->GetDatastore())
+	{
+		auto& v = r.first;
+		pof::base::data::text_t& name = boost::variant2::get<pof::base::data::text_t>(v[pof::SaleManager::PRODUCT_NAME]);
+		pof::base::data::currency_t& amount = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_EXT_PRICE]);
+		std::uint64_t quantity = boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
+
+		auto quantext = fmt::to_string(quantity);
+
+		dc->DrawText(quantext, xPos, yPos);
+		dc->GetTextExtent(quantext, &xExtent, &yExtent);
+
+		dc->DrawText(name, xPos + xExtent + 2, yPos);
+		dc->GetTextExtent(name, &xExtent, &yExtent);
+
+		totalAmount += amount;
+		yPos += lineHeight + 2;
+		rect.SetPosition(wxPoint(xPos + border, yPos + border));
+	}
+
+	dc->SetFont(cachefont);
+	//footer
+	yPos += lineHeight;
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
+	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+	//dc->SetFont(mInoiceHeaderFont);
+	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
+	dc->GetTextExtent(totalA, &xExtent, &yExtent);
+	yPos += border + 20;
+	wxRect TotalRect(xPos, yPos + border, lineLength - border, yExtent);
+
+	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
+
+	yPos += yExtent + border;
+	//dc->SetFont(mFooterFont);
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+	dc->GetTextExtent(mFooterMessage, &xExtent, &yExtent);
+	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->DrawText(mFooterMessage, lineLength / 2 - xExtent / 2, yPos + border + 20);
+
+
+	//
+	yPos += yExtent + border;
+	//dc->SetFont(mFooterFont);
+	std::string copyRight = "Powered by PharmaOffice";
+	dc->GetTextExtent(copyRight, &xExtent, &yExtent);
+	xPos = lineLength / 2;//int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
+	dc->DrawText(copyRight, lineLength / 2 - xExtent / 2, yPos + border + 20);
+
+
+	return yPos;
+}
+
 bool pof::Printout::DrawSalePrint()
 {
 
@@ -280,9 +444,255 @@ bool pof::Printout::DrawSalePrint()
 	dc->SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 	dc->SetBrush(*wxTRANSPARENT_BRUSH);
 	//calculate the length of a line
-	int y = WritePageHeader(this, dc, app.MainPharmacy->name, logUnitsFactor);
-	WriteSaleData(logUnitsFactor, y);
+	int y = 0;
 
+	switch (m_paper_type)
+	{
+	case wxPAPER_NONE:
+		y = WritePageHeaderSmall(this, dc, app.MainPharmacy->name, logUnitsFactor);
+		WriteSaleDataSmall(logUnitsFactor, y);
+		break;
+	case wxPAPER_LETTER:
+	case wxPAPER_LEGAL:
+	case wxPAPER_A4:
+		y = WritePageHeader(this, dc, app.MainPharmacy->name, logUnitsFactor);
+		WriteSaleData(logUnitsFactor, y);
+		break;
+	case wxPAPER_CSHEET:
+		break;
+	case wxPAPER_DSHEET:
+		break;
+	case wxPAPER_ESHEET:
+		break;
+	case wxPAPER_LETTERSMALL:
+		break;
+	case wxPAPER_TABLOID:
+		break;
+	case wxPAPER_LEDGER:
+		break;
+	case wxPAPER_STATEMENT:
+		break;
+	case wxPAPER_EXECUTIVE:
+		break;
+	case wxPAPER_A3:
+		break;
+	case wxPAPER_A4SMALL:
+	    y = WritePageHeaderSmall(this, dc, app.MainPharmacy->name, logUnitsFactor);
+		WriteSaleDataSmall(logUnitsFactor, y);
+		break;
+	case wxPAPER_A5:
+		break;
+	case wxPAPER_B4:
+		break;
+	case wxPAPER_B5:
+		break;
+	case wxPAPER_FOLIO:
+		break;
+	case wxPAPER_QUARTO:
+		break;
+	case wxPAPER_10X14:
+		break;
+	case wxPAPER_11X17:
+		break;
+	case wxPAPER_NOTE:
+		break;
+	case wxPAPER_ENV_9:
+		break;
+	case wxPAPER_ENV_10:
+		break;
+	case wxPAPER_ENV_11:
+		break;
+	case wxPAPER_ENV_12:
+		break;
+	case wxPAPER_ENV_14:
+		break;
+	case wxPAPER_ENV_DL:
+		break;
+	case wxPAPER_ENV_C5:
+		break;
+	case wxPAPER_ENV_C3:
+		break;
+	case wxPAPER_ENV_C4:
+		break;
+	case wxPAPER_ENV_C6:
+		break;
+	case wxPAPER_ENV_C65:
+		break;
+	case wxPAPER_ENV_B4:
+		break;
+	case wxPAPER_ENV_B5:
+		break;
+	case wxPAPER_ENV_B6:
+		break;
+	case wxPAPER_ENV_ITALY:
+		break;
+	case wxPAPER_ENV_MONARCH:
+		break;
+	case wxPAPER_ENV_PERSONAL:
+		break;
+	case wxPAPER_FANFOLD_US:
+		break;
+	case wxPAPER_FANFOLD_STD_GERMAN:
+		break;
+	case wxPAPER_FANFOLD_LGL_GERMAN:
+		break;
+	case wxPAPER_ISO_B4:
+		break;
+	case wxPAPER_JAPANESE_POSTCARD:
+		break;
+	case wxPAPER_9X11:
+		break;
+	case wxPAPER_10X11:
+		break;
+	case wxPAPER_15X11:
+		break;
+	case wxPAPER_ENV_INVITE:
+		break;
+	case wxPAPER_LETTER_EXTRA:
+		break;
+	case wxPAPER_LEGAL_EXTRA:
+		break;
+	case wxPAPER_TABLOID_EXTRA:
+		break;
+	case wxPAPER_A4_EXTRA:
+		break;
+	case wxPAPER_LETTER_TRANSVERSE:
+		break;
+	case wxPAPER_A4_TRANSVERSE:
+		break;
+	case wxPAPER_LETTER_EXTRA_TRANSVERSE:
+		break;
+	case wxPAPER_A_PLUS:
+		break;
+	case wxPAPER_B_PLUS:
+		break;
+	case wxPAPER_LETTER_PLUS:
+		break;
+	case wxPAPER_A4_PLUS:
+		break;
+	case wxPAPER_A5_TRANSVERSE:
+		break;
+	case wxPAPER_B5_TRANSVERSE:
+		break;
+	case wxPAPER_A3_EXTRA:
+		break;
+	case wxPAPER_A5_EXTRA:
+		break;
+	case wxPAPER_B5_EXTRA:
+		break;
+	case wxPAPER_A2:
+		break;
+	case wxPAPER_A3_TRANSVERSE:
+		break;
+	case wxPAPER_A3_EXTRA_TRANSVERSE:
+		break;
+	case wxPAPER_DBL_JAPANESE_POSTCARD:
+		break;
+	case wxPAPER_A6:
+		break;
+	case wxPAPER_JENV_KAKU2:
+		break;
+	case wxPAPER_JENV_KAKU3:
+		break;
+	case wxPAPER_JENV_CHOU3:
+		break;
+	case wxPAPER_JENV_CHOU4:
+		break;
+	case wxPAPER_LETTER_ROTATED:
+		break;
+	case wxPAPER_A3_ROTATED:
+		break;
+	case wxPAPER_A4_ROTATED:
+		break;
+	case wxPAPER_A5_ROTATED:
+		break;
+	case wxPAPER_B4_JIS_ROTATED:
+		break;
+	case wxPAPER_B5_JIS_ROTATED:
+		break;
+	case wxPAPER_JAPANESE_POSTCARD_ROTATED:
+		break;
+	case wxPAPER_DBL_JAPANESE_POSTCARD_ROTATED:
+		break;
+	case wxPAPER_A6_ROTATED:
+		break;
+	case wxPAPER_JENV_KAKU2_ROTATED:
+		break;
+	case wxPAPER_JENV_KAKU3_ROTATED:
+		break;
+	case wxPAPER_JENV_CHOU3_ROTATED:
+		break;
+	case wxPAPER_JENV_CHOU4_ROTATED:
+		break;
+	case wxPAPER_B6_JIS:
+		break;
+	case wxPAPER_B6_JIS_ROTATED:
+		break;
+	case wxPAPER_12X11:
+		break;
+	case wxPAPER_JENV_YOU4:
+		break;
+	case wxPAPER_JENV_YOU4_ROTATED:
+		break;
+	case wxPAPER_P16K:
+		break;
+	case wxPAPER_P32K:
+		break;
+	case wxPAPER_P32KBIG:
+		break;
+	case wxPAPER_PENV_1:
+		break;
+	case wxPAPER_PENV_2:
+		break;
+	case wxPAPER_PENV_3:
+		break;
+	case wxPAPER_PENV_4:
+		break;
+	case wxPAPER_PENV_5:
+		break;
+	case wxPAPER_PENV_6:
+		break;
+	case wxPAPER_PENV_7:
+		break;
+	case wxPAPER_PENV_8:
+		break;
+	case wxPAPER_PENV_9:
+		break;
+	case wxPAPER_PENV_10:
+		break;
+	case wxPAPER_P16K_ROTATED:
+		break;
+	case wxPAPER_P32K_ROTATED:
+		break;
+	case wxPAPER_P32KBIG_ROTATED:
+		break;
+	case wxPAPER_PENV_1_ROTATED:
+		break;
+	case wxPAPER_PENV_2_ROTATED:
+		break;
+	case wxPAPER_PENV_3_ROTATED:
+		break;
+	case wxPAPER_PENV_4_ROTATED:
+		break;
+	case wxPAPER_PENV_5_ROTATED:
+		break;
+	case wxPAPER_PENV_6_ROTATED:
+		break;
+	case wxPAPER_PENV_7_ROTATED:
+		break;
+	case wxPAPER_PENV_8_ROTATED:
+		break;
+	case wxPAPER_PENV_9_ROTATED:
+		break;
+	case wxPAPER_PENV_10_ROTATED:
+		break;
+	case wxPAPER_A0:
+		break;
+	case wxPAPER_A1:
+		break;
+	default:
+		break;
+	}
 
 	return true;
 }

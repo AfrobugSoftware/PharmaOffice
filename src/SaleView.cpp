@@ -324,9 +324,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	});*/
 
 	//load receipt style
-	auto ap = wxGetApp().GetAssertsPath() / "boostrap.css";
+	/*auto ap = wxGetApp().GetAssertsPath() / "boostrap.css";
 	std::fstream file(ap, std::ios::in);
-	if(file.is_open()) receiptcss << file.rdbuf();
+	if(file.is_open()) receiptcss << file.rdbuf();*/
 }
 
 pof::SaleView::~SaleView()

@@ -20,6 +20,9 @@ namespace pof
 		size_t WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical);
 		size_t WriteSaleData(double mToLogical, size_t ypos);
 
+		size_t WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical);
+		size_t WriteSaleDataSmall(double mToLogical, size_t ypos);
+
 		bool DrawSalePrint();
 		bool DrawLabelPrint(int page);
 		void SetDefaultFonts();
