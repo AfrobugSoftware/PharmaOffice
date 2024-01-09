@@ -45,6 +45,10 @@ namespace pof
 		wxPanel* mEmptyEod = nullptr;
 		wxStaticText* mTotalQuantity = nullptr;
 		wxStaticText* mTotalAmount = nullptr;
+		wxStaticText* mTotalAmountCash = nullptr;
+		wxStaticText* mTotalAmountTransfer = nullptr;
+		wxStaticText* mTotalAmountPos = nullptr;
+
 		wxTextCtrl* mSaleIdSearch = nullptr;
 		
 		wxPanel* mCSPanel = nullptr;

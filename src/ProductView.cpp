@@ -2015,6 +2015,7 @@ void pof::ProductView::CreateDataView()
 	
 	//mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), pof::ProductManager::PRODUCT_SERIAL_NUM, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 450, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Class"), pof::ProductManager::PRODUCT_CLASS, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductFormulation = m_dataViewCtrl1->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
@@ -2116,9 +2117,21 @@ void pof::ProductView::CreateSpecialCols()
 		}
 	};
 
+	pof::DataModel::SpeicalColHandler_t spl;
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	spl.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& st = boost::variant2::get<pof::base::data::text_t>((datastore)[row].first[pof::ProductManager::PRODUCT_STRENGTH]);
+		auto& stt = boost::variant2::get<pof::base::data::text_t>((datastore)[row].first[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+		if (stt == "NOT SPECIFIED") return ""s;
+
+		auto string = fmt::format("{}{}", st, stt);
+		return string;
+	};
+
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	assert(model != nullptr);
 	model->SetSpecialColumnHandler(SELECTION_MODEL_COL, std::move(SelectionCol));
+	model->SetSpecialColumnHandler(11111, std::move(spl));
 }
 
 void pof::ProductView::Style()

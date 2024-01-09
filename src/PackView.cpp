@@ -21,6 +21,7 @@ EVT_BUTTON(pof::PackView::ID_TOOL_ADD_PACK, pof::PackView::OnAddPack)
 
 EVT_MENU(pof::PackView::ID_RENAME_PACK, pof::PackView::OnRenamePack)
 EVT_MENU(pof::PackView::ID_TOOL_REMOVE_PACK, pof::PackView::OnRemovePack)
+EVT_MENU(pof::PackView::ID_OPEN_PACK, pof::PackView::OnOpenPack)
 END_EVENT_TABLE()
 
 
@@ -644,6 +645,7 @@ void pof::PackView::OnRightClick(wxListEvent& evt)
 {
 	mSelItem = evt.GetItem();
 	wxMenu* menu = new wxMenu;
+	auto op = menu->Append(ID_OPEN_PACK, "Open pack", nullptr);
 	auto rn = menu->Append(ID_RENAME_PACK, "Rename", nullptr);
 	auto rv = menu->Append(ID_TOOL_REMOVE_PACK, "Remove", nullptr);
 
@@ -655,6 +657,48 @@ void pof::PackView::OnRenamePack(wxCommandEvent& evt)
 	int id = mSelItem.GetId();
 	if (id == wxNOT_FOUND) return;
 	mPackSelect->EditLabel(id);
+}
+
+void pof::PackView::OnOpenPack(wxCommandEvent& evt)
+{
+	boost::uuids::uuid* id = mCurPackId;
+	if (id == nullptr) return;
+
+	auto packRelation = wxGetApp().mProductManager.GetProductPack(*id);
+	if (!packRelation.has_value()) {
+		wxMessageBox("Error trying to get pack", "PACK", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	CreatePackTools();
+	mPackModel->Clear();
+
+	if (packRelation.value().empty()) {
+		mBook->SetSelection(PACK_PRODUCT_EMPTY); //show empty pack
+		return;
+	}
+	for (auto& pk : *packRelation) {
+		pof::base::data::row_t row;
+		auto& v = row.first;
+		v.resize(6);
+		v[0] = std::get<1>(pk);
+		v[1] = std::get<2>(pk);
+		v[2] = std::get<3>(pk);
+		v[3] = std::get<4>(pk);
+		v[4] = std::get<5>(pk);
+		v[5] = std::get<6>(pk);
+
+
+		mPackModel->EmplaceData(std::move(row));
+	}
+	UpdateTotals();
+	if (!mPackModel->GetDatastore().empty())
+	{
+		mBook->SetSelection(PACK_DATA); //show the pack view
+	}
+	else {
+		mBook->SetSelection(PACK_PRODUCT_EMPTY); //show the pack view
+	}
 }
 
 void pof::PackView::UpdateTotals()

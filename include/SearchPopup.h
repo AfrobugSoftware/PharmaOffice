@@ -16,6 +16,12 @@ namespace pof {
 		enum {
 			ID_DATA_VIEW = 10,
 		};
+
+		enum {
+			DATA_VIEW = 0,
+			NO_RESULT
+		};
+
 		SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData,
 			const std::vector<std::pair<std::string, size_t>>& colNames = {}, const std::vector<size_t>& colSizes = {});
 
@@ -25,11 +31,16 @@ namespace pof {
 			size_t col);
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
+		void CreateNoResultPanel();
 		void OnDataItemSelected(wxDataViewEvent& evt);
 		void OnSetFocus(wxFocusEvent& evt);
 		void OnKillFocus(wxFocusEvent& evt);
+		void ShowNoResult(const std::string& search);
 
 		wxAuiManager mPopManager;
+		wxSimplebook* mBook = nullptr;
+		wxPanel* mNoResult = nullptr;
+		wxStaticText* mNoResultText = nullptr;
 		wxDataViewCtrl* mTable = nullptr;
 		pof::DataModel* mTableModel = nullptr;
 		DECLARE_EVENT_TABLE()

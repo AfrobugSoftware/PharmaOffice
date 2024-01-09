@@ -76,6 +76,7 @@ namespace pof
 			ID_TOOL_REMOVE_PRODUCT_PACK,
 			ID_SALE_PACK,
 			ID_RENAME_PACK,
+			ID_OPEN_PACK,
 
 		};
 
@@ -105,6 +106,7 @@ namespace pof
 		void OnColEdited(wxDataViewEvent& evt);
 		void OnRightClick(wxListEvent& evt);
 		void OnRenamePack(wxCommandEvent& evt);
+		void OnOpenPack(wxCommandEvent& evt);
 
 		bool mShowSale = false;
 		void UpdateTotals();

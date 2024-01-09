@@ -910,6 +910,10 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 	}
 
 	std::ifstream file(filename);
+	if (file.is_open()){
+		wxMessageBox(fmt::format("Cannot open {} permission denied", filename.string()), "Formulary", wxICON_WARNING | wxOK);
+		return;
+	}
 	std::stringstream data;
 	data << file.rdbuf();
 
@@ -1030,9 +1034,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 			auto products = productselect.GetSelectedProducts();
 			for (const auto& prod : products){
 
-
-
-
+				wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod.get()));
 
 				pg = static_cast<float>(((float)i / (float)count) * 90.f);
 				i++;
@@ -1043,6 +1045,8 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		}
 		else {
 			//single product selected by double click on the product or add product
+			auto prod = productselect.GetSelectedProduct();
+			wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod));
 		}
 
 	}

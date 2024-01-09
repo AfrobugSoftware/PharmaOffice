@@ -55,6 +55,40 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	mTotalAmount->Wrap(-1);
 	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
 
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mTotalAmountCash = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmountCash->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountCash->Wrap(-1);
+	bSizer4->Add(mTotalAmountCash, 0, wxALL, 5);
+
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mTotalAmountTransfer = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmountTransfer->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountTransfer->Wrap(-1);
+	bSizer4->Add(mTotalAmountTransfer, 0, wxALL, 5);
+
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mTotalAmountPos = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmountPos->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountPos->Wrap(-1);
+	bSizer4->Add(mTotalAmountPos, 0, wxALL, 5);
 
 	mSPanel->SetSizer(bSizer4);
 	mSPanel->Layout();
@@ -847,15 +881,33 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 {
 	if (data.empty()) return;
 	pof::base::currency totalAmount;
+	pof::base::currency totalAmountCash;
+	pof::base::currency totalAmountTransfer;
+	pof::base::currency totalAmountPos;
 	std::uint64_t totalQuantity = 0;
+
 
 	for (const auto& d : data) {
 		totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
 		totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
+		if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Cash") {
+			totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
+
+		}
+		else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Transfer") {
+			totalAmountTransfer += boost::variant2::get<pof::base::currency>(d.first[4]);
+
+		}
+		else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "POS") {
+			totalAmountPos += boost::variant2::get<pof::base::currency>(d.first[4]);
+		}
 	}
 	mSPanel->Freeze();
 	mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
 	mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+	mTotalAmountCash->SetLabelText(fmt::format("Total Cash Amount:   {:cu}", totalAmountCash));
+	mTotalAmountTransfer->SetLabelText(fmt::format("Total Transfer Amount:   {:cu}", totalAmountTransfer));
+	mTotalAmountPos->SetLabelText(fmt::format("Total POS Amount:   {:cu}", totalAmountPos));
 	mSPanel->Thaw();
 	mSPanel->Layout();
 	mSPanel->Refresh();

@@ -38,6 +38,9 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 				if(puid) mPatientChildSignal(*puid);
 				winIter = mModuleViews.find(mPaitents);
 			}
+			else {
+				return; //not in any container
+			}
 		}
 		mSig(winIter, Evt::CHILD_ACTIVATED);
 		return;

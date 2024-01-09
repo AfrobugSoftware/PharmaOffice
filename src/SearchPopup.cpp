@@ -7,21 +7,34 @@ END_EVENT_TABLE()
 
 
 pof::SearchPopup::SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData, const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes)
-: wxPopupTransientWindow(parent, wxBORDER_NONE){
+: wxPopupTransientWindow(parent, wxBORDER_NONE), mPopManager(this){
 	mTableModel = new pof::DataModel(ptrData);
+	mBook = new wxSimplebook(this, wxID_ANY);
 	CreateDataView(colNames, colSizes);
+	CreateNoResultPanel();
+
+	mPopManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").Caption("Book").CenterPane().Show());
+	mPopManager.Update();
 }
 
 void pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
 {
 	mTableModel->StringSearchAndReload(col, searchString);
+	auto& modelItems = mTableModel->GetDataViewItems();
+	if (modelItems.empty()) {
+		ShowNoResult(searchString);
+	}
+	else {
+		mBook->SetSelection(DATA_VIEW);
+	}
 }
 
 void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes)
 {
 	assert(colNames.size() == colSizes.size());
-	mTable = new wxDataViewCtrl(this, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize,
-		wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	wxPanel* p = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mTable = new wxDataViewCtrl(p, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize,
+		wxDV_ROW_LINES | wxDV_HORIZ_RULES | wxNO_BORDER);
 	mTable->AssociateModel(mTableModel);
 	mTableModel->DecRef();
 
@@ -36,10 +49,63 @@ void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, s
 	sizer->Add(mTable, wxSizerFlags().Expand().Proportion(1));
 	
 
-	this->SetSizer(sizer);
-	this->Layout();
-	sizer->Fit(this);
+	p->SetSizer(sizer);
+	p->Layout();
+	sizer->Fit(p);
 
+	mBook->AddPage(p, "View", false);
+}
+
+void pof::SearchPopup::CreateNoResultPanel()
+{
+	mNoResult = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mNoResult->SetBackgroundColour(*wxWHITE);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mNoResult, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mNoResultText = new wxStaticText(m7, wxID_ANY, wxT("No result"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultText->Wrap(-1);
+	bSizer9->Add(mNoResultText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mNoResult->SetSizer(bSizer6);
+	mNoResult->Layout();
+
+	mBook->AddPage(mNoResult, "Empty", true);
 }
 
 void pof::SearchPopup::CaptureFocus()
@@ -73,4 +139,14 @@ void pof::SearchPopup::OnKillFocus(wxFocusEvent& evt)
 {
 	spdlog::info("focus killed on object");
 	evt.Skip();
+}
+
+void pof::SearchPopup::ShowNoResult(const std::string& search)
+{
+	mNoResult->Freeze();
+	mNoResultText->SetLabelText(fmt::format("No product \"{}\" in store", search));
+	mNoResult->Layout();
+	mNoResult->Thaw();
+
+	mBook->SetSelection(NO_RESULT);
 }
