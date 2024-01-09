@@ -117,6 +117,8 @@ namespace pof
 		wxDataViewColumn* mStockLevel = nullptr;
 		wxDataViewColumn* mSelectionCol = nullptr;
 		wxPanel* mEmpty = nullptr;
+		wxPanel* mNoResult = nullptr;
+		wxStaticText* mNoResultText = nullptr;
 		wxTimer mStockCheckTimer;
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
@@ -216,6 +218,7 @@ namespace pof
 		void CreateProductInfo();
 		void CreateAttibutes();
 		void CreateSpecialCols();
+		void CreateNoResultPane();
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);
@@ -223,6 +226,7 @@ namespace pof
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void CheckIfStockCheckIsComplete();
 		void CheckEmpty();
+		void ShowNoResult(const std::string& search);
 	private:
 		DECLARE_EVENT_TABLE()
 

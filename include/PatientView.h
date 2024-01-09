@@ -54,6 +54,7 @@ namespace pof {
 			PATIENT_SELECT = 0,
 			PATIENT_VIEW,
 			PATIENT_EMPTY,
+			PATIENT_NORESULT,
 		};
 
 		enum : std::uint8_t {
@@ -115,6 +116,9 @@ namespace pof {
 		void CreateEmptyPanel();
 		void CreateEmptyMedsPanel();
 		void CreateEmptyMedHistPanel();
+		void CreateNoResultPanel();
+
+
 
 		void StartTimer();
 		void SetupAuiTheme();
@@ -124,6 +128,7 @@ namespace pof {
 
 		void CheckStoppedMedication();
 		void ShowPatientDetails();
+		void ShowNoResultPanel(const std::string& name);
 		wxBitmap GetPatientBitMap();
 		void SwitchToolBar();
 		void OnPatientSaleCompleted(const pof::base::data::duuid_t& saleId, size_t type);
@@ -204,6 +209,8 @@ namespace pof {
 		wxPanel* mEmpty = nullptr;
 		wxPanel* mEmptyMeds = nullptr;
 		wxPanel* mEmptyMedsHist = nullptr;
+		wxPanel* mNoResult = nullptr;
+		wxStaticText* mNoResultText = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

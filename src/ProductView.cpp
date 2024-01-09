@@ -88,6 +88,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	Style();
 	CreateAccTable();
 	CreateEmptyPanel();
+	CreateNoResultPane();
 	//load base data
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
@@ -802,6 +803,7 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 	assert(datam != nullptr);
 	m_dataViewCtrl1->Freeze();
 	std::string search = evt.GetString().ToStdString();
+	bool empty = false;
 	if (search.empty()) {
 		//go back to what was there before the search?
 		if (!mActiveCategory.empty()) {
@@ -813,12 +815,27 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 	}
 	else {
 		if (!mActiveCategory.empty()) {
-			datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
 		}
 		else {
-			datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
 		}
+
 	}
+
+	if (empty) {
+		ShowNoResult(search);
+	}
+	else {
+		auto& d = m_mgr.GetPane("DataView");
+		auto& p = m_mgr.GetPane("NoResult");
+		if (p.IsShown()) p.Hide();
+		if (!d.IsShown()) {
+			d.Show();
+		}
+		m_mgr.Update();
+	}
+
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Update();
 }
@@ -1361,7 +1378,7 @@ void pof::ProductView::OnCacheHint(wxDataViewEvent& evt){
 	size_t i = evt.GetCacheFrom();
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	if (evt.GetCacheTo() >= datastore.size()) return;
-	spdlog::info("Loading cache from {:d} to {:d}", evt.GetCacheFrom(), evt.GetCacheTo());
+//	spdlog::info("Loading cache from {:d} to {:d}", evt.GetCacheFrom(), evt.GetCacheTo());
 	//do this in the ProductManager
 	/*for (; i < evt.GetCacheTo(); i++) {
 		auto& row = datastore[i];
@@ -2134,6 +2151,59 @@ void pof::ProductView::CreateSpecialCols()
 	model->SetSpecialColumnHandler(11111, std::move(spl));
 }
 
+void pof::ProductView::CreateNoResultPane()
+{
+	mNoResult = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mNoResult->SetBackgroundColour(*wxWHITE);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mNoResult, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mNoResultText = new wxStaticText(m7, wxID_ANY, wxT("No result"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultText->SetFont(wxFontInfo(12));
+	mNoResultText->Wrap(100);
+	bSizer9->Add(mNoResultText, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mNoResult->SetSizer(bSizer6);
+	mNoResult->Layout();
+
+	m_mgr.AddPane(mNoResult, wxAuiPaneInfo().Name("NoResult").CenterPane().CaptionVisible(false).Hide());
+}
+
 void pof::ProductView::Style()
 {
 	wxColour col = wxTheColourDatabase->Find("Navajo_white");
@@ -2224,5 +2294,20 @@ void pof::ProductView::CheckEmpty()
 		e.Hide();
 		d.Show();
 	}
+}
+
+void pof::ProductView::ShowNoResult(const std::string& search)
+{
+	mNoResult->Freeze();
+	mNoResultText->SetLabelText(fmt::format("No product \"{}\" in store", search));
+	mNoResult->Layout();
+	mNoResult->Thaw();
+
+	auto& pane = m_mgr.GetPane("NoResult");
+	auto& d = m_mgr.GetPane("DataView");
+	if (!pane.IsOk() || !d.IsOk()) return;
+	if (d.IsShown()) d.Hide();
+	pane.Show();
+	m_mgr.Update();
 }
 

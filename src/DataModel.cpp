@@ -171,17 +171,17 @@ void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
-void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
+bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
 {
 	if (datastore->empty() || col > datastore->get_metadata().size() 
-			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return;
+			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return false;
 	std::string reg;
 	reg.reserve(search_for.size() * 2);
 	for (auto& c : search_for)
 	{
 		if (!std::isalnum(c)) {
 			//what to do
-			return;
+			return false;
 		}
 		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
 	}
@@ -199,12 +199,13 @@ void pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	}
 	ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
+	return mItems.IsEmpty();
 }
 
-void pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
+bool pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
 {
 	if (mItems.empty() || col > datastore->get_metadata().size()
-		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return;
+		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return false;
 
 	std::string reg;
 	reg.reserve(searchFor.size() * 2);
@@ -212,7 +213,7 @@ void pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& sea
 	{
 		if (!std::isalnum(c)) {
 			//what to do
-			return;
+			return false;
 		}
 		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
 	}
@@ -233,6 +234,7 @@ void pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& sea
 		}
 	}
 	ItemsAdded(wxDataViewItem(0), ars);
+	return ars.IsEmpty();
 }
 
 bool pof::DataModel::HasContainerColumns(const wxDataViewItem& item) const

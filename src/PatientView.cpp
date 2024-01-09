@@ -68,6 +68,7 @@ pof::PatientView::PatientView(wxWindow* parent, wxWindowID id, const wxPoint& po
 	CreateEmptyPanel();
 	CreateEmptyMedsPanel();
 	CreateEmptyMedHistPanel();
+	CreateNoResultPanel();
 
 	//check if we have nothing to display
 	if (wxGetApp().mPatientManager.GetPatientData()->GetDatastore().empty())
@@ -723,6 +724,59 @@ void pof::PatientView::CreateEmptyMedHistPanel()
 	mBookMedsHist->AddPage(mEmptyMedsHist, "Empty", false);
 }
 
+void pof::PatientView::CreateNoResultPanel()
+{
+	mNoResult = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	mNoResult->SetBackgroundColour(*wxWHITE);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mNoResult, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mNoResultText = new wxStaticText(m7, wxID_ANY, wxT("No patient"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultText->SetFont(wxFontInfo(12));
+	mNoResultText->Wrap(100);
+	bSizer9->Add(mNoResultText, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mNoResult->SetSizer(bSizer6);
+	mNoResult->Layout();
+
+	mBook->AddPage(mNoResult, "No Result", false);
+}
+
 void pof::PatientView::CreatePatientDetailsPane()
 {
 	mPatientDetails = new wxPropertyGridManager(this, ID_MED_DETAILS,
@@ -853,6 +907,16 @@ void pof::PatientView::CheckStoppedMedication()
 
 void pof::PatientView::ShowPatientDetails()
 {
+}
+
+void pof::PatientView::ShowNoResultPanel(const std::string& name)
+{
+	mNoResult->Freeze();
+	mNoResultText->SetLabelText(fmt::format("No patient with name:  \"{}\" in pharmacy", name));
+	mNoResult->Layout();
+	mNoResult->Thaw();
+
+	mBook->SetSelection(PATIENT_NORESULT);
 }
 
 wxBitmap pof::PatientView::GetPatientBitMap()
@@ -1212,13 +1276,25 @@ void pof::PatientView::OnSearchPatient(wxCommandEvent& evt)
 {
 	auto searchString = evt.GetString().ToStdString();
 	auto& datastore = wxGetApp().mPatientManager.GetPatientData();
+	if (datastore->GetDatastore().empty()) return;
+
 	mPatientSelect->Freeze();
+	bool empty = false;
 	if (searchString.empty()) {
 		datastore->Reload();
 	}
 	else {
-		datastore->StringSearchAndReload(mSearchColumn, std::move(searchString));
+		empty = datastore->StringSearchAndReload(mSearchColumn, std::move(searchString));
 	}
+
+	if (empty) {
+		ShowNoResultPanel(searchString);
+		mBook->SetSelection(PATIENT_NORESULT);
+	}
+	else {
+		mBook->SetSelection(PATIENT_SELECT);
+	}
+
 	mPatientSelect->Thaw();
 	mPatientSelect->Refresh();
 }

@@ -81,8 +81,8 @@ void pof::SearchPopup::CreateNoResultPanel()
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	mNoResultText = new wxStaticText(m7, wxID_ANY, wxT("No result"), wxDefaultPosition, wxDefaultSize, 0);
-	mNoResultText->Wrap(-1);
-	bSizer9->Add(mNoResultText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	mNoResultText->Wrap(100);
+	bSizer9->Add(mNoResultText, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
