@@ -608,6 +608,52 @@ bool pof::SaleManager::CheckIfSaved(const boost::uuids::uuid& saleID)
 	return false;
 }
 
+bool pof::SaleManager::ReturnFromSales(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE sales SET sale_payment_type = 'Returned' WHERE uuid = ? AND product_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID, puid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::SaleManager::CheckReturned(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT 1 FROM sales 
+		WHERE uuid = ? AND product_uuid = ? AND sale_payment_type = 'Returned';)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID, puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return false;
+
+		return std::get<0>(*(rel->begin())) == 1;
+	}
+	return false;
+}
+
 bool pof::SaleManager::RemoveProductSaleHistory(pof::base::data::const_iterator iterator)
 {
 	if (mLocalDatabase){

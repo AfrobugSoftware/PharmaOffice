@@ -34,7 +34,7 @@ namespace pof {
 
 		wxStaticText* texts[8] = {0};
 		wxSpinCtrl* mQuantityInControl = nullptr;
-		wxSpinCtrl* mCostControl = nullptr;
+		wxTextCtrl* mCostControl = nullptr;
 		wxDatePickerCtrl* mExpiryDate = nullptr;
 		wxTextCtrl* mBatchNumber = nullptr;
 		//wxTextCtrl* mManufactureName = nullptr;
@@ -42,7 +42,7 @@ namespace pof {
 		wxButton* mOkCancel[2] = {0};
 		wxComboBox* mManufacturersName = nullptr;
 		pof::base::data::row_t mInventoryData;
-
+		float mFloatValidator = 0.0f;
 	private:
 		void OnOk(wxCommandEvent& evt);
 		void OnCancel(wxCommandEvent& evt);

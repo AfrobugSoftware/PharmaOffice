@@ -355,7 +355,8 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("ShowPrintPrompt"), bShowPrintPrompt);
 	config->Write(wxT("AutomaticBatchNumber"), bAutomaticBatchNumber);
 	config->Write(wxT("NotifyStockCheckInComplete"), bNotifyStockCheckInComplete);
-
+	config->Write(wxT("ShowPageSetup"), bShowPageSetup);
+	config->Write(wxT("PaperType"), mPaperType);
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
@@ -413,7 +414,8 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("ShowPrintPromt"), &bShowPrintPrompt);
 	config->Read(wxT("AutomaticBatchNumber"), &bAutomaticBatchNumber);
 	config->Read(wxT("NotifyStockCheckInComplete"), &bNotifyStockCheckInComplete);
-
+	config->Read(wxT("ShowPageSetup"), &bShowPageSetup);
+	config->Read(wxT("PaperType"), &mPaperType);
 
 	wxString version;
 	config->Read(wxT("Version"), &version);
@@ -1259,11 +1261,13 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	}
 
 	grid->Append(new wxPropertyCategory("Sale Printer"));
-	auto pp0 = grid->Append(new wxBoolProperty("Show Preview on Sale", "0", bShowPreviewOnSale));
-	auto pp1 = grid->Append(new wxBoolProperty("Show Print prompt on Sale", "1", bShowPrintPrompt));
+	auto pp0 = grid->Append(new wxBoolProperty("Show preview on Sale", "0", bShowPreviewOnSale));
+	auto pp1 = grid->Append(new wxBoolProperty("Show print prompt on Sale", "1", bShowPrintPrompt));
+	auto pp2 = grid->Append(new wxBoolProperty("Show print page setup", "2", bShowPageSetup));
 
 	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
 	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing");
+	grid->SetPropertyHelpString(pp2, "Show printing page setup before printing");
 	mSettingProperties[3]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
 		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
 			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
@@ -1286,6 +1290,8 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 		case 1:
 			bShowPrintPrompt = v.GetBool();
 			break;
+		case 2:
+			bShowPageSetup = v.GetBool();
 		default:
 			break;
 		}

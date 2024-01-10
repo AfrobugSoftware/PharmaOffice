@@ -527,7 +527,7 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 				return;
 			}
 			
-			auto str = mListReport->GetItemText(mSelItem.GetId(), 4); 
+			auto str = mListReport->GetItemText(mSelItem.GetId(), 5); 
 			wxTextDataObject *tObj = new wxTextDataObject(std::move(str));
 			wxTheClipboard->Clear();
 			wxTheClipboard->AddData(tObj);
@@ -888,6 +888,9 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 
 
 	for (const auto& d : data) {
+		//skip end of day that are returned
+		if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Returned") continue;
+
 		totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
 		totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
 		if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Cash") {

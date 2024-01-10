@@ -134,6 +134,7 @@ namespace pof {
 		bool bNotifyStockCheckInComplete = true;
 		bool bAllowSellControlledMed = true;
 		bool bAlwaysCreateEntryIntoRegister = false;
+		bool bShowPageSetup = false;
 
 		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;
@@ -142,7 +143,7 @@ namespace pof {
 		std::shared_ptr<pof::Pharmacy> MainPharmacy;
 		std::shared_ptr<pof::Account> MainAccount;
 		std::string gVersion;
-		
+		int mPaperType = 0;
 
 		//utility functions
 		static clock_t::time_point FromDateTime(const wxDateTime& dt);

@@ -7,7 +7,8 @@ pof::Printout::Printout(wxPrintDialogData* printDlgData, const std::string& titl
 : wxPrintout(title){
 	mPrintDialogData = printDlgData;
 	SetDefaultFonts();
-	PerformPageSetup(true);
+	m_paper_type = static_cast<wxPaperSize>(wxGetApp().mPaperType);
+	PerformPageSetup(wxGetApp().bShowPageSetup);
 }
 
 bool pof::Printout::OnPrintPage(int page)
@@ -93,6 +94,7 @@ void pof::Printout::PerformPageSetup(bool showSetup)
 	}
 
 	spdlog::info("Paper type {:d}", m_paper_type);
+	wxGetApp().mPaperType = static_cast<int>(m_paper_type);
 }
 
 size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
@@ -105,8 +107,8 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	int lineHeight = 18;
 
 	//dc->SetFont(mPharmacyNameFont);
-	wxString name(wxT("Bits"));
-	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
+	//wxString name(wxT("Bits"));
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString);
 
 	dc->SetFont(font);
 
@@ -165,11 +167,11 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	const std::string title = "INVOICE";
 	//dc->SetFont(mInoiceHeaderFont);
 	dc->GetTextExtent(title, &xExtent, &yExtent);
-	yPos += border + 20;
+	yPos += border + 10;
 	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
 	dc->DrawText(title, lineLength / 2 - xExtent/2, yPos);
 
-	yPos += yExtent + border + 20;
+	yPos += yExtent + border + 2;
 
 	return yPos;
 }
@@ -199,8 +201,8 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	//dc->SetFont(mBodyFont);
 	auto& cachefont = dc->GetFont();
 
-	wxString name(wxT("Bits"));
-	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT,false, name);
+	//wxString name(wxT("Bits"));
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT,false, wxEmptyString);
 
 	dc->SetFont(font);
 
@@ -240,7 +242,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	//dc->SetFont(mInoiceHeaderFont);
 	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
 	dc->GetTextExtent(totalA, &xExtent, &yExtent);
-	yPos += border + 20;
+	yPos += border + 10;
 	wxRect TotalRect(xPos, yPos + border,  lineLength - border, yExtent);
 
 	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
@@ -248,10 +250,10 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	yPos += yExtent + border;
 	//dc->SetFont(mFooterFont);
 	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
-	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
 	dc->GetTextExtent(mFooterMessage, &xExtent, &yExtent);
 	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->DrawText(mFooterMessage, lineLength/2 - xExtent /2, yPos + border + 20);
+	dc->DrawText(mFooterMessage, lineLength/2 - xExtent /2, yPos + border +2);
 
 
 	//
@@ -260,7 +262,8 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	std::string copyRight = "Powered by PharmaOffice";
 	dc->GetTextExtent(copyRight, &xExtent, &yExtent);
 	xPos = lineLength / 2;//int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->DrawText(copyRight, lineLength/2 - xExtent / 2 , yPos + border + 20);
+	dc->DrawText(copyRight, lineLength/2 - xExtent / 2 , yPos + border);
+	dc->DrawText(" ", lineLength / 2 - xExtent / 2, yPos + border);
 
 
 	return yPos;
@@ -294,14 +297,16 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	dc->DrawText(addy, lineLength / 2 - xExtent / 2, yPos + border);
 
 	//print contact
-	std::string contact = app.MainPharmacy->GetContactAsString();
+	std::string phone = fmt::format("No:{}", app.MainPharmacy->contact.phoneNumber);
+	std::string mail = app.MainPharmacy->contact.email;
 	yPos += yExtent + border;
-	dc->GetTextExtent(contact, &xExtent, &yExtent);
-	dc->DrawText(contact, lineLength / 2 - xExtent / 2, yPos + border);
+	dc->GetTextExtent(phone, &xExtent, &yExtent);
+	dc->DrawText(phone, lineLength / 2 - xExtent / 2, yPos + border);
 
+	yPos += yExtent + border;
+	dc->GetTextExtent(mail, &xExtent, &yExtent);
+	dc->DrawText(mail, lineLength / 2 - xExtent / 2, yPos + border);
 
-
-	//dc->SetFont(mBodyFont);
 	//date/time
 	yPos += yExtent + border + 5;
 	wxRect rect(xPos, yPos, lineLength, lineHeight);
@@ -335,11 +340,11 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	//draw titile
 	const std::string title = "INVOICE";
 	dc->GetTextExtent(title, &xExtent, &yExtent);
-	yPos += border + 20;
+	yPos += border + 5;
 	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
 	dc->DrawText(title, lineLength / 2 - xExtent / 2, yPos);
 
-	yPos += yExtent + border + 20;
+	yPos += yExtent + border + 2;
 
 	return yPos;
 }
@@ -380,11 +385,18 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 
 		auto quantext = fmt::to_string(quantity);
 
-		dc->DrawText(quantext, xPos, yPos);
-		dc->GetTextExtent(quantext, &xExtent, &yExtent);
+		auto productText = fmt::format("{:d} {}", quantity, name);
+		auto amountText = fmt::format("{:cu}", amount);
 
-		dc->DrawText(name, xPos + xExtent + 2, yPos);
-		dc->GetTextExtent(name, &xExtent, &yExtent);
+		dc->GetTextExtent(amountText, &xExtent, &yExtent);
+		int xSize = m_coord_system_width - xExtent - 10;
+		dc->SetClippingRegion(wxRect{ xPos, yPos, xSize, lineHeight });
+		
+		dc->DrawText(productText, { xPos, yPos });
+
+		dc->DestroyClippingRegion();
+
+		dc->DrawText(amountText, xPos + xSize + 10, yPos);
 
 		totalAmount += amount;
 		yPos += lineHeight + 2;
@@ -400,7 +412,7 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	//dc->SetFont(mInoiceHeaderFont);
 	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
 	dc->GetTextExtent(totalA, &xExtent, &yExtent);
-	yPos += border + 20;
+	yPos += border + 5;
 	wxRect TotalRect(xPos, yPos + border, lineLength - border, yExtent);
 
 	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
@@ -408,10 +420,10 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	yPos += yExtent + border;
 	//dc->SetFont(mFooterFont);
 	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
-	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
 	dc->GetTextExtent(mFooterMessage, &xExtent, &yExtent);
 	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->DrawText(mFooterMessage, lineLength / 2 - xExtent / 2, yPos + border + 20);
+	dc->DrawText(mFooterMessage, lineLength / 2 - xExtent / 2, yPos + border + 2);
 
 
 	//
@@ -420,7 +432,7 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	std::string copyRight = "Powered by PharmaOffice";
 	dc->GetTextExtent(copyRight, &xExtent, &yExtent);
 	xPos = lineLength / 2;//int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
-	dc->DrawText(copyRight, lineLength / 2 - xExtent / 2, yPos + border + 20);
+	dc->DrawText(copyRight, lineLength / 2 - xExtent / 2, yPos + border);
 
 
 	return yPos;

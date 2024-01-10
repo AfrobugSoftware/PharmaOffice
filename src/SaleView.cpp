@@ -113,7 +113,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
 	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Reprint a sale");
 	mReprintItem->SetHasDropDown(true);
-	mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
+	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
+	mReturnItem->SetHasDropDown(true);
 	mBottomTools->AddSpacer(5);
 	//look for how to make this more dynamic
 	auto pt = new wxStaticText(mBottomTools, wxID_ANY, "Payment option:");
@@ -1088,11 +1089,18 @@ void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
 		bool status = false;
 		for (auto& retSale : wxGetApp().mSaleManager.GetSaleData()->GetDatastore()) {
 			auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
+			if (wxGetApp().mSaleManager.CheckReturned(rid, pid)) {
+				wxMessageBox("Product has already been returned", "Sales", wxICON_WARNING | wxOK);
+				continue;
+			}
+
 			auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
 			if (!retQuan.has_value()) goto err;
 			status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
 			if (!status) goto err;
-			
+			status = wxGetApp().mSaleManager.ReturnFromSales(rid, pid);
+			if (!status) goto err;
+
 			//get product
 			auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 			auto prodIter = std::ranges::find_if(prodDatastore,
@@ -1172,7 +1180,7 @@ void pof::SaleView::OnReprintLastSale(wxCommandEvent& evt)
 		return;
 	}
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
-	wxGetApp().mPrintManager->PrintSaleReceipt(m_dataViewCtrl1);
+	wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
 }
 
 void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
@@ -1227,7 +1235,7 @@ void pof::SaleView::OnReprintSale(wxAuiToolBarEvent& evt)
 					}
 					ReloadLabelInfo(sid);
 					wxGetApp().mPrintManager->gPrintState = pof::PrintManager::REPRINT_RECEIPT;
-					wxGetApp().mPrintManager->PrintSaleReceipt(this);
+					wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
 					return;
 				}
 				catch (boost::bad_lexical_cast& err) {

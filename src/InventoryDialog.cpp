@@ -18,22 +18,33 @@ pof::InventoryDialog::InventoryDialog(wxWindow* parent, const pof::base::data::d
 
 bool pof::InventoryDialog::TransferDataFromWindow()
 {
-
-	mInventoryData.first.resize(pof::ProductManager::INVENTORY_MAX);
-	mInventoryData.first[pof::ProductManager::INVENTORY_ID] = pof::GenRandomId();
-	mInventoryData.first[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::Application::clock_t::now();
-	mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
-	mInventoryData.first[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(mQuantityInControl->GetValue());
-	mInventoryData.first[pof::ProductManager::INVENTORY_COST] = pof::base::currency(static_cast<float>(mCostControl->GetValue()));
-	auto expDate = date::floor<date::days>(std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks()));
-	auto nowDate = date::floor<date::days>(pof::base::data::clock_t::now()) - date::days(1);
-	if (expDate == nowDate) {
-		wxMessageBox("Expiry date cannot be today's date, check and try again", "Add Stock", wxICON_INFORMATION | wxOK);
+	try {
+		mInventoryData.first.resize(pof::ProductManager::INVENTORY_MAX);
+		mInventoryData.first[pof::ProductManager::INVENTORY_ID] = pof::GenRandomId();
+		mInventoryData.first[pof::ProductManager::INVENTORY_INPUT_DATE] = pof::Application::clock_t::now();
+		mInventoryData.first[pof::ProductManager::INVENTORY_LOT_NUMBER] = mBatchNumber->GetValue().ToStdString();
+		std::uint64_t stok = static_cast<std::uint64_t>(mQuantityInControl->GetValue());
+		if (stok == 0) {
+			wxMessageBox("Quantity in cannot be 0, please try again", "Add stock", wxICON_WARNING | wxOK);
+			return false;
+		}
+		mInventoryData.first[pof::ProductManager::INVENTORY_STOCK_COUNT] = stok;
+		mInventoryData.first[pof::ProductManager::INVENTORY_COST] = pof::base::currency(boost::lexical_cast<float>(mCostControl->GetValue().ToStdString()));
+		auto expDate = date::floor<date::days>(std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks()));
+		auto nowDate = date::floor<date::days>(pof::base::data::clock_t::now()) - date::days(1);
+		if (expDate == nowDate) {
+			wxMessageBox("Expiry date cannot be today's date, check and try again", "Add Stock", wxICON_INFORMATION | wxOK);
+			return false;
+		}
+		mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
+		mInventoryData.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = mManufacturersName->GetValue().ToStdString();
+		return true;
+	}
+	catch (const std::exception& exp){
+		spdlog::error(exp.what());
+		wxMessageBox("Invalid input in inventory form", "Add stock", wxICON_ERROR | wxOK);
 		return false;
 	}
-	mInventoryData.first[pof::ProductManager::INVENTORY_EXPIRE_DATE] = std::chrono::system_clock::from_time_t(mExpiryDate->GetValue().GetTicks());
-	mInventoryData.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = mManufacturersName->GetValue().ToStdString();
-	return true;
 }
 
 bool pof::InventoryDialog::TransferDataToWindow()
@@ -87,11 +98,15 @@ void pof::InventoryDialog::CreateDialog()
 	mOkCancel[0]->Create(this, wxID_OK, "OK");
 	mOkCancel[1]->Create(this, wxID_CANCEL, "Cancel");
 	//look for a calender icon
+	wxFloatingPointValidator<float> val(2, &mFloatValidator, wxNUM_VAL_ZERO_AS_BLANK);
+	val.SetRange(0, 999999999999);
+
 
 	mQuantityInControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
 		std::numeric_limits<int>::max());
-	mCostControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
-		999999999);
+	mCostControl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
+	mCostControl->SetValidator(val);
+
 	mExpiryDate = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mExpiryDate->SetRange(wxDateTime::Now(), wxDateTime{});
 	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
@@ -185,11 +200,12 @@ void pof::InventoryDialog::OnCalendar(wxCommandEvent& evt)
 wxArrayString pof::InventoryDialog::SetupManufacturerName()
 {
 	wxArrayString ret;
+	ret.push_back("ENTRY");
+
 	auto supname = wxGetApp().mProductManager.GetLastInventorySupplierName(mProductUuid);
 	if (supname.has_value() && supname.value() != "ENTRY" && !supname.value().empty()){
 		ret.push_back(supname.value());
 	}
-	ret.push_back("ENTRY");
 
 	return ret;
 }

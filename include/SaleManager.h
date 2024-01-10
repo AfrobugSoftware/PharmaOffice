@@ -79,6 +79,8 @@ namespace pof {
 		bool SaveSale(const boost::uuids::uuid& saleID); //pushes the current sale in mSaleData; 
 		std::optional<pof::base::relation<pof::base::data::datetime_t, boost::uuids::uuid, pof::base::currency>> GetSavedSales();
 		bool CheckIfSaved(const boost::uuids::uuid& saleID);
+		bool ReturnFromSales(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid);
+		bool CheckReturned(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid);
 
 		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);

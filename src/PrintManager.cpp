@@ -12,8 +12,8 @@ pof::PrintManager::PrintManager()
 	mPrintDialogData->SetMinPage(1);
 	mPrintDialogData->SetMaxPage(2);
 	mPrintDialogData->SetFromPage(1);
-	mPrintDialogData->SetToPage(2);
-	mPrintDialogData->SetAllPages(false);
+	mPrintDialogData->SetToPage(1);
+	mPrintDialogData->SetAllPages(true);
 	
 }
 
