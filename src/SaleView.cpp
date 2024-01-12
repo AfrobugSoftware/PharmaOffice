@@ -13,12 +13,14 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_PACKS, pof::SaleView::OnShowPacks)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
-	EVT_TOOL(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
-	EVT_TOOL(pof::SaleView::ID_REPRINT, pof::SaleView::OnReturnSale)
+	EVT_TOOL(pof::SaleView::ID_DISCOUNT, pof::SaleView::OnDiscount)
 
 	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
-	
+	EVT_MENU(pof::SaleView::ID_RETURN_LAST_SALE, pof::SaleView::OnReturnLastSale)
+
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
+	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
+
 	EVT_DATAVIEW_ITEM_BEGIN_DRAG(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnBeginDrag)
 	EVT_DATAVIEW_ITEM_DROP_POSSIBLE(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDropPossible)
 	EVT_DATAVIEW_ITEM_DROP(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnDrop)
@@ -27,7 +29,8 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_DATAVIEW_ITEM_START_EDITING(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnValueChanged)
 	EVT_DATAVIEW_SELECTION_CHANGED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnSelected)
-	
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SaleView::ID_SALE_DATA_VIEW, pof::SaleView::OnContextMenu)
+
 	EVT_TEXT(pof::SaleView::ID_PRODUCT_SEARCH_NAME, pof::SaleView::OnProductNameSearch)
 	EVT_SEARCH(pof::SaleView::ID_PRODUCT_SCAN, pof::SaleView::OnScanBarCode)
 	
@@ -111,9 +114,13 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
 	mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
+	mBottomTools->AddSpacer(5);
 	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Reprint a sale");
 	mReprintItem->SetHasDropDown(true);
-	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an Item");
+	mBottomTools->AddSpacer(5);
+	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an item");
+	mBottomTools->AddSpacer(5);
+	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("action_add"), "Add discount to an item");
 	mReturnItem->SetHasDropDown(true);
 	mBottomTools->AddSpacer(5);
 	//look for how to make this more dynamic
@@ -155,7 +162,11 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mBottomTools->Realize();
 	
-	mDataPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mBook = new wxSimplebook(this, wxID_ANY);
+
+	mDataPane = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mBook->AddPage(mDataPane, "DataPane", false);
+	CreateEmptyPanel();
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxHORIZONTAL);
 
@@ -303,7 +314,9 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	bSizer1->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
 	bSizer1->Add(mBottomTools, 0, wxEXPAND |wxALL, 0);
-	bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
+	//bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
+	bSizer1->Add(mBook, 1, wxEXPAND | wxALL, 0);
+
 	bSizer1->Add( mSaleOutputPane, 0, wxEXPAND | wxALL, 0 );
 	this->SetSizer( bSizer1 );
 	this->Layout();
@@ -323,6 +336,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	/*this->Bind(wxEVT_UPDATE_UI, [&](wxUpdateUIEvent& evt) {
 		UpdateSaleDisplay();
 	});*/
+	CheckEmpty();
 
 	//load receipt style
 	/*auto ap = wxGetApp().GetAssertsPath() / "boostrap.css";
@@ -553,6 +567,65 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	std::get<2>(mPosionBookDetails) = false;
 	mSaleType = NONE;
 	mLocked = false;
+	CheckEmpty();
+}
+
+void pof::SaleView::CreateEmptyPanel()
+{
+	mEmpty = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("checkout"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, fmt::format("Please add an item to begin sale", wxGetApp().gVersion), wxDefaultPosition, wxDefaultSize, 0);
+	t1->Wrap(-1);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	/*wxButton* btn = new wxButton(m7, ID_TOOL_ADD_INVENTORY);
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetLabel("Add stock");
+	btn->SetBackgroundColour(*wxWHITE);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);*/
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	mBook->AddPage(mEmpty, "Empty", false);
 }
 
 void pof::SaleView::OnCheckout(wxCommandEvent& evt)
@@ -634,6 +707,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
 	//wxGetApp().mPrintManager->PrintSaleReceiptHtml(CreateHtmlReciept(), CreateHtmlReciept());
 	mLocked = false;
+	CheckEmpty();
 }
 
 void pof::SaleView::OnSaleComplete(bool status, size_t printState)
@@ -663,6 +737,8 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		mCurSaleuuid = boost::uuids::nil_uuid();
+		CheckEmpty();
+
 		mPaymentTypes->SetSelection(paymentTypes.size() - 1);
 		std::get<2>(mPosionBookDetails) = false;
 		SetActiveSaleIdText(mCurSaleuuid);
@@ -736,13 +812,24 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	wxSize sz = mProductNameValue->GetClientSize();
 
 	mSearchPopup->SetPosition(wxPoint{ pos.x, pos.y + sz.y  + 5});
-	mSearchPopup->SetSize(wxSize(sz.x + 700, 400));
+	mSearchPopup->SetSize(wxSize(sz.x + 500, 400));
 
 	//mSearchPopup->Show();
 	mSearchPopup->CaptureFocus();
 	mSearchPopup->Popup();
 	mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
 	mSearchPopup->SetFocus();
+}
+
+void pof::SaleView::CheckEmpty()
+{
+	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty())
+	{
+		mBook->SetSelection(SALE_EMPTY);
+	}
+	else {
+		mBook->SetSelection(SALE_VIEW);
+	}
 }
 
 void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
@@ -752,7 +839,10 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		return;
 	}
 	auto item = m_dataViewCtrl1->GetSelection();
-	if (!item.IsOk()) return;
+	if (!item.IsOk()){
+		wxMessageBox("No item is selected", "Sales", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	if (idx == datastore.size() - 1){
@@ -797,6 +887,7 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		mCurSaleuuid = boost::uuids::nil_uuid();
 		SetActiveSaleIdText(mCurSaleuuid);
 	}
+	CheckEmpty();
 }
 
 void pof::SaleView::OnSelected(wxDataViewEvent& evt)
@@ -969,6 +1060,7 @@ void pof::SaleView::OnShowPacks(wxCommandEvent& evt)
 			m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 
 		}
+		CheckEmpty();
 		UpdateSaleDisplay();
 	}
 }
@@ -1018,6 +1110,7 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 			wxMessageBox("Failed to restore sale", "Sale", wxICON_INFORMATION | wxOK);
 		}
 	}
+	CheckEmpty();
 }
 
 void pof::SaleView::OnValueChanged(wxDataViewEvent& evt)
@@ -1051,92 +1144,105 @@ void pof::SaleView::OnSaleUuidTextUI(wxUpdateUIEvent& evt)
 	}
 }
 
-void pof::SaleView::OnReturnSale(wxCommandEvent& evt)
+void pof::SaleView::OnReturnSale(wxAuiToolBarEvent& evt)
 {
-	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
-		wxMessageBox("User account cannot perform this function", "Return", wxICON_INFORMATION | wxOK);
-		return;
-	}
+	if (!evt.IsDropDownClicked()) {
+		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+			wxMessageBox("User account cannot perform this function", "Return", wxICON_INFORMATION | wxOK);
+			return;
+		}
 
-	if (mLocked) {
-		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
-		return;
-	}
+		if (mLocked) {
+			mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+			return;
+		}
 
-	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
-		mInfoBar->ShowMessage("No products selected to return");
-		return;
-	}
-	try {
-		wxTextEntryDialog dialog(this, "Please enter the receipt ID for this return", "Return");
-		if (dialog.ShowModal() != wxID_OK) return;
-		std::string uids = dialog.GetValue().ToStdString();
-		if (uids.empty()) return;
-		boost::uuids::uuid rid = boost::lexical_cast<boost::uuids::uuid>(uids);
-		wxIcon cop;
-		cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
-		wxBusyInfo info
-		(
-			wxBusyInfoFlags()
-			.Parent(this)
-			.Icon(cop)
-			.Title("Returning")
-			.Text(fmt::format("Please wait...."))
-			.Foreground(*wxBLACK)
-			.Background(*wxWHITE)
-			.Transparency(4 * wxALPHA_OPAQUE / 5)
-		);
-		bool status = false;
-		for (auto& retSale : wxGetApp().mSaleManager.GetSaleData()->GetDatastore()) {
-			auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
-			if (wxGetApp().mSaleManager.CheckReturned(rid, pid)) {
-				wxMessageBox("Product has already been returned", "Sales", wxICON_WARNING | wxOK);
-				continue;
+		if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()) {
+			mInfoBar->ShowMessage("No products selected to return");
+			return;
+		}
+		try {
+			wxTextEntryDialog dialog(this, "Please enter the receipt ID for this return", "Return");
+			if (dialog.ShowModal() != wxID_OK) return;
+			std::string uids = dialog.GetValue().ToStdString();
+			if (uids.empty()) return;
+			boost::uuids::uuid rid = boost::lexical_cast<boost::uuids::uuid>(uids);
+			wxIcon cop;
+			cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+			wxBusyInfo info
+			(
+				wxBusyInfoFlags()
+				.Parent(this)
+				.Icon(cop)
+				.Title("Returning")
+				.Text(fmt::format("Please wait...."))
+				.Foreground(*wxBLACK)
+				.Background(*wxWHITE)
+				.Transparency(4 * wxALPHA_OPAQUE / 5)
+			);
+			bool status = false;
+			for (auto& retSale : wxGetApp().mSaleManager.GetSaleData()->GetDatastore()) {
+				auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
+				if (wxGetApp().mSaleManager.CheckReturned(rid, pid)) {
+					wxMessageBox("Product has already been returned", "Sales", wxICON_WARNING | wxOK);
+					continue;
+				}
+
+				auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
+				if (!retQuan.has_value()) goto err;
+				status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
+				if (!status) goto err;
+				status = wxGetApp().mSaleManager.ReturnFromSales(rid, pid);
+				if (!status) goto err;
+
+				//get product
+				auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+				auto prodIter = std::ranges::find_if(prodDatastore,
+					[&](auto& r) -> bool {
+						return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
+						== pid;
+					});
+				if (std::end(prodDatastore) == prodIter) goto err;
+				wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
+
+
+				// do not delete from sale, the problems is too much, never delete sale
+				//status = wxGetApp().mSaleManager.RemoveProductFromSale(pid, rid);
+				//if (!status) goto err;
+
+				auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
+				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, uids));
 			}
-
-			auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
-			if (!retQuan.has_value()) goto err;
-			status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
-			if (!status) goto err;
-			status = wxGetApp().mSaleManager.ReturnFromSales(rid, pid);
-			if (!status) goto err;
-
-			//get product
-			auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-			auto prodIter = std::ranges::find_if(prodDatastore,
-				[&](auto& r) -> bool {
-					return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
-					== pid;
-			});
-			if (std::end(prodDatastore) == prodIter) goto err;
-			wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
-			
-
-			// do not delete from sale, the problems is too much, never delete sale
-			//status = wxGetApp().mSaleManager.RemoveProductFromSale(pid, rid);
-			//if (!status) goto err;
-
-			auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
-			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, uids));
+			wxGetApp().mSaleManager.GetSaleData()->Clear();
+			if (mPropertyManager->IsShown()) {
+				mPropertyManager->Hide();
+				mDataPane->Layout();
+				mDataPane->Refresh();
+			}
+			ResetSaleDisplay();
+			mCurSaleuuid = boost::uuids::nil_uuid();
+			SetActiveSaleIdText(mCurSaleuuid);
+			if (mInfoBar->IsShown()) {
+				mInfoBar->Dismiss();
+			}
+			CheckEmpty();
+			mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
+			return;
 		}
-		wxGetApp().mSaleManager.GetSaleData()->Clear();
-		if (mPropertyManager->IsShown()) {
-			mPropertyManager->Hide();
-			mDataPane->Layout();
-			mDataPane->Refresh();
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+			wxMessageBox("Incorrect recepit ID", "Return", wxICON_INFORMATION | wxOK);
+			return;
 		}
-		ResetSaleDisplay();
-		mCurSaleuuid = boost::uuids::nil_uuid();
-		SetActiveSaleIdText(mCurSaleuuid);
-		if (mInfoBar->IsShown()) {
-			mInfoBar->Dismiss();
-		}
-		mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
-		return;
 	}
-	catch (std::exception& exp) {
-		spdlog::error(exp.what());
-		wxMessageBox("Incorrect recepit ID", "Return", wxICON_INFORMATION | wxOK);
+	else {
+		wxMenu* menu = new wxMenu;
+		menu->Append(ID_RETURN_LAST_SALE, "Return last sale", nullptr);
+
+		wxPoint pos = mReturnItem->GetSizerItem()->GetPosition();
+		wxSize sz = mReturnItem->GetSizerItem()->GetSize();
+
+		mBottomTools->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 		return;
 	}
 err:
@@ -1340,6 +1446,7 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
+		CheckEmpty();
 	}
 	else {
 		spdlog::error("Drop data invalid or does not exist");
@@ -1426,7 +1533,7 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
-
+		CheckEmpty();
 		mProductNameValue->Clear(); 
 	}
 	catch (const std::exception& exp) {
@@ -1524,7 +1631,7 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		}
 		CheckProductWarning(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 		UpdateSaleDisplay();
-
+		CheckEmpty();
 		mScanProductValue->Clear();
 		mScanProductValue->SetFocus();
 	}
@@ -1579,6 +1686,84 @@ void pof::SaleView::OnProductPropertyChanged(wxPropertyGridEvent& evt)
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());
 	}
+
+}
+
+void pof::SaleView::OnReturnLastSale(wxCommandEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Return", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+
+	if (wxMessageBox("Are you sure you want to return last sale?", "Sale", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
+
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Returning last sale")
+		.Text(fmt::format("Please wait...."))
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
+
+	auto lastSale = wxGetApp().mSaleManager.GetLastSale();
+	if (!lastSale.has_value()) {
+		wxMessageBox("Cannot get last sale", "Sale", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (lastSale->empty()) {
+		mInfoBar->ShowMessage("No sale to return", wxICON_INFORMATION);
+		return;
+	}
+
+	//show what you want to return
+
+
+
+	bool status = false;
+	for (auto& retSale : lastSale.value()) {
+		auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
+		auto& rid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::SALE_UUID]);
+
+		auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
+		if (!retQuan.has_value()) goto err;
+		status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
+		if (!status) goto err;
+		status = wxGetApp().mSaleManager.ReturnFromSales(rid, pid);
+		if (!status) goto err;
+
+		//get product
+		auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+		auto prodIter = std::ranges::find_if(prodDatastore,
+			[&](auto& r) -> bool {
+				return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
+				== pid;
+			});
+		if (std::end(prodDatastore) == prodIter) goto err;
+		wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
+
+
+		auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, boost::lexical_cast<std::string>(rid)));
+	}
+	mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
+	return;
+
+
+err:
+	mInfoBar->ShowMessage("Return failed", wxICON_ERROR);
+	return;
 
 }
 
@@ -1645,6 +1830,7 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 	bool ret = !wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty(); 
 	mLocked = ret; // lock sale
 	mSaleType = PATIENT;
+	CheckEmpty();
 	UpdateSaleDisplay();
 	return ret;
 }
@@ -1704,6 +1890,18 @@ bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
 	return true;
 }
 
+void pof::SaleView::OnContextMenu(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REMOVE_DISCOUNT, "Remove discount", nullptr);
+
+	m_dataViewCtrl1->PopupMenu(menu);
+
+}
+
 bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
 {
 	auto& v = product.first;
@@ -1738,6 +1936,34 @@ bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
 		return false;
 	}
 	return true;
+}
+
+void pof::SaleView::OnDiscount(wxCommandEvent& evt)
+{
+	if (wxGetApp().mSaleManager.GetSaleData()->GetDatastore().empty()){
+		mInfoBar->ShowMessage("Sale is empty");
+		return;
+	}
+
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk())
+	{
+		wxMessageBox("No item selected", "Sales", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	
+	
+	auto str = wxGetTextFromUser("Please enter discount amount e.g 50").ToStdString();
+	if (str.empty()) return;
+
+	if (!std::ranges::all_of(str, [&](char c) ->bool { return std::isdigit(c); })) {
+		wxMessageBox("Invalid discount amount", "Sales", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	pof::base::currency discount(str);
+	mTotalDiscount += discount;
+	
 }
 
 
@@ -2010,6 +2236,10 @@ void pof::SaleView::SetActiveSaleIdText(const boost::uuids::uuid& saleId)
 	mBottomTools->Realize();
 	mBottomTools->Refresh();
 	this->Layout();
+}
+
+void pof::SaleView::OnRemoveDiscount(wxCommandEvent& evt)
+{
 }
 
 void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)

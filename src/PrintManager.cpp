@@ -19,6 +19,8 @@ pof::PrintManager::PrintManager()
 
 pof::PrintManager::~PrintManager()
 {
+	delete po;
+	delete po2;
 }
 
 void pof::PrintManager::PrinterSetup()
@@ -36,11 +38,11 @@ void pof::PrintManager::PrinterSetup()
 void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 {
 	//PrinterSetup();
-	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
-	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	if(!po) po = new pof::Printout(mPrintDialogData.get());
 	po->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
-	po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	if (wxGetApp().bShowPreviewOnSale){
+		if(!po2) po2 = new pof::Printout(mPrintDialogData.get());
+		po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 		Preview(parent, po, po2);
 	}else PrintJob(parent, po);
 
@@ -58,23 +60,23 @@ void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrinto
 
 void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent)
 {
-	pof::Printout* po = new pof::Printout(mPrintDialogData.get());
-	pof::Printout* po2 = new pof::Printout(mPrintDialogData.get());
+	if(!po) po = new pof::Printout(mPrintDialogData.get());
 	po->mLabels = labels;
-	po2->mLabels = labels;
 	
 	po->minPage = 1;
 	po->maxPage = labels.size();
 	po->selPageFrom = 1;
 	po->selPageTo = labels.size();
 
-	po2->minPage = 1;
-	po2->maxPage = labels.size();
-	po2->selPageFrom = 1;
-	po2->selPageTo = labels.size();
-
 
 	if (wxGetApp().bShowPreviewOnSale) {
+		if(!po2) po2 = new pof::Printout(mPrintDialogData.get());
+		po2->mLabels = labels;
+		
+		po2->minPage = 1;
+		po2->maxPage = labels.size();
+		po2->selPageFrom = 1;
+		po2->selPageTo = labels.size();
 		Preview(parent, po, po2);
 	}
 	else PrintJob(parent, po);

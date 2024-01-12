@@ -765,3 +765,45 @@ std::optional<pof::base::data::datetime_t> pof::SaleManager::GetSaleDate(const p
 	}
 	return std::nullopt;
 }
+
+std::optional<pof::base::data> pof::SaleManager::GetLastSale()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT 
+		s.uuid,
+		s.product_uuid,
+		s.product_quantity,
+		s.product_ext_price,
+		s.sale_date,
+		s.sale_payment_type 
+		FROM sales s, (SELECT uuid, MAX(sale_date) FROM sales LIMIT 1) as last
+		WHERE  s.uuid = last.uuid AND s.sale_payment_type IS NOT 'Returned';)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::duuid_t,
+			std::uint64_t,
+			pof::base::data::currency_t,
+			pof::base::data::datetime_t,
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (const auto& tup : *rel){
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+		}
+		return ret;
+	}
+
+	return std::nullopt;
+}

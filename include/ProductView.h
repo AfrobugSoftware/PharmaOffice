@@ -196,7 +196,7 @@ namespace pof
 		void OnStoreSummary(wxCommandEvent& evt);
 		void OnIncrPrice(wxCommandEvent& evt);
 		void OnOpenProductInfo(wxCommandEvent& evt);
-	
+
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

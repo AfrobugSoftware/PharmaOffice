@@ -1223,16 +1223,15 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 {
 	//check for expired 
+	std::vector<std::string> f;
 	if (wxGetApp().bCheckExpiredOnUpdate){
 		auto now = std::chrono::system_clock::now();
 		if (now >= mExpireProductWatchDog + mWatchDogDuration){
 			auto items = wxGetApp().mProductManager.DoExpiredProducts();
 			if (!items.has_value()) { }
 			else if (!items->empty()){
-				mInfoBar->ShowMessage(fmt::format("{:d} products in store has expired", items->size()), wxICON_WARNING);
-				mInfoBar->Refresh();
+				f.push_back(fmt::format("{:d} products in store has expired", items->size()));
 			}
-
 		}
 		mExpireProductWatchDog = now;
 	}
@@ -1242,11 +1241,14 @@ void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 			auto items = wxGetApp().mProductManager.DoOutOfStock();
 			if (!items.has_value()) {}
 			else if (!items->empty()) {
-				mInfoBar->ShowMessage(fmt::format("{:d} products in store are out of stock", items->size()), wxICON_WARNING);
-				mInfoBar->Refresh();
+				f.push_back(fmt::format("{:d} products in store are out of stock", items->size()));
 			}
 		}
 		mOutOfStockProductWatchDog = now;
+	}
+	if (!f.empty()) {
+		mInfoBar->ShowMessage("");
+		mInfoBar->ShowMessage(fmt::format("{}", fmt::join(f, " and ")), wxICON_INFORMATION);
 	}
 	if (wxGetApp().bNotifyStockCheckInComplete) {
 		CheckIfStockCheckIsComplete();

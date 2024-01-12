@@ -35,6 +35,10 @@ namespace pof {
 		std::unique_ptr<wxPrintDialogData> mPrintDialogData;
 		std::unique_ptr<wxPageSetupData> mPageSetupData;
 		std::unique_ptr<wxPrintData> mPrintData;
+
+		pof::Printout* po = nullptr;
+		pof::Printout* po2 = nullptr;
+
 	};
 };
 

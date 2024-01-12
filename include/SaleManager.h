@@ -91,6 +91,8 @@ namespace pof {
 			const pof::base::data::duuid_t& sid);
 		std::optional<pof::base::data::datetime_t> GetSaleDate(const pof::base::data::duuid_t& saleID);
 
+		std::optional<pof::base::data> GetLastSale();
+
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;
 		double discount = 0.0;

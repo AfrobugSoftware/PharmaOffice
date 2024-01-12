@@ -17,6 +17,8 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_TOOL_SHOW_PRODUCT_INFO, pof::ProductInfo::OnShowProductInfo)
 	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
 	EVT_TOOL(pof::ProductInfo::ID_RESET, pof::ProductInfo::OnReset)
+	EVT_TOOL(pof::ProductInfo::ID_ADD_BARCODE, pof::ProductInfo::OnAddBarcode)
+
 
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
@@ -86,7 +88,20 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
-	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Product Information"), wxNullBitmap );
+	auto tool = m_propertyGridManager1->GetToolBar();
+	if (tool){
+		tool->SetBackgroundColour(*wxWHITE);
+		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
+		tool->AddStretchableSpace();
+		tool->AddSeparator();
+		tool->AddTool(ID_ADD_BARCODE, "Barcode", wxArtProvider::GetBitmap("action_add"), "Add barcode to the product");
+
+		tool->Realize();
+		m_propertyGridManager1->Update();
+	}
+
+
+	m_propertyGridPage1 = m_propertyGridManager1->AddPage( wxT("Info"), wxNullBitmap );
 	m_propertyGridItem1 = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Product details"), wxT("Product Details") ) ); 
 	mNameItem = m_propertyGridPage1->Append( new wxStringProperty( wxT("NAME"), wxPG_LABEL) );
 	m_propertyGridPage1->SetPropertyHelpString( mNameItem, wxT("The product brand name") );
@@ -988,6 +1003,33 @@ void pof::ProductInfo::OnReset(wxCommandEvent& evt)
 	default:
 		break;
 	}
+}
+
+void pof::ProductInfo::OnAddBarcode(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+	auto str = wxGetTextFromUser("Please scan a product barcode or enter barcode manually", "Barcode").ToStdString();
+	if (str.empty()) return;
+
+	//check if is not numeric
+	if (std::ranges::any_of(str, [&](char c) -> bool { return !std::isdigit(c); })) {
+		wxMessageBox("Barcode cannot contain non-digits", "Product info", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	auto& pid = boost::variant2::get<boost::uuids::uuid>(mProductData.first[pof::ProductManager::PRODUCT_UUID]);
+
+	//update the current product data
+	auto iter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+		[&](const pof::base::data::row_t& row) -> bool {
+			return boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID])
+			== pid;
+		});
+	if (iter != wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) return;
+	iter->first[pof::ProductManager::PRODUCT_BARCODE] = str;
+	wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, str), { "uuid", "barcode" });
+
+	wxMessageBox("Product barcode updated", "Product info", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ProductInfo::RemovePropertyModification()

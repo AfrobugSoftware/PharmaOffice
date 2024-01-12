@@ -94,6 +94,8 @@ namespace pof
 		wxEditEnumProperty* warning = nullptr;
 		wxIntProperty* packageSize = nullptr;
 		wxChoice* mPaymentTypes = nullptr;
+		wxSimplebook* mBook = nullptr;
+		wxPanel* mEmpty = nullptr;
 		bool mLocked = false;
 		size_t mSaleType = 0;
 
@@ -105,7 +107,12 @@ namespace pof
 
 		boost::uuids::random_generator_mt19937 uuidGen;
 		pof::base::currency mCurTotal;
+		pof::base::currency mTotalDiscount;
 	public:
+		enum {
+			SALE_VIEW = 0,
+			SALE_EMPTY,
+		};
 
 		enum {
 			ID_PRODUCT_SEARCH_NAME,
@@ -128,6 +135,9 @@ namespace pof
 			ID_FUNCTIONS,
 			ID_FOCUS_SCAN,
 			ID_PAYMENT_TYPE,
+			ID_RETURN_LAST_SALE,
+			ID_DISCOUNT,
+			ID_REMOVE_DISCOUNT,
 		};
 
 		//sale type
@@ -150,6 +160,7 @@ namespace pof
 		void CreateSearchPopup();
 		void CreateProductDetails();
 		void CreateAccelTable();
+		void CreateEmptyPanel();
 
 		bool OnAddMedicationsToSale(const pof::base::data& data);
 	protected:
@@ -157,6 +168,7 @@ namespace pof
 		void UpdateSaleDisplay();
 		void ResetSaleDisplay();
 		void Checkout();
+		void CheckEmpty();
 
 		void OnClear(wxCommandEvent& evt);
 		void OnCheckout(wxCommandEvent& evt);
@@ -179,15 +191,18 @@ namespace pof
 		void OnEditingStarted(wxDataViewEvent& evt);
 		void OnEditingDone(wxDataViewEvent& evt);
 		void OnSaleUuidTextUI(wxUpdateUIEvent& evt);
-		void OnReturnSale(wxCommandEvent& evt);
+		void OnReturnSale(wxAuiToolBarEvent& evt);
 		void OnReprintLastSale(wxCommandEvent& evt);
 		void OnReprintSale(wxAuiToolBarEvent& evt);
+		void OnReturnLastSale(wxCommandEvent& evt);
+		void OnContextMenu(wxDataViewEvent& evt);
 
 		void DropData(const pof::DataObject& dat);
 		void OnSearchPopup(const pof::base::data::row_t& row);
 		void OnScanBarCode(wxCommandEvent& evt);
 		void OnProductPropertyChanged(wxPropertyGridEvent& evt);
-	
+		void OnDiscount(wxCommandEvent& evt);
+		void OnRemoveDiscount(wxCommandEvent& evt);
 
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductWarning(const pof::base::data::duuid_t& pid);

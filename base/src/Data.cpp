@@ -82,6 +82,12 @@ void pof::base::data::update(const typename row_t::first_type::value_type& d, si
 
 void pof::base::data::emplace(typename row_t::first_type&& vals)
 {
+	auto& b = value.emplace_back(row_t{});
+	b.first = std::forward<row_t::first_type>(vals);
+
+	modified = clock_t::now();
+	constexpr size_t pos = (std::underlying_type_t<state>)state::CREATED;
+	b.second.first.set(pos);
 }
 
 const pof::base::data::row_t & pof::base::data::at(size_t i) const
