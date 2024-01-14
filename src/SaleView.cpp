@@ -17,6 +17,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 
 	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
 	EVT_MENU(pof::SaleView::ID_RETURN_LAST_SALE, pof::SaleView::OnReturnLastSale)
+	EVT_MENU(pof::SaleView::ID_REMOVE_DISCOUNT, pof::SaleView::OnRemoveDiscount)
 
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
@@ -183,6 +184,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Quantity"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
 	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Price"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mDiscountCol = m_dataViewCtrl1->AppendTextColumn(wxT("Discount"), 1000, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
 	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Extact Price"), pof::SaleManager::PRODUCT_EXT_PRICE);
 	
 	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, wxSize(400, -1),
@@ -361,6 +363,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	pof::DataModel::SpeicalColHandler_t extPriceCol;
 	pof::DataModel::SpeicalColHandler_t quantityCol;
+	pof::DataModel::SpeicalColHandler_t discountCol;
 
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	pof::base::data& dataStore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
@@ -368,10 +371,18 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 	extPriceCol.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datum = dataStore[row];
 		auto& v = datum.first;
+		auto& pid = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
 		auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
 		auto& extPrice = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_EXT_PRICE]);
 		auto& quantiy = boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]);
 		extPrice = price * static_cast<double>(quantiy);
+		
+		//account for dicount
+		auto diter = mDiscounts.find(pid);
+		if (diter != mDiscounts.end()) {
+			extPrice -= diter->second;
+		}
+
 		return wxVariant(fmt::format("{:cu}", extPrice));
 	};
 
@@ -380,6 +391,7 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 		auto& v = datum.first;
 		try {
 			auto quan = static_cast<std::uint64_t>(atoi(value.GetString().ToStdString().c_str()));
+			auto& pid = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
 
 			//check if the new quantity is more than the available stock?
 			auto productIter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
@@ -397,6 +409,12 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 			auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
 			pof::base::currency extPrice = price * static_cast<double>(quan);
 
+			//account for dicount
+			auto diter = mDiscounts.find(pid);
+			if (diter != mDiscounts.end()) {
+				extPrice -= diter->second;
+			}
+
 			v[pof::SaleManager::PRODUCT_QUANTITY] = quan;
 			v[pof::SaleManager::PRODUCT_EXT_PRICE] = extPrice;
 			UpdateSaleDisplay();
@@ -412,8 +430,21 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 		}
 	};
 
+	discountCol.first = [&](size_t row, size_t col) -> wxVariant {
+		auto& datum = dataStore[row];
+		auto& v = datum.first;
+		auto& pid = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
+		auto iter = mDiscounts.find(pid);
+		pof::base::currency ret;
+		if (iter != mDiscounts.end()) {
+			ret = iter->second;
+		}
+		return fmt::format("{:cu}", ret);
+	};
+
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_QUANTITY, std::move(quantityCol));
 	model->SetSpecialColumnHandler(pof::SaleManager::PRODUCT_EXT_PRICE, std::move(extPriceCol));
+	model->SetSpecialColumnHandler(1000, std::move(discountCol));
 }
 
 void pof::SaleView::CreateSearchPopup()
@@ -488,14 +519,11 @@ void pof::SaleView::UpdateSaleDisplay()
 	size_t quantity = dataStore.size(), exactQuantity = 0;
 
 	pof::base::currency totalAmount;
-	pof::base::currency discountAmount;
 	size_t extQuantity = 0;
 	try {
 		totalAmount = std::accumulate(dataStore.begin(),
 			dataStore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
-				spdlog::info("{:cu}", boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_PRICE]));
-				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
-				
+				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);	
 			});
 
 		extQuantity = std::accumulate(dataStore.begin(), dataStore.end(), extQuantity, [&](size_t v,
@@ -511,7 +539,7 @@ void pof::SaleView::UpdateSaleDisplay()
 	Freeze();
 	mQuantityValue->SetLabel(fmt::format("{:d}", quantity));
 	mExtQuantityItem->SetLabel(fmt::format("{:d}", extQuantity));
-	mDiscountValue->SetLabel(fmt::format("{:cu}", discountAmount));
+	mDiscountValue->SetLabel(fmt::format("{:cu}", mTotalDiscount));
 	mTotalQuantityValue->SetLabel(fmt::format("{:d}", extQuantity));
 	mTotalAmount->SetLabel(fmt::format("{:cu}", totalAmount));
 	Thaw();
@@ -567,6 +595,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	std::get<2>(mPosionBookDetails) = false;
 	mSaleType = NONE;
 	mLocked = false;
+	mDiscounts.clear();
 	CheckEmpty();
 }
 
@@ -707,6 +736,7 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 	wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
 	//wxGetApp().mPrintManager->PrintSaleReceiptHtml(CreateHtmlReciept(), CreateHtmlReciept());
 	mLocked = false;
+
 	CheckEmpty();
 }
 
@@ -736,6 +766,10 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		mProductLabels.clear(); //remove all the label data
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
+		
+		SaveDiscounts(mCurSaleuuid);
+		mDiscounts.clear();
+
 		mCurSaleuuid = boost::uuids::nil_uuid();
 		CheckEmpty();
 
@@ -782,6 +816,32 @@ void pof::SaleView::OnSave(wxCommandEvent& evt)
 	mSaleType = NONE;
 	wxGetApp().mSaleManager.SaveSale(mCurSaleuuid);
 	SaveLabelInfo(mCurSaleuuid);
+	if (!mDiscounts.empty()) {
+		SaveDiscounts(mCurSaleuuid);
+	}
+
+	//clear the current sale
+	wxGetApp().mSaleManager.GetSaleData()->Clear();
+	if (mPropertyManager->IsShown()) {
+		mPropertyManager->Hide();
+		mDataPane->Layout();
+		mDataPane->Refresh();
+	}
+	mProductLabels.clear();
+	ResetSaleDisplay();
+	mCurSaleuuid = boost::uuids::nil_uuid();
+	SetActiveSaleIdText(mCurSaleuuid);
+	mPaymentTypes->SetSelection(paymentTypes.size() - 1);
+	if (mInfoBar->IsShown()) {
+		mInfoBar->Dismiss();
+	}
+
+	std::get<2>(mPosionBookDetails) = false;
+	mSaleType = NONE;
+	mLocked = false;
+	mDiscounts.clear();
+	CheckEmpty();
+
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Saved Sale: {}", str.str()));
 	mInfoBar->ShowMessage(fmt::format("{} saved successfully", str.str()), wxICON_INFORMATION);
 }
@@ -1098,6 +1158,9 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 			mCurSaleuuid = dialog.GetSaveSaleId();
 			str << mCurSaleuuid;
 			ReloadLabelInfo(mCurSaleuuid);
+			RestoreDiscounts(mCurSaleuuid);
+
+			wxGetApp().mSaleManager.RemoveInfo(mCurSaleuuid);
 			wxGetApp().mSaleManager.RemoveLabels(mCurSaleuuid);
 			//remove from save
 			wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
@@ -1962,8 +2025,25 @@ void pof::SaleView::OnDiscount(wxCommandEvent& evt)
 	}
 
 	pof::base::currency discount(str);
+	auto& s = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)];
+	auto& pid = boost::variant2::get<boost::uuids::uuid>(s.first[pof::SaleManager::PRODUCT_UUID]);
+	auto& extprice = boost::variant2::get<pof::base::currency>(s.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
+
+	if (discount >= extprice) {
+		wxMessageBox("Cannot have discount greater than or same as the extact price of the item", "Sale", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	auto&& [i, t] = mDiscounts.insert({ pid, discount });
+	if (!t) {
+		//already inside, updating
+		i->second = discount;
+	}
 	mTotalDiscount += discount;
-	
+	extprice -= discount;
+
+	wxGetApp().mSaleManager.GetSaleData()->ItemChanged(item);
+	UpdateSaleDisplay();
 }
 
 
@@ -2240,6 +2320,20 @@ void pof::SaleView::SetActiveSaleIdText(const boost::uuids::uuid& saleId)
 
 void pof::SaleView::OnRemoveDiscount(wxCommandEvent& evt)
 {
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	auto& s = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)];
+	auto& pid = boost::variant2::get<boost::uuids::uuid>(s.first[pof::SaleManager::PRODUCT_UUID]);
+
+	auto i = mDiscounts.find(pid);
+	if (i == mDiscounts.end()) return;
+
+	mTotalDiscount -= i->second;
+
+	mDiscounts.erase(pid);
+	wxGetApp().mSaleManager.GetSaleData()->ItemChanged(item);
+	UpdateSaleDisplay(); 
 }
 
 void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
@@ -2350,6 +2444,101 @@ wxHtmlPrintout* pof::SaleView::CreateHtmlReciept()
 	out << document;
 	htmlprintout->SetHtmlText(out.str());
 	return htmlprintout;
+}
+
+void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)
+{
+	auto info = wxGetApp().mSaleManager.GetInfo(saleID);
+	if (!info.has_value()) {
+		mInfoBar->ShowMessage("Failed to save discounts");
+		return;
+	}
+	try {
+		if (info->empty()) {
+			//no info for this saleID, the saleID is not in the table
+			if (mDiscounts.empty()) return; //no discount to add to sale
+
+			nl::json object = nl::json::object();
+			nl::json disarray = nl::json::array();
+			for (auto& dis : mDiscounts)
+			{
+				nl::json discount = nl::json::object();
+				discount["pid"] = boost::lexical_cast<std::string>(dis.first);
+				discount["amount"] = boost::lexical_cast<float>(dis.second);
+
+				disarray.push_back(discount);
+			}
+			object["discounts"] = disarray;
+			wxGetApp().mSaleManager.SaveInfo(saleID, object.dump());
+		}
+		else {
+			nl::json object = nl::json::parse(*info);
+			auto i = object.find("discounts");
+			if (i != object.end()) {
+				nl::json disarray = nl::json::array();
+				for (auto& dis : mDiscounts)
+				{
+					nl::json discount = nl::json::object();
+					discount["pid"] = boost::lexical_cast<std::string>(dis.first);
+					discount["amount"] = boost::lexical_cast<float>(dis.second);
+
+					disarray.push_back(discount);
+				}
+				object["discounts"] = disarray;
+			}
+			else {
+				//clear the discounts and load the updated one for this sale
+				nl::json& disarray = *i;
+				disarray.clear();
+
+				for (auto& dis : mDiscounts)
+				{
+					nl::json discount = nl::json::object();
+					discount["pid"] = boost::lexical_cast<std::string>(dis.first);
+					discount["amount"] = boost::lexical_cast<float>(dis.second);
+
+					disarray.push_back(discount);
+				}
+				object["discounts"] = disarray;
+
+			}
+			wxGetApp().mSaleManager.SaveInfo(saleID, object.dump());
+		}
+	}
+	catch (nl::json::exception& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Critial error in saving discount", "Sale", wxICON_ERROR | wxOK);
+	}
+}
+
+void pof::SaleView::RestoreDiscounts(const boost::uuids::uuid& saleID)
+{
+	auto info = wxGetApp().mSaleManager.GetInfo(saleID);
+	if (!info.has_value()) {
+		mInfoBar->ShowMessage("Failed to retore discounts");
+		return;
+	}
+	try {
+		if (info->empty()) return;//nothing to retore
+		nl::json object = nl::json::parse(*info);
+		auto i = object.find("discounts");
+		if (i == object.end()) return; //no dicounts
+
+		auto& disarray = *i;
+		mDiscounts.clear();
+
+		for (const auto& discount : disarray) {
+			auto pid = boost::lexical_cast<boost::uuids::uuid>(static_cast<std::string>(discount["pid"]));
+			auto amount = pof::base::currency(static_cast<float>(discount["amount"]));
+
+			mDiscounts.insert({ pid, amount });
+		}
+	}
+	catch (std::exception& exp){
+		spdlog::error(exp.what());
+		wxMessageBox("Critical error in restoring discounts", "Sales", wxICON_ERROR | wxOK);
+		return;
+	}
 }
 
 void pof::SaleView::LoadLabelDetails(LabelInfo& info, const pof::base::data::row_t& product)

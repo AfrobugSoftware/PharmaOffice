@@ -49,14 +49,15 @@ namespace pof
 		wxStaticText* mScanProduct;
 		wxSearchCtrl* mScanProductValue;
 		wxPanel* mProductViewPane = nullptr;
-		wxPanel* mDataPane;
-		wxPropertyGrid* mPropertyManager;
-		wxDataViewCtrl* m_dataViewCtrl1;
-		wxDataViewColumn* mSerialNumber;
-		wxDataViewColumn* mProductNameCol;
-		wxDataViewColumn* mQuantityColumn;
-		wxDataViewColumn* mExtPriceColumn;
-		wxDataViewColumn* mPriceCol;
+		wxPanel* mDataPane = nullptr;
+		wxPropertyGrid* mPropertyManager = nullptr;
+		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
+		wxDataViewColumn* mSerialNumber = nullptr;
+		wxDataViewColumn* mProductNameCol = nullptr;
+		wxDataViewColumn* mQuantityColumn = nullptr;
+		wxDataViewColumn* mExtPriceColumn = nullptr;
+		wxDataViewColumn* mDiscountCol = nullptr;
+		wxDataViewColumn* mPriceCol = nullptr;
 		wxPanel* mSaleOutputPane;
 		wxPanel* mSaleDisplayPane;
 		wxPanel* mTextOutPut;
@@ -148,6 +149,8 @@ namespace pof
 		};
 
 		std::vector<pof::LabelInfo> mProductLabels;
+		std::map<boost::uuids::uuid, pof::base::currency> mDiscounts;
+
 
 		size_t sSaleType = NONE;
 		boost::signals2::signal<void(const pof::base::data::duuid_t&, size_t)> mSaleCompleted;
@@ -203,6 +206,9 @@ namespace pof
 		void OnProductPropertyChanged(wxPropertyGridEvent& evt);
 		void OnDiscount(wxCommandEvent& evt);
 		void OnRemoveDiscount(wxCommandEvent& evt);
+
+		void SaveDiscounts(const boost::uuids::uuid& saleID);
+		void RestoreDiscounts(const boost::uuids::uuid& saleID);
 
 		bool CheckInStock(const pof::base::data::row_t& product);
 		bool CheckProductWarning(const pof::base::data::duuid_t& pid);

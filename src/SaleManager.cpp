@@ -379,6 +379,21 @@ void pof::SaleManager::CreateSaleLabelTable()
 	}
 }
 
+void pof::SaleManager::CreateSaleInfoTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sale_info (uuid blob, info text);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
 bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
@@ -650,6 +665,92 @@ bool pof::SaleManager::CheckReturned(const boost::uuids::uuid& saleID, const boo
 		if (rel->empty()) return false;
 
 		return std::get<0>(*(rel->begin())) == 1;
+	}
+	return false;
+}
+
+bool pof::SaleManager::SaveInfo(const boost::uuids::uuid& saleID, const std::string& info)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(INSERT INTO sale_info (uuid, info) VALUES (?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID, info));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+std::optional<std::string> pof::SaleManager::GetInfo(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT info FROM sale_info WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::string>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::string{}; //return empty string
+
+		return std::get<0>(*(rel->begin()));
+
+	}
+	return std::nullopt;
+}
+
+bool pof::SaleManager::RemoveInfo(const boost::uuids::uuid& saleID)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM sale_info WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(saleID));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::SaleManager::UpdateInfo(const boost::uuids::uuid& saleID, const std::string& info)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(UPDATE sale_info SET info = ? WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(info, saleID));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
 	}
 	return false;
 }

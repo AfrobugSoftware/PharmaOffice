@@ -897,7 +897,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 	auto& categories = wxGetApp().mProductManager.GetCategories();
 
 	if (!datastore.empty()) {
-		if(wxMessageBox("Products is not empty, importing a formulary might create duplicate products,\ndo you wish to continue?", "Formulary", wxICON_WARNING | wxYES_NO) == wxNO)
+		if(wxMessageBox("Pharmacy store is not empty, importing a formulary might create duplicate products,\ndo you wish to continue?", "Formulary", wxICON_WARNING | wxYES_NO) == wxNO)
 			return;
 	}
 	wxFileDialog fileDialog(this, "Formulary Import", wxEmptyString, wxEmptyString, "form files (*.form)|*.form",
@@ -910,7 +910,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 	}
 
 	std::ifstream file(filename);
-	if (file.is_open()){
+	if (!file.is_open()){
 		wxMessageBox(fmt::format("Cannot open {} permission denied", filename.string()), "Formulary", wxICON_WARNING | wxOK);
 		return;
 	}

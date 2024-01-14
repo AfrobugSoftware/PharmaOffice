@@ -71,6 +71,8 @@ namespace pof {
 		//SAVE SALE
 		void CreateSaveSaleTable();
 		void CreateSaleLabelTable();
+		void CreateSaleInfoTable();
+
 		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
 		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
 		bool SaveLabels(const boost::uuids::uuid& saleID, const std::string& labelData);
@@ -81,6 +83,12 @@ namespace pof {
 		bool CheckIfSaved(const boost::uuids::uuid& saleID);
 		bool ReturnFromSales(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid);
 		bool CheckReturned(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid);
+		
+		bool SaveInfo(const boost::uuids::uuid& saleID, const std::string& info);
+		std::optional<std::string> GetInfo(const boost::uuids::uuid& saleID);
+		bool RemoveInfo(const boost::uuids::uuid& saleID);
+		bool UpdateInfo(const boost::uuids::uuid& saleID, const std::string& info);
+
 
 		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
