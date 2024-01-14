@@ -596,6 +596,7 @@ void pof::SaleView::OnClear(wxCommandEvent& evt)
 	mSaleType = NONE;
 	mLocked = false;
 	mDiscounts.clear();
+	mTotalDiscount = {};
 	CheckEmpty();
 }
 
@@ -768,6 +769,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
 		
 		SaveDiscounts(mCurSaleuuid);
+		mTotalDiscount = {};
 		mDiscounts.clear();
 
 		mCurSaleuuid = boost::uuids::nil_uuid();
@@ -840,10 +842,12 @@ void pof::SaleView::OnSave(wxCommandEvent& evt)
 	mSaleType = NONE;
 	mLocked = false;
 	mDiscounts.clear();
+	mTotalDiscount = {};
+
 	CheckEmpty();
 
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Saved Sale: {}", str.str()));
-	mInfoBar->ShowMessage(fmt::format("{} saved successfully", str.str()), wxICON_INFORMATION);
+	wxMessageBox(fmt::format("{} saved successfully", str.str()), "Sale", wxICON_INFORMATION | wxOK);
 }
 
 void pof::SaleView::OnDropPossible(wxDataViewEvent& evt)
@@ -1159,6 +1163,12 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 			str << mCurSaleuuid;
 			ReloadLabelInfo(mCurSaleuuid);
 			RestoreDiscounts(mCurSaleuuid);
+
+			//recalculate the discounts
+			mTotalDiscount = {};
+			for (auto& d : mDiscounts) {
+				mTotalDiscount += d.second;
+			}
 
 			wxGetApp().mSaleManager.RemoveInfo(mCurSaleuuid);
 			wxGetApp().mSaleManager.RemoveLabels(mCurSaleuuid);
@@ -2325,10 +2335,12 @@ void pof::SaleView::OnRemoveDiscount(wxCommandEvent& evt)
 
 	auto& s = wxGetApp().mSaleManager.GetSaleData()->GetDatastore()[pof::DataModel::GetIdxFromItem(item)];
 	auto& pid = boost::variant2::get<boost::uuids::uuid>(s.first[pof::SaleManager::PRODUCT_UUID]);
+	auto& extprice = boost::variant2::get<pof::base::currency>(s.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
 
 	auto i = mDiscounts.find(pid);
 	if (i == mDiscounts.end()) return;
-
+	
+	extprice += i->second;
 	mTotalDiscount -= i->second;
 
 	mDiscounts.erase(pid);
