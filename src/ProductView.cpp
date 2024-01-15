@@ -953,9 +953,11 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 
 		
 		mPropertyUpdate.mUpdatedElememts.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
-		mPropertyUpdate.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
-			boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT])
-			+ boost::variant2::get<std::uint64_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		mPropertyUpdate.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = boost::variant2::get<std::uint64_t>(Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+		
+		mPropertyUpdate.mUpdatedElememts.set(pof::ProductManager::PRODUCT_COST_PRICE);
+		mPropertyUpdate.mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_COST_PRICE] = boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]);
+
 
 		std::string cls = boost::variant2::get<pof::base::data::text_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_CLASS]);
 		if (cls == "CONTROLLED"){
@@ -993,7 +995,7 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 		wxGetApp().mProductManager.GetInventory()->StoreData(std::move(Inven));
 
 		auto name = boost::variant2::get<pof::base::data::text_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_NAME]);
-		mInfoBar->ShowMessage(fmt::format("{} Inventory was updated successfully!", name), wxICON_INFORMATION);
+		mInfoBar->ShowMessage(fmt::format("{} stock was updated successfully!", name), wxICON_INFORMATION);
 	}
 }
 

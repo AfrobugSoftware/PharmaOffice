@@ -467,6 +467,7 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 	case ReportType::COMSUMPTION_PATTARN:
 		ConsumptionPatternExcel(mSelectedMonth);
 		break;
+	case ReportType::EOM:
 	case ReportType::EOD:
 		EODExcel();
 		break;
@@ -795,7 +796,13 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 
 void pof::ReportsDialog::EODExcel()
 {
-	auto datastore = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+
+	std::optional<pof::base::data> datastore = std::nullopt;
+	if (mCurReportType == ReportType::EOD)
+		datastore = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+	else
+		datastore = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
+
 	if (!datastore.has_value()) {
 		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
 		return;
@@ -826,9 +833,12 @@ void pof::ReportsDialog::EODExcel()
 	}
 
 	auto wks = doc.workbook().worksheet("Sheet1");
-	wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
+	if(mCurReportType == ReportType::EOD)
+		 wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
+	else wks.setName(fmt::format("EOM for {:%d/%m/%Y}", mSelectDay));
+
 	const size_t colSize = mListReport->GetColumnCount();
-	const size_t rowSize = datastore.value().size() + 2; //plus title and total row
+	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
 	const size_t firstRow = 1;
 	const size_t firstCol = 1;
 
@@ -840,10 +850,11 @@ void pof::ReportsDialog::EODExcel()
 		iter++;
 	};
 
-	writeHeader("DATE/TIME");
-	writeHeader("PRODUCT NAME");
-	writeHeader("QUANTITY");
-	writeHeader("AMOUNT");
+	writeHeader("Date/Time");
+	writeHeader("Product");
+	writeHeader("Quantity");
+	writeHeader("Amount");
+	writeHeader("Payment type");
 
 
 	auto& v = datastore.value();
@@ -860,16 +871,30 @@ void pof::ReportsDialog::EODExcel()
 
 		iter->value().set(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(row[4])));
 		iter++;
+
+		iter->value().set(fmt::format("{}", boost::variant2::get<pof::base::data::text_t>(row[6])));
+		iter++;
 	}
 	//totals
-	iter++; //skip two columns
-	iter++; //skip two columns
+	//iter++; //skip two columns
+	//iter++; //skip two columns
+
 
 	iter->value().set(mTotalQuantity->GetLabel().ToStdString());
 	iter++;
 
 	iter->value().set(mTotalAmount->GetLabel().ToStdString());
 	iter++;
+
+	iter->value().set(mTotalAmountCash->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmountTransfer->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmountPos->GetLabel().ToStdString());
+	iter++;
+
 
 	doc.save();
 	doc.close();

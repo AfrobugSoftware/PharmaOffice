@@ -1837,7 +1837,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 						WHERE i.uuid NOT NULL
 						GROUP BY i.uuid
 					)  
-			AND ? > i.expire_date AND p.stock_count > 0 AND p.uuid = i.uuid; )";
+			AND Days(?) > Days(i.expire_date) AND p.stock_count > 0 AND p.uuid = i.uuid; )";
 			auto stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
