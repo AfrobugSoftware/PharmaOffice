@@ -1025,10 +1025,10 @@ void pof::ProductInfo::OnAddBarcode(wxCommandEvent& evt)
 			return boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID])
 			== pid;
 		});
-	if (iter != wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) return;
+	if (iter == wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) return;
 	iter->first[pof::ProductManager::PRODUCT_BARCODE] = str;
+	
 	wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, str), { "uuid", "barcode" });
-
 	wxMessageBox("Product barcode updated", "Product info", wxICON_INFORMATION | wxOK);
 }
 

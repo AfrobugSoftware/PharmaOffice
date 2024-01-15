@@ -284,6 +284,10 @@ bool pof::Application::CreateMainFrame()
 
 bool pof::Application::CheckForUpdate()
 {
+	auto sess = std::make_shared<pof::base::ssl::session<http::string_body>>(wxGetApp().mNetManager.io(), wxGetApp().mNetManager.ssl());
+	auto fut = sess->req<http::verb::get>("localhost", "/update/info", "80");
+
+
 	//check everytime or just after some days
 	return false;
 }

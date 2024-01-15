@@ -388,7 +388,7 @@ namespace pof {
 					std::chrono::system_clock::time_point stoptime;
 
 					spdlog::info("Connecting..");
-					std::tie(ec, ep) = co_await net::async_connect(sock,results);
+					std::tie(ec, ep) = co_await net::async_connect(sock, results);
 					if (ec) {
 						on_fail(ec);
 						co_return std::move(m_resp);

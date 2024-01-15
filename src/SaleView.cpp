@@ -112,8 +112,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	
 	mTopTools->Realize();
 
-	mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
-	mBottomTools->AddSpacer(5);
+	//mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
+	//mBottomTools->AddSpacer(5);
 	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
 	mBottomTools->AddSpacer(5);
 	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Reprint a sale");
@@ -937,6 +937,13 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		}
 	}
 
+	//remove discount associated with the product
+	auto& pid = boost::variant2::get<boost::uuids::uuid>(datastore[pof::DataModel::GetIdxFromItem(item)].first[pof::SaleManager::PRODUCT_UUID]);
+	auto i = mDiscounts.find(pid);
+	if (i != mDiscounts.end()){
+		mTotalDiscount -= i->second;
+		mDiscounts.erase(i);
+	}
 
 	m_dataViewCtrl1->Freeze();
 	if (mInfoBar->IsShown()) mInfoBar->Dismiss();
@@ -1152,10 +1159,12 @@ void pof::SaleView::OnOpenSaveSale(wxCommandEvent& evt)
 		return;
 	}
 	if (dialog.ShowModal() == wxID_OK){
-		if (mCurSaleuuid == dialog.GetSaveSaleId()){
-			wxMessageBox("Selected the current sale", "Sale", wxICON_INFORMATION | wxOK);
+
+		if (mCurSaleuuid != boost::uuids::nil_uuid()) {
+			wxMessageBox("Sale is not empty, clear, save or checkout current sale before loading a saved sale", "Sale", wxICON_INFORMATION | wxOK);
 			return;
 		}
+
 		status = wxGetApp().mSaleManager.RestoreSaveSale(dialog.GetSaveSaleId());
 		if (status) {
 			std::ostringstream str;
@@ -2047,6 +2056,9 @@ void pof::SaleView::OnDiscount(wxCommandEvent& evt)
 	auto&& [i, t] = mDiscounts.insert({ pid, discount });
 	if (!t) {
 		//already inside, updating
+		extprice += i->second;
+		mTotalDiscount -= i->second;
+
 		i->second = discount;
 	}
 	mTotalDiscount += discount;
