@@ -930,6 +930,14 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
 		return;
 	}
+
+	//check if product has stock
+	if (boost::variant2::get<std::uint64_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT])
+		!= static_cast<std::uint64_t>(0) &&
+		 wxMessageBox("Product has stock avaliable, do you wish to add more stock?", "Add stock", wxICON_INFORMATION | wxYES_NO) == wxNO) {
+		return; //has stock and does not what to add more
+	}
+
 	auto items = wxGetApp().mProductManager.DoExpiredProducts();
 	if (!items.has_value()) return;
 	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {
@@ -941,6 +949,7 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 		return;
 	}
 
+	
 
 	pof::InventoryDialog dialog(nullptr, boost::variant2::get<pof::base::data::duuid_t>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_UUID]));
 	if (dialog.ShowModal() == wxID_OK) {

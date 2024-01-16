@@ -669,6 +669,28 @@ bool pof::SaleManager::CheckReturned(const boost::uuids::uuid& saleID, const boo
 	return false;
 }
 
+bool pof::SaleManager::ChangePaymentOption(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid, const std::string& option)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(UPDATE sales SET sale_payment_type = ?
+		WHERE uuid = ? AND product_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(option, saleID, puid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 bool pof::SaleManager::SaveInfo(const boost::uuids::uuid& saleID, const std::string& info)
 {
 	if (mLocalDatabase)

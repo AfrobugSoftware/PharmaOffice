@@ -167,7 +167,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 1000;";
+		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 5000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());

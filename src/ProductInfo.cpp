@@ -515,6 +515,13 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
 		return;
 	}
+	//check if product has stock
+	if (boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
+		!= static_cast<std::uint64_t>(0) &&
+		wxMessageBox("Product has stock avaliable, do you wish to add more stock?", "Add stock", wxICON_INFORMATION | wxYES_NO) == wxNO) {
+		return; //has stock and does not what to add more
+	}
+
 	auto items = wxGetApp().mProductManager.DoExpiredProducts();
 	if (!items.has_value()) return;
 	if (std::ranges::any_of(items.value(), [&](const wxDataViewItem& i) -> bool {

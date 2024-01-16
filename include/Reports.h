@@ -80,6 +80,7 @@ namespace pof
 			ID_REPORT_LIST,
 			ID_COPY_RECIEPT_ID,
 			ID_SEARCH_SALEID,
+			ID_CHANGE_PAYMENT_OPT,
 		};
 
 		enum {
@@ -115,6 +116,7 @@ namespace pof
 
 		void OnSaleIdSearch(wxCommandEvent& evt);
 		void OnSaleIdCleared(wxCommandEvent& evt);
+		void OnChangePaymentOption(wxCommandEvent& evt);
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();

@@ -201,6 +201,23 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxIcon appIcon;
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
+
+	//bind some events
+	mListReport->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
+		if (!bShowSaleID) return;
+
+		wxClipboardLocker clipLocker;
+		if (!clipLocker) {
+			spdlog::error("Can't open the clipboard");
+			return;
+		}
+
+		auto str = mListReport->GetItemText(mSelItem.GetId(), 5);
+		wxTextDataObject* tObj = new wxTextDataObject(std::move(str));
+		wxTheClipboard->Clear();
+		wxTheClipboard->AddData(tObj);
+
+		}, ID_COPY_RECIEPT_ID);
 }
 
 pof::ReportsDialog::~ReportsDialog()
@@ -515,26 +532,25 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 
 void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 {
-	if (mCurReportType == ReportType::EOD){
+	if (mCurReportType == ReportType::EOD || mCurReportType == ReportType::EOM){
+		constexpr const std::array<std::string_view, 3> opts = {
+		"Cash", "Transfer", "POS"
+		};
+		
 		wxMenu* menu = new wxMenu;
 		auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
+	
+		wxMenu* submenu = new wxMenu;
+		submenu->Append(0, opts[0].data(), nullptr);
+		submenu->Append(1, opts[1].data(), nullptr);
+		submenu->Append(2, opts[2].data(), nullptr);
 
-		mListReport->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
-			if (!bShowSaleID) return;
+		submenu->Bind(wxEVT_MENU, std::bind_front(&pof::ReportsDialog::OnChangePaymentOption, this), 0);
+		submenu->Bind(wxEVT_MENU, std::bind_front(&pof::ReportsDialog::OnChangePaymentOption, this), 1);
+		submenu->Bind(wxEVT_MENU, std::bind_front(&pof::ReportsDialog::OnChangePaymentOption, this), 2);
 
-			wxClipboardLocker clipLocker;
-			if (!clipLocker) {
-				spdlog::error("Can't open the clipboard");
-				return;
-			}
-			
-			auto str = mListReport->GetItemText(mSelItem.GetId(), 5); 
-			wxTextDataObject *tObj = new wxTextDataObject(std::move(str));
-			wxTheClipboard->Clear();
-			wxTheClipboard->AddData(tObj);
 
-		}, ID_COPY_RECIEPT_ID);
-
+		auto a = menu->Append(ID_CHANGE_PAYMENT_OPT, "Change payment option", submenu);
 		mListReport->PopupMenu(menu);
 	}
 }
@@ -577,6 +593,64 @@ void pof::ReportsDialog::OnSaleIdSearch(wxCommandEvent& evt)
 void pof::ReportsDialog::OnSaleIdCleared(wxCommandEvent& evt)
 {
 	evt.Skip();
+}
+
+void pof::ReportsDialog::OnChangePaymentOption(wxCommandEvent& evt)
+{
+	constexpr const std::array<std::string_view, 3> opts = {  
+		"Cash", "Transfer", "POS"
+	};
+
+	size_t id = mSelItem.GetId();
+	auto str = mListReport->GetItemText(id, 4).ToStdString();
+	if (str == "Returned") {
+		wxMessageBox("Cannot change the payment option of a returned item");
+		return;
+	}
+	
+
+	wxBusyCursor cursor;
+	std::optional<pof::base::data> data = std::nullopt;
+	if (mCurReportType == ReportType::EOD) {
+		data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+	}
+	else if (mCurReportType == ReportType::EOM) {
+		data = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
+	}
+
+	if (!data.has_value()) {
+		wxMessageBox("Error in getting data", "Report", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	if (data->empty()) return;
+
+	auto& v = data.value()[id].first;
+	auto& pid = boost::variant2::get<boost::uuids::uuid>(v[0]);
+	auto& saleid = boost::variant2::get<boost::uuids::uuid>(v[5]);
+	auto& name = boost::variant2::get<std::string>(v[2]);
+
+
+
+	auto newstr = std::string(opts[evt.GetId()]);
+	if (newstr == str) return; //no change
+
+
+	bool status = wxGetApp().mSaleManager.ChangePaymentOption(saleid, pid, newstr);
+	if (status) {
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE,
+			fmt::format("Changed sale payment option from {} to {} for {} in sale {}",
+				str, newstr, name, boost::lexical_cast<std::string>(saleid)));
+
+		mSelItem.SetColumn(4);
+		mSelItem.SetText(newstr);
+		mSelItem.SetMask(wxLIST_MASK_TEXT);
+		mListReport->SetItem(mSelItem);
+
+		v[6] = std::move(newstr);
+		UpdateTotals(data.value());
+	}
+	else wxMessageBox("Failed to change payment option", "Report", wxICON_ERROR | wxOK);
 }
 
 void pof::ReportsDialog::CreateToolBar()
