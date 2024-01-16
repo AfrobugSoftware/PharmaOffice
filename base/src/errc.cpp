@@ -7,7 +7,7 @@ pof::base::error_category::error_category() {
 	//PREPARE THE ERROR CODES MESSAGES
 	m_messages[to_underlying(errc::no_data)] = "NO DATA IN BUFFER";
 	m_messages[to_underlying(errc::metadata_mismatch)] = "DATA IN ROW DOES NOT MATCH THE METADATA FOR DATA OBJECT";
-
+	m_messages[to_underlying(errc::no_database_hostname)] = "NO DATABASE HOSTNAME";
 
 }
 
