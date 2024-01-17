@@ -106,17 +106,17 @@ bool pof::Application::OnInit()
 
 
 	//where do I lunch set up wizard?? 
-	//LunchWizard();
 	pof::Account::CreateSecurityQuestions();
 
 	if (MainPharmacy->name.empty()){
 		//lunch register pharmacy
-		bool registerd = RegisterPharmacyLocal();
-		if (!registerd) {
-			//wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
-			OnExit();
-			return false;
-		}
+		LunchWizard();
+		//bool registerd = RegisterPharmacyLocal();
+		//if (!registerd) {
+		//	//wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
+		//	OnExit();
+		//	return false;
+		//}
 	}
 	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
@@ -196,7 +196,11 @@ bool pof::Application::OnInit()
 int pof::Application::OnExit()
 {
 	wxApp::OnExit();
-
+	if (wizard){
+		wizard->Destroy();
+		delete wizard;
+		wizard = nullptr;
+	}
 	mNetManager.stop();
 	if (bUsingLocalDatabase) {
 		mLocalDatabase->flush_db();
@@ -298,7 +302,13 @@ bool pof::Application::CheckForUpdate()
 bool pof::Application::LunchWizard()
 {
 	wizard = new pof::PharmacySetupWizard(nullptr);
+	wizard->mp = MainPharmacy;
 	wizard->RunWizard(wizard->GetFirstPage());
+
+	wizard->Destroy();
+	delete wizard;
+	wizard = nullptr;
+
 	return false;
 }
 
@@ -637,8 +647,8 @@ void pof::Application::CreateMysqlDatabase()
 		if (ec) return;
 
 		//open the database
-		auto qptr = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
-		auto qptr2 = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
+		auto qptr = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
+		auto qptr2 = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
 		
 			qptr->m_sql = R"(CREATE DATABASE IF NOT EXISTS pharmaoffice;)";
 			qptr2->m_sql = R"(USE pharmaoffice;)";
@@ -656,7 +666,7 @@ void pof::Application::CreateMysqlDatabase()
 
 void pof::Application::CreateMysqlTables()
 {
-	auto query = std::make_shared<pof::base::query<pof::base::databasemysql>>(*mMysqlDatabase);
+	auto query = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
 	query->m_sql = R"(CREATE TABLE IF NOT EXISTS products (
 		uuid blob, 
 		serail_num integer, 

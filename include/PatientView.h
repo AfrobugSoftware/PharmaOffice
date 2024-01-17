@@ -103,6 +103,7 @@ namespace pof {
 			ID_PIN_PATIENT,
 			ID_BOOK_MEDS_HIST,
 			ID_OPEN_PATIENT,
+			ID_REPEAT_MED,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PatientView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL);
@@ -152,6 +153,7 @@ namespace pof {
 		void OnMedicationsContextMenu(wxDataViewEvent& evt);
 		void OnMedicationsSelected(wxDataViewEvent& evt);
 		void OnMedicationHistorySelected(wxDataViewEvent& evt);
+		void OnMedicationHistoryContextMenu(wxDataViewEvent& evt);
 		void OnAuiThemeChange();
 		void OnSearchPatient(wxCommandEvent& evt);
 		void OnSearchCleared(wxCommandEvent& evt);
@@ -184,6 +186,7 @@ namespace pof {
 		void OnPatientSaleHist(wxCommandEvent& evt);
 		void OnPinPatient(wxCommandEvent& evt);
 		void OnOpenPatient(wxCommandEvent& evt);
+		void OnRepeatMedication(wxCommandEvent& evt);
 
 		void ShowSaleHistory();
 

@@ -20,6 +20,38 @@ namespace pof
 {
 	class PharmacySetupWizard : public wxWizard
 	{
+		wxPanel* m_panel1;
+		wxStaticText* mTitle;
+		wxStaticText* mDescription;
+		wxScrolledWindow* m_scrolledWindow1;
+		wxPanel* m_panel3;
+		wxStaticText* mPharmacyType;
+		wxChoice* mPharamcyTypeValue;
+		wxStaticText* mPharamcyName;
+		wxTextCtrl* mPharmacyNameValue;
+		wxStaticText* mPhoneNo;
+		wxTextCtrl* mPhoneNoValue;
+		wxStaticText* mEmail;
+		wxTextCtrl* mEmailValue;
+		wxStaticText* mWebsiteText;
+		wxTextCtrl* mWebsiteValue;
+		wxPanel* m_panel4;
+		wxStaticText* mCountyText;
+		wxTextCtrl* mCountryValue;
+		wxStaticText* mLgaText;
+		wxTextCtrl* mLgaValue;
+		wxStaticText* mNoText;
+		wxTextCtrl* mNoValue;
+		wxStaticText* mStreetText;
+		wxTextCtrl* mStreetValue;
+		wxStaticText* mCityText;
+		wxTextCtrl* mCityValue;
+		wxStaticText* mStateText;
+		wxTextCtrl* mStateValue;
+		wxStdDialogButtonSizer* m_sdbSizer1;
+		wxButton* m_sdbSizer1OK;
+		wxButton* m_sdbSizer1Cancel;
+
 	public:
 		enum {
 				ID_FIRST_PAGE = wxID_HIGHEST + 100,
@@ -32,11 +64,15 @@ namespace pof
 		virtual bool TransferDataFromWindow() override;
 
 		void CreateFirstPage();
+		void CreateContactPage();
 
 		wxWizardPageSimple* GetFirstPage() const { return mFirstPage; }
+		
+		std::shared_ptr<pof::Pharmacy> mp;
 	private:
 		wxWizardPageSimple* mFirstPage = nullptr;
-
+		wxWizardPageSimple* mContactPage = nullptr;
+		wxSize pageSize;
 		//DECLARE_EVENT_TABLE()
 	};
 }

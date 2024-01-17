@@ -21,6 +21,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	EVT_MENU(pof::PatientView::ID_ADD_REASON, pof::PatientView::OnAddText)
 	EVT_MENU(pof::PatientView::ID_PIN_PATIENT, pof::PatientView::OnPinPatient)
 	EVT_MENU(pof::PatientView::ID_OPEN_PATIENT, pof::PatientView::OnOpenPatient)
+	EVT_MENU(pof::PatientView::ID_REPEAT_MED, pof::PatientView::OnRepeatMedication)
 	//search
 	EVT_SEARCH(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchPatient)
 	EVT_SEARCH_CANCEL(pof::PatientView::ID_SEARCH, pof::PatientView::OnSearchCleared)
@@ -34,6 +35,7 @@ BEGIN_EVENT_TABLE(pof::PatientView, wxPanel)
 	//dataview
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientsContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsContextMenu)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PatientView::ID_PATIENT_HISTORY_VIEW, pof::PatientView::OnMedicationHistoryContextMenu)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientActivated)
 	EVT_DATAVIEW_SELECTION_CHANGED(pof::PatientView::ID_PATIENT_MEDS_VIEW, pof::PatientView::OnMedicationsSelected)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::PatientView::ID_PATIENT_VIEW, pof::PatientView::OnPatientHeaderClicked)
@@ -1266,6 +1268,17 @@ void pof::PatientView::OnMedicationHistorySelected(wxDataViewEvent& evt)
 {
 }
 
+void pof::PatientView::OnMedicationHistoryContextMenu(wxDataViewEvent& evt)
+{
+	auto item = mMedHistoryView->GetSelection();
+	if (!item.IsOk()) return;
+
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REPEAT_MED, "Repeat medication", nullptr);
+
+	mMedHistoryView->PopupMenu(menu);
+}
+
 void pof::PatientView::OnAuiThemeChange()
 {
 	auto auiArtProvider = mManager.GetArtProvider();
@@ -1851,6 +1864,10 @@ void pof::PatientView::OnOpenPatient(wxCommandEvent& evt)
 		mBookMeds->SetSelection(MED_EMPTY);
 	if (wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore().empty())
 		mBookMedsHist->SetSelection(MED_HIST_EMPTY);
+}
+
+void pof::PatientView::OnRepeatMedication(wxCommandEvent& evt)
+{
 }
 
 void pof::PatientView::ShowSaleHistory()
