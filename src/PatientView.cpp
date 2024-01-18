@@ -130,6 +130,8 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
 	mPatientTools->AddSeparator();
 	mPatientTools->AddSpacer(5);
+	mPatientTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select medications", wxITEM_CHECK);
+	mPatientTools->AddSpacer(5);
 	mPatientTools->AddTool(ID_SALE_PATIENT_MED,"Add Sale", wxArtProvider::GetBitmap("sci"), "Add current medication to sale");
 	mPatientTools->AddSpacer(5);
 
@@ -237,9 +239,9 @@ void pof::PatientView::CreateViews()
 	mMedTools->SetMinSize(wxSize(-1, 30));
 	mMedTools->SetBackgroundColour(*wxWHITE); //add to theme
 
-	mMedTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select medications", wxITEM_CHECK);
-	mMedTools->AddSeparator();
+	
 	mMedTools->AddStretchSpacer();
+	mMedTools->AddSeparator();
 	auto today = pof::base::data::clock_t::now();
 
 	mStartDatePicker = new wxDatePickerCtrl(mMedTools, ID_START_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
@@ -352,6 +354,7 @@ void pof::PatientView::CreateSpecialCols()
 {
 	pof::DataModel::SpeicalColHandler_t SelectColHandler;
 	pof::DataModel::SpeicalColHandler_t SelectMedColHandler;
+	pof::DataModel::SpeicalColHandler_t SelectMedHistColHandler;
 	pof::DataModel::SpeicalColHandler_t statusHandler;
 	pof::DataModel::SpeicalColHandler_t startDateHandler;
 	pof::DataModel::SpeicalColHandler_t stopDateHandler;	
@@ -391,6 +394,22 @@ void pof::PatientView::CreateSpecialCols()
 			return true;
 		}
 	};
+
+	SelectMedHistColHandler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto found = mMedicationHistSelections.find(pof::DataModel::GetItemFromIdx(row));
+		return wxVariant((found != mMedicationHistSelections.end()));
+	};
+	SelectMedHistColHandler.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
+		if (v.GetBool()) {
+			auto [iter, inserted] = mMedicationHistSelections.insert(pof::DataModel::GetItemFromIdx(row));
+			return inserted;
+		}
+		else {
+			mMedicationHistSelections.erase(pof::DataModel::GetItemFromIdx(row));
+			return true;
+		}
+	};
+
 
 	statusHandler.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datastore = wxGetApp().mPatientManager.GetPatientData()->GetDatastore();
@@ -499,6 +518,7 @@ void pof::PatientView::CreateSpecialCols()
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOP_DATE, std::move(stopDateHandler));;
 	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(pof::PatientManager::MED_START_DATE, std::move(startDateHandler2));;
 	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOP_DATE, std::move(stopDateHandler2));;
+	wxGetApp().mPatientManager.GetPatientHistotyData()->SetSpecialColumnHandler(HIST_SELECTION_COL, std::move(SelectMedHistColHandler));
 	wxGetApp().mPatientManager.GetPatientMedData()->SetSpecialColumnHandler(pof::PatientManager::MED_STOCK, std::move(stockHandler));;
 
 }
@@ -1274,7 +1294,12 @@ void pof::PatientView::OnMedicationHistoryContextMenu(wxDataViewEvent& evt)
 	if (!item.IsOk()) return;
 
 	wxMenu* menu = new wxMenu;
-	menu->Append(ID_REPEAT_MED, "Repeat medication", nullptr);
+	if (mMedicationHistSelections.empty()) {
+		menu->Append(ID_REPEAT_MED, "Repeat medication", nullptr);
+	}
+	else {
+		menu->Append(ID_REPEAT_MED, fmt::format("Repeat {:d} medications", mMedicationHistSelections.size()), nullptr);
+	}
 
 	mMedHistoryView->PopupMenu(menu);
 }
@@ -1404,6 +1429,9 @@ void pof::PatientView::ShowMedSelectCol()
 {
 	mSelectMedCol = mCurrentMedicationView->PrependToggleColumn(wxT("Select"), SELECTION_COL,
 		wxDATAVIEW_CELL_ACTIVATABLE, 50);
+
+	mSelectMedHistCol = mMedHistoryView->PrependToggleColumn(wxT("Select"), HIST_SELECTION_COL,
+		wxDATAVIEW_CELL_ACTIVATABLE, 50);
 }
 
 void pof::PatientView::HidePatientsSelectCol()
@@ -1427,8 +1455,18 @@ void pof::PatientView::HideMedSelectCol()
 		mCurrentMedicationView->Freeze();
 		mCurrentMedicationView->DeleteColumn(mSelectMedCol);
 		mCurrentMedicationView->Thaw();
-		mCurrentMedicationView->Update();
+
 		mSelectMedCol = nullptr;
+	}
+
+	if (mSelectMedHistCol != nullptr){
+		mMedicationHistSelections.clear();
+
+		mMedHistoryView->Freeze();
+		mMedHistoryView->DeleteColumn(mSelectMedHistCol);
+		mMedHistoryView->Thaw();
+
+		mSelectMedHistCol = nullptr;
 	}
 }
 
@@ -1868,6 +1906,73 @@ void pof::PatientView::OnOpenPatient(wxCommandEvent& evt)
 
 void pof::PatientView::OnRepeatMedication(wxCommandEvent& evt)
 {
+	if (mMedicationHistSelections.empty()) {
+		auto item = mMedHistoryView->GetSelection();
+		if (!item.IsOk()) return;
+
+		wxBusyCursor cursor;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		//copy
+		pof::base::data::row_t row = wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore()[idx];
+		auto& v = row.first;
+
+		if (std::ranges::any_of(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore(),
+			[&](const auto& r) -> bool {
+				return v[pof::PatientManager::MED_PRODUCT_UUID]
+				== r.first[pof::PatientManager::MED_PRODUCT_UUID];
+			})) {
+			wxMessageBox(fmt::format("Patient is already on {}",
+				boost::variant2::get<std::string>(v[pof::PatientManager::MED_NAME])), "Medications", wxICON_WARNING | wxOK);
+			return;
+		}
+
+		pof::base::data::datetime_t& startTime = boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::MED_START_DATE]);
+		pof::base::data::datetime_t& stopTime = boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::MED_STOP_DATE]);
+
+		//calculate new stop time from now
+		auto dur = stopTime - startTime;
+		startTime = pof::base::data::clock_t::now();
+		stopTime = startTime + dur;
+
+		wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
+
+		if (mBookMeds->GetSelection() == MED_EMPTY) {
+			mBookMeds->SetSelection(MED_VIEW);
+		}
+	}
+	else {
+		wxBusyCursor cursor;
+		for (auto& item : mMedicationHistSelections){
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			//copy
+			pof::base::data::row_t row = wxGetApp().mPatientManager.GetPatientHistotyData()->GetDatastore()[idx];
+			auto& v = row.first;
+
+			if (std::ranges::any_of(wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore(),
+				[&](const auto& r) -> bool {
+					return v[pof::PatientManager::MED_PRODUCT_UUID]
+					== r.first[pof::PatientManager::MED_PRODUCT_UUID];
+				})) {
+				wxMessageBox(fmt::format("Patient is already on {}",
+					boost::variant2::get<std::string>(v[pof::PatientManager::MED_NAME])), "Medications", wxICON_WARNING | wxOK);
+				continue;
+			}
+
+			pof::base::data::datetime_t& startTime = boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::MED_START_DATE]);
+			pof::base::data::datetime_t& stopTime = boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::MED_STOP_DATE]);
+
+			//calculate new stop time from now
+			auto dur = stopTime - startTime;
+			startTime = pof::base::data::clock_t::now();
+			stopTime = startTime + dur;
+
+			wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
+		}
+
+		if (mBookMeds->GetSelection() == MED_EMPTY) {
+			mBookMeds->SetSelection(MED_VIEW);
+		}
+	}
 }
 
 void pof::PatientView::ShowSaleHistory()

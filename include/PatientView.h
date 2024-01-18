@@ -48,8 +48,10 @@ namespace pof {
 	class PatientView : public wxPanel
 	{
 	public:
-		//pages
 		constexpr const static size_t SELECTION_COL = 30456;
+		constexpr const static size_t HIST_SELECTION_COL = 30456;
+
+		//pages
 		enum : std::uint8_t {
 			PATIENT_SELECT = 0,
 			PATIENT_VIEW,
@@ -137,6 +139,7 @@ namespace pof {
 		void OnPatientUnpin(const pof::base::data::duuid_t& puid);
 
 		std::set<wxDataViewItem> mMedicationSelections;
+		std::set<wxDataViewItem> mMedicationHistSelections;
 		std::set<wxDataViewItem> mPatientSelections;
 		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
 		boost::signals2::signal<bool(const pof::base::data&)> fSaleSignal;
@@ -225,6 +228,7 @@ namespace pof {
 		wxDataViewColumn* mSelectCol = nullptr;
 		wxDataViewCtrl* mCurrentMedicationView;
 		wxDataViewColumn* mSelectMedCol = nullptr;
+		wxDataViewColumn* mSelectMedHistCol = nullptr;
 		wxDataViewColumn* mStockMedCol = nullptr;
 		wxStaticText* mPatientNameText = nullptr;
 		wxStaticText* mDobText = nullptr;
