@@ -54,7 +54,6 @@ namespace pof{
 			ID_VERIFY,
 			ID_RESET,
 		};
-
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PoisonBookView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
 		virtual ~PoisonBookView();
@@ -72,6 +71,7 @@ namespace pof{
 		void SwitchToolBar();
 		void LoadProductName(const std::string& name);
 		void OnProductRemoved(pof::base::data::const_iterator iter);
+		void OnBookAdded(const pof::base::data::row_t& product);
 	private:
 		void OnBookActivated(wxListEvent& evt);
 		void OnBookSelected(ThumbnailEvent& evt);

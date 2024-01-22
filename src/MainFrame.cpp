@@ -286,6 +286,7 @@ void pof::MainFrame::CreateViews()
 	//set up slots
 	mProductView->CategoryAddSignal.connect(std::bind_front(&pof::MainFrame::OnCategoryAdded, this));
 	mProductView->removeSignal.connect(std::bind_front(&pof::PoisonBookView::OnProductRemoved, mPoisonBookView));
+	mProductView->addPoisonBook.connect(std::bind_front(&pof::PoisonBookView::OnBookAdded, mPoisonBookView));
 	mPatientView->fSaleSignal.connect(std::bind_front(&pof::SaleView::OnAddMedicationsToSale,mSaleView));
 
 	mSaleView->mSaleCompleted.connect(std::bind_front(&pof::PatientView::OnPatientSaleCompleted, mPatientView));

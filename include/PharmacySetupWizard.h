@@ -55,6 +55,7 @@ namespace pof
 	public:
 		enum {
 				ID_FIRST_PAGE = wxID_HIGHEST + 100,
+				ID_ADD_ACCOUNT,
 		};
 
 		PharmacySetupWizard(wxFrame* frame);
@@ -62,17 +63,29 @@ namespace pof
 
 		bool ValidateEmail(const std::string email);
 		virtual bool TransferDataFromWindow() override;
-
+		bool InsertUserDataIntoDatabase(const pof::Account& acc);
 		void CreateFirstPage();
 		void CreateContactPage();
+		void CreateAddressPage();
+		void CreateAddAccountPage();
+		void CreateSummaryPage();
 
 		wxWizardPageSimple* GetFirstPage() const { return mFirstPage; }
 		
 		std::shared_ptr<pof::Pharmacy> mp;
+		inline bool CheckState() const { return state;  }
 	private:
+		void OnFinished(wxWizardEvent& evt);
+		void OnAddAccount(wxCommandEvent& evt);
+
 		wxWizardPageSimple* mFirstPage = nullptr;
 		wxWizardPageSimple* mContactPage = nullptr;
+		wxWizardPageSimple* mAddressPage = nullptr;
+		wxWizardPageSimple* mAddAccountPage = nullptr;
+		wxWizardPageSimple* mSummaryPage = nullptr;
+		wxButton* btn = nullptr;
 		wxSize pageSize;
-		//DECLARE_EVENT_TABLE()
+		bool state = false;
+		DECLARE_EVENT_TABLE()
 	};
 }

@@ -102,10 +102,10 @@ pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString
 
 	bSizer7->Add(0,0, 1, wxEXPAND, 5);
 
-	mForgotPasswordLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Forgot password"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+	mForgotPasswordLink = new wxHyperlinkCtrl(mPharmacySignupPanel, ID_FORGOT_PASS, wxT("Forgot password"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 	bSizer7->Add(mForgotPasswordLink, 0, wxALL, 5);
 
-	mHelpLink = new wxHyperlinkCtrl(mPharmacySignupPanel, wxID_ANY, wxT("Help"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+	mHelpLink = new wxHyperlinkCtrl(mPharmacySignupPanel, ID_HELP, wxT("Help"), wxT(""), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 	bSizer7->Add(mHelpLink, 0, wxALL, 5);
 
 
@@ -185,6 +185,14 @@ void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 		}
 	}
 	//Show();
+}
+
+void pof::SignInDialog::OnForgotPassword(wxCommandEvent& evt)
+{
+}
+
+void pof::SignInDialog::OnHelp(wxCommandEvent& evt)
+{
 }
 
 bool pof::SignInDialog::ValidateLocal()

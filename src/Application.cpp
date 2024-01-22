@@ -85,17 +85,6 @@ bool pof::Application::OnInit()
 	wxArtProvider::Push(new pof::ArtProvider);
 	
 	wxBitmap bitmap = wxArtProvider::GetBitmap("splash");
-
-
-	// we can even draw dynamic artwork onto our splashscreen
-	//DecorateSplashScreen(bitmap);
-
-	//// show the splashscreen
-	//new wxSplashScreen(bitmap,
-	//	wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
-	//	6000, nullptr, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-	//	wxSIMPLE_BORDER | wxSTAY_ON_TOP);
-
 	
 	SetUpColorTable();
 	//do system settings here?
@@ -108,16 +97,7 @@ bool pof::Application::OnInit()
 	//where do I lunch set up wizard?? 
 	pof::Account::CreateSecurityQuestions();
 
-	if (MainPharmacy->name.empty()){
-		//lunch register pharmacy
-		LunchWizard();
-		//bool registerd = RegisterPharmacyLocal();
-		//if (!registerd) {
-		//	//wxMessageBox("Failed to register pharamcy, cannot start PharmaOffice", "PharamOffice", wxICON_ERROR | wxOK);
-		//	OnExit();
-		//	return false;
-		//}
-	}
+	
 	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
 	mSaleManager.mCurAccount = MainAccount;
@@ -135,6 +115,16 @@ bool pof::Application::OnInit()
 			OnExit();
 			return false;
 		}
+
+		//lunch register pharmacy
+		if (MainPharmacy->name.empty()) {
+			bool registerd = LunchWizard();
+			if (!registerd) {
+				OnExit();
+				return false;
+			}
+		}
+
 		//check if in active session, if we are asked to keep the signin
 		bool ssin = false;
 		if (bKeepMeSignedIn) {
@@ -202,7 +192,7 @@ int pof::Application::OnExit()
 		wizard = nullptr;
 	}
 	mNetManager.stop();
-	if (bUsingLocalDatabase) {
+	if (bUsingLocalDatabase && mLocalDatabase) {
 		mLocalDatabase->flush_db();
 		sqlite3_shutdown();
 	}
@@ -304,12 +294,13 @@ bool pof::Application::LunchWizard()
 	wizard = new pof::PharmacySetupWizard(nullptr);
 	wizard->mp = MainPharmacy;
 	wizard->RunWizard(wizard->GetFirstPage());
-
+	bool state = wizard->CheckState();
+	
 	wizard->Destroy();
 	delete wizard;
 	wizard = nullptr;
 
-	return false;
+	return state;
 }
 
 bool pof::Application::OpenLocalDatabase()
@@ -1399,4 +1390,49 @@ void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
 		== wxNO) return;
 
 
+}
+
+pof::RegexValidator::RegexValidator(std::regex&& reg, const std::string& errorstr)
+: pattern(reg), estr(errorstr){
+
+}
+
+wxObject* pof::RegexValidator::Clone() const
+{
+	auto p = pattern;
+	auto s = estr;
+	auto sp = new RegexValidator(std::move(p), s);
+	return sp;
+}
+
+bool pof::RegexValidator::TransferFromWindow()
+{
+	return true;
+}
+
+bool pof::RegexValidator::TransferToWindow()
+{
+	return true;
+}
+
+bool pof::RegexValidator::Validate(wxWindow* parent)
+{
+	wxTextCtrl* control = dynamic_cast<wxTextCtrl*>(parent);
+	if (!control) return false;
+
+
+	auto&& v = control->GetValue().ToStdString();
+	if (!v.empty() && !std::regex_match(v, pattern)) {
+		wxMessageBox(estr, "Validator", wxICON_WARNING | wxOK);
+		return false;
+	}
+	return true;
+}
+
+wxString pof::RegexValidator::IsValid(const wxString& val) const
+{
+	if (!std::regex_match(val.ToStdString(), pattern)) {
+		return estr;
+	}
+	return wxEmptyString;
 }

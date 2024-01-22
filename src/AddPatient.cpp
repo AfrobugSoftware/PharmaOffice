@@ -156,8 +156,9 @@ pof::AddPatient::~AddPatient()
 bool pof::AddPatient::TransferDataFromWindow()
 {
 	//validate phone number
+	const std::regex pattern("(0|91)?[6-9][0-9]{9}");
 	auto ph = mPhonenumberValue->GetValue().ToStdString();
-	if (!ph.empty() && ph.size() != 11) {
+	if (!std::regex_match(ph, pattern)) {
 		wxMessageBox("Invalid phone number", "Add Patient", wxICON_INFORMATION | wxOK);
 		return false;
 	}

@@ -480,8 +480,6 @@ void pof::PackView::OnAddPack(wxCommandEvent& evt)
 		mPackSelect->InsertItem(std::move(item));
 
 		mPackSelect->Thaw();
-		mPackSelect->Refresh();
-		mPackSelect->Update();
 
 		if (!wxGetApp().mProductManager.CreatePack(std::move(pdesc))) {
 			wxMessageBox("Error creating pack", "PACK", wxICON_ERROR | wxOK);

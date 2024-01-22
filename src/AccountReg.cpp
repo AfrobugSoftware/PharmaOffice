@@ -229,10 +229,12 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 		return false;
 	}
 	mAccount.priv.set(sel);
+
+	const std::regex pattern("(0|91)?[6-9][0-9]{9}");
 	const auto phone = mPhoneNoValue->GetValue().ToStdString();
-	if (phone.size() != 11) {
+	if (!std::regex_match(phone, pattern)) {
 		//cannot properly validate number just the count
-		wxMessageBox("Phone number is not complete, please enter valid phone number", "Registation", wxICON_WARNING | wxOK);
+		wxMessageBox("Phone number is not valid, please enter a valid phone number", "Registation", wxICON_WARNING | wxOK);
 		return false;
 	}
 	sel = mSecurityQuestions->GetSelection();

@@ -1921,7 +1921,7 @@ void pof::PatientView::OnRepeatMedication(wxCommandEvent& evt)
 				return v[pof::PatientManager::MED_PRODUCT_UUID]
 				== r.first[pof::PatientManager::MED_PRODUCT_UUID];
 			})) {
-			wxMessageBox(fmt::format("Patient is already on {}",
+			wxMessageBox(fmt::format("Patient is already started on {}",
 				boost::variant2::get<std::string>(v[pof::PatientManager::MED_NAME])), "Medications", wxICON_WARNING | wxOK);
 			return;
 		}
@@ -1953,7 +1953,7 @@ void pof::PatientView::OnRepeatMedication(wxCommandEvent& evt)
 					return v[pof::PatientManager::MED_PRODUCT_UUID]
 					== r.first[pof::PatientManager::MED_PRODUCT_UUID];
 				})) {
-				wxMessageBox(fmt::format("Patient is already on {}",
+				wxMessageBox(fmt::format("Patient is already started on {}",
 					boost::variant2::get<std::string>(v[pof::PatientManager::MED_NAME])), "Medications", wxICON_WARNING | wxOK);
 				continue;
 			}

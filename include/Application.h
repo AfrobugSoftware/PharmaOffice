@@ -55,6 +55,23 @@ namespace pof {
 	}
 	extern wxArrayString SplitIntoArrayString(const std::string& string);
 
+	class RegexValidator : public wxTextValidator
+	{
+	public:
+		RegexValidator(std::regex&& reg, const std::string& errorstr = {});
+		virtual wxObject* Clone() const override;
+		virtual bool TransferFromWindow() override;
+		virtual bool TransferToWindow() override;
+		virtual bool Validate(wxWindow* parent) override;
+		virtual wxString IsValid(const wxString& val) const override;
+
+	private:
+		std::string estr;
+		std::regex pattern;
+
+	};
+
+
 	class Application : public wxApp
 	{
 	public:
@@ -133,7 +150,7 @@ namespace pof {
 		bool bAllowOtherUsersInventoryPermission = false;
 		bool bMaximizeOnLoad = true;
 		bool bShowPreviewOnSale = false;
-		bool bShowPrintPrompt = true;
+		bool bShowPrintPrompt = false;
 		bool bAutomaticBatchNumber = true;
 		bool bNotifyStockCheckInComplete = true;
 		bool bAllowSellControlledMed = true;

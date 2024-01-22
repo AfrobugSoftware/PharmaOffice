@@ -1,15 +1,20 @@
 #include "PharmacySetupWizard.h"
+BEGIN_EVENT_TABLE(pof::PharmacySetupWizard, wxWizard)
+    EVT_WIZARD_FINISHED(wxID_ANY, pof::PharmacySetupWizard::OnFinished)
+    EVT_BUTTON(pof::PharmacySetupWizard::ID_ADD_ACCOUNT, pof::PharmacySetupWizard::OnAddAccount)
+END_EVENT_TABLE()
 
 pof::PharmacySetupWizard::PharmacySetupWizard(wxFrame* frame)
 {
    // SetExtraStyle(wxWIZARD_EX_HELPBUTTON);
+    auto path = wxGetApp().GetAssertsPath() / "icons" / "wiztest.svg";
 
     Create(frame, wxID_ANY, "PharmaOffice - Setup pharmacy",
-        wxNullBitmap,
+        wxBitmapBundle::FromSVGFile(path.string(), wxSize(116, 260)),
         wxDefaultPosition,
         wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
-    pageSize = wxSize(900, 400);
-
+    pageSize = wxSize(600, 400);
+    SetBitmapPlacement(wxWIZARD_TILE);
     SetBackgroundColour(*wxWHITE);
     SetSize(wxSize(700, 400));
     wxIcon appIcon;
@@ -21,7 +26,9 @@ pof::PharmacySetupWizard::PharmacySetupWizard(wxFrame* frame)
 
     CreateFirstPage();
     CreateContactPage();
-
+    CreateAddressPage();
+    CreateAddAccountPage();
+    CreateSummaryPage();
 }
 
 bool pof::PharmacySetupWizard::ValidateEmail(const std::string email)
@@ -52,29 +59,32 @@ bool pof::PharmacySetupWizard::TransferDataFromWindow()
     }
 
     mp->name = mPharmacyNameValue->GetValue();
-
     mp->addy.city = mCityValue->GetValue();
     mp->addy.country = mCountryValue->GetValue();
     mp->addy.lga = mLgaValue->GetValue();
     mp->addy.number = mNoValue->GetValue();
     mp->addy.state = mStateValue->GetValue();
     mp->addy.street = mStreetValue->GetValue();
-
-    const auto phone = mPhoneNoValue->GetValue().ToStdString();
-    if (phone.size() != 11) {
-        //cannot properly validate number just the count
-        wxMessageBox("Phone number is not complete, please enter valid phone number", "Registration", wxICON_WARNING | wxOK);
-        return false;
-    }
-    mp->contact.phoneNumber = mPhoneNoValue->GetValue();
-    const auto email = mEmailValue->GetValue().ToStdString();
-    if (!ValidateEmail(email)) {
-        return false;
-    }
+    mp->contact.phoneNumber = mPhoneNoValue->GetValue().ToStdString();
     mp->contact.email = mEmailValue->GetValue();
     mp->contact.website = mWebsiteValue->GetValue();
 
 	return true;
+}
+
+bool pof::PharmacySetupWizard::InsertUserDataIntoDatabase(const pof::Account& acc)
+{
+    constexpr const std::string_view sql = "INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);";
+    auto& dbPtr = wxGetApp().mLocalDatabase;
+    if (!dbPtr) return false;
+
+    auto stmt = dbPtr->prepare(sql);
+    assert(stmt.has_value());
+    dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
+        acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+    bool ret = dbPtr->execute(*stmt);
+    dbPtr->finalise(*stmt);
+    return ret;
 }
 
 void pof::PharmacySetupWizard::CreateFirstPage()
@@ -169,7 +179,7 @@ void pof::PharmacySetupWizard::CreateContactPage()
 
     mPhoneNoValue = new wxTextCtrl(mContactPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
     mPhoneNoValue->SetMaxLength(250);
-    mPhoneNoValue->SetValidator(wxTextValidator{ wxFILTER_NUMERIC });
+    mPhoneNoValue->SetValidator(pof::RegexValidator(std::regex("(0|91)?[6-9][0-9]{9}"), "Invalid phone number"));
     bSizer1->Add(mPhoneNoValue, 0, wxALL , 5);
 
     mEmail = new wxStaticText(mContactPage, wxID_ANY, wxT("Email"), wxDefaultPosition, wxSize(450, -1), 0);
@@ -178,6 +188,7 @@ void pof::PharmacySetupWizard::CreateContactPage()
 
     mEmailValue = new wxTextCtrl(mContactPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
     mEmailValue->SetMaxLength(250);
+    mEmailValue->SetValidator(pof::RegexValidator(std::regex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)"), "Invalid email address"));
     bSizer1->Add(mEmailValue, 0, wxALL , 5);
 
     mWebsiteText = new wxStaticText(mContactPage, wxID_ANY, wxT("Website"), wxDefaultPosition, wxSize(450, -1), 0);
@@ -192,4 +203,159 @@ void pof::PharmacySetupWizard::CreateContactPage()
     mContactPage->Layout();
     
     mFirstPage->Chain(mContactPage);
+}
+
+void pof::PharmacySetupWizard::CreateAddressPage()
+{
+    mAddressPage = new wxWizardPageSimple(this);
+
+    wxBoxSizer* bSizer1;
+    bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+    auto contTitle = new wxStaticText(mAddressPage, wxID_ANY, wxT("Please enter the pharmacy address details.\n"), wxDefaultPosition, wxDefaultSize, 0);
+    contTitle->Wrap(-1);
+    contTitle->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+
+    bSizer1->Add(contTitle, 0, wxTOP | wxLEFT, 5);
+
+    auto conDescription = new wxStaticText(mAddressPage, wxID_ANY, wxT(R"(PharmaOffice uses the address information for receipts and reports, please fill in the information)"), wxDefaultPosition, wxDefaultSize, 0);
+    conDescription->SetFont(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+    conDescription->Wrap(-1);
+
+    bSizer1->Add(conDescription, 0, wxTOP | wxBOTTOM | wxLEFT, 5);
+
+    mCountyText = new wxStaticText(mAddressPage, wxID_ANY, wxT("Country"), wxDefaultPosition, wxDefaultSize, 0);
+    mCountyText->Wrap(-1);
+    bSizer1->Add(mCountyText, 0, wxALL, 5);
+
+    mCountryValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mCountryValue->SetMaxLength(250);
+    bSizer1->Add(mCountryValue, 0, wxALL, 5);
+
+    mLgaText = new wxStaticText(mAddressPage, wxID_ANY, wxT("L.G.A"), wxDefaultPosition, wxDefaultSize, 0);
+    mLgaText->Wrap(-1);
+    bSizer1->Add(mLgaText, 0, wxALL, 5);
+
+    mLgaValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mLgaValue->SetMaxLength(250);
+    bSizer1->Add(mLgaValue, 0, wxALL , 5);
+
+    mNoText = new wxStaticText(mAddressPage, wxID_ANY, wxT("No."), wxDefaultPosition, wxDefaultSize, 0);
+    mNoText->Wrap(-1);
+    bSizer1->Add(mNoText, 0, wxALL, 5);
+
+    mNoValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mNoValue->SetMaxLength(250);
+    mNoValue->SetValidator(wxTextValidator{ wxFILTER_NUMERIC });
+    bSizer1->Add(mNoValue, 0, wxALL, 5);
+
+    mStreetText = new wxStaticText(mAddressPage, wxID_ANY, wxT("Street"), wxDefaultPosition, wxDefaultSize, 0);
+    mStreetText->Wrap(-1);
+    bSizer1->Add(mStreetText, 0, wxALL, 5);
+
+    mStreetValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mStreetValue->SetMaxLength(250);
+    bSizer1->Add(mStreetValue, 0, wxALL , 5);
+
+    mCityText = new wxStaticText(mAddressPage, wxID_ANY, wxT("City"), wxDefaultPosition, wxDefaultSize, 0);
+    mCityText->Wrap(-1);
+    bSizer1->Add(mCityText, 0, wxALL, 5);
+
+    mCityValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mCityValue->SetMaxLength(250);
+    bSizer1->Add(mCityValue, 0, wxALL, 5);
+
+    mStateText = new wxStaticText(mAddressPage, wxID_ANY, wxT("State"), wxDefaultPosition, wxSize(450, -1), 0);
+    mStateText->Wrap(-1);
+    bSizer1->Add(mStateText, 0, wxALL, 5);
+
+    mStateValue = new wxTextCtrl(mAddressPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
+    mStateValue->SetMaxLength(250);
+    bSizer1->Add(mStateValue, 0, wxALL, 5);
+
+
+
+    mAddressPage->SetSizer(bSizer1);
+    mAddressPage->Layout();
+
+    mContactPage->Chain(mAddressPage);
+}
+
+void pof::PharmacySetupWizard::CreateAddAccountPage()
+{
+    mAddAccountPage = new wxWizardPageSimple(this);
+
+    wxBoxSizer* bSizer1;
+    bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+    auto contTitle = new wxStaticText(mAddAccountPage, wxID_ANY, wxT("Please add an account for the pharmacy.\n"), wxDefaultPosition, wxDefaultSize, 0);
+    contTitle->Wrap(-1);
+    contTitle->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+
+    bSizer1->Add(contTitle, 0, wxTOP | wxLEFT, 5);
+
+    auto conDescription = new wxStaticText(mAddAccountPage, wxID_ANY, wxT(R"(Please an a user account to the pharmacy.)"), wxDefaultPosition, wxDefaultSize, 0);
+    conDescription->SetFont(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+    conDescription->Wrap(-1);
+
+    bSizer1->Add(conDescription, 0, wxTOP | wxBOTTOM | wxLEFT, 5);
+
+    btn = new wxButton(mAddAccountPage, ID_ADD_ACCOUNT);
+    btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+    btn->SetLabel("Add user account");
+    btn->SetBackgroundColour(*wxWHITE);
+    bSizer1->Add(btn, 0,  wxALL, 5);
+
+
+    mAddAccountPage->SetSizer(bSizer1);
+    mAddAccountPage->Layout();
+
+    mAddressPage->Chain(mAddAccountPage);
+}
+
+void pof::PharmacySetupWizard::CreateSummaryPage()
+{
+    mSummaryPage = new wxWizardPageSimple(this);
+
+    wxBoxSizer* bSizer1;
+    bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+    auto contTitle = new wxStaticText(mSummaryPage, wxID_ANY, wxT("You have completed the pharmacy registration.\n"), wxDefaultPosition, wxDefaultSize, 0);
+    contTitle->Wrap(-1);
+    contTitle->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+
+    bSizer1->Add(contTitle, 0, wxTOP | wxLEFT, 5);
+
+    auto conDescription = new wxStaticText(mSummaryPage, wxID_ANY, wxT(R"(Click finish to start using PharmaOffice.)"), wxDefaultPosition, wxDefaultSize, 0);
+    conDescription->SetFont(wxFont(wxFontInfo().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+    conDescription->Wrap(-1);
+
+    bSizer1->Add(conDescription, 0, wxTOP | wxBOTTOM | wxLEFT, 5);
+
+
+    mSummaryPage->SetSizer(bSizer1);
+    mSummaryPage->Layout();
+
+    mAddAccountPage->Chain(mSummaryPage);
+}
+
+void pof::PharmacySetupWizard::OnFinished(wxWizardEvent& evt)
+{
+   state = TransferDataFromWindow();
+}
+
+void pof::PharmacySetupWizard::OnAddAccount(wxCommandEvent& evt)
+{
+    pof::RegistrationDialog regDialog(this);
+    regDialog.mAccount.mLocalDatabase = wxGetApp().mLocalDatabase;
+    int ret = regDialog.ShowModal();
+    bool status = false;
+    if (ret == wxID_OK) {
+        wxBusyInfo info("Registring account and Signing in...");
+        if (!InsertUserDataIntoDatabase(regDialog.GetAccount())) {
+            wxMessageBox(wxGetApp().mLocalDatabase->err_msg().data(), "REGISTRATION", wxICON_ERROR | wxOK);
+            return;
+        }
+        btn->Disable();
+    }
 }

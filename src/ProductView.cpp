@@ -1451,6 +1451,7 @@ void pof::ProductView::OnCreateControlBook(wxCommandEvent& evt)
 	else {
 		mInfoBar->ShowMessage(fmt::format("Created controlled book for {}", name));
 	}
+	addPoisonBook(prow);
 }
 
 void pof::ProductView::OnAddVariant(wxCommandEvent& evt)

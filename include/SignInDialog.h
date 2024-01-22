@@ -56,7 +56,9 @@ namespace pof {
 
 		enum {
 			ID_LOGON,
-			ID_SIGNUP
+			ID_SIGNUP,
+			ID_FORGOT_PASS,
+			ID_HELP,
 		};
 
 

@@ -279,7 +279,6 @@ void pof::PoisonBookView::LoadBooks()
 		mBookList->InsertItem(std::move(item));
 		i++;
 	}
-
 }
 
 void pof::PoisonBookView::LoadBookValues()
@@ -364,6 +363,8 @@ void pof::PoisonBookView::OnAddProduct(wxCommandEvent& evt)
 		item.SetData(new pof::base::data::duuid_t(puid));
 		item.SetImage(0);
 		item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
+
+		mBook->SetSelection(THUMBNAIL_SELECT);
 
 		mBookList->InsertItem(std::move(item));
 		mBookList->EnsureVisible(i);
@@ -459,9 +460,62 @@ void pof::PoisonBookView::OnProductRemoved(pof::base::data::const_iterator iter)
 			}
 		}
 	}
-
+	
 	//reload books, because this wxListCtrl api is so stupid, there is no mechanism to iterate through all the items
 	LoadBooks();
+	if (mBookList->IsEmpty()) {
+		mBook->SetSelection(EMPTY);
+	}
+}
+
+void pof::PoisonBookView::OnBookAdded(const pof::base::data::row_t& prow)
+{
+	auto& puid = boost::variant2::get<pof::base::data::duuid_t>(prow.first[pof::ProductManager::PRODUCT_UUID]);
+	auto& name = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_NAME]);
+	auto& cls = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_CLASS]);
+
+	if (wxGetApp().mPoisonBookManager.IsBookCreated(puid)) {
+		return;
+	}
+	pof::base::data::row_t row;
+	//create the first entry into the book table	
+	auto& v = row.first;
+	auto& p = prow.first;
+
+	v.push_back(p[pof::ProductManager::PRODUCT_UUID]);
+	v.push_back("ENTRY"s);
+	v.push_back(wxGetApp().MainPharmacy->GetAddressAsString());
+	v.push_back(fmt::format("{} {}", wxGetApp().MainAccount->lastname, wxGetApp().MainAccount->name));
+	v.push_back(static_cast<std::uint64_t>(1));
+	v.push_back(static_cast<std::uint64_t>(0));
+	//create with the current stock
+	std::uint64_t stock = boost::variant2::get<std::uint64_t>(p[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	v.push_back(stock);
+	v.push_back(stock);
+	v.push_back(pof::base::data::clock_t::now());
+
+	if (!wxGetApp().mPoisonBookManager.CreateNewBook(std::move(row))) {
+		wxMessageBox(fmt::format("Failed to create book for {}", name), "Products", wxICON_INFORMATION | wxOK);
+	}
+
+	//add the one
+	auto& formulation = boost::variant2::get<pof::base::data::text_t>(prow.first[pof::ProductManager::PRODUCT_FORMULATION]);
+	auto string = fmt::format("{}\n{}", name, formulation);
+
+	mBookList->Freeze();
+	size_t i = mBookList->GetItemCount();
+	wxListItem item;
+	item.SetId(i);
+	item.SetText(string);
+	item.SetData(new pof::base::data::duuid_t(puid));
+	item.SetImage(0);
+	item.SetMask(wxLIST_MASK_IMAGE | wxLIST_MASK_TEXT | wxLIST_MASK_DATA);
+
+	mBook->SetSelection(THUMBNAIL_SELECT);
+		
+	mBookList->InsertItem(std::move(item));
+	mBookList->EnsureVisible(i);
+	mBookList->Thaw();
 }
 
 void pof::PoisonBookView::SetupAuiTheme()
@@ -492,7 +546,6 @@ void pof::PoisonBookView::LoadProductName(const std::string& name)
 	auto panel = mBook->GetPage(BOOK_VIEW);
 	panel->Freeze();
 	mProductName->SetLabelText(name);
-	panel->Thaw();
 	panel->Layout();
-	panel->Refresh();
+	panel->Thaw();
 }
