@@ -70,8 +70,8 @@ namespace pof {
 	protected:
 		void onLogon(wxCommandEvent& evt);
 		void onSignup(wxCommandEvent& evt);
-		void OnForgotPassword(wxCommandEvent& evt);
-		void OnHelp(wxCommandEvent& evt);
+		void OnForgotPassword(wxHyperlinkEvent& evt);
+		void OnHelp(wxHyperlinkEvent& evt);
 
 		bool ValidateLocal();
 		bool ValidateGlobal(); 

@@ -163,23 +163,22 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mBottomTools->Realize();
 	
-	mBook = new wxSimplebook(this, wxID_ANY);
-
-	mDataPane = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
-	mBook->AddPage(mDataPane, "DataPane", false);
-	CreateEmptyPanel();
+	mDataPane = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer(wxHORIZONTAL);
-
 
 	wxPanel* panel = new wxPanel(mDataPane, wxID_ANY);
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
 	mInfoBar = new wxInfoBar(panel, wxID_ANY);
-	
-	m_dataViewCtrl1 = new wxDataViewCtrl(panel, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
-	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
+	mBook = new wxSimplebook(panel, wxID_ANY);
 
+
+	m_dataViewCtrl1 = new wxDataViewCtrl(mBook, ID_SALE_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
+	m_dataViewCtrl1->AssociateModel(wxGetApp().mSaleManager.GetSaleData().get());
+	
+	mBook->AddPage(m_dataViewCtrl1, "DataPane", false);
+	CreateEmptyPanel();
 
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
 	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Quantity"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
@@ -193,7 +192,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	CreateProductDetails();
 
 	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 0));
-	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
+	sizer->Add(mBook, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
 
 	panel->SetSizer(sizer);
 	panel->Layout();
@@ -316,8 +315,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	bSizer1->Add(mTopTools, 0, wxEXPAND | wxALL, 0);
 	bSizer1->Add(mBottomTools, 0, wxEXPAND |wxALL, 0);
-	//bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
-	bSizer1->Add(mBook, 1, wxEXPAND | wxALL, 0);
+	bSizer1->Add(mDataPane, 1, wxEXPAND | wxALL, 0);
+	//bSizer1->Add(mBook, 1, wxEXPAND | wxALL, 0);
 
 	bSizer1->Add( mSaleOutputPane, 0, wxEXPAND | wxALL, 0 );
 	this->SetSizer( bSizer1 );

@@ -3,7 +3,9 @@
 #include "PofPch.h"
 BEGIN_EVENT_TABLE(pof::SignInDialog, wxDialog)
 	EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
-	EVT_BUTTON(pof::SignInDialog::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
+	EVT_BUTTON(pof::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
+	EVT_HYPERLINK(pof::SignInDialog::ID_FORGOT_PASS, pof::SignInDialog::OnForgotPassword)
+	EVT_HYPERLINK(pof::SignInDialog::ID_HELP, pof::SignInDialog::OnHelp)
 END_EVENT_TABLE()
 
 
@@ -187,11 +189,12 @@ void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 	//Show();
 }
 
-void pof::SignInDialog::OnForgotPassword(wxCommandEvent& evt)
+void pof::SignInDialog::OnForgotPassword(wxHyperlinkEvent& evt)
 {
+
 }
 
-void pof::SignInDialog::OnHelp(wxCommandEvent& evt)
+void pof::SignInDialog::OnHelp(wxHyperlinkEvent& evt)
 {
 }
 
