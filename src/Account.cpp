@@ -88,16 +88,16 @@ bool pof::Account::CreateAccountInfo()
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(IF NOT EXISTS (SELECT 1 FROM users_info WHERE user_id = ?)
-			BEGIN IMMEDIATE
-				INSERT INTO users_info (user_id) VALUES (?)
-			END;)";
+		constexpr const std::string_view sql = R"(INSERT INTO users_info (user_id, sec_question, sec_ans_hash, signin_time, signout_time) VALUES (?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
-		
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(accountID, accountID));
-		assert(status);
+		std::transform(secanswer.begin(), secanswer.end(), secanswer.begin(), [&](char c) -> char { return std::tolower(c); });
+		std::string hash = bcrypt::generateHash(std::move(secanswer));
 
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(accountID,
+			secquestion, hash, signintime, pof::base::data::datetime_t{}));
+		assert(status);
+			
 		status = mLocalDatabase->execute(*stmt);
 		assert(status);
 
@@ -433,7 +433,7 @@ void pof::Account::SetSecurityQuestion(const std::string& question, const std::s
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(UPDATE users_info set sec_question = ?, set sec_ans_hash = ? WHERE user_id = ?;)";
+		constexpr const std::string_view sql = R"(UPDATE users_info set sec_question = ?, sec_ans_hash = ? WHERE user_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt.has_value());
 		std::string ans = answer;
@@ -496,4 +496,39 @@ void pof::Account::CreateSecurityQuestions() {
 	mSecurityQuestions.push_back("What color do you like the most?");
 	mSecurityQuestions.push_back("What’s your favorite artist?");
 	mSecurityQuestions.push_back("What book do you recommend to your friends?");
+}
+
+bool pof::Account::RecoverPassword(const std::string& username, const std::string& newpass)
+{
+	return false;
+}
+
+std::optional<bool> pof::Account::ValidateSecurityQuestion(const std::string& username, const std::string& answer)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT ui.sec_ans_hash FROM user_info ui, users u 
+		WHERE ui.user_id = u.id AND u.username = ?;)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(username));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::string>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+
+		auto& hash = std::get<0>(*rel->begin());
+		std::string ans = answer;
+		std::transform(ans.begin(), ans.end(), ans.begin(), [&](char c) -> char { return std::tolower(c); });
+
+		return bcrypt::validatePassword(ans, hash);
+	}
 }

@@ -19,8 +19,8 @@ pof::PrintManager::PrintManager()
 
 pof::PrintManager::~PrintManager()
 {
-	delete po;
-	delete po2;
+	if(po != nullptr) delete po;
+	if(po2 != nullptr) delete po2;
 }
 
 void pof::PrintManager::PrinterSetup()
@@ -38,10 +38,10 @@ void pof::PrintManager::PrinterSetup()
 void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 {
 	//PrinterSetup();
-	if(!po) po = new pof::Printout(mPrintDialogData.get());
+	po = new pof::Printout(mPrintDialogData.get());
 	po->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 	if (wxGetApp().bShowPreviewOnSale){
-		if(!po2) po2 = new pof::Printout(mPrintDialogData.get());
+		po2 = new pof::Printout(mPrintDialogData.get());
 		po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 		Preview(parent, po, po2);
 	}else PrintJob(parent, po);

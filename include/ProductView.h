@@ -157,6 +157,8 @@ namespace pof
 		//events
 		void OnResize(wxSizeEvent& evt);
 		void OnAuiThemeChange();
+		void CheckEmpty();
+
 
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
@@ -226,7 +228,6 @@ namespace pof
 		void DoBroughtForward();
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void CheckIfStockCheckIsComplete();
-		void CheckEmpty();
 		void ShowNoResult(const std::string& search);
 	private:
 		DECLARE_EVENT_TABLE()

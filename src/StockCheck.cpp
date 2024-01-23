@@ -424,26 +424,31 @@ pof::StockCheck::~StockCheck()
 
 void pof::StockCheck::UpdateSummary()
 {
-	auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
-	auto& prodStore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	std::uint64_t totalShortage = 0;
-	totalShortage = std::accumulate(datastore.begin(), datastore.end(), totalShortage, [&](const std::uint64_t& v,
-		const auto& row) -> std::uint64_t {
-			std::uint64_t shortage = (boost::variant2::get<std::uint64_t>(row.first[STOCK_CURRENT_STOCK]) -
-			boost::variant2::get<std::uint64_t>(row.first[STOCK_CHECKED_STOCK]));
-			return  v + shortage; 
-		});
-	
-	mSummary->Freeze();
-	auto prodchecked = wxGetApp().mProductManager.GetProductCheckedCount(*mSelectedMonth);
-	mTotalStockCheckedValue->SetLabel(fmt::format("{:d} of {:d}", prodchecked.value_or((std::uint64_t)0), prodStore.size()));
-	mTotalShortageValue->SetLabel(fmt::format("{:d}", totalShortage));
-	auto shortage = wxGetApp().mProductManager.GetShortageCost(*mSelectedMonth);
-	mShortageAmountValue->SetLabelText(fmt::format("{:c}", shortage.value_or(pof::base::currency{})));
+	try {
+		auto& datastore = wxGetApp().mProductManager.GetStockCheckData()->GetDatastore();
+		auto& prodStore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+		std::uint64_t totalShortage = 0;
+		totalShortage = std::accumulate(datastore.begin(), datastore.end(), totalShortage, [&](const std::uint64_t& v,
+			const auto& row) -> std::uint64_t {
+				std::uint64_t shortage = (boost::variant2::get<std::uint64_t>(row.first[STOCK_CURRENT_STOCK]) -
+				boost::variant2::get<std::uint64_t>(row.first[STOCK_CHECKED_STOCK]));
+		return  v + shortage;
+			});
 
-	mSummary->Layout();
-	mSummary->Thaw();
-	mSummary->Update();
+		mSummary->Freeze();
+		auto prodchecked = wxGetApp().mProductManager.GetProductCheckedCount(*mSelectedMonth);
+		mTotalStockCheckedValue->SetLabel(fmt::format("{:d} of {:d}", prodchecked.value_or((std::uint64_t)0), prodStore.size()));
+		mTotalShortageValue->SetLabel(fmt::format("{:d}", totalShortage));
+		auto shortage = wxGetApp().mProductManager.GetShortageCost(*mSelectedMonth);
+		mShortageAmountValue->SetLabelText(fmt::format("{:c}", shortage.value_or(pof::base::currency{})));
+
+		mSummary->Layout();
+		mSummary->Thaw();
+		mSummary->Update();
+	}
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 }
 
 void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)

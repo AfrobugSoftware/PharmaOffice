@@ -95,6 +95,7 @@ namespace pof
 		wxTextCtrl* mSuplierNameValue;
 		wxStaticText* mCostPerUnitName;
 		wxTextCtrl* mCostPerUnitValue;
+		wxStaticText* mBarcodeValue;
 
 		wxPanel* m_panel7;
 		wxStdDialogButtonSizer* m_sdbSizer2;

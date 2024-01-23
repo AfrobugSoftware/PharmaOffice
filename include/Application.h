@@ -120,6 +120,7 @@ namespace pof {
 		std::shared_ptr<pof::PrintManager> mPrintManager;
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::base::databasemysql> mMysqlDatabase;
+		wxArrayString FormulationChoices;
 
 		void CreateMysqlDatabase();
 		void CreateMysqlTables();
@@ -150,7 +151,7 @@ namespace pof {
 		bool bAllowOtherUsersInventoryPermission = false;
 		bool bMaximizeOnLoad = true;
 		bool bShowPreviewOnSale = false;
-		bool bShowPrintPrompt = false;
+		bool bShowPrintPrompt = true;
 		bool bAutomaticBatchNumber = true;
 		bool bNotifyStockCheckInComplete = true;
 		bool bAllowSellControlledMed = true;
@@ -174,6 +175,12 @@ namespace pof {
 		void ShowPharmacySettings(wxPropertySheetDialog& sd);
 		void ShowAccountSettings(wxPropertySheetDialog& sd);
 		void ShowSaleSettings(wxPropertySheetDialog& sd);
+
+		//formulation choices
+		void LoadFormulationChoices();
+		void AddFormulationChoices(const std::string& choice);
+		void SaveFormulationChoices();
+		void UpdateFormulationChoices(const wxArrayString& choices);
 
 	
 		//settings callback

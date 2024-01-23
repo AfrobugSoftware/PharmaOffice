@@ -896,6 +896,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 {
 	const auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	auto& categories = wxGetApp().mProductManager.GetCategories();
+	std::unordered_map<pof::base::data::duuid_t, pof::base::data> mInventoryData;
 
 	if (!datastore.empty()) {
 		if(wxMessageBox("Pharmacy store is not empty, importing a formulary might create duplicate products,\ndo you wish to continue?", "Formulary", wxICON_WARNING | wxYES_NO) == wxNO)
@@ -927,6 +928,8 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		const nl::json form = nl::json::parse(data.str());
 		const nl::json header = form["header"];
 		const nl::json products = form["products"];
+		bool has_inven = static_cast<bool>(form["has_inventory"]);
+
 		const size_t count = static_cast<std::uint64_t>(header["product_count"]);
 		std::chrono::system_clock::time_point p(std::chrono::system_clock::duration(static_cast<std::uint64_t>(header["timestamp"])));
 
@@ -963,10 +966,49 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 			v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = static_cast<std::string>(prod["health_conditions"]);
 			std::string_view price = static_cast<std::string>(prod["unit_price"]);
 			v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::currency(std::string(price.begin() + 1, price.end()));
-			v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::currency{};
+			std::string_view costprice = static_cast<std::string>(prod["cost_price"]);
+			v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::currency(std::string(costprice.begin() + 1, costprice.end()));
 			v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(prod["package_size"]);
 			v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 			v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = static_cast<std::string>(prod["side_effects"]);
+
+
+			if (has_inven)
+			{
+				v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(prod["stock_count"]);
+				v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(prod["min_stock_count"]);
+				v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = static_cast<std::uint64_t>(prod["expire_priod"]);
+				v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = static_cast<std::string>(prod["to_expire_date"]);
+
+				auto itt = prod.find("inventory");
+				if (itt != prod.end()) {
+					auto& iobjs = *itt;
+					auto inven = pof::base::data{};
+					for (auto& iobj : iobjs) {
+						pof::base::data::row_t row;
+						auto& i = row.first;
+						i.resize(pof::ProductManager::INVENTORY_MAX);
+						i[pof::ProductManager::INVENTORY_PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+						i[pof::ProductManager::INVENTORY_ID] = static_cast<std::uint64_t>(iobj["inven_id"]);
+						i[pof::ProductManager::INVENTORY_LOT_NUMBER] = static_cast<std::string>(iobj["lot_number"]);
+						i[pof::ProductManager::INVENTORY_STOCK_COUNT] = static_cast<std::uint64_t>(iobj["stock_count"]);
+						i[pof::ProductManager::INVENTORY_INPUT_DATE] =
+							pof::base::data::datetime_t(pof::base::data::clock_t::duration(static_cast<std::uint64_t>(iobj["input_date"])));
+						i[pof::ProductManager::INVENTORY_EXPIRE_DATE] =
+							pof::base::data::datetime_t(pof::base::data::clock_t::duration(static_cast<std::uint64_t>(iobj["expire_date"])));
+						std::string_view invencostprice = static_cast<std::string>(iobj["inven_cost"]);
+						i[pof::ProductManager::INVENTORY_COST] = pof::base::currency(std::string(invencostprice.begin() + 1, invencostprice.end()));
+						i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = static_cast<std::string>(iobj["supplier_name"]);
+						i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(iobj["supplier_id"]);
+
+						inven.emplace(std::move(i));
+					}
+					mInventoryData.insert({ boost::variant2::get<boost::uuids::uuid>(v[pof::ProductManager::PRODUCT_UUID]),
+							inven });
+				}
+			}
+
+
 			auto catiter = prod.find("category");
 			if (catiter != prod.end()) {
 				auto found = cats.find(static_cast<std::string>(*catiter));
@@ -1033,13 +1075,24 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		if (productselect.HasMultipleSelections())
 		{
 			auto products = productselect.GetSelectedProducts();
-			for (const auto& prod : products){
+			for (const auto& prod : products) {
+				if (has_inven) {
+					auto iter = mInventoryData.find(boost::variant2::get<boost::uuids::uuid>(prod.get().first[pof::ProductManager::PRODUCT_UUID]));
+					if (iter != mInventoryData.end())
+					{
+						auto& iv = wxGetApp().mProductManager.GetInventory();
+						iv->Clear();
+						for (auto& d : iter->second) {
+							iv->StoreData(std::move(d));
+						}
+						iv->Clear();
+					}
+					wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod.get()));
 
-				wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod.get()));
-
-				pg = static_cast<float>(((float)i / (float)count) * 90.f);
-				i++;
-				dlg.Update(pg);
+					i++;
+					pg = static_cast<int>(std::clamp(static_cast<float>(((float)i / (float)count) * 90.f), 0.0f, 90.0f));
+					dlg.Update(pg);
+				}
 			}
 			wxMessageBox(fmt::format("Added {:d} products to the store from {} formulary", products.size(), static_cast<std::string>(header["pharmacy"])),
 				"Formulary", wxICON_INFORMATION | wxOK);
@@ -1047,9 +1100,21 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 		else {
 			//single product selected by double click on the product or add product
 			auto prod = productselect.GetSelectedProduct();
+			if (has_inven) {
+				auto data = mInventoryData.find(boost::variant2::get<boost::uuids::uuid>(prod.first[pof::ProductManager::PRODUCT_UUID]));
+				if (data != mInventoryData.end())
+				{
+					auto& iv = wxGetApp().mProductManager.GetInventory();
+					for (auto& d : data->second) {
+						iv->StoreData(std::move(d));
+					}
+					iv->Clear();
+				}
+			}
 			wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod));
-		}
 
+		}
+		mProductView->CheckEmpty();
 	}
 	catch (nl::json::exception& exp){
 		wxMessageBox(fmt::format("Invalid formulary in file, inalid error", "Formulary", wxICON_ERROR | wxOK));
@@ -1095,46 +1160,87 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 
 	float pg = 0.0f;
 	int i = 0;
-	for (const auto& row : datastore){
-		nl::json prod = nl::json::object();
-		const auto& v = row.first;
-		
-		prod["name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
-		prod["generic_name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
-		prod["class"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_CLASS]);
-		prod["formulation"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_FORMULATION]);
-		prod["strength"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH]);
-		prod["strength_type"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
-		prod["usage_info"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
-		prod["description"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_DESCRIP]);
-		prod["health_conditions"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS]);
-		prod["unit_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
-		prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
-		prod["side_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
-		
+	bool exportInven = wxMessageBox("Do you want to add inventory to formulary?", "Export formulary", wxICON_INFORMATION | wxYES_NO) == wxYES;
+	try {
+		for (const auto& row : datastore) {
+			nl::json prod = nl::json::object();
+			const auto& v = row.first;
 
-		auto iter = std::ranges::find_if(cats, [&](const pof::base::data::row_t& r) -> bool {
-			return boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_CATEGORY])
-			== boost::variant2::get<std::uint64_t>(r.first[pof::ProductManager::CATEGORY_ID]);
-		});
-		if(iter != cats.end())
-			prod["category"] = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::CATEGORY_NAME]);
+			prod["name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]);
+			prod["generic_name"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_GENERIC_NAME]);
+			prod["class"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_CLASS]);
+			prod["formulation"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_FORMULATION]);
+			prod["strength"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH]);
+			prod["strength_type"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_STRENGTH_TYPE]);
+			prod["usage_info"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
+			prod["description"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_DESCRIP]);
+			prod["health_conditions"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS]);
+			prod["unit_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
+			prod["cost_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_COST_PRICE]));
+			prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
+			prod["side_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
+
+			if (exportInven)
+			{
+				prod["stock_count"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+				prod["min_stock_count"] = static_cast<std::uint64_t>(0); //boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT]);
+				prod["expire_priod"] = static_cast<std::uint64_t>(0);// boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD]);
+				prod["to_expire_date"] = ""s; //boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE]);
+
+				wxGetApp().mProductManager.LoadInventoryData(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
+				auto& inven = wxGetApp().mProductManager.GetInventory();
+				if (!inven->GetDatastore().empty()) {
+					nl::json iobjs = nl::json::array();
+					for (auto& irow : inven->GetDatastore())
+					{
+						auto& i = irow.first;
+						nl::json iobj = nl::json::object();
+						iobj["product_uuid"] = boost::lexical_cast<boost::uuids::uuid>(
+							boost::variant2::get<boost::uuids::uuid>(i[pof::ProductManager::INVENTORY_PRODUCT_UUID]));
+						iobj["inven_id"] = boost::variant2::get<std::uint64_t>(i[pof::ProductManager::INVENTORY_ID]);
+						iobj["lot_number"] = boost::variant2::get<pof::base::data::text_t>(i[pof::ProductManager::INVENTORY_LOT_NUMBER]);
+						iobj["stock_count"] = boost::variant2::get<std::uint64_t>(i[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+						iobj["input_date"] = static_cast<std::uint64_t>(boost::variant2::get<pof::base::data::datetime_t>(
+							i[pof::ProductManager::INVENTORY_INPUT_DATE]).time_since_epoch().count());
+						iobj["expire_date"] = static_cast<std::uint64_t>(boost::variant2::get<pof::base::data::datetime_t>(
+							i[pof::ProductManager::INVENTORY_EXPIRE_DATE]).time_since_epoch().count());
+						iobj["inven_cost"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(i[pof::ProductManager::INVENTORY_COST]));
+						iobj["supplier_name"] = boost::variant2::get<pof::base::data::text_t>(i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
+						iobj["supplier_id"] = boost::variant2::get<std::uint64_t>(i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID]);
+
+						iobjs.push_back(iobj);
+					}
+					prod["inventory"] = iobjs;
+				}
+				inven->Clear();
+			}
+
+			auto iter = std::ranges::find_if(cats, [&](const pof::base::data::row_t& r) -> bool {
+				return boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_CATEGORY])
+				== boost::variant2::get<std::uint64_t>(r.first[pof::ProductManager::CATEGORY_ID]);
+				});
+			if (iter != cats.end())
+				prod["category"] = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::CATEGORY_NAME]);
 
 
-		products.emplace_back(std::move(prod));
+			products.emplace_back(std::move(prod));
 
-		pg = static_cast<float>(((float)i / (float)count) * 100.f);
-		i++;
-		dlg.Update(pg);
+			pg = static_cast<float>(((float)i / (float)count) * 100.f);
+			i++;
+			dlg.Update(pg);
+		}
+
+		form["header"] = header;
+		form["products"] = products;
+		form["has_inventory"] = exportInven;
+		file << form.dump(5);
+		file.close();
+		wxMessageBox(fmt::format("Created {}", filename.string()), "Formulary", wxICON_INFORMATION | wxOK);
+		mProductView->SetFocus();
 	}
-
-	form["header"] = header;
-	form["products"] = products;
-
-	file << form.dump(5);
-	file.close();
-	wxMessageBox(fmt::format("Created {}", filename.string()), "Formulary", wxICON_INFORMATION | wxOK);
-	mProductView->SetFocus();
+	catch (const std::exception& exp) {
+		spdlog::error(exp.what());
+	}
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

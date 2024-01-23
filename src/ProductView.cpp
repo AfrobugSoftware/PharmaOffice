@@ -636,6 +636,12 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 				}
 				stop = dlg.Update(up(count), fmt::format("Removing {}", name));
 				if (!stop) {
+					//try to remove items already deleted
+					wxGetApp().mProductManager.GetProductData()->RemoveData(items);
+					m_dataViewCtrl1->Thaw();
+					m_dataViewCtrl1->Refresh();
+					mSelections.clear();
+					CheckEmpty();
 					return; //topped removed
 				}
 				status = wxGetApp().mProductManager.RemoveProductInPacks(next);
@@ -908,6 +914,7 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 		items.shrink_to_fit();
 		if (items.empty()) {
 			wxMessageBox("No out of stock product in store", "PRODUCTS", wxICON_INFORMATION | wxOK);
+			RemoveCheckedState(mOutOfStockItem);
 			return;
 		}
 		pd->Reload(std::move(items));
@@ -1530,28 +1537,12 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	fgSizer2->Add(productnamevalue, 1, wxALL | wxEXPAND, 5);
 
 	//name entries
-	wxArrayString FormulationChoices;
-	FormulationChoices.Add("TABLET");
-	FormulationChoices.Add("CAPSULE");
-	FormulationChoices.Add("SOLUTION");
-	FormulationChoices.Add("SUSPENSION");
-	FormulationChoices.Add("IV");
-	FormulationChoices.Add("IM");
-	FormulationChoices.Add("EMULSION");
-	FormulationChoices.Add("CREAM");
-	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	FormulationChoices.Add("POWDER"); //needles, cannul
-	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
-
-
+	
 	auto formulationLabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0);
 	formulationLabel->Wrap(-1);
 	fgSizer2->Add(formulationLabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	auto formulation = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices);
+	auto formulation = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxGetApp().FormulationChoices);
 	formulation->SetSelection(0);
 	fgSizer2->Add(formulation, 0, wxALL | wxEXPAND, 5);
 
@@ -1656,7 +1647,7 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] = pof::GenRandomId();
 	v[pof::ProductManager::PRODUCT_NAME] = productnamevalue->GetValue().ToStdString();
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = p[pof::ProductManager::PRODUCT_GENERIC_NAME];
-	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[formulation->GetSelection()].ToStdString());
+	v[pof::ProductManager::PRODUCT_FORMULATION] = wxGetApp().FormulationChoices[formulation->GetSelection()].ToStdString();
 	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 	v[pof::ProductManager::PRODUCT_CLASS] = p[pof::ProductManager::PRODUCT_CLASS];
 	v[pof::ProductManager::PRODUCT_BARCODE] = ""s;
@@ -2308,6 +2299,7 @@ void pof::ProductView::CheckEmpty()
 		e.Hide();
 		d.Show();
 	}
+	m_mgr.Update();
 }
 
 void pof::ProductView::ShowNoResult(const std::string& search)

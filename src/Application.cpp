@@ -78,7 +78,7 @@ bool pof::Application::OnInit()
 	//load the settings
 	LoadSettings();
 
-	gVersion = "1.0.12 - test pre beta";
+	gVersion = "1.0.13 - pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();
@@ -96,7 +96,7 @@ bool pof::Application::OnInit()
 
 	//where do I lunch set up wizard?? 
 	pof::Account::CreateSecurityQuestions();
-
+	LoadFormulationChoices();
 	
 	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
@@ -878,7 +878,9 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp12 = grid->Append(new wxBoolProperty("Notify stock check before end of month", "12", bNotifyStockCheckInComplete));	
 	auto pp13 = grid->Append(new wxBoolProperty("Allow sale of controlled medication", "13", bAllowSellControlledMed));	
 	auto pp14 = grid->Append(new wxBoolProperty("Create poison book entry for each controlled drug sale", "14", bAlwaysCreateEntryIntoRegister));	
-	
+	auto ct1 = grid->Append(new wxPropertyCategory("Product settings"));
+	auto pp15 = grid->Append(new wxArrayStringProperty("Product formulation", "15", FormulationChoices));
+
 	
 	if (mLocalDatabase){
 		pp0->Enable(false);
@@ -898,6 +900,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp12, "Notify the user of stock check incomplete 5 days before end of month");
 	grid->SetPropertyHelpString(pp13, "Allow users that are not pharmacist to sell controlled medications and enter in to the register");
 	grid->SetPropertyHelpString(pp14, "Create posion book entry for the medications that are controlled");
+	grid->SetPropertyHelpString(pp15, "Add or remove product formulations");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -962,6 +965,11 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 			case 14:
 				bAlwaysCreateEntryIntoRegister = v.GetBool();
 				break;
+			case 15:
+			{
+				FormulationChoices = v.GetArrayString();
+				SaveFormulationChoices();
+			}
 			default:
 				evt.Skip();
 				return;
@@ -1390,6 +1398,77 @@ void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
 		== wxNO) return;
 
 
+}
+
+void pof::Application::LoadFormulationChoices()
+{
+	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	if (!fs::exists(p)) {
+		FormulationChoices.Add("NOT SPECIFIED");
+		FormulationChoices.Add("TABLET");
+		FormulationChoices.Add("CAPSULE");
+		FormulationChoices.Add("SOLUTION");
+		FormulationChoices.Add("SUSPENSION");
+		FormulationChoices.Add("SYRUP");
+		FormulationChoices.Add("IV");
+		FormulationChoices.Add("IM");
+		FormulationChoices.Add("EMULSION");
+		FormulationChoices.Add("COMSUMABLE");
+		FormulationChoices.Add("POWDER"); //needles, cannula and the rest
+		FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+		FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+		FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+		FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
+		FormulationChoices.Add("OIL"); //needles, cannula and the rest
+
+		SaveFormulationChoices();
+		return;
+	}
+	std::fstream file(p, std::ios::in);
+	if (!file.is_open()) {
+		spdlog::error("Failed to open misc file for reading");
+	}
+	std::stringstream os;
+	os << file.rdbuf();
+	nl::json obj = nl::json::parse(os.str());
+
+	auto i = obj.find("formchoices");
+	if (i == obj.end()) return;
+
+	for (auto& s : *i){
+		FormulationChoices.Add(static_cast<std::string>(s));
+	}
+}
+
+void pof::Application::AddFormulationChoices(const std::string& choice)
+{
+	FormulationChoices.insert(FormulationChoices.end() - 2, choice);
+	SaveFormulationChoices();
+}
+
+void pof::Application::SaveFormulationChoices()
+{
+	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	std::fstream file(p, std::ios::out);
+	if (!file.is_open()) {
+		spdlog::error("Filed to open miscs file for writing");
+		return;
+	}
+
+	nl::json obj = nl::json::object();
+	nl::json formchoices = nl::json::array();
+
+	for (auto& form : FormulationChoices) {
+		formchoices.push_back(form.ToStdString());
+	}
+	obj["formchoices"] = formchoices;
+	file << obj.dump();
+}
+
+void pof::Application::UpdateFormulationChoices(const wxArrayString& choices)
+{
+	FormulationChoices = choices;
+	SaveFormulationChoices();
 }
 
 pof::RegexValidator::RegexValidator(std::regex&& reg, const std::string& errorstr)

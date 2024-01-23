@@ -69,7 +69,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer2->Add( mProductGenericName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 	mGenericNameValue = new wxTextCtrl( mProductDetailsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	mGenericNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
+	//mGenericNameValue->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	fgSizer2->Add( mGenericNameValue, 1, wxALL|wxEXPAND, 5 );
 	
 	mFormulation = new wxStaticText( mProductDetailsPanel, wxID_ANY, wxT("Formulation"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -77,23 +77,24 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer2->Add( mFormulation, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
 
-	FormulationChoices.Add("TABLET");
-	FormulationChoices.Add("CAPSULE");
-	FormulationChoices.Add("SOLUTION");
-	FormulationChoices.Add("SUSPENSION");
-	FormulationChoices.Add("IV");
-	FormulationChoices.Add("IM");
-	FormulationChoices.Add("EMULSION");
-	FormulationChoices.Add("CREAM");
-	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
-	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
+	//FormulationChoices.Add("TABLET");
+	//FormulationChoices.Add("CAPSULE");
+	//FormulationChoices.Add("SOLUTION");
+	//FormulationChoices.Add("SUSPENSION");
+	//FormulationChoices.Add("SYRUP");
+	//FormulationChoices.Add("IV");
+	//FormulationChoices.Add("IM");
+	//FormulationChoices.Add("EMULSION");
+	//FormulationChoices.Add("CREAM");
+	//FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	//FormulationChoices.Add("POWDER"); //needles, cannula and the rest
+	//FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+	//FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+	//FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	//FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
 
-
-	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, FormulationChoices, 0 );
+	//FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
+	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxGetApp().FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );
 	mFormulationValue->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
@@ -113,6 +114,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mStrengthType->Wrap( -1 );
 	fgSizer2->Add( mStrengthType, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
+	StrengthChoices.Add("NOT SPECIFIED");
 	StrengthChoices.Add("g");
 	StrengthChoices.Add("mg");
 	StrengthChoices.Add("mcg");
@@ -400,7 +402,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] =  pof::GenRandomId(); //change this 
 	v[pof::ProductManager::PRODUCT_NAME] = std::move(mProductNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(mGenericNameValue->GetValue().ToStdString());
-	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(FormulationChoices[mFormulationValue->GetSelection()].ToStdString());
+	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(wxGetApp().FormulationChoices[mFormulationValue->GetSelection()].ToStdString());
 	v[pof::ProductManager::PRODUCT_CLASS] = std::move(ProductClassChoices[mClassValue->GetSelection()].ToStdString());
 	v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 	v[pof::ProductManager::PRODUCT_BARCODE] = std::move(mScanProductString);
@@ -426,8 +428,10 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		if(idx == wxNOT_FOUND) v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
 		else {
 			if(idx >= cat.size()) v[pof::ProductManager::PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
-			auto& r = cat[idx];
-			v[pof::ProductManager::PRODUCT_CATEGORY] = r.first[pof::ProductManager::CATEGORY_ID];
+			else {
+				auto& r = cat[idx];
+				v[pof::ProductManager::PRODUCT_CATEGORY] = r.first[pof::ProductManager::CATEGORY_ID];
+			}
 		}
 	}
 
@@ -448,7 +452,8 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 			return false;
 		}
 		i[pof::ProductManager::INVENTORY_EXPIRE_DATE] = expDate;
-		i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPerUnitValue->GetValue().ToStdString() };
+		if(!mCostPriceValue->GetValue().IsEmpty())  i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPriceValue->GetValue().ToStdString() };
+		else i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPerUnitValue->GetValue().ToStdString() };
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = std::move(mSuplierNameValue->GetValue().ToStdString()); //test
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
 	}

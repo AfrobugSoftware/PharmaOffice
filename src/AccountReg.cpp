@@ -152,7 +152,6 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	sbSizer7 = new wxStaticBoxSizer(new wxStaticBox(m_panel4, wxID_ANY, wxT("Security questions")), wxVERTICAL);
 
 	mSecurityQuestions = new wxChoice(sbSizer7->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, pof::Account::mSecurityQuestions, 0);
-	mSecurityQuestions->SetValidator(wxTextValidator{ wxFILTER_EMPTY });
 	sbSizer7->Add(mSecurityQuestions, 0, wxALL | wxEXPAND, 5);
 
 	mSecurityAnswer = new wxTextCtrl(sbSizer7->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
@@ -252,7 +251,8 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.email = email;
 	mAccount.phonenumber = phone;
 	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 
-	mAccount.SetSecurityQuestion(pof::Account::mSecurityQuestions[sel].ToStdString(), mSecurityAnswer->GetValue().ToStdString());
+	mAccount.secquestion = pof::Account::mSecurityQuestions[sel].ToStdString();
+	mAccount.secanswer =  mSecurityAnswer->GetValue().ToStdString();
 	return true;
 }
 

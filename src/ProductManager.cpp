@@ -2321,7 +2321,7 @@ bool pof::ProductManager::CheckIfMonthStarted(const pof::base::data::datetime_t&
 
 bool pof::ProductManager::CheckIfDone(pof::base::data::duuid_t pid, pof::base::data::datetime_t month)
 {
-	if (mLocalDatabase){
+	if (mLocalDatabase) {
 		constexpr const std::string_view checksql = R"(SELECT 1 
 		FROM stock_check 
 		WHERE prod_uuid = ? AND date = ? AND status = 1;)";
@@ -2335,7 +2335,12 @@ bool pof::ProductManager::CheckIfDone(pof::base::data::duuid_t pid, pof::base::d
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<std::uint64_t>(*cstmt);
-		assert(rel);
+		if (!rel.has_value())
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*cstmt);
+			return false;
+		}
 
 		mLocalDatabase->finalise(*cstmt);
 		return !rel->empty();
@@ -2358,21 +2363,49 @@ std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::bas
 			)
 		)) 
 		FROM stock_check sc, products p WHERE sc.prod_uuid = p.uuid AND Months(sc.date) = ?;)";
+
+		constexpr const std::string_view sql2 = R"(SELECT
+		SumCost(CostMulti(p.unit_price, sc.check_stock)) FROM stock_check sc, products p
+		WHERE sc.prod_uuid = p.uuid AND Months(sc.date) = ?;)";
+
+		auto m = pof::base::data::datetime_t(std::chrono::duration_cast<date::months>(month.time_since_epoch()));
+
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return std::nullopt;
 		}
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(month));
+
+		auto stmt2 = mLocalDatabase->prepare(sql2);
+		if (!stmt2.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(m));
 		assert(status);
+
+		status = mLocalDatabase->bind(*stmt2, std::make_tuple(m));
+		assert(status);
+
 		auto rel = mLocalDatabase->retrive<pof::base::currency>(*stmt);
+
 		if (!rel.has_value() || rel->empty()){
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
 			return std::nullopt;
 		}
+
+		auto rel2 = mLocalDatabase->retrive<pof::base::currency>(*stmt2);
+		if (!rel2.has_value() || rel2->empty()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+
+
 		mLocalDatabase->finalise(*stmt);
-		return std::get<0>(*(rel->begin()));
+		return std::get<0>(*(rel->begin())) - std::get<0>(*rel2->begin());
 	}
 	return std::nullopt;
 }

@@ -109,6 +109,9 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_propertyGridPage1->SetPropertyHelpString( mGenericNameItem, wxT("The generic name for the product") );
 	mPackageSizeItem = m_propertyGridPage1->Append( new wxIntProperty( wxT("PACKAGE SIZE"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mPackageSizeItem, wxT("Size of a single unit of product for sale. For example, for anti-malaria with 6 tablets would have package size set to 6 and formulation set to tablets") );
+	mBarcode = m_propertyGridPage1->Append(new wxStringProperty(wxT("BARCODE"), wxPG_LABEL));
+	m_propertyGridPage1->SetPropertyHelpString(mBarcode, wxT("Product barcode"));
+	mBarcode->Enable(false);
 
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
@@ -116,23 +119,24 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("CLASS"), wxPG_LABEL, ProductClassChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription. Controlled medications are medications that are to be sold only be a pharmacist.") );
 	
-	FormulationChoices.Add("TABLET");
-	FormulationChoices.Add("CAPSULE");
-	FormulationChoices.Add("SOLUTION");
-	FormulationChoices.Add("SUSPENSION");
-	FormulationChoices.Add("IV");
-	FormulationChoices.Add("IM");
-	FormulationChoices.Add("EMULSION");
-	FormulationChoices.Add("CREAM"); //needles, cannula and the rest
-	FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	FormulationChoices.Add("POWDER"); //needles, cannula and the rest
-	FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
+	//FormulationChoices.Add("TABLET");
+	//FormulationChoices.Add("CAPSULE");
+	//FormulationChoices.Add("SOLUTION");
+	//FormulationChoices.Add("SUSPENSION");
+	//FormulationChoices.Add("SYRUP");
+	//FormulationChoices.Add("IV");
+	//FormulationChoices.Add("IM");
+	//FormulationChoices.Add("EMULSION");
+	//FormulationChoices.Add("CREAM"); //needles, cannula and the rest
+	//FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
+	//FormulationChoices.Add("POWDER"); //needles, cannula and the rest
+	//FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+	//FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+	//FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+	//FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
 
-	FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
-	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, FormulationChoices));
+	//FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
+	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, wxGetApp().FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
 	
 
@@ -295,20 +299,19 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 	mHealthCond->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_HEALTH_CONDITIONS>(tup))));
 	mProductDescription->SetValue(std::get<pof::ProductManager::PRODUCT_DESCRIP>(tup));
 	mSideEffects->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_SIDEEFFECTS>(tup))));
-
-	wxArrayString Ar = std::move(FormulationChoices.GetLabels());
-	auto FormIter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_FORMULATION>(tup));
-	if ((FormIter != Ar.end())) {
-		auto idx = std::distance(Ar.begin(), FormIter);
+	mBarcode->SetValue(std::get<pof::ProductManager::PRODUCT_BARCODE>(tup));
+	auto FormIter = std::find(wxGetApp().FormulationChoices.begin(), wxGetApp().FormulationChoices.end(), std::get<pof::ProductManager::PRODUCT_FORMULATION>(tup));
+	if ((FormIter != wxGetApp().FormulationChoices.end())) {
+		auto idx = std::distance(wxGetApp().FormulationChoices.begin(), FormIter);
 		mFormulationItem->SetValue(wxVariant(static_cast<int>(idx)));
 	}
 	else {
-		mFormulationItem->SetValue(static_cast<int>(Ar.size() - 1));
+		mFormulationItem->SetValue(static_cast<int>(0));
 	}
 
 	mStrengthValueItem->SetValue(wxVariant(std::get<pof::ProductManager::PRODUCT_STRENGTH>(tup)));
 
-	Ar = std::move(StrengthChoices.GetLabels());
+	auto Ar = std::move(StrengthChoices.GetLabels());
 	auto Iter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_STRENGTH_TYPE>(tup));
 	if ((Iter != Ar.end())) {
 		auto idx = std::distance(Ar.begin(), Iter);
@@ -360,6 +363,7 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "EXPIRE PERIOD", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "EXPIRE PERIOD COUNT", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
+	mNameToProductElem.insert({ "BARCODE", pof::ProductManager::PRODUCT_BARCODE });
 }
 
 void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)
@@ -798,14 +802,13 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = std::move(JoinArrayList(PropertyValue));
 		break;
 	case pof::ProductManager::PRODUCT_FORMULATION:
-		v[pof::ProductManager::PRODUCT_FORMULATION] = 
-				std::move(FormulationChoices.GetLabel(PropertyValue.GetInteger()).ToStdString());
+		v[pof::ProductManager::PRODUCT_FORMULATION] = wxGetApp().FormulationChoices[PropertyValue.GetInteger()].ToStdString();
 		break;
 	case pof::ProductManager::PRODUCT_STRENGTH:
 		v[pof::ProductManager::PRODUCT_STRENGTH] = PropertyValue.GetString().ToStdString();
 		break;
 	case pof::ProductManager::PRODUCT_STRENGTH_TYPE:
-		v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = std::move(StrengthChoices.GetLabel(PropertyValue.GetInteger()).ToStdString());
+		v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = StrengthChoices.GetLabel(PropertyValue.GetInteger()).ToStdString();
 		break;
 	default:
 		return;
@@ -1034,7 +1037,7 @@ void pof::ProductInfo::OnAddBarcode(wxCommandEvent& evt)
 		});
 	if (iter == wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) return;
 	iter->first[pof::ProductManager::PRODUCT_BARCODE] = str;
-	
+	mBarcode->SetValue(str);
 	wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, str), { "uuid", "barcode" });
 	wxMessageBox("Product barcode updated", "Product info", wxICON_INFORMATION | wxOK);
 }

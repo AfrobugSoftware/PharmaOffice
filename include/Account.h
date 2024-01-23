@@ -94,6 +94,7 @@ namespace pof {
 		bool ValidateCredentials(const std::string& username, const std::string& password);
 		bool CheckForUsername(const std::string& usersname);
 		bool ChangePassword(const std::string& newPass);
+		bool RecoverPassword(const std::string& username, const std::string& newpass);
 		bool AddNewRole(const Privilage& p);
 		std::optional<std::string> GetSecurityQuestion(const std::string& username);
 		std::uint64_t GetLastId() const;
@@ -101,7 +102,8 @@ namespace pof {
 		bool UpdateAccount();
 		void SetSignInTime();
 		void SetSecurityQuestion(const std::string& question, const std::string& answer);
-		
+		std::optional<bool> ValidateSecurityQuestion(const std::string& username, const std::string& answer);
+
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		signal_t signOutSig;
 		signal_t updateSig;
@@ -117,6 +119,8 @@ namespace pof {
 		std::string phonenumber;
 		std::string regnumber;
 		std::string passhash;
+		std::string secquestion;
+		std::string secanswer;
 		bool isLoccum = false; 
 		//account details?
 	}; 

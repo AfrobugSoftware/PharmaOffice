@@ -331,17 +331,16 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	rect.SetPosition(wxPoint(xPos, yPos));
 	dc->DrawLabel(fmt::format("id: {}", os.str()), rect, wxALIGN_LEFT);
 
-	yPos += yExtent + border;
+	yPos += yExtent + border + 10;
 
 	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
 	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
 	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
 
 	//draw titile
-	const std::string title = "INVOICE";
+	const std::string title = "Invoice";
 	dc->GetTextExtent(title, &xExtent, &yExtent);
 	yPos += border + 5;
-	//xPos = int(((((pageWidthMM - leftMargin - rightMargin) / 2.0) + leftMargin) * mmToLogical) - (xExtent / 2.0));
 	dc->DrawText(title, lineLength / 2 - xExtent / 2, yPos);
 
 	yPos += yExtent + border + 2;
@@ -363,6 +362,9 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 
 	//tite
 	wxRect rect(xPos + border, yPos, lineLength, lineHeight - border);
+
+	dc->DrawLabel("Qty Product", rect, wxALIGN_LEFT);
+	dc->DrawLabel("Sub-amount", rect, wxALIGN_RIGHT);
 
 	yPos += lineHeight + 2;
 	rect.SetPosition(wxPoint(xPos + border, yPos + border));

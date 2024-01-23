@@ -185,21 +185,126 @@ void pof::SignInDialog::onSignup(wxCommandEvent& evt)
 			wxMessageBox(wxGetApp().mLocalDatabase->err_msg().data(), "REGISTRATION", wxICON_ERROR | wxOK);
 			return;
 		}
+		regDialog.mAccount.CreateAccountInfo();
 	}
 	//Show();
 }
 
 void pof::SignInDialog::OnForgotPassword(wxHyperlinkEvent& evt)
 {
+	auto acc = wxGetApp().MainAccount;
+	assert(acc);
 
+	auto username = wxGetTextFromUser("Please enter your username", "Forgot password").ToStdString();
+	if (username.empty()) return;
+
+	auto secquest = acc->GetSecurityQuestion(username);
+	if (!secquest.has_value()) {
+		wxMessageBox("No security question set, call admin to reset password", "Forgot password", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	while (1) {
+		auto secanswer = wxGetTextFromUser(fmt::format("Please answer the following security question;\n\n{}", secquest.value()), "Forgot password").ToStdString();
+		if (secanswer.empty()) return;
+
+		auto verified = acc->ValidateSecurityQuestion(username, secanswer);
+		if (!verified.has_value()) {
+			wxMessageBox("Fatal error in password recovery, please call admin", "Forgot password", wxICON_ERROR | wxOK);
+			return;
+		}
+		if (!*verified) {
+			if(wxMessageBox("Invalid security answer, please try again?", "Forgot password", wxICON_INFORMATION | wxYES_NO) == wxNO){
+				return;
+			}
+			continue;
+		}
+		break;
+	}
+
+	//reset password
+	wxDialog dialog(this, wxID_ANY, "Reset passord", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+
+	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	dialog.SetBackgroundColour(*wxWHITE);
+	wxDialog* d = std::addressof(dialog);
+
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+	auto contTitle = new wxStaticText(d, wxID_ANY, wxT("Please enter new password.\n"), wxDefaultPosition, wxDefaultSize, 0);
+	contTitle->Wrap(-1);
+	contTitle->SetFont(wxFont(wxFontInfo(10).Bold().AntiAliased().Family(wxFONTFAMILY_SWISS)));
+
+	bSizer1->Add(contTitle, 0, wxTOP | wxLEFT, 5);
+
+	auto q = new wxStaticText(d, wxID_ANY, wxT("Password"), wxDefaultPosition, wxDefaultSize, 0);
+	q->Wrap(-1);
+	bSizer1->Add(q, 0, wxALL, 5);
+
+	auto qv = new wxTextCtrl(d, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	qv->SetMaxLength(250);
+	bSizer1->Add(qv, 0, wxALL, 5);
+
+	auto q2 = new wxStaticText(d, wxID_ANY, wxT("Confirm Password"), wxDefaultPosition, wxDefaultSize, 0);
+	q2->Wrap(-1);
+	bSizer1->Add(q2, 0, wxALL, 5);
+
+	auto qv2 = new wxTextCtrl(d, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	qv2->SetMaxLength(250);
+	bSizer1->Add(qv2, 0, wxALL, 5);
+
+	auto m_panel7 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxVERTICAL);
+
+	auto m_sdbSizer2 = new wxStdDialogButtonSizer();
+	auto m_sdbSizer2OK = new wxButton(m_panel7, wxID_OK);
+	m_sdbSizer2->AddButton(m_sdbSizer2OK);
+	auto m_sdbSizer2Cancel = new wxButton(m_panel7, wxID_CANCEL);
+	m_sdbSizer2->AddButton(m_sdbSizer2Cancel);
+	m_sdbSizer2->Realize();
+	bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 5);
+
+
+
+	m_panel7->SetSizer(bSizer4);
+	m_panel7->Layout();
+	bSizer4->Fit(m_panel7);
+
+	bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
+
+
+	d->SetSizer(bSizer1);
+	d->Layout();
+	d->Center(wxBOTH);
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	d->SetIcon(appIcon);
+
+	while (1) {
+		if (d->ShowModal() == wxID_CANCEL) return;
+
+		auto pass = qv->GetValue().ToStdString();
+		auto cpass = qv2->GetValue().ToStdString();
+
+		if (pass != cpass) {
+			wxMessageBox("Password mismatch", "Forgot password", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+	
 }
 
 void pof::SignInDialog::OnHelp(wxHyperlinkEvent& evt)
 {
+	wxMessageBox("Help not yet avaliable");
 }
 
 bool pof::SignInDialog::ValidateLocal()
 {
+	wxBusyCursor cursor;
 	auto& dbPtr = wxGetApp().mLocalDatabase;
 	if(!dbPtr) return false;
 	std::string Username = mUserName->GetValue().ToStdString();
