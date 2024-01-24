@@ -299,14 +299,17 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	//print contact
 	std::string phone = fmt::format("No:{}", app.MainPharmacy->contact.phoneNumber);
 	std::string mail = app.MainPharmacy->contact.email;
-	yPos += yExtent + border;
-	dc->GetTextExtent(phone, &xExtent, &yExtent);
-	dc->DrawText(phone, lineLength / 2 - xExtent / 2, yPos + border);
+	if (!phone.empty()) {
+		yPos += yExtent + border;
+		dc->GetTextExtent(phone, &xExtent, &yExtent);
+		dc->DrawText(phone, lineLength / 2 - xExtent / 2, yPos + border);
+	}
 
-	yPos += yExtent + border;
-	dc->GetTextExtent(mail, &xExtent, &yExtent);
-	dc->DrawText(mail, lineLength / 2 - xExtent / 2, yPos + border);
-
+	if (!mail.empty()) {
+		yPos += yExtent + border;
+		dc->GetTextExtent(mail, &xExtent, &yExtent);
+		dc->DrawText(mail, lineLength / 2 - xExtent / 2, yPos + border);
+	}
 	//date/time
 	yPos += yExtent + border + 5;
 	wxRect rect(xPos, yPos, lineLength, lineHeight);
@@ -361,7 +364,7 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	int lineHeight = yExtent;
 
 	//tite
-	wxRect rect(xPos + border, yPos, lineLength, lineHeight - border);
+	wxRect rect(xPos, yPos, lineLength, lineHeight - border);
 
 	dc->DrawLabel("Qty Product", rect, wxALIGN_LEFT);
 	dc->DrawLabel("Sub-amount", rect, wxALIGN_RIGHT);
