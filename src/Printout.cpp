@@ -440,6 +440,33 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	return yPos;
 }
 
+size_t pof::Printout::WriteOrderListSmall()
+{
+	auto& app = wxGetApp();
+	auto dc = GetDC();
+
+	int border = 0;
+	int xPos = leftMargin, yPos = topMargin;
+	int lineLength = m_coord_system_width;
+	int lineHeight = 18;
+
+	wxString name(wxT("Bits"));
+	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
+
+	dc->SetFont(font);
+
+
+
+
+
+	return size_t();
+}
+
+size_t pof::Printout::WriteOrderList()
+{
+	return size_t();
+}
+
 bool pof::Printout::DrawSalePrint()
 {
 
@@ -472,237 +499,9 @@ bool pof::Printout::DrawSalePrint()
 		y = WritePageHeader(this, dc, app.MainPharmacy->name, logUnitsFactor);
 		WriteSaleData(logUnitsFactor, y);
 		break;
-	case wxPAPER_CSHEET:
-		break;
-	case wxPAPER_DSHEET:
-		break;
-	case wxPAPER_ESHEET:
-		break;
-	case wxPAPER_LETTERSMALL:
-		break;
-	case wxPAPER_TABLOID:
-		break;
-	case wxPAPER_LEDGER:
-		break;
-	case wxPAPER_STATEMENT:
-		break;
-	case wxPAPER_EXECUTIVE:
-		break;
-	case wxPAPER_A3:
-		break;
 	case wxPAPER_A4SMALL:
 	    y = WritePageHeaderSmall(this, dc, app.MainPharmacy->name, logUnitsFactor);
 		WriteSaleDataSmall(logUnitsFactor, y);
-		break;
-	case wxPAPER_A5:
-		break;
-	case wxPAPER_B4:
-		break;
-	case wxPAPER_B5:
-		break;
-	case wxPAPER_FOLIO:
-		break;
-	case wxPAPER_QUARTO:
-		break;
-	case wxPAPER_10X14:
-		break;
-	case wxPAPER_11X17:
-		break;
-	case wxPAPER_NOTE:
-		break;
-	case wxPAPER_ENV_9:
-		break;
-	case wxPAPER_ENV_10:
-		break;
-	case wxPAPER_ENV_11:
-		break;
-	case wxPAPER_ENV_12:
-		break;
-	case wxPAPER_ENV_14:
-		break;
-	case wxPAPER_ENV_DL:
-		break;
-	case wxPAPER_ENV_C5:
-		break;
-	case wxPAPER_ENV_C3:
-		break;
-	case wxPAPER_ENV_C4:
-		break;
-	case wxPAPER_ENV_C6:
-		break;
-	case wxPAPER_ENV_C65:
-		break;
-	case wxPAPER_ENV_B4:
-		break;
-	case wxPAPER_ENV_B5:
-		break;
-	case wxPAPER_ENV_B6:
-		break;
-	case wxPAPER_ENV_ITALY:
-		break;
-	case wxPAPER_ENV_MONARCH:
-		break;
-	case wxPAPER_ENV_PERSONAL:
-		break;
-	case wxPAPER_FANFOLD_US:
-		break;
-	case wxPAPER_FANFOLD_STD_GERMAN:
-		break;
-	case wxPAPER_FANFOLD_LGL_GERMAN:
-		break;
-	case wxPAPER_ISO_B4:
-		break;
-	case wxPAPER_JAPANESE_POSTCARD:
-		break;
-	case wxPAPER_9X11:
-		break;
-	case wxPAPER_10X11:
-		break;
-	case wxPAPER_15X11:
-		break;
-	case wxPAPER_ENV_INVITE:
-		break;
-	case wxPAPER_LETTER_EXTRA:
-		break;
-	case wxPAPER_LEGAL_EXTRA:
-		break;
-	case wxPAPER_TABLOID_EXTRA:
-		break;
-	case wxPAPER_A4_EXTRA:
-		break;
-	case wxPAPER_LETTER_TRANSVERSE:
-		break;
-	case wxPAPER_A4_TRANSVERSE:
-		break;
-	case wxPAPER_LETTER_EXTRA_TRANSVERSE:
-		break;
-	case wxPAPER_A_PLUS:
-		break;
-	case wxPAPER_B_PLUS:
-		break;
-	case wxPAPER_LETTER_PLUS:
-		break;
-	case wxPAPER_A4_PLUS:
-		break;
-	case wxPAPER_A5_TRANSVERSE:
-		break;
-	case wxPAPER_B5_TRANSVERSE:
-		break;
-	case wxPAPER_A3_EXTRA:
-		break;
-	case wxPAPER_A5_EXTRA:
-		break;
-	case wxPAPER_B5_EXTRA:
-		break;
-	case wxPAPER_A2:
-		break;
-	case wxPAPER_A3_TRANSVERSE:
-		break;
-	case wxPAPER_A3_EXTRA_TRANSVERSE:
-		break;
-	case wxPAPER_DBL_JAPANESE_POSTCARD:
-		break;
-	case wxPAPER_A6:
-		break;
-	case wxPAPER_JENV_KAKU2:
-		break;
-	case wxPAPER_JENV_KAKU3:
-		break;
-	case wxPAPER_JENV_CHOU3:
-		break;
-	case wxPAPER_JENV_CHOU4:
-		break;
-	case wxPAPER_LETTER_ROTATED:
-		break;
-	case wxPAPER_A3_ROTATED:
-		break;
-	case wxPAPER_A4_ROTATED:
-		break;
-	case wxPAPER_A5_ROTATED:
-		break;
-	case wxPAPER_B4_JIS_ROTATED:
-		break;
-	case wxPAPER_B5_JIS_ROTATED:
-		break;
-	case wxPAPER_JAPANESE_POSTCARD_ROTATED:
-		break;
-	case wxPAPER_DBL_JAPANESE_POSTCARD_ROTATED:
-		break;
-	case wxPAPER_A6_ROTATED:
-		break;
-	case wxPAPER_JENV_KAKU2_ROTATED:
-		break;
-	case wxPAPER_JENV_KAKU3_ROTATED:
-		break;
-	case wxPAPER_JENV_CHOU3_ROTATED:
-		break;
-	case wxPAPER_JENV_CHOU4_ROTATED:
-		break;
-	case wxPAPER_B6_JIS:
-		break;
-	case wxPAPER_B6_JIS_ROTATED:
-		break;
-	case wxPAPER_12X11:
-		break;
-	case wxPAPER_JENV_YOU4:
-		break;
-	case wxPAPER_JENV_YOU4_ROTATED:
-		break;
-	case wxPAPER_P16K:
-		break;
-	case wxPAPER_P32K:
-		break;
-	case wxPAPER_P32KBIG:
-		break;
-	case wxPAPER_PENV_1:
-		break;
-	case wxPAPER_PENV_2:
-		break;
-	case wxPAPER_PENV_3:
-		break;
-	case wxPAPER_PENV_4:
-		break;
-	case wxPAPER_PENV_5:
-		break;
-	case wxPAPER_PENV_6:
-		break;
-	case wxPAPER_PENV_7:
-		break;
-	case wxPAPER_PENV_8:
-		break;
-	case wxPAPER_PENV_9:
-		break;
-	case wxPAPER_PENV_10:
-		break;
-	case wxPAPER_P16K_ROTATED:
-		break;
-	case wxPAPER_P32K_ROTATED:
-		break;
-	case wxPAPER_P32KBIG_ROTATED:
-		break;
-	case wxPAPER_PENV_1_ROTATED:
-		break;
-	case wxPAPER_PENV_2_ROTATED:
-		break;
-	case wxPAPER_PENV_3_ROTATED:
-		break;
-	case wxPAPER_PENV_4_ROTATED:
-		break;
-	case wxPAPER_PENV_5_ROTATED:
-		break;
-	case wxPAPER_PENV_6_ROTATED:
-		break;
-	case wxPAPER_PENV_7_ROTATED:
-		break;
-	case wxPAPER_PENV_8_ROTATED:
-		break;
-	case wxPAPER_PENV_9_ROTATED:
-		break;
-	case wxPAPER_PENV_10_ROTATED:
-		break;
-	case wxPAPER_A0:
-		break;
-	case wxPAPER_A1:
 		break;
 	default:
 		break;
@@ -793,6 +592,37 @@ bool pof::Printout::DrawLabelPrint(int page)
 	infoBox.height = yPos + 5;
 	dc->DrawRectangle(infoBox);
 
+	return true;
+}
+
+bool pof::Printout::DrawOrderList()
+{
+	wxDC* dc = GetDC();
+	auto& app = wxGetApp();
+
+
+	FitThisSizeToPageMargins(wxSize(m_coord_system_width, m_coord_system_height), m_page_setup);
+
+	wxRect fitRect = GetLogicalPageMarginsRect(m_page_setup);
+
+	wxCoord xoff = (fitRect.width - m_coord_system_width) / 2;
+	wxCoord yoff = (fitRect.height - m_coord_system_height) / 2;
+	OffsetLogicalOrigin(xoff, yoff);
+
+	dc->SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+	dc->SetBrush(*wxTRANSPARENT_BRUSH);
+	
+	switch (m_paper_type)
+	{
+	case wxPAPER_NONE:
+	case wxPAPER_A4SMALL:
+		WriteOrderListSmall();
+		break;
+	default:
+		WriteOrderList();
+		break;
+	}
+	
 	return true;
 }
 

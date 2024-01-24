@@ -50,6 +50,17 @@ void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 	//delete po2;
 }
 
+void pof::PrintManager::PrintOrderList(wxWindow* parent)
+{
+	gPrintState = ORDERlIST;
+	po = new pof::Printout(mPrintDialogData.get());
+	if (wxGetApp().bShowPreviewOnSale) {
+		po2 = new pof::Printout(mPrintDialogData.get());
+		Preview(parent, po, po2);
+	}
+	else PrintJob(parent, po);
+}
+
 void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrintout* preview)
 {
 	if (wxGetApp().bShowPreviewOnSale) {

@@ -2,12 +2,14 @@
 #include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
-EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
-EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
-EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+	EVT_TOOL(pof::OrderListView::ID_CLEAR_ORDERLIST, pof::OrderListView::OnClearOrderList)
+	EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
+	EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+	
+	EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
 
-EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
-EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
+	EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
 END_EVENT_TABLE()
 
 
@@ -25,8 +27,10 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( wxSize( -1,40 ) );
 	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
+	
 	mTopTools->AddStretchSpacer();
-	m_tool11 = mTopTools->AddTool( wxID_ANY, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
+	mTopTools->AddTool(ID_CLEAR_ORDERLIST, wxT("Clear"), wxArtProvider::GetBitmap(wxART_NEW, wxART_TOOLBAR, wxSize(16, 16)), "Clear order list");
+	m_tool11 = mTopTools->AddTool( ID_PRINT_ORDER, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
 	mTopTools->Realize(); 
 	
@@ -79,7 +83,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	m_panel3->SetSizer( bSizer3 );
 	m_panel3->Layout();
 	bSizer3->Fit( m_panel3 );
-	bSizer2->Add( m_panel3, 0, wxEXPAND | wxALL, 0 );
+	//bSizer2->Add( m_panel3, 0, wxEXPAND | wxALL, 0 );
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	mOrderView = new wxDataViewCtrl(mBook, ID_ORDER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
@@ -96,8 +100,9 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	mBook->AddPage(mOrderView, wxT("ORDER VIEW"), !empty);
 	mBook->AddPage(mEmpty, wxT("EMPTY"), empty);
 	mBook->Layout();
+	
 	bSizer2->Add(mBook, 1, wxEXPAND, 0);
-
+	bSizer2->Add(m_panel3, 0, wxEXPAND | wxALL, 2);
 
 	m_panel1->SetSizer( bSizer2 );
 	m_panel1->Layout();
@@ -231,6 +236,10 @@ void pof::OrderListView::CreateSpeicalCol()
 
 void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
 {
+	if (wxGetApp().mProductManager.GetOrderList()->GetDatastore().empty()){
+		wxMessageBox("Order list is empty", "Order list", wxICON_WARNING | wxOK);
+		return;
+	}
 }
 
 void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
@@ -255,6 +264,10 @@ void pof::OrderListView::OnRemoveOrder(wxCommandEvent& evt)
 	wxGetApp().mProductManager.RemvFromOrderList(uid);
 	orderList->RemoveData(item);
 	UpdateTexts();
+
+	if (orderList->GetDatastore().empty()) {
+		mBook->SetSelection(1);
+	}
 }
 
 void pof::OrderListView::OnAddProduct(wxCommandEvent& evt)
@@ -267,36 +280,42 @@ void pof::OrderListView::OnAddProduct(wxCommandEvent& evt)
 	if (dialog.HasMultipleSelections())
 	{
 		auto vec = dialog.GetSelectedProducts();
-		
-		for (auto& p : vec){
-			auto& row = p.get();
-			pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
-			//check if already exisits
-			if (std::any_of(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& row) -> bool {
-				return uuid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
-			})){
-				//skip
-				continue;
-			}
-			wxGetApp().mProductManager.AddToOrderList(uuid, 1);
-		}
+		wxGetApp().mProductManager.AddMulipleToOrderList(vec);
+		//for (auto& p : vec){
+		//	auto& row = p.get();
+		//	pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		//	//check if already exisits
+		//	if (std::any_of(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& row) -> bool {
+		//		return uuid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+		//	})){
+		//		//skip
+		//		continue;
+		//	}
+		//	wxGetApp().mProductManager.AddToOrderList(uuid, 1);
+		//}
 	}
 	else {
 		auto& row =  dialog.GetSelectedProduct();
 		pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
-		//check if already exisits
-		if (std::any_of(datastore.begin(), datastore.end(), [&](const pof::base::data::row_t& row) -> bool {
-			return uuid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
-			})) {
-			//skip
-			return;
-		}
 		wxGetApp().mProductManager.AddToOrderList(uuid, 1);
 	}
 
 	wxGetApp().mProductManager.LoadOrderList();
 	UpdateTexts();
 	mOrderView->Thaw();
+
+	mBook->SetSelection(0);
+}
+
+void pof::OrderListView::OnClearOrderList(wxCommandEvent& evt)
+{
+	if (wxMessageBox("Are you sure you want to clear order list?", "Order list", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	wxGetApp().mProductManager.GetOrderList()->Clear();
+	wxGetApp().mProductManager.ClearOrderList();
+
+	//set to empty
+	UpdateTexts();
+	mBook->SetSelection(1);
 }
 
 void pof::OrderListView::UpdateTexts()
