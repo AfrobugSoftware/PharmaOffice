@@ -464,7 +464,6 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	if (!m_dataViewCtrl1->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto open = menu->Append(ID_OPEN_PRODUCT_INFO, "Open product", nullptr);
-	auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 	wxMenu* catSub = new wxMenu;
 	CreateCategoryMenu(catSub);
 	if (!mActiveCategory.empty()) {
@@ -483,11 +482,13 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 
 	menu->AppendSeparator();
 	if (mSelections.empty()) {
+		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, "Increase price", nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 	}
 	else {
+		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, fmt::format("Add {:d} products to order list", mSelections.size()), nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, fmt::format("Increase {:d} product prices", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);

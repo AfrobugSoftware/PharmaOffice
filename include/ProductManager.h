@@ -169,6 +169,7 @@ namespace pof {
 		bool ClearOrderList();
 		bool CheckIfInOrderList(const pof::base::data::duuid_t& ud);
 		bool AddToOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
+		bool AddMulipleToOrderList(const std::vector<std::reference_wrapper<pof::base::data::row_t>>& data);
 		bool UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan);
 		bool RemvFromOrderList(const pof::base::data::duuid_t ud);
 		size_t GetOrderListCount() const;

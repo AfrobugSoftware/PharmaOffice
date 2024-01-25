@@ -979,6 +979,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 				v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT] = static_cast<std::uint64_t>(prod["min_stock_count"]);
 				v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD] = static_cast<std::uint64_t>(prod["expire_priod"]);
 				v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE] = static_cast<std::string>(prod["to_expire_date"]);
+				v[pof::ProductManager::PRODUCT_BARCODE] = static_cast<std::string>(prod["barcode"]);
 
 				auto itt = prod.find("inventory");
 				if (itt != prod.end()) {
@@ -1186,6 +1187,7 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 				prod["min_stock_count"] = static_cast<std::uint64_t>(0); //boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_MIN_STOCK_COUNT]);
 				prod["expire_priod"] = static_cast<std::uint64_t>(0);// boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_EXPIRE_PERIOD]);
 				prod["to_expire_date"] = ""s; //boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_TO_EXPIRE_DATE]);
+				prod["barcode"] = boost::variant2::get<std::string>(v[pof::ProductManager::PRODUCT_BARCODE]);
 
 				wxGetApp().mProductManager.LoadInventoryData(boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]));
 				auto& inven = wxGetApp().mProductManager.GetInventory();

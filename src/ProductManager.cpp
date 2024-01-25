@@ -388,6 +388,37 @@ bool pof::ProductManager::AddToOrderList(const pof::base::data::duuid_t& ud, std
 	return false;
 }
 
+bool pof::ProductManager::AddMulipleToOrderList(const std::vector<std::reference_wrapper<pof::base::data::row_t>>& data)
+{
+	if (data.empty()) return false;
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(INSERT INTO order_list (prod_uuid, quan, state)
+			VALUES (:prod_uuid, :quan, :state)
+			ON CONFLICT (prod_uuid) DO UPDATE SET quan = quan + 1 WHERE prod_uuid = :prod_uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		//assert(stmt.has_value());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = false;
+		for (auto& ref : data)
+		{
+			auto& row = ref.get();
+			pof::base::data::duuid_t uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+
+			status = mLocalDatabase->bind_para(*stmt, std::make_tuple(uuid, static_cast<std::uint64_t>(1), PENDING), {"prod_uuid", "quan", "state"});
+			assert(status);
+			status = mLocalDatabase->execute(*stmt);
+			assert(status);
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+
 bool pof::ProductManager::UpdateOrderList(const pof::base::data::duuid_t& ud, std::uint64_t quan)
 {
 	if (mLocalDatabase)
