@@ -134,6 +134,7 @@ namespace pof
 			boost::signals2::connection AttachPropertyUpdateSlot(update_signal_t::slot_type&& slot);
 			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
+			void UpdateDropDowns();
 
 
 			void m_splitter1OnIdle(wxIdleEvent&);

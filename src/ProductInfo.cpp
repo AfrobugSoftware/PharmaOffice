@@ -211,6 +211,9 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateNameToProductElemTable();
 	StyleProductPropertyManager();
 	StyleSheet();
+
+	//set update signal
+	wxGetApp().mUpdateChoices.connect(std::bind_front(&pof::ProductInfo::UpdateDropDowns, this));
 }
 
 pof::ProductInfo::~ProductInfo()
@@ -364,6 +367,18 @@ void pof::ProductInfo::CreateNameToProductElemTable()
 	mNameToProductElem.insert({ "EXPIRE PERIOD COUNT", pof::ProductManager::PRODUCT_EXPIRE_PERIOD });
 	mNameToProductElem.insert({ "FORMULATION", pof::ProductManager::PRODUCT_FORMULATION });
 	mNameToProductElem.insert({ "BARCODE", pof::ProductManager::PRODUCT_BARCODE });
+}
+
+void pof::ProductInfo::UpdateDropDowns()
+{
+	auto ff = dynamic_cast<wxEnumProperty*>(mFormulationItem);
+	if (!ff) return;
+	wxPGChoices choice;
+	for (auto& i : wxGetApp().FormulationChoices)
+	{
+		choice.Add(i);
+	}
+	ff->SetChoices(choice);
 }
 
 void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)

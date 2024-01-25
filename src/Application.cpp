@@ -969,6 +969,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 			{
 				FormulationChoices = v.GetArrayString();
 				SaveFormulationChoices();
+				mUpdateChoices();
 			}
 			default:
 				evt.Skip();

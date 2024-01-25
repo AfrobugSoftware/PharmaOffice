@@ -122,6 +122,8 @@ namespace pof {
 		std::shared_ptr<pof::base::databasemysql> mMysqlDatabase;
 		wxArrayString FormulationChoices;
 
+		boost::signals2::signal<void()> mUpdateChoices;
+
 		void CreateMysqlDatabase();
 		void CreateMysqlTables();
 		//settings flags

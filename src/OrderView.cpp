@@ -29,7 +29,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
 	
 	mTopTools->AddStretchSpacer();
-	mTopTools->AddTool(ID_CLEAR_ORDERLIST, wxT("Clear"), wxArtProvider::GetBitmap(wxART_NEW, wxART_TOOLBAR, wxSize(16, 16)), "Clear order list");
+	mTopTools->AddTool(ID_CLEAR_ORDERLIST, wxT("Clear all"), wxArtProvider::GetBitmap(wxART_NEW, wxART_TOOLBAR, wxSize(16, 16)), "Clear order list");
 	m_tool11 = mTopTools->AddTool( ID_PRINT_ORDER, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
 	mTopTools->Realize(); 
