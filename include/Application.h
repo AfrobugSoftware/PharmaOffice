@@ -121,6 +121,7 @@ namespace pof {
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::base::databasemysql> mMysqlDatabase;
 		wxArrayString FormulationChoices;
+		wxArrayString StrengthChoices;
 
 		boost::signals2::signal<void()> mUpdateChoices;
 
@@ -184,6 +185,9 @@ namespace pof {
 		void SaveFormulationChoices();
 		void UpdateFormulationChoices(const wxArrayString& choices);
 
+		//strength choices
+		void LoadStrengthChoices();
+		void SaveStrengthChoices();
 	
 		//settings callback
 		void OnResetAccount(wxCommandEvent& evt);

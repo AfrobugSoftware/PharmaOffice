@@ -86,22 +86,6 @@ void pof::SearchProduct::CreateToolBar()
 	});
 	SearchProductBar->AddControl(mCategoryFilter, "Select Category");
 	SearchProductBar->AddSpacer(10);
-	//wxArrayString FormulationChoices;
-	//FormulationChoices.Add("TABLET");
-	//FormulationChoices.Add("CAPSULE");
-	//FormulationChoices.Add("SOLUTION");
-	//FormulationChoices.Add("SUSPENSION");
-	//FormulationChoices.Add("SYRUP");
-	//FormulationChoices.Add("IV");
-	//FormulationChoices.Add("IM");
-	//FormulationChoices.Add("EMULSION");
-	//FormulationChoices.Add("COMSUMABLE");
-	//FormulationChoices.Add("POWDER"); //needles, cannula and the rest
-	//FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	//FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	//FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	//FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
-
 
 	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, wxSize(200, -1), wxGetApp().FormulationChoices);
 	mFormulationFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {

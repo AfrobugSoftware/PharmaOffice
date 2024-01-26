@@ -880,6 +880,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp14 = grid->Append(new wxBoolProperty("Create poison book entry for each controlled drug sale", "14", bAlwaysCreateEntryIntoRegister));	
 	auto ct1 = grid->Append(new wxPropertyCategory("Product settings"));
 	auto pp15 = grid->Append(new wxArrayStringProperty("Product formulation", "15", FormulationChoices));
+	auto pp16 = grid->Append(new wxArrayStringProperty("Product Strength", "16", StrengthChoices));
 
 	
 	if (mLocalDatabase){
@@ -901,6 +902,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp13, "Allow users that are not pharmacist to sell controlled medications and enter in to the register");
 	grid->SetPropertyHelpString(pp14, "Create posion book entry for the medications that are controlled");
 	grid->SetPropertyHelpString(pp15, "Add or remove product formulations");
+	grid->SetPropertyHelpString(pp16, "Add or remove product strength");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -969,6 +971,13 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 			{
 				FormulationChoices = v.GetArrayString();
 				SaveFormulationChoices();
+				mUpdateChoices();
+			}
+				break;
+			case 16:
+			{
+				StrengthChoices = v.GetArrayString();
+				SaveStrengthChoices();
 				mUpdateChoices();
 			}
 			default:
@@ -1470,6 +1479,14 @@ void pof::Application::UpdateFormulationChoices(const wxArrayString& choices)
 {
 	FormulationChoices = choices;
 	SaveFormulationChoices();
+}
+
+void pof::Application::LoadStrengthChoices()
+{
+}
+
+void pof::Application::SaveStrengthChoices()
+{
 }
 
 pof::RegexValidator::RegexValidator(std::regex&& reg, const std::string& errorstr)
