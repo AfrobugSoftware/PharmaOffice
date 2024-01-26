@@ -15,9 +15,11 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/bind_cancellation_slot.hpp>
+#include <boost/asio/experimental/awaitable_operators.hpp>
 
 #include <boost/signals2/signal.hpp>
 
+#include <future>
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -30,6 +32,7 @@ using boost::asio::awaitable;
 using boost::asio::co_spawn;
 using boost::asio::detached;
 
+using namespace boost::asio::experimental::awaitable_operators;
 using boost::asio::use_awaitable_t;
 using default_token = boost::asio::as_tuple_t<use_awaitable_t<>>;
 using serial_port = default_token::as_default_on_t<boost::asio::serial_port>;
@@ -57,6 +60,7 @@ namespace pof
 			std::error_code cancel();
 			void setoptions();
 
+
 			operator bool();
 
 			awaitable<void> watchdog();
@@ -74,10 +78,13 @@ namespace pof
 			awaitable<void> do_read();
 			awaitable<void> do_write();
 
+			std::future<bool> trans();
 
 			boost::asio::cancellation_signal mcancelsignal;
 		private:
 			//might not be necessery
+			boost::asio::awaitable<void> do_trans();
+
 			std::chrono::steady_clock::duration mPoolDuration = 5s;
 			boost::asio::steady_timer mPollTimer;
 			//why not a stringstream, then a poll would read whatever is in the buffer

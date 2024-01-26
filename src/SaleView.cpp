@@ -687,6 +687,12 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		spdlog::error(exp.what());
 		return;
 	}
+
+	if (wxGetApp().mSaleManager.mCurPaymentType == "POS")
+	{
+		TransTerminal(totalAmount);
+	}
+
 	//update the stocks of the sold items, set date
 	auto now = pof::base::data::clock_t::now();
 	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
@@ -2467,6 +2473,30 @@ wxHtmlPrintout* pof::SaleView::CreateHtmlReciept()
 	out << document;
 	htmlprintout->SetHtmlText(out.str());
 	return htmlprintout;
+}
+
+bool pof::SaleView::TransTerminal(const pof::base::currency& ta)
+{
+	if (!wxGetApp().mSerialPort) return false; //skip if not configured
+	//create the message
+	std::string message;
+	std::string response;
+
+	wxGetApp().mSerialPort->writeque(std::move(message));
+
+	auto fut = wxGetApp().mSerialPort->trans();
+	std::chrono::time_point start = std::chrono::system_clock::now() + 60s;
+	std::chrono::time_point end = std::chrono::system_clock::now();
+	while (start > end) {
+		auto s = fut.wait_for(1s);
+		if (s != std::future_status::ready) {
+			end += 1s;
+			continue;
+		}
+		break;
+	}
+	response = wxGetApp().mSerialPort->readque().value_or(std::string{});
+	return true;
 }
 
 void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)

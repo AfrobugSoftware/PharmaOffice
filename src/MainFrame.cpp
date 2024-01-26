@@ -1280,9 +1280,9 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 		wxMessageBox("No com port avaliable", "Configure com ports", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	wxDialog dialog(this, wxID_ANY, "Configure com ports", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(this, wxID_ANY, "Configure com ports", wxDefaultPosition, wxSize(400, -1), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
-	dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
 	wxDialog* d = std::addressof(dialog);
 
@@ -1326,13 +1326,12 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 	m_panel7->SetSizer(bSizer4);
 	m_panel7->Layout();
 	bSizer4->Fit(m_panel7);
-	bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
+	bSizer1->Add(m_panel7, 0, wxALL, 5);
 
 
 
 	d->SetSizer(bSizer1);
 	d->Layout();
-	bSizer1->Fit(d);
 	d->Center(wxBOTH);
 
 	wxIcon appIcon;
@@ -1355,12 +1354,7 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 		return;
 	}
 	wxGetApp().mSerialPort->setoptions();
-	boost::asio::co_spawn(wxGetApp().mSerialPort->get_underlying_port().get_executor(), 
-		wxGetApp().mSerialPort->read(), [this](std::exception_ptr ptr) {
-		if (ptr) {
-			wxGetApp().mSerialPort->close();
-		}
-	});
+	
 
 }
 

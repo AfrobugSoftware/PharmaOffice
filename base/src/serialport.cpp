@@ -44,19 +44,19 @@ pof::base::serialport::operator bool() {
 */
 awaitable<void> pof::base::serialport::watchdog()
 {
-	auto deadline = std::chrono::steady_clock::now() + 6s;
-	std::error_code ec;
-	timer_t timer(co_await boost::asio::this_coro::executor);
+	auto deadline = std::chrono::steady_clock::now() + 1min;
 
-	timer.expires_at(deadline);
-	std::tie(ec) = co_await timer.async_wait();
-	if (ec.value() == boost::asio::error::operation_aborted) {
-		//spdlog::info("Cancelled");
-		co_return; //cancel 
+	timer_t timer(co_await boost::asio::this_coro::executor);
+	auto now = std::chrono::steady_clock::now();
+	while (deadline > now)
+	{
+		timer.expires_at(deadline);
+		co_await timer.async_wait();
+		now = std::chrono::steady_clock::now();
 	}
-	//timeout ??
-	//use exceptions? exceptions are not used for || awaitable operators 
-	//spdlog::info("timeout");
+	//timeout
+	throw std::system_error(std::make_error_code(std::errc::timed_out));
+
 }
 
 awaitable<void> pof::base::serialport::write()
@@ -72,7 +72,6 @@ awaitable<void> pof::base::serialport::write()
 			c = data[count];
 			auto&& [ec, size] = co_await mPort.async_write_some(boost::asio::buffer(&c, 1));
 			if (ec) {
-				written(false);
 				throw std::system_error(ec);
 			}
 			count++;
@@ -81,7 +80,9 @@ awaitable<void> pof::base::serialport::write()
 		//write the delimeter
 		c = '\0';
 		auto&& [ec, size] = co_await mPort.async_write_some(boost::asio::buffer(&c, 1));
-		written(true);
+		if (ec) {
+			throw std::system_error(ec);
+		}
 	}
 }
 
@@ -136,15 +137,7 @@ std::optional<std::string> pof::base::serialport::readque()
 void pof::base::serialport::writeque(std::string&& data)
 {
 	std::unique_lock<std::shared_mutex>(mWriteQueMut);
-	const bool isRunning = !mWriteQue.empty();
 	mWriteQue.push_back(std::forward<std::string>(data));
-	if (!isRunning) {
-		boost::asio::co_spawn(mPort.get_executor(), write(), [&](std::exception_ptr ptr) {
-			if (ptr) {
-				return;
-			}
-		});
-	}
 }
 
 awaitable<void> pof::base::serialport::do_read()
@@ -167,6 +160,28 @@ awaitable<void> pof::base::serialport::do_read()
 		std::unique_lock<std::shared_mutex> lock(mQueMut);
 		mReadQue.emplace_back(std::move(s));
 	}
+}
+
+std::future<bool> pof::base::serialport::trans()
+{
+	std::shared_ptr<std::promise<bool>> prom
+		= std::make_shared<std::promise<bool>>();
+	boost::asio::co_spawn(mPort.get_executor(), do_trans(), [prom_ = prom](std::exception_ptr ptr) {
+		if (ptr) {
+			prom_->set_exception(ptr);
+		}
+		else {
+			prom_->set_value(true);
+		}
+	});
+
+	return prom->get_future();
+}
+
+boost::asio::awaitable<void> pof::base::serialport::do_trans()
+{
+	co_await (write() && watchdog());
+	co_await (read() && watchdog());
 }
 
 

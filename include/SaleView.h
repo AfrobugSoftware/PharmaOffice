@@ -225,6 +225,10 @@ namespace pof
 		void ReloadLabelInfo(const pof::base::data::duuid_t& suid);
 		void StorePoisonBookEnteries();
 		wxHtmlPrintout* CreateHtmlReciept();
+
+		//experimental
+		bool TransTerminal(const pof::base::currency& ta);
+
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
