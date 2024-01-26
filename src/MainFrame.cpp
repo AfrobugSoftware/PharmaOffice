@@ -1280,7 +1280,7 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 		wxMessageBox("No com port avaliable", "Configure com ports", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	wxDialog dialog(this, wxID_ANY, "Configure com ports", wxDefaultPosition, wxSize(400, -1), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(nullptr, wxID_ANY, "Configure com ports", wxDefaultPosition, wxSize(400, -1), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1307,7 +1307,7 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
 	}
 		});
-	bSizer1->Add(choice, wxSizerFlags().Border(wxALL, 5).Expand());
+	bSizer1->Add(choice, wxSizerFlags().Proportion(1).Border(wxALL, 5));
 
 
 	auto m_panel7 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
@@ -1326,12 +1326,13 @@ void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
 	m_panel7->SetSizer(bSizer4);
 	m_panel7->Layout();
 	bSizer4->Fit(m_panel7);
-	bSizer1->Add(m_panel7, 0, wxALL, 5);
+	bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
 
 
 
 	d->SetSizer(bSizer1);
 	d->Layout();
+	//bSizer1->Fit(d);
 	d->Center(wxBOTH);
 
 	wxIcon appIcon;
