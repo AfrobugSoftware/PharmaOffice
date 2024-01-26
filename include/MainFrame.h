@@ -79,6 +79,7 @@ namespace pof {
 			ID_MENU_PRODUCT_IMPORT_EXCEL,
 			ID_MENU_HELP_ABOUT,
 			ID_MENU_HELP_SETTINGS,
+			ID_MENU_HELP_CONFIGURE_SERIALPORT,
 			ID_MENU_PRODUCT_EXPORT,
 			ID_MENU_EXPORT_JSON,
 			ID_MENU_EXPORT_EXCEL,
@@ -147,6 +148,8 @@ namespace pof {
 		void OnRollbackData(wxCommandEvent& evt);
 		void OnImportFormulary(wxCommandEvent& evt);
 		void OnExportFormulary(wxCommandEvent& evt);
+		void OnConfigurePorts(wxCommandEvent& evt);
+
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);

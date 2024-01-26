@@ -7,6 +7,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PRODUCT_IMPORT_JSON, pof::MainFrame::OnImportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_ABOUT, pof::MainFrame::OnAbout)
 	EVT_MENU(pof::MainFrame::ID_MENU_HELP_SETTINGS, pof::MainFrame::OnShowSettings)
+	EVT_MENU(pof::MainFrame::ID_MENU_HELP_CONFIGURE_SERIALPORT, pof::MainFrame::OnConfigurePorts)
 	EVT_MENU(pof::MainFrame::ID_MENU_VIEW_LOG, pof::MainFrame::OnShowLog)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_JSON, pof::MainFrame::OnExportJson)
 	EVT_MENU(pof::MainFrame::ID_MENU_EXPORT_EXCEL, pof::MainFrame::OnExportExcel)
@@ -184,6 +185,7 @@ void pof::MainFrame::CreateMenuBar()
 
 	//about
 	Menus[7]->Append(ID_MENU_HELP_SETTINGS, "Settings", nullptr);
+	Menus[7]->Append(ID_MENU_HELP_CONFIGURE_SERIALPORT, "Configure ports", nullptr);
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
@@ -1243,6 +1245,123 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
 	}
+}
+
+void pof::MainFrame::OnConfigurePorts(wxCommandEvent& evt)
+{
+	if (!wxGetApp().mSerialPort) {
+		wxGetApp().mSerialPort = std::make_shared<pof::base::serialport>(wxGetApp().mNetManager.io());
+	}
+
+	//get coms ports
+	wxBusyCursor cursor;
+	wchar_t lpTargetPath[5000]; // buffer to store the path of the COMPORTS
+	wxArrayString Ret;
+	std::string coms;
+#ifdef WIN32
+	for (int i = 0; i < 255; i++) // checking ports from COM0 to COM255
+	{
+		std::wstring str = L"COM" + std::to_wstring(i); // converting to COM0, COM1, COM2
+		DWORD test = QueryDosDevice(str.c_str(), lpTargetPath, 5000);
+		// Test the return value and error if any
+		if (test != 0) //QueryDosDevice returns zero if it didn't find an object
+		{
+			//spdlog::info("Path {}", fmt::make_format_args(lpTargetPath));
+			Ret.push_back(str);
+		}
+
+		if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+			spdlog::error("ERROR INSUFFICENT BUFFER");
+			return;
+		}
+	}
+#endif
+	if (Ret.IsEmpty()) {
+		wxMessageBox("No com port avaliable", "Configure com ports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxDialog dialog(this, wxID_ANY, "Configure com ports", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+
+	dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
+	dialog.SetBackgroundColour(*wxWHITE);
+	wxDialog* d = std::addressof(dialog);
+
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+	auto m_staticText18 = new wxStaticText(d, wxID_ANY, "Select a com port:", wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText18->Wrap(-1);
+	bSizer1->Add(m_staticText18, 0, wxALL, 5);
+
+	auto choice = new wxChoice(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, Ret);
+	choice->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(choice);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	auto sel = choice->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+	}
+		});
+	bSizer1->Add(choice, wxSizerFlags().Border(wxALL, 5).Expand());
+
+
+	auto m_panel7 = new wxPanel(d, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxVERTICAL);
+
+	auto m_sdbSizer2 = new wxStdDialogButtonSizer();
+	auto m_sdbSizer2OK = new wxButton(m_panel7, wxID_OK);
+	m_sdbSizer2->AddButton(m_sdbSizer2OK);
+	auto m_sdbSizer2Cancel = new wxButton(m_panel7, wxID_CANCEL);
+	m_sdbSizer2->AddButton(m_sdbSizer2Cancel);
+	m_sdbSizer2->Realize();
+
+	bSizer4->Add(m_sdbSizer2, 0, wxEXPAND, 5);
+
+	m_panel7->SetSizer(bSizer4);
+	m_panel7->Layout();
+	bSizer4->Fit(m_panel7);
+	bSizer1->Add(m_panel7, 0, wxEXPAND | wxALL, 5);
+
+
+
+	d->SetSizer(bSizer1);
+	d->Layout();
+	bSizer1->Fit(d);
+	d->Center(wxBOTH);
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	d->SetIcon(appIcon);
+
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+
+	//set com port
+	int sel = choice->GetSelection();
+	if (sel == wxNOT_FOUND) return;
+	coms = Ret[sel].ToStdString();
+
+	wxBusyInfo info(fmt::format("Connecting to {}...", coms));
+
+
+	wxGetApp().mSerialPort->open(coms);
+	if (!wxGetApp().mSerialPort->get_underlying_port().is_open()) {
+		wxMessageBox(fmt::format("Failed to create connection port to {}", coms), "Configure com port", wxICON_ERROR | wxOK);
+		return;
+	}
+	wxGetApp().mSerialPort->setoptions();
+	boost::asio::co_spawn(wxGetApp().mSerialPort->get_underlying_port().get_executor(), 
+		wxGetApp().mSerialPort->read(), [this](std::exception_ptr ptr) {
+		if (ptr) {
+			wxGetApp().mSerialPort->close();
+		}
+	});
+
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

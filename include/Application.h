@@ -26,6 +26,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <serialport.h>
 
 #include <nlohmann/json.hpp>
 #include "SignInDialog.h"
@@ -123,6 +124,7 @@ namespace pof {
 		wxArrayString FormulationChoices;
 
 		boost::signals2::signal<void()> mUpdateChoices;
+		std::shared_ptr<pof::base::serialport> mSerialPort;
 
 		void CreateMysqlDatabase();
 		void CreateMysqlTables();
