@@ -1487,6 +1487,12 @@ void pof::Application::LoadStrengthChoices()
 
 void pof::Application::SaveStrengthChoices()
 {
+	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	std::fstream file(p, std::ios::out);
+	if (!file.is_open()) {
+		spdlog::error("Filed to open miscs file for writing");
+		return;
+	}
 }
 
 pof::RegexValidator::RegexValidator(std::regex&& reg, const std::string& errorstr)
