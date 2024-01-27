@@ -119,23 +119,6 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("CLASS"), wxPG_LABEL, ProductClassChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription. Controlled medications are medications that are to be sold only be a pharmacist.") );
 	
-	//FormulationChoices.Add("TABLET");
-	//FormulationChoices.Add("CAPSULE");
-	//FormulationChoices.Add("SOLUTION");
-	//FormulationChoices.Add("SUSPENSION");
-	//FormulationChoices.Add("SYRUP");
-	//FormulationChoices.Add("IV");
-	//FormulationChoices.Add("IM");
-	//FormulationChoices.Add("EMULSION");
-	//FormulationChoices.Add("CREAM"); //needles, cannula and the rest
-	//FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	//FormulationChoices.Add("POWDER"); //needles, cannula and the rest
-	//FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	//FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	//FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	//FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
-
-	//FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationItem = m_propertyGridPage1->Append( new wxEnumProperty( wxT("FORMULATION"), wxPG_LABEL, wxGetApp().FormulationChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mFormulationItem, wxT("Product formulation is the form in which this product is in, for example, tablet, capsules, injectables, or solutions.") );
 	
@@ -154,21 +137,8 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mStrengthValueItem = m_propertyGridPage1->Append(new wxStringProperty(wxT("STRENGTH/CONC."), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString(mStrengthValueItem, wxT("The pharmalogical strength of the medication"));
 
-	StrengthChoices.Add("g");
-	StrengthChoices.Add("mg");
-	StrengthChoices.Add("mcg");
 
-	StrengthChoices.Add("L");
-	StrengthChoices.Add("ml");
-
-	StrengthChoices.Add("%v/v");
-	StrengthChoices.Add("%w/v");
-
-	StrengthChoices.Add("mol");
-	StrengthChoices.Add("mmol");
-	StrengthChoices.Add("NOT SPECIFIED");
-
-	mStrengthTypeItem = m_propertyGridPage1->Append(new wxEnumProperty(wxT("STRENGTH TYPE"), wxPG_LABEL, StrengthChoices));
+	mStrengthTypeItem = m_propertyGridPage1->Append(new wxEnumProperty(wxT("STRENGTH TYPE"), wxPG_LABEL, wxGetApp().StrengthChoices));
 	mSettings = m_propertyGridPage1->Append( new wxPropertyCategory( wxT("Settings"), wxT("Settings"))); 
 	mMinStockCount = m_propertyGridPage1->Append( new wxIntProperty( wxT("MINIMUM STOCK COUNT"), wxPG_LABEL ) );
 	m_propertyGridPage1->SetPropertyHelpString( mMinStockCount, wxT("The amount of stock that should indicate stock level is low. ") );
@@ -314,14 +284,13 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 
 	mStrengthValueItem->SetValue(wxVariant(std::get<pof::ProductManager::PRODUCT_STRENGTH>(tup)));
 
-	auto Ar = std::move(StrengthChoices.GetLabels());
-	auto Iter = std::find(Ar.begin(), Ar.end(), std::get<pof::ProductManager::PRODUCT_STRENGTH_TYPE>(tup));
-	if ((Iter != Ar.end())) {
-		auto idx = std::distance(Ar.begin(), Iter);
+	auto Iter = std::find(wxGetApp().StrengthChoices.begin(), wxGetApp().StrengthChoices.end(), std::get<pof::ProductManager::PRODUCT_STRENGTH_TYPE>(tup));
+	if ((Iter != wxGetApp().StrengthChoices.end())) {
+		auto idx = std::distance(wxGetApp().StrengthChoices.begin(), Iter);
 		mStrengthTypeItem->SetValue(wxVariant(static_cast<int>(idx)));
 	}
 	else {
-		mStrengthTypeItem->SetValue(static_cast<int>(Ar.size() - 1));
+		mStrengthTypeItem->SetValue(static_cast<int>(0));
 	}
 	//load the inventory data
 	wxGetApp().mProductManager.GetInventory()->Clear();
@@ -373,12 +342,18 @@ void pof::ProductInfo::UpdateDropDowns()
 {
 	auto ff = dynamic_cast<wxEnumProperty*>(mFormulationItem);
 	if (!ff) return;
-	wxPGChoices choice;
+	wxPGChoices choice, choice2;
 	for (auto& i : wxGetApp().FormulationChoices)
 	{
 		choice.Add(i);
 	}
 	ff->SetChoices(choice);
+	auto qq = dynamic_cast<wxEnumProperty*>(mStrengthTypeItem);
+	if (!qq) return;
+	for (auto& i : wxGetApp().StrengthChoices) {
+		choice2.Add(i);
+	}
+	qq->SetChoices(choice2);
 }
 
 void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)
@@ -823,7 +798,7 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 		v[pof::ProductManager::PRODUCT_STRENGTH] = PropertyValue.GetString().ToStdString();
 		break;
 	case pof::ProductManager::PRODUCT_STRENGTH_TYPE:
-		v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = StrengthChoices.GetLabel(PropertyValue.GetInteger()).ToStdString();
+		v[pof::ProductManager::PRODUCT_STRENGTH_TYPE] = wxGetApp().StrengthChoices[PropertyValue.GetInteger()].ToStdString();
 		break;
 	default:
 		return;

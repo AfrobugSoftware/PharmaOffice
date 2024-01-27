@@ -1560,23 +1560,8 @@ void pof::ProductView::OnAddVariant(wxCommandEvent& evt)
 	strengthtypelabel->Wrap(-1);
 	fgSizer2->Add(strengthtypelabel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxArrayString StrengthChoices;
-	StrengthChoices.Add("g");
-	StrengthChoices.Add("mg");
-	StrengthChoices.Add("mcg");
-
-	StrengthChoices.Add("L");
-	StrengthChoices.Add("ml");
-	StrengthChoices.Add("ml");
-
-	StrengthChoices.Add("%v/v");
-	StrengthChoices.Add("%w/v");
-
-	StrengthChoices.Add("mol");
-	StrengthChoices.Add("mmol");
-
-	auto strengthtype = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, StrengthChoices);
-	strengthtype->SetSelection(1);
+	auto strengthtype = new wxChoice(m_scrolledWindow2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxGetApp().StrengthChoices);
+	strengthtype->SetSelection(0);
 	fgSizer2->Add(strengthtype, 1, wxALL | wxEXPAND, 5);
 
 	auto packsizelabel = new wxStaticText(m_scrolledWindow2, wxID_ANY, wxT("Package Size"), wxDefaultPosition, wxDefaultSize, 0);

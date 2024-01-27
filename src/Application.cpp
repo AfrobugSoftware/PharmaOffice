@@ -97,6 +97,7 @@ bool pof::Application::OnInit()
 	//where do I lunch set up wizard?? 
 	pof::Account::CreateSecurityQuestions();
 	LoadFormulationChoices();
+	LoadStrengthChoices();
 	
 	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
@@ -1440,10 +1441,32 @@ void pof::Application::LoadFormulationChoices()
 	}
 	std::stringstream os;
 	os << file.rdbuf();
+	file.close();
+	
 	nl::json obj = nl::json::parse(os.str());
 
 	auto i = obj.find("formchoices");
-	if (i == obj.end()) return;
+	if (i == obj.end()) {
+		FormulationChoices.Add("NOT SPECIFIED");
+		FormulationChoices.Add("TABLET");
+		FormulationChoices.Add("CAPSULE");
+		FormulationChoices.Add("SOLUTION");
+		FormulationChoices.Add("SUSPENSION");
+		FormulationChoices.Add("SYRUP");
+		FormulationChoices.Add("IV");
+		FormulationChoices.Add("IM");
+		FormulationChoices.Add("EMULSION");
+		FormulationChoices.Add("COMSUMABLE");
+		FormulationChoices.Add("POWDER"); //needles, cannula and the rest
+		FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
+		FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
+		FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
+		FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
+		FormulationChoices.Add("OIL"); //needles, cannula and the rest
+
+		SaveFormulationChoices();
+		return;
+	}
 
 	for (auto& s : *i){
 		FormulationChoices.Add(static_cast<std::string>(s));
@@ -1459,15 +1482,27 @@ void pof::Application::AddFormulationChoices(const std::string& choice)
 void pof::Application::SaveFormulationChoices()
 {
 	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	bool ex = fs::exists(p);
+	std::stringstream str;
+	nl::json obj = nl::json::object();
+	nl::json formchoices = nl::json::array();
+	
+	//if it exists read and parse it
+	if (ex){
+		std::fstream file(p, std::ios::in);
+		if (!file.is_open()) {
+			spdlog::error("Filed to open miscs file for writing");
+			return;
+		}
+		str << file.rdbuf();
+		obj = nl::json::parse(str.str());
+	}
+
 	std::fstream file(p, std::ios::out);
 	if (!file.is_open()) {
 		spdlog::error("Filed to open miscs file for writing");
 		return;
 	}
-
-	nl::json obj = nl::json::object();
-	nl::json formchoices = nl::json::array();
-
 	for (auto& form : FormulationChoices) {
 		formchoices.push_back(form.ToStdString());
 	}
@@ -1483,16 +1518,90 @@ void pof::Application::UpdateFormulationChoices(const wxArrayString& choices)
 
 void pof::Application::LoadStrengthChoices()
 {
+	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	if (!fs::exists(p)){
+		StrengthChoices.Add("NOT SPECIFIED");
+		StrengthChoices.Add("g");
+		StrengthChoices.Add("mg");
+		StrengthChoices.Add("mcg");
+
+		StrengthChoices.Add("L");
+		StrengthChoices.Add("ml");
+		StrengthChoices.Add("ml");
+
+		StrengthChoices.Add("%v/v");
+		StrengthChoices.Add("%w/v");
+
+		StrengthChoices.Add("mol");
+		StrengthChoices.Add("mmol");
+
+		SaveStrengthChoices();
+		return;
+	}
+	std::fstream file(p, std::ios::in);
+	if (!file.is_open()) {
+		spdlog::error("Failed to open misc file for reading");
+	}
+	std::stringstream os;
+	os << file.rdbuf();
+	file.close();
+
+	nl::json obj = nl::json::parse(os.str());
+	auto i = obj.find("strengthchoices");
+	if (i == obj.end()){
+		StrengthChoices.Add("NOT SPECIFIED");
+		StrengthChoices.Add("g");
+		StrengthChoices.Add("mg");
+		StrengthChoices.Add("mcg");
+
+		StrengthChoices.Add("L");
+		StrengthChoices.Add("ml");
+		StrengthChoices.Add("ml");
+
+		StrengthChoices.Add("%v/v");
+		StrengthChoices.Add("%w/v");
+
+		StrengthChoices.Add("mol");
+		StrengthChoices.Add("mmol");
+
+		SaveStrengthChoices();
+		return;
+	}
+
+	for (auto& c : *i) {
+		StrengthChoices.Add(static_cast<std::string>(c));
+	}
 }
 
 void pof::Application::SaveStrengthChoices()
 {
 	auto p = std::filesystem::current_path() / ".data" / "mics.json";
+	bool ex = fs::exists(p);
+	std::stringstream str;
+	nl::json obj = nl::json::object();
+	nl::json formchoices = nl::json::array();
+
+	//cannot open for in and out
+	if (ex) {
+		std::fstream file(p, std::ios::in);
+		if (!file.is_open()) {
+			spdlog::error("Filed to open miscs file for writing");
+			return;
+		}
+		str << file.rdbuf();
+		obj = nl::json::parse(str.str());
+	}
+
 	std::fstream file(p, std::ios::out);
 	if (!file.is_open()) {
 		spdlog::error("Filed to open miscs file for writing");
 		return;
 	}
+	for (auto& form : StrengthChoices) {
+		formchoices.push_back(form.ToStdString());
+	}
+	obj["strengthchoices"] = formchoices;
+	file << obj.dump();
 }
 
 pof::RegexValidator::RegexValidator(std::regex&& reg, const std::string& errorstr)
