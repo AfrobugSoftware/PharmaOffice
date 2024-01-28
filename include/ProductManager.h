@@ -97,6 +97,22 @@ namespace pof {
 		};
 
 		enum : std::uint8_t {
+			SUPPLIER_ID,
+			SUPPLIER_NAME,
+			SUPPLIER_DATE_CREATED,
+			SUPPLIER_DATE_MODIFIED,
+			SUPPLIER_INFO,
+			SUPPLIER_MAX
+		};
+
+		enum :std::uint8_t {
+			INVOICE_SUPP_ID,
+			INVOICE_ID,
+			INVOICE_PROD_UUID,
+			INVOICE_INVENTORY_ID,
+		};
+
+		enum : std::uint8_t {
 			PACK_UUID_DECS,
 			PACK_NAME,
 			PACK_DESCRIPTION
@@ -178,6 +194,28 @@ namespace pof {
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		
+		//supplier/invoice
+		bool CreateSupplierInvoiceTable();
+		inline std::unique_ptr<pof::DataModel>& GetSupplier() { return mSuppliers; }
+		bool LoadSuplliers();
+		std::optional<std::vector<std::string>> GetSupplierNames();
+		bool AddSupplier(pof::base::data::const_iterator iter);
+		bool RemoveSupplier(pof::base::data::const_iterator iter);
+		bool UpdateSupplier(pof::base::data::const_iterator iter);
+
+		std::optional<std::vector<std::string>> GetInvoices(std::uint64_t suppId);
+		inline std::unique_ptr<pof::DataModel>& GetInvoices() { return mInvoices; }
+		bool LoadInvoices(std::uint64_t sid);
+		bool AddInvoice(pof::base::data::const_iterator iter);
+		bool RemoveInvoice(pof::base::data::const_iterator iter);
+		bool UpdateInvoice(pof::base::data::const_iterator iter);
+		bool RemoveInventoryFromInvoice(pof::base::data::const_iterator iter); //iter is in inventory
+		std::optional<pof::base::relation<
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::currency
+		>> GetProductsInInvoice(std::uint64_t suppid, const std::string& in);
+
 		//do remove product
 		bool RemoveProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductInOrderListData(pof::base::data::const_iterator iter);
@@ -396,7 +434,8 @@ namespace pof {
 		std::unique_ptr<pof::DataModel> mInventoryData;
 		std::unique_ptr<pof::DataModel> mOrderList;
 		std::unique_ptr<pof::DataModel> mStockCheckData;
-
+		std::unique_ptr<pof::DataModel> mSuppliers;
+		std::unique_ptr<pof::DataModel> mInvoices;
 
 	};
 

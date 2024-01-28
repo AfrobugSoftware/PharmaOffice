@@ -5,6 +5,9 @@ pof::ProductManager::ProductManager() {
 	mInventoryData = std::make_unique<pof::DataModel>();
 	mOrderList = std::make_unique<pof::DataModel>();
 	mStockCheckData = std::make_unique<pof::DataModel>();
+	mSuppliers = std::make_unique<pof::DataModel>();
+	mInvoices = std::make_unique<pof::DataModel>();
+
 	mProductData->Adapt<
 		pof::base::data::duuid_t, //UUID
 		std::uint64_t, //SERIAL NUM
@@ -62,6 +65,20 @@ pof::ProductManager::ProductManager() {
 		pof::base::data::datetime_t
 	>();
 	
+	mSuppliers->Adapt<
+		std::uint64_t, //supplier id
+		pof::base::data::text_t, //supplier_name
+		pof::base::data::datetime_t, //date created
+		pof::base::data::datetime_t, //date modified
+		pof::base::data::text_t
+	>();
+
+	mInvoices->Adapt<
+		std::uint64_t, //supplier_id
+		pof::base::data::text_t, //invoice identifier
+		pof::base::data::duuid_t, //product uuid
+		std::uint64_t //inventory id
+	>();
 
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::StrProductData, this), pof::DataModel::Signals::STORE);
 	mProductData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateProductData, this), pof::DataModel::Signals::UPDATE);
@@ -71,6 +88,14 @@ pof::ProductManager::ProductManager() {
 	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::StoreInventoryData, this), pof::DataModel::Signals::STORE);
 	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateInventoryData, this), pof::DataModel::Signals::UPDATE);
 	mInventoryData->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveInventoryData, this), pof::DataModel::Signals::REMOVED);
+
+	mSuppliers->ConnectSlot(std::bind_front(&pof::ProductManager::AddSupplier, this), pof::DataModel::Signals::STORE);
+	mSuppliers->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveSupplier, this), pof::DataModel::Signals::REMOVED);
+	mSuppliers->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateSupplier, this), pof::DataModel::Signals::UPDATE);
+
+	mInvoices->ConnectSlot(std::bind_front(&pof::ProductManager::AddInvoice, this), pof::DataModel::Signals::STORE);
+	mInvoices->ConnectSlot(std::bind_front(&pof::ProductManager::RemoveInvoice, this), pof::DataModel::Signals::REMOVED);
+	mInvoices->ConnectSlot(std::bind_front(&pof::ProductManager::UpdateInvoice, this), pof::DataModel::Signals::UPDATE);
 }
 
 pof::ProductManager::~ProductManager()
@@ -727,6 +752,310 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 	}
 
 	return true;
+}
+
+bool pof::ProductManager::CreateSupplierInvoiceTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS supplier (id integer, name text, date_created integer, date_modified integer, info text);)";
+		constexpr const std::string_view sql2 = R"(CREATE TABLE IF NOT EXISTS invoice (supp_id integer, invoice_id text, prod_uuid blob, inventory_id integer);)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		stmt = mLocalDatabase->prepare(sql2);
+		assert(stmt);
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+
+	}
+	return false;
+}
+
+bool pof::ProductManager::LoadSuplliers()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM supplier;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t, //supplier id
+			pof::base::data::text_t, //supplier_name
+			pof::base::data::datetime_t, //date created
+			pof::base::data::datetime_t, //date modified
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+
+		mLocalDatabase->finalise(*stmt);
+		auto& data = mSuppliers->GetDatastore();
+		data.reserve(rel->size());
+		for (auto& r : *rel){
+			auto p = pof::base::make_row_from_tuple(r);
+			data.emplace(std::move(p));
+		}
+		//reload the itemIds 
+		mSuppliers->Reload();
+	}
+	return false;
+}
+
+
+
+std::optional<std::vector<std::string>> pof::ProductManager::GetSupplierNames()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT name FROM supplier;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<std::string>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		std::vector<std::string> ret;
+		ret.reserve(rel->size());
+		for (auto&& tup : *rel) {
+			ret.emplace_back(std::move(std::get<0>(tup)));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+
+bool pof::ProductManager::AddSupplier(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(INSERT INTO supplier (id, name, data_created, date_modified, info) VALUES (?,?,?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		std::tuple<std::uint64_t, pof::base::data::text_t, pof::base::data::datetime_t, pof::base::data::datetime_t> tup;
+		pof::base::build(tup, *iter);
+		bool status = mLocalDatabase->bind(*stmt, tup);
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+
+	}
+	return false;
+}
+
+bool pof::ProductManager::RemoveSupplier(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM supplier WHERE id =?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[SUPPLIER_ID]);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(id));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::UpdateSupplier(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase){
+		constexpr static std::array<std::string_view, SUPPLIER_MAX> colName = {
+			"id", "name", "date_created", "date_modified", "info"
+		};
+		std::ostringstream os;
+		std::vector<size_t> upIdx;
+		os << "UPDATE supplier SET ";
+		auto& updateFlag = iter->second.second;
+		for (int i = 0; i < SUPPLIER_MAX; i++) {
+			if (updateFlag.test(i)) {
+				if (upIdx.size() != 0) {
+					os << ", ";
+				}
+				upIdx.push_back(i);
+				os << colName[i] << "= ?";
+			}
+		}
+		os << " WHERE id = ?;";
+		upIdx.push_back(SUPPLIER_ID);
+		auto stmt = mLocalDatabase->prepare(os.str());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[SUPPLIER_ID]);
+		size_t i = 1;
+		auto& meta = mSuppliers->GetDatastore().get_metadata();
+		auto& v = iter->first;
+		for (size_t d : upIdx) {
+			auto kind = meta[d];
+			switch (kind)
+			{
+			case pof::base::data::kind::uint64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::uint64_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::datetime:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::datetime_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::text:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::text_t>(v[d]), i);
+				break;
+			default:
+				break;
+			}
+			i++;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+	return false;
+}
+
+std::optional<std::vector<std::string>> pof::ProductManager::GetInvoices(std::uint64_t suppId)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT DISTINCT invoice_id FROM invoice WHERE supp_id = ? LIMIT 1000;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suppId));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::string>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		std::vector<std::string> ret;
+		ret.reserve(rel->size());
+
+		for (auto&& t : *rel) {
+			ret.emplace_back(std::move(std::get<0>(t)));
+		}
+		return ret;
+	}
+
+	return std::nullopt;
+}
+bool pof::ProductManager::LoadInvoices(std::uint64_t sid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT * FROM invoice WHERE supp_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(sid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t, //supplier_id
+			pof::base::data::text_t, //invoice identifier
+			pof::base::data::duuid_t, //product uuid
+			std::uint64_t //inventory id
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return false;
+
+		mInvoices->Clear();
+		auto& datastore = mInvoices->GetDatastore();
+		datastore.reserve(rel->size());
+		for (auto&& tup : rel.value()){
+			auto v = pof::base::make_row_from_tuple(std::move(tup));
+			datastore.emplace(std::move(v));
+		}
+		mInvoices->Reload();
+	}
+	return false;
+}
+bool pof::ProductManager::AddInvoice(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(INSERT INTO invoice (supp_id, invoice_num, ))";
+	}
+	return false;
+}
+
+bool pof::ProductManager::RemoveInvoice(pof::base::data::const_iterator iter)
+{
+	return false;
+}
+
+bool pof::ProductManager::UpdateInvoice(pof::base::data::const_iterator iter)
+{
+	return false;
+}
+
+bool pof::ProductManager::RemoveInventoryFromInvoice(pof::base::data::const_iterator iter)
+{
+	return false;
+}
+
+std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::base::currency>> 
+	pof::ProductManager::GetProductsInInvoice(std::uint64_t suppid, const std::string& in)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, i.cost 
+		FROM products p, inventory i, invoices ii 
+		WHERE p.uuid = ii.prod_uuid AND i.id = ii.inventory_id AND i.uuid = p.uuid AND ii.supp_id = ? AND ii.invoice_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suppid, in));
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::text_t, std::uint64_t, pof::base::currency>(*stmt);
+		if (!rel.has_value()) {
+			mLocalDatabase->finalise(*stmt);
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
 }
 
 bool pof::ProductManager::RemoveProductData(pof::base::data::const_iterator iter)

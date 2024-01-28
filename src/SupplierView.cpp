@@ -1,0 +1,395 @@
+#include "PofPch.h"
+#include "SupplierView.h"
+BEGIN_EVENT_TABLE(pof::SupplierView, wxPanel)
+	EVT_TOOL(pof::SupplierView::ID_BACK, pof::SupplierView::OnBack)
+	EVT_TOOL(pof::SupplierView::ID_ADD_SUPPLIER, pof::SupplierView::OnCreateSupplier)
+	EVT_TOOL(pof::SupplierView::ID_REMV_SUPPLIER, pof::SupplierView::OnRemoveSupplier)
+
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnContextMenu)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnSupplierActivated)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceActivated)
+
+	EVT_SEARCH(pof::SupplierView::ID_SEARCH, pof::SupplierView::OnSearch)
+	EVT_SEARCH_CANCEL(pof::SupplierView::ID_SEARCH, pof::SupplierView::OnSearchCleared)
+	EVT_TEXT(pof::SupplierView::ID_SEARCH, pof::SupplierView::OnSearch)
+
+END_EVENT_TABLE()
+
+
+pof::SupplierView::SupplierView(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
+: wxPanel(parent, id, pos, size, style) {
+	mManager.SetManagedWindow(this);
+	mManager.SetFlags(AUIMGRSTYLE);
+	SetSizeHints(wxDefaultSize, wxDefaultSize);
+	SetBackgroundColour(*wxWHITE);
+	SetDoubleBuffered(true);
+	mBook = new wxSimplebook(this, wxID_ANY);
+	CreateToolbar();
+	CreateViews();
+	CreateEmptyPanel();
+
+	CheckEmpty(SUPPLIER_VIEW);
+	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CenterPane());
+}
+
+pof::SupplierView::~SupplierView()
+{
+	//this might cause issues
+	if (mInvoiceProductModel) delete mInvoiceProductModel;
+}
+
+void pof::SupplierView::CreateToolbar()
+{
+	mTools = new wxAuiToolBar(this, ID_TOOLS, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mTools->SetToolBitmapSize(wxSize(16, 16));
+
+	mTools->AddSeparator();
+	mTools->AddSpacer(5);
+	mSupplierSearch = new wxSearchCtrl(mTools, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
+	mTools->AddControl(mSupplierSearch);
+
+	mTools->AddStretchSpacer();
+	mTools->AddTool(ID_ADD_SUPPLIER, "Create supplier", wxArtProvider::GetBitmap("action_add"), "Create supplier");
+	mTools->AddSpacer(5);
+	mTools->Realize();
+	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Tools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+
+	mInvoiceTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mInvoiceTools->SetToolBitmapSize(wxSize(16, 16));
+	mTools->AddTool(ID_BACK, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
+
+	mManager.AddPane(mInvoiceTools, wxAuiPaneInfo().Name("InvoiceTools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
+}
+
+void pof::SupplierView::CreateViews()
+{
+	//supplier view
+	mView = new wxDataViewCtrl(mBook, ID_SUPPLIER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mView->AssociateModel(wxGetApp().mProductManager.GetSupplier().get());
+
+	mView->AppendTextColumn("Supplier Name", pof::ProductManager::SUPPLIER_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mView->AppendTextColumn("Date created", pof::ProductManager::SUPPLIER_DATE_CREATED, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mView->AppendTextColumn("Date modified", pof::ProductManager::SUPPLIER_DATE_MODIFIED, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+
+	mBook->AddPage(mView, "View", false);
+
+	mInvoiceView = new wxDataViewCtrl(mBook, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mInvoiceView->AssociateModel(wxGetApp().mProductManager.GetInvoices().get());
+	mInvoiceView->AppendTextColumn("Invoice", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+
+
+	mBook->AddPage(mInvoiceView, "Invoice", false);
+
+	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
+
+	mInvoiceProductView = new wxDataViewCtrl(panel, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mInvoiceProductModel = new pof::DataModel();
+	mInvoiceProductModel->Adapt<
+		pof::base::data::text_t,
+		std::uint64_t,
+		pof::base::currency
+	>();
+	mInvoiceProductView->AssociateModel(mInvoiceProductModel);
+	mInvoiceProductView->AppendTextColumn("Product", 0, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Stock entry", 1, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Cost", 2, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+
+	mCSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
+
+	mTotalStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalStock->Wrap(-1);
+	bSizer4->Add(mTotalStock, 0, wxALL, 5);
+
+	bSizer4->AddSpacer(5);
+
+	bSizer4->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(5);
+
+	mTotalAmount = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmount->Wrap(-1);
+	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
+
+	mCSPanel->SetSizer(bSizer4);
+	mCSPanel->Layout();
+	bSizer4->Fit(mCSPanel);
+
+	sz->Add(mInvoiceProductView, 1, wxEXPAND | wxALL, 0);
+	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, 0);
+
+	panel->SetSizer(sz);
+	sz->SetSizeHints(panel);
+	panel->Layout();
+	mBook->AddPage(panel, "Products", false);
+}
+
+void pof::SupplierView::LoadSuppliers()
+{
+	wxGetApp().mProductManager.LoadSuplliers();
+	CheckEmpty(SUPPLIER_VIEW);
+}
+
+void pof::SupplierView::LoadInvoices(std::uint64_t supid)
+{
+	wxGetApp().mProductManager.LoadInvoices(supid);
+	CheckEmpty(INVOICE_VIEW);
+}
+
+void pof::SupplierView::LoadInvoiceProducts(std::uint64_t sid, const std::string& in)
+{
+	auto rel = wxGetApp().mProductManager.GetProductsInInvoice(sid, in);
+	if (!rel.has_value()) {
+		wxMessageBox("Error in getting product for invoice, contact admin", "Critical error", wxICON_ERROR | wxOK);
+		return;
+	}
+	mInvoiceProductModel->Clear();
+	auto& datastore = mInvoiceProductModel->GetDatastore();
+	for (auto&& tup : rel.value())
+	{
+		auto v = pof::base::make_row_from_tuple(std::move(tup));
+		datastore.emplace(std::move(v));
+	}
+	mInvoiceProductModel->Reload();
+}
+
+wxPanel* pof::SupplierView::CreateEmptyPanel(const std::string& text)
+{
+	mEmpty = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("supplement-bottle"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mEmptyStr = new wxStaticText(m7, wxID_ANY, text, wxDefaultPosition, wxDefaultSize, 0);
+	mEmptyStr->Wrap(-1);
+	bSizer9->Add(mEmptyStr, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+
+	mBook->AddPage(mEmpty, "Empty", false);
+
+	return mEmpty;
+}
+
+void pof::SupplierView::CheckEmpty(int viewIdx)
+{
+	switch (viewIdx)
+	{
+	case SUPPLIER_VIEW:
+		if (wxGetApp().mProductManager.GetSupplier()->GetDatastore().empty()) {
+			ShowEmpty("No supplier in store");
+		}
+		else {
+			mBook->SetSelection(SUPPLIER_VIEW);
+		}
+		break;
+	case INVOICE_VIEW:
+		if (wxGetApp().mProductManager.GetInvoices()->GetDatastore().empty()){
+			ShowEmpty("There are no invoices associated with supplier");
+		}
+		else {
+			mBook->SetSelection(INVOICE_VIEW);
+		}
+		break;
+	case INVOICE_PRODUCT_VIEW:
+		if (mInvoiceProductModel->GetDatastore().empty()){
+			ShowEmpty("There are no product in invoice");
+		}
+		else {
+			mBook->SetSelection(INVOICE_PRODUCT_VIEW);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void pof::SupplierView::ShowEmpty(const std::string& text)
+{
+	mEmpty->Freeze();
+	mEmptyStr->SetLabelText(text);
+	mEmpty->Layout();
+	mEmpty->Thaw();
+
+	mBook->SetSelection(EMPTY);
+}
+
+void pof::SupplierView::SwitchTool(int viewIdx)
+{
+	mManager.GetPane("Tools").Hide();
+	mManager.GetPane("InvoiceTools").Hide();
+
+	switch (viewIdx)
+	{
+	case SUPPLIER_VIEW:
+		mManager.GetPane("Tools").Show();
+		break;
+	case INVOICE_VIEW:
+		mManager.GetPane("InvoiceTools").Show();
+		break;
+	default:
+		break;
+	}
+	mManager.Update();
+}
+
+void pof::SupplierView::UpdateTotals()
+{
+	auto& datastore = mInvoiceProductModel->GetDatastore();
+	std::uint64_t totalStock = 0;
+	pof::base::currency totalAmount;
+
+	for (auto& i : datastore){
+		totalStock += boost::variant2::get<std::uint64_t>(i.first[1]);
+		totalAmount += boost::variant2::get<pof::base::currency>(i.first[2]);
+	}
+
+	mCSPanel->Freeze();
+	mTotalStock->SetLabelText(fmt::format("Total Quantity:   {:d}", totalStock));
+	mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+	mCSPanel->Thaw();
+}
+
+void pof::SupplierView::OnAuiThemeChange()
+{
+	auto auiArtProvider = mManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+}
+
+void pof::SupplierView::OnSupplierActivated(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+
+}
+
+void pof::SupplierView::OnInvoiceActivated(wxDataViewEvent& evt)
+{
+
+}
+
+void pof::SupplierView::OnBack(wxCommandEvent& evt)
+{
+	int page = mBook->GetSelection();
+	switch (page)
+	{
+	case SUPPLIER_VIEW:
+		break;
+	case INVOICE_VIEW:
+		SwitchTool(SUPPLIER_VIEW);
+		CheckEmpty(SUPPLIER_VIEW);
+		break;
+	case INVOICE_PRODUCT_VIEW:
+		SwitchTool(INVOICE_VIEW);
+		CheckEmpty(INVOICE_VIEW);
+		break;
+	default:
+		break;
+	}
+}
+
+void pof::SupplierView::OnCreateSupplier(wxCommandEvent& evt)
+{
+	auto str = wxGetTextFromUser("Please enter the name of the supplier", "Supplier").ToStdString();
+	if (str.empty()) return;
+
+	pof::base::data::row_t row;
+	auto& v = row.first;
+	v.resize(pof::ProductManager::SUPPLIER_MAX);
+	auto dt = pof::base::data::clock_t::now();
+
+	v[pof::ProductManager::SUPPLIER_ID] = pof::GenRandomId();
+	v[pof::ProductManager::SUPPLIER_NAME] = str;
+	v[pof::ProductManager::SUPPLIER_DATE_CREATED] = dt;
+	v[pof::ProductManager::SUPPLIER_DATE_MODIFIED] = dt;
+	v[pof::ProductManager::SUPPLIER_INFO] = ""s;
+
+	wxGetApp().mProductManager.GetSupplier()->StoreData(std::move(row));
+	wxMessageBox("Successfully added supplier!", "Supplier", wxICON_INFORMATION | wxOK);
+}
+
+void pof::SupplierView::OnRemoveSupplier(wxCommandEvent& evt)
+{
+}
+
+void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REMV_SUPPLIER, "Remove supplier", nullptr);
+
+	mView->PopupMenu(menu);
+}
+
+void pof::SupplierView::OnSearch(wxCommandEvent& evt)
+{
+	auto str = evt.GetString().ToStdString();
+	auto& datastore = wxGetApp().mProductManager.GetSupplier();
+	if (datastore->GetDatastore().empty()) return;
+	bool empty = false;
+	mView->Freeze();
+	if (str.empty()) datastore->Reload();
+	else {
+		empty = datastore->StringSearchAndReload(pof::ProductManager::SUPPLIER_NAME, str);
+	}
+	
+	if (empty) {
+		ShowEmpty(fmt::format("No supplier name {} in store", str));
+	}
+	else {
+		mBook->SetSelection(SUPPLIER_VIEW);
+	}
+	mView->Thaw();
+
+}
+
+void pof::SupplierView::OnSearchCleared(wxCommandEvent& evt)
+{
+	mView->Freeze();
+	wxGetApp().mProductManager.GetSupplier()->Reload();
+	mView->Thaw();
+
+	CheckEmpty(SUPPLIER_VIEW);
+}
