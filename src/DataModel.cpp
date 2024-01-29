@@ -577,8 +577,7 @@ bool pof::DataModel::RemoveData(const wxDataViewItemArray& items)
 		
 }
 
-void pof::DataModel::Reload()
-{
+void pof::DataModel::Reload(){
 	Cleared();
 	attributes.clear();
 	mItems.Clear();

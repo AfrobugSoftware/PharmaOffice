@@ -613,6 +613,7 @@ void pof::Application::CreateTables()
 	mProductManager.CreateWarningTable();
 	mProductManager.CreateExpiredStockTable();
 	mProductManager.CreateActionTable();
+	mProductManager.CreateSupplierInvoiceTable();
 	
 	mSaleManager.CreateSaleTable();
 	mSaleManager.CreateSaveSaleTable();

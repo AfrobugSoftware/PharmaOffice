@@ -26,6 +26,7 @@
 #include "OrderView.h"
 #include "Reports.h"
 #include "StockCheck.h"
+#include "SupplierView.h"
 
 #include <boost/signals2/signal.hpp>
 #include <OpenXLSX.hpp>
@@ -94,6 +95,7 @@ namespace pof
 			ID_INCR_PRICE,
 			ID_INCR_PRODUCT_PRICE,
 			ID_OPEN_PRODUCT_INFO,
+			ID_SHOW_SUPPLIER,
 		};
 
 		size_t mRowHeights;
@@ -123,6 +125,7 @@ namespace pof
 		pof::ProductInfo* mProductinfo = nullptr;
 		wxInfoBar* mInfoBar = nullptr;
 		std::string mActiveCategory;
+		pof::SupplierView* mSupplierView = nullptr;
 
 		//attibutes
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
@@ -199,7 +202,7 @@ namespace pof
 		void OnStoreSummary(wxCommandEvent& evt);
 		void OnIncrPrice(wxCommandEvent& evt);
 		void OnOpenProductInfo(wxCommandEvent& evt);
-
+		void OnShowSupplier(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
@@ -222,6 +225,7 @@ namespace pof
 		void CreateAttibutes();
 		void CreateSpecialCols();
 		void CreateNoResultPane();
+		void CreateSupplierView();
 		void Style();
 		void SwapCenterPane(bool IsInventoryView);
 		void CreateCategoryMenu(wxMenu* menu);

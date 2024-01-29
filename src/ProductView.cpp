@@ -20,6 +20,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 	EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 	EVT_TOOL(pof::ProductView::ID_ORDER_LIST, pof::ProductView::OnShowOrderList)
+	EVT_TOOL(pof::ProductView::ID_SHOW_SUPPLIER, pof::ProductView::OnShowSupplier)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
 
@@ -89,6 +90,7 @@ pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& p
 	CreateAccTable();
 	CreateEmptyPanel();
 	CreateNoResultPane();
+	CreateSupplierView();
 	//load base data
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
 	wxGetApp().mProductManager.LoadCategories();
@@ -803,8 +805,11 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 {
 	RemoveCheckedState(mOutOfStockItem);
 	RemoveCheckedState(mExpireProductItem);
+	auto& suppPane = m_mgr.GetPane("Supplier");
 
 	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()) return;
+	if (suppPane.IsOk() && suppPane.IsShown()) return;
+
 
 	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
 	assert(datam != nullptr);
@@ -1841,6 +1846,45 @@ void pof::ProductView::OnOpenProductInfo(wxCommandEvent& evt)
 	SwapCenterPane(true);
 }
 
+void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
+{
+	auto& pane = m_mgr.GetPane("Supplier");
+	auto& dataview = m_mgr.GetPane("DataView");
+	auto& noresult = m_mgr.GetPane("NoResult");
+	auto& empty = m_mgr.GetPane("Empty");
+
+	static int c = -1;
+	if (evt.IsChecked())
+	{
+		pane.Show();
+
+		if (dataview.IsShown()) {
+			dataview.Hide();
+			c = 0;
+		}
+		else if (noresult.IsShown()) { noresult.Hide(); c = 1; }
+		else if (empty.IsShown()) { empty.Hide(); c = 2; }
+	}
+	else {
+		pane.Hide();
+		switch (c)
+		{
+		case 0:
+			dataview.Show();
+			break;
+		case 1:
+			noresult.Show();
+			break;
+		case 2:
+			empty.Show();
+			break;
+		default:
+			break;
+		}
+	}
+	m_mgr.Update();
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -2070,6 +2114,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
+	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Suppliers", wxArtProvider::GetBitmap(wxART_FLOPPY, wxART_TOOLBAR, wxSize(16, 16)), "Show suppliers", wxITEM_CHECK);
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddSpacer(2);
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxEmptyString, wxArtProvider::GetBitmap("action_add"), "Add a new Product");
@@ -2193,6 +2238,13 @@ void pof::ProductView::CreateNoResultPane()
 	mNoResult->Layout();
 
 	m_mgr.AddPane(mNoResult, wxAuiPaneInfo().Name("NoResult").CenterPane().CaptionVisible(false).Hide());
+}
+
+void pof::ProductView::CreateSupplierView()
+{
+	mSupplierView = new pof::SupplierView(this);
+	mSupplierView->LoadSuppliers();
+	m_mgr.AddPane(mSupplierView, wxAuiPaneInfo().Name("Supplier").CenterPane().Hide());
 }
 
 void pof::ProductView::Style()

@@ -847,10 +847,10 @@ bool pof::ProductManager::AddSupplier(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(INSERT INTO supplier (id, name, data_created, date_modified, info) VALUES (?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO supplier (id, name, date_created, date_modified, info) VALUES (?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
-		std::tuple<std::uint64_t, pof::base::data::text_t, pof::base::data::datetime_t, pof::base::data::datetime_t> tup;
+		std::tuple<std::uint64_t, pof::base::data::text_t, pof::base::data::datetime_t, pof::base::data::datetime_t, pof::base::data::text_t> tup;
 		pof::base::build(tup, *iter);
 		bool status = mLocalDatabase->bind(*stmt, tup);
 		assert(status);
@@ -871,12 +871,24 @@ bool pof::ProductManager::RemoveSupplier(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(DELETE FROM supplier WHERE id =?;)";
+		constexpr const std::string_view sql2 = R"(DELETE FROM invoice WHERE supp_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[SUPPLIER_ID]);
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(id));
 		assert(status);
 
+		status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		stmt = mLocalDatabase->prepare(sql2);
+		assert(stmt);
+		status = mLocalDatabase->bind(*stmt, std::make_tuple(id));
+		assert(status);
 		status = mLocalDatabase->execute(*stmt);
 		if (!status)
 		{
@@ -1015,13 +1027,48 @@ bool pof::ProductManager::AddInvoice(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(INSERT INTO invoice (supp_id, invoice_num, ))";
+		constexpr const std::string_view sql = R"(INSERT INTO invoice (supp_id, invoice_id, prod_uuid, inventory_id) 
+		VALUES (?,?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		std::tuple<
+			std::uint64_t, //supplier_id
+			pof::base::data::text_t, //invoice identifier
+			pof::base::data::duuid_t, //product uuid
+			std::uint64_t //inventory id
+		> tup;
+		pof::base::build(tup, *iter);
+		bool status = mLocalDatabase->bind(*stmt, tup);
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
 	}
 	return false;
 }
 
 bool pof::ProductManager::RemoveInvoice(pof::base::data::const_iterator iter)
 {
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM invoice WHERE supp_id = ? AND invoice_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		const std::string& invoice_id = boost::variant2::get<std::string>(iter->first[pof::ProductManager::INVOICE_ID]);
+		const std::uint64_t supp_id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVOICE_SUPP_ID]);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(supp_id, invoice_id));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
 	return false;
 }
 
