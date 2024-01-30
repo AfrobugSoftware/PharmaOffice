@@ -286,10 +286,13 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->SetFlexibleDirection( wxBOTH );
 	fgSizer21->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	mAddInventory = new wxCheckBox(mProductInvenPanel, ID_INVENTORY_ADD,wxT("Add Inventory"), wxDefaultPosition, wxDefaultSize, 0);
+	mAddInventory = new wxCheckBox(mProductInvenPanel, ID_INVENTORY_ADD,wxT("Add inventory"), wxDefaultPosition, wxDefaultSize, 0);
 	fgSizer21->Add(mAddInventory, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	
+	mAddSupplier = new wxCheckBox(mProductInvenPanel, ID_INVENTORY_ADD,wxT("Add supplier"), wxDefaultPosition, wxDefaultSize, 0);
+	fgSizer21->Add(mAddSupplier, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	fgSizer21->AddStretchSpacer();
+	//fgSizer21->AddStretchSpacer();
 
 	mBacthNumber = new wxStaticText( mProductInvenPanel, wxID_ANY, wxT("Batch Number"), wxDefaultPosition, wxDefaultSize, 0 );
 	mBacthNumber->Wrap( -1 );
@@ -319,8 +322,18 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mSupplierName->Wrap(-1);
 	fgSizer21->Add(mSupplierName, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	mSuplierNameValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	auto suppliers = SetupSupplierName();
+	mSuplierNameValue = new wxComboBox(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, suppliers, 0);
 	fgSizer21->Add(mSuplierNameValue, 0, wxALL | wxEXPAND, 5);
+
+	mInvoiceText = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Invoice"), wxDefaultPosition, wxDefaultSize, 0);
+	mInvoiceText->Wrap(-1);
+	fgSizer21->Add(mInvoiceText, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mInvoiceValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	mInvoiceValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
+	fgSizer21->Add(mInvoiceValue, 0, wxALL | wxEXPAND, 5);
+
 
 	mCostPerUnitName = new wxStaticText(mProductInvenPanel, wxID_ANY, wxT("Cost Price Per Unit(N)"), wxDefaultPosition, wxDefaultSize, 0);
 	mSupplierName->Wrap(-1);
@@ -456,6 +469,69 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		else i[pof::ProductManager::INVENTORY_COST] = pof::base::currency{ mCostPerUnitValue->GetValue().ToStdString() };
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = std::move(mSuplierNameValue->GetValue().ToStdString()); //test
 		i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(9999);
+
+		if (mAddSupplier->GetValue()){
+			auto manuName = mSuplierNameValue->GetValue().ToStdString();
+
+			if (manuName.empty()) {
+				wxMessageBox("Supplier name cannot be empty if Add supplier is checked.\nPlease add a supplier name", "Add stock", wxICON_WARNING | wxOK);
+				return false;
+			}
+
+			if (mInvoiceValue->IsEmpty())
+			{
+				wxMessageBox("Invoice id cannot be empty if Add supplier is checked.\nPlease add an invoice id", "Add stock", wxICON_WARNING | wxOK);
+				return false;
+			}
+			auto& suppliers = wxGetApp().mProductManager.GetSupplier()->GetDatastore();
+			auto it = std::ranges::find_if(suppliers, [&](const pof::base::data::row_t& row) -> bool {
+				return boost::variant2::get<std::string>(row.first[pof::ProductManager::SUPPLIER_NAME]) == manuName;
+				});
+
+			if (it == suppliers.end()) {
+				//new supplier
+				pof::base::data::row_t row;
+				auto& vq = row.first;
+				vq.resize(pof::ProductManager::SUPPLIER_MAX);
+				auto dt = pof::base::data::clock_t::now();
+
+				vq[pof::ProductManager::SUPPLIER_ID] = pof::GenRandomId();
+				vq[pof::ProductManager::SUPPLIER_NAME] = manuName;
+				vq[pof::ProductManager::SUPPLIER_DATE_CREATED] = dt;
+				vq[pof::ProductManager::SUPPLIER_DATE_MODIFIED] = dt;
+				vq[pof::ProductManager::SUPPLIER_INFO] = ""s;
+
+
+				//Add invoice entry for this stock
+				pof::base::data::row_t inv;
+				auto& iq = inv.first;
+				iq.resize(pof::ProductManager::INVOICE_MAX);
+
+				iq[pof::ProductManager::INVOICE_SUPP_ID] = boost::variant2::get<std::uint64_t>(vq[pof::ProductManager::SUPPLIER_ID]);
+				iq[pof::ProductManager::INVOICE_ID] = mInvoiceValue->GetValue().ToStdString();
+				iq[pof::ProductManager::INVOICE_PROD_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+				iq[pof::ProductManager::INVOICE_INVENTORY_ID] = i[pof::ProductManager::INVENTORY_ID];
+
+
+				wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));
+				wxGetApp().mProductManager.GetSupplier()->StoreData(std::move(row));
+			}
+			else {
+				pof::base::data::row_t inv;
+				auto& iq = inv.first;
+				iq.resize(pof::ProductManager::INVOICE_MAX);
+
+				iq[pof::ProductManager::INVOICE_SUPP_ID] = boost::variant2::get<std::uint64_t>(it->first[pof::ProductManager::SUPPLIER_ID]);
+				iq[pof::ProductManager::INVOICE_ID] = mInvoiceValue->GetValue().ToStdString();
+				iq[pof::ProductManager::INVOICE_PROD_UUID] = v[pof::ProductManager::PRODUCT_UUID];
+				iq[pof::ProductManager::INVOICE_INVENTORY_ID] = i[pof::ProductManager::INVENTORY_ID];
+
+
+				wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));
+			}
+		}
+		
+
 	}
 	return true;
 }
@@ -494,4 +570,18 @@ void pof::AddProdutDialog::OnInventoryCheck(wxCommandEvent& evt)
 	else {
 		mBatchNumbeValue->SetValidator(wxTextValidator{ });
 	}
+}
+
+wxArrayString pof::AddProdutDialog::SetupSupplierName()
+{
+	wxArrayString ret;
+	ret.push_back("ENTRY");
+
+	auto suppliers = wxGetApp().mProductManager.GetSupplierNames();
+	if (suppliers.has_value()) {
+		for (auto& s : suppliers.value()) {
+			ret.push_back(s);
+		}
+	}
+	return ret;
 }

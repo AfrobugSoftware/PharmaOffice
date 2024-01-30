@@ -27,12 +27,14 @@ namespace pof {
 			ID_CALENDAR = wxID_HIGHEST + 2333,
 			ID_IMPROPER_DATE,
 			ID_DATE_PICKER,
+			ID_SUPPLIER_NAME_COMBO,
+			ID_INVOICE_NAME_COMBO,
 		};
 	private:
 		void CreateDialog();
 		void SizeDialog();
 
-		wxStaticText* texts[8] = {0};
+		wxStaticText* texts[9] = {0};
 		wxSpinCtrl* mQuantityInControl = nullptr;
 		wxTextCtrl* mCostControl = nullptr;
 		wxDatePickerCtrl* mExpiryDate = nullptr;
@@ -41,6 +43,8 @@ namespace pof {
 		wxBitmapButton* mCalenderButton = nullptr;
 		wxButton* mOkCancel[2] = {0};
 		wxComboBox* mManufacturersName = nullptr;
+		wxTextCtrl* mInvoiceName = nullptr;
+		wxCheckBox* mAddSupplier = nullptr;
 		pof::base::data::row_t mInventoryData;
 		float mFloatValidator = 0.0f;
 	private:
@@ -48,7 +52,9 @@ namespace pof {
 		void OnCancel(wxCommandEvent& evt);
 		void OnCalendar(wxCommandEvent& evt);
 
+
 		wxArrayString SetupManufacturerName();
+		wxArrayString SetupInvoicesName();
 
 		DECLARE_EVENT_TABLE()
 

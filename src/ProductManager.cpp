@@ -991,7 +991,7 @@ bool pof::ProductManager::LoadInvoices(std::uint64_t sid)
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT * FROM invoice WHERE supp_id = ?;)";
+		constexpr const std::string_view sql = R"(SELECT supp_id, invoice_id, prod_uuid, inventory_id  FROM invoice WHERE supp_id = ? ORDER BY invoice_id ASC;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
@@ -1010,15 +1010,25 @@ bool pof::ProductManager::LoadInvoices(std::uint64_t sid)
 			return false;
 		}
 		mLocalDatabase->finalise(*stmt);
-		if (rel->empty()) return false;
 
 		mInvoices->Clear();
+
+		if (rel->empty()) return false;
+
+		//make unique, this is O(n) which is very bad
+		//need to come up with a better solution
+		auto end = std::unique(rel->begin(), rel->end(), [&](const auto& a, const auto& b) -> bool {
+			return std::get<1>(a) == std::get<1>(b);
+		});
+		rel->erase(end, rel->end());
+
 		auto& datastore = mInvoices->GetDatastore();
 		datastore.reserve(rel->size());
 		for (auto&& tup : rel.value()){
 			auto v = pof::base::make_row_from_tuple(std::move(tup));
 			datastore.emplace(std::move(v));
 		}
+
 		mInvoices->Reload();
 	}
 	return false;
@@ -1087,11 +1097,14 @@ std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::b
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, i.cost 
-		FROM products p, inventory i, invoices ii 
+		FROM products p, inventory i, invoice ii 
 		WHERE p.uuid = ii.prod_uuid AND i.id = ii.inventory_id AND i.uuid = p.uuid AND ii.supp_id = ? AND ii.invoice_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
-
+		//assert(stmt);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suppid, in));
 		assert(stmt);
 
@@ -1101,6 +1114,27 @@ std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::b
 		}
 		mLocalDatabase->finalise(*stmt);
 		return rel;
+	}
+	return std::nullopt;
+}
+
+std::optional<bool> pof::ProductManager::CheckIfProductInInvoice(std::uint64_t suppid, const std::string& in, const pof::base::data::duuid_t& puid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT 1 FROM invoice WHERE supp_id = ? AND invoice_id = ? AND prod_uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suppid, in, puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel->empty(); // if select it means product is in this invoice in this supplier
 	}
 	return std::nullopt;
 }

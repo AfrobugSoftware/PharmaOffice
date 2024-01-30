@@ -110,6 +110,7 @@ namespace pof {
 			INVOICE_ID,
 			INVOICE_PROD_UUID,
 			INVOICE_INVENTORY_ID,
+			INVOICE_MAX,
 		};
 
 		enum : std::uint8_t {
@@ -215,7 +216,7 @@ namespace pof {
 			std::uint64_t,
 			pof::base::currency
 		>> GetProductsInInvoice(std::uint64_t suppid, const std::string& in);
-
+		std::optional<bool> CheckIfProductInInvoice(std::uint64_t suppid, const std::string& in, const pof::base::data::duuid_t&);
 		//do remove product
 		bool RemoveProductData(pof::base::data::const_iterator iter);
 		bool RemoveProductInOrderListData(pof::base::data::const_iterator iter);

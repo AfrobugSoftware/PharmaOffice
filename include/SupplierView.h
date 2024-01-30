@@ -66,7 +66,7 @@ namespace pof
 		void SwitchTool(int viewIdx);
 		void UpdateTotals();
 		void OnAuiThemeChange();
-
+		void ShowTitle(const std::string& text);
 	protected:
 		void OnSupplierActivated(wxDataViewEvent& evt);
 		void OnInvoiceActivated(wxDataViewEvent& evt);
@@ -86,7 +86,7 @@ namespace pof
 		wxAuiToolBar* mInvoiceTools = nullptr;
 		wxAuiToolBar* mInvoiceProductTools = nullptr;
 		wxSearchCtrl* mSupplierSearch = nullptr;
-
+		wxAuiToolBarItem* mSupplierNameItem = nullptr;
 		wxDataViewCtrl* mView = nullptr;
 		wxDataViewCtrl* mInvoiceView = nullptr;
 		wxDataViewCtrl* mInvoiceProductView = nullptr;

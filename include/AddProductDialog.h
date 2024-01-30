@@ -85,6 +85,7 @@ namespace pof
 		wxPanel* m_panel6;
 		wxPanel* mProductInvenPanel;
 		wxCheckBox* mAddInventory;
+		wxCheckBox* mAddSupplier;
 		wxStaticText* mBacthNumber;
 		wxTextCtrl* mBatchNumbeValue;
 		wxStaticText* m_staticText8;
@@ -92,10 +93,12 @@ namespace pof
 		wxStaticText* mQuntity;
 		wxTextCtrl* mQunatityValue;
 		wxStaticText* mSupplierName;
-		wxTextCtrl* mSuplierNameValue;
+		wxComboBox* mSuplierNameValue;
 		wxStaticText* mCostPerUnitName;
 		wxTextCtrl* mCostPerUnitValue;
 		wxStaticText* mBarcodeValue;
+		wxStaticText* mInvoiceText;
+		wxTextCtrl* mInvoiceValue;
 
 		wxPanel* m_panel7;
 		wxStdDialogButtonSizer* m_sdbSizer2;
@@ -134,6 +137,8 @@ namespace pof
 		void OnMoreSideffects(wxCommandEvent& evt);
 		void OnMoreHealthConditions(wxCommandEvent& evt);
 		void OnInventoryCheck(wxCommandEvent& evt);
+
+		wxArrayString SetupSupplierName();
 
 		DECLARE_EVENT_TABLE()
 	};

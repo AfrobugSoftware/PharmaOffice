@@ -964,10 +964,10 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 			v[pof::ProductManager::PRODUCT_USAGE_INFO] = static_cast<std::string>(prod["usage_info"]);
 			v[pof::ProductManager::PRODUCT_DESCRIP] = static_cast<std::string>(prod["description"]);
 			v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS] = static_cast<std::string>(prod["health_conditions"]);
-			std::string_view price = static_cast<std::string>(prod["unit_price"]);
-			v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::currency(std::string(price.begin() + 1, price.end()));
-			std::string_view costprice = static_cast<std::string>(prod["cost_price"]);
-			v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::currency(std::string(costprice.begin() + 1, costprice.end()));
+			//std::string_view price = static_cast<std::string>(prod["unit_price"]);
+			v[pof::ProductManager::PRODUCT_UNIT_PRICE] = pof::base::currency(static_cast<double>(prod["unit_price"]));
+			//std::string_view costprice = static_cast<std::string>(prod["cost_price"]);
+			v[pof::ProductManager::PRODUCT_COST_PRICE] = pof::base::currency(static_cast<double>(prod["cost_price"]));
 			v[pof::ProductManager::PRODUCT_PACKAGE_SIZE] = static_cast<std::uint64_t>(prod["package_size"]);
 			v[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(0);
 			v[pof::ProductManager::PRODUCT_SIDEEFFECTS] = static_cast<std::string>(prod["side_effects"]);
@@ -997,8 +997,8 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 							pof::base::data::datetime_t(pof::base::data::clock_t::duration(static_cast<std::uint64_t>(iobj["input_date"])));
 						i[pof::ProductManager::INVENTORY_EXPIRE_DATE] =
 							pof::base::data::datetime_t(pof::base::data::clock_t::duration(static_cast<std::uint64_t>(iobj["expire_date"])));
-						std::string_view invencostprice = static_cast<std::string>(iobj["inven_cost"]);
-						i[pof::ProductManager::INVENTORY_COST] = pof::base::currency(std::string(invencostprice.begin() + 1, invencostprice.end()));
+						//std::string_view invencostprice = static_cast<std::string>(iobj["inven_cost"]);
+						i[pof::ProductManager::INVENTORY_COST] = pof::base::currency(static_cast<double>(iobj["inven_cost"]));
 						i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = static_cast<std::string>(iobj["supplier_name"]);
 						i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID] = static_cast<std::uint64_t>(iobj["supplier_id"]);
 
@@ -1176,8 +1176,8 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 			prod["usage_info"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_USAGE_INFO]);
 			prod["description"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_DESCRIP]);
 			prod["health_conditions"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_HEALTH_CONDITIONS]);
-			prod["unit_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
-			prod["cost_price"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_COST_PRICE]));
+			prod["unit_price"] = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]));
+			prod["cost_price"] = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(v[pof::ProductManager::PRODUCT_COST_PRICE]));
 			prod["package_size"] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_PACKAGE_SIZE]);
 			prod["side_effects"] = boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_SIDEEFFECTS]);
 
@@ -1206,7 +1206,7 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 							i[pof::ProductManager::INVENTORY_INPUT_DATE]).time_since_epoch().count());
 						iobj["expire_date"] = static_cast<std::uint64_t>(boost::variant2::get<pof::base::data::datetime_t>(
 							i[pof::ProductManager::INVENTORY_EXPIRE_DATE]).time_since_epoch().count());
-						iobj["inven_cost"] = fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(i[pof::ProductManager::INVENTORY_COST]));
+						iobj["inven_cost"] = static_cast<double>(boost::variant2::get<pof::base::data::currency_t>(i[pof::ProductManager::INVENTORY_COST]));
 						iobj["supplier_name"] = boost::variant2::get<pof::base::data::text_t>(i[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
 						iobj["supplier_id"] = boost::variant2::get<std::uint64_t>(i[pof::ProductManager::INVENTORY_MANUFACTURER_ADDRESS_ID]);
 

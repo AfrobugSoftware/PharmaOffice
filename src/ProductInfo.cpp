@@ -22,7 +22,9 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
+	
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
+	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_CREATE_INVOICE, pof::ProductInfo::OnCreateInvoice)
 	EVT_BUTTON(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 
 END_EVENT_TABLE()
@@ -964,6 +966,8 @@ void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
 {
 	if (!InventoryView->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
+	auto s = menu->Append(ID_INVEN_MENU_CREATE_INVOICE, "Create invoice for inventory", nullptr);
+	menu->AppendSeparator();
 	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
 
 	PopupMenu(menu);
@@ -1030,6 +1034,74 @@ void pof::ProductInfo::OnAddBarcode(wxCommandEvent& evt)
 	mBarcode->SetValue(str);
 	wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, str), { "uuid", "barcode" });
 	wxMessageBox("Product barcode updated", "Product info", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
+{
+	wxBusyCursor cursor;
+	auto item = InventoryView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& irow = wxGetApp().mProductManager.GetInventory()->GetDatastore()[idx];
+
+	std::string str = wxGetTextFromUser("Please enter invoice number for inventory entry", "Add invoice").ToStdString();
+	if (str.empty()) return;
+
+	auto& suppname = boost::variant2::get<std::string>(irow.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
+	auto& suppliers = wxGetApp().mProductManager.GetSupplier()->GetDatastore();
+	auto it = std::ranges::find_if(suppliers, [&](const pof::base::data::row_t& row) -> bool {
+		return boost::variant2::get<std::string>(row.first[pof::ProductManager::SUPPLIER_NAME]) == suppname;
+	});
+
+	if (it == suppliers.end()) {
+		pof::base::data::row_t row;
+		auto& vq = row.first;
+		vq.resize(pof::ProductManager::SUPPLIER_MAX);
+		auto dt = pof::base::data::clock_t::now();
+
+		vq[pof::ProductManager::SUPPLIER_ID] = pof::GenRandomId();
+		vq[pof::ProductManager::SUPPLIER_NAME] = suppname;
+		vq[pof::ProductManager::SUPPLIER_DATE_CREATED] = dt;
+		vq[pof::ProductManager::SUPPLIER_DATE_MODIFIED] = dt;
+		vq[pof::ProductManager::SUPPLIER_INFO] = ""s;
+
+
+		//Add invoice entry for this stock
+		pof::base::data::row_t inv;
+		auto& iq = inv.first;
+		iq.resize(pof::ProductManager::INVOICE_MAX);
+
+		iq[pof::ProductManager::INVOICE_SUPP_ID] = boost::variant2::get<std::uint64_t>(vq[pof::ProductManager::SUPPLIER_ID]);
+		iq[pof::ProductManager::INVOICE_ID] = str;
+		iq[pof::ProductManager::INVOICE_PROD_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
+		iq[pof::ProductManager::INVOICE_INVENTORY_ID] = irow.first[pof::ProductManager::INVENTORY_ID];
+
+
+		wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));
+		wxGetApp().mProductManager.GetSupplier()->StoreData(std::move(row));
+	}
+	else {
+		auto suppid = boost::variant2::get<std::uint64_t>(it->first[pof::ProductManager::SUPPLIER_ID]);
+		if (wxGetApp().mProductManager.CheckIfProductInInvoice(
+			suppid, str,
+			boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]))){
+			wxMessageBox(fmt::format("Product inventory already exists in {} for supplier {}", str, suppname));
+			return;
+		}
+
+		pof::base::data::row_t inv;
+		auto& iq = inv.first;
+		iq.resize(pof::ProductManager::INVOICE_MAX);
+
+		iq[pof::ProductManager::INVOICE_SUPP_ID] = boost::variant2::get<std::uint64_t>(it->first[pof::ProductManager::SUPPLIER_ID]);
+		iq[pof::ProductManager::INVOICE_ID] = str;
+		iq[pof::ProductManager::INVOICE_PROD_UUID] = mProductData.first[pof::ProductManager::PRODUCT_UUID];
+		iq[pof::ProductManager::INVOICE_INVENTORY_ID] = irow.first[pof::ProductManager::INVENTORY_ID];
+
+		wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));	
+	}
+	wxMessageBox(fmt::format("Created invoice {} for {} successfully!", str, suppname), "Add stock", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ProductInfo::RemovePropertyModification()
