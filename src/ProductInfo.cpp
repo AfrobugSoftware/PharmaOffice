@@ -87,7 +87,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER|wxPG_TOOLBAR|wxPG_TOOLTIPS|wxTAB_TRAVERSAL | wxNO_BORDER);
+	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER| wxPG_TOOLBAR | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
 	auto tool = m_propertyGridManager1->GetToolBar();
@@ -1083,10 +1083,16 @@ void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
 	}
 	else {
 		auto suppid = boost::variant2::get<std::uint64_t>(it->first[pof::ProductManager::SUPPLIER_ID]);
-		if (wxGetApp().mProductManager.CheckIfProductInInvoice(
+		auto vv = wxGetApp().mProductManager.CheckIfProductInInvoice(
 			suppid, str,
-			boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]))){
-			wxMessageBox(fmt::format("Product inventory already exists in {} for supplier {}", str, suppname));
+			boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
+		if (!vv.has_value()) {
+			wxMessageBox("Error in checking product status in invoice, call D-Glopa Admin", "Add invoice", wxICON_ERROR | wxOK);
+			return;
+		}
+		
+		if (vv.value()){
+			wxMessageBox(fmt::format("Product inventory already exists in {} for supplier {}", str, suppname), "Add invoice", wxICON_WARNING | wxOK);
 			return;
 		}
 

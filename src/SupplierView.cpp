@@ -91,7 +91,7 @@ void pof::SupplierView::CreateViews()
 
 	mInvoiceView = new wxDataViewCtrl(mBook, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mInvoiceView->AssociateModel(wxGetApp().mProductManager.GetInvoices().get());
-	mInvoiceView->AppendTextColumn("Invoice", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceView->AppendTextColumn("Invoices", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
 
 	mBook->AddPage(mInvoiceView, "Invoice", false);
@@ -99,7 +99,7 @@ void pof::SupplierView::CreateViews()
 	wxPanel* panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxSizer* sz = new wxBoxSizer(wxVERTICAL);
 
-	mInvoiceProductView = new wxDataViewCtrl(panel, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	mInvoiceProductView = new wxDataViewCtrl(panel, ID_INVOICE_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mInvoiceProductModel = new pof::DataModel();
 	mInvoiceProductModel->Adapt<
 		pof::base::data::text_t,
@@ -120,7 +120,7 @@ void pof::SupplierView::CreateViews()
 	bSizer4->AddStretchSpacer();
 
 	mTotalStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalStock->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased()));
 	mTotalStock->Wrap(-1);
 	bSizer4->Add(mTotalStock, 0, wxALL, 5);
 
@@ -131,7 +131,7 @@ void pof::SupplierView::CreateViews()
 	bSizer4->AddSpacer(5);
 
 	mTotalAmount = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmount->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased()));
 	mTotalAmount->Wrap(-1);
 	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
 

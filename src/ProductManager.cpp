@@ -1096,7 +1096,7 @@ std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::b
 	pof::ProductManager::GetProductsInInvoice(std::uint64_t suppid, const std::string& in)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, i.cost 
+		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, CostMulti(i.cost, i.stock_count) 
 		FROM products p, inventory i, invoice ii 
 		WHERE p.uuid = ii.prod_uuid AND i.id = ii.inventory_id AND i.uuid = p.uuid AND ii.supp_id = ? AND ii.invoice_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1134,7 +1134,7 @@ std::optional<bool> pof::ProductManager::CheckIfProductInInvoice(std::uint64_t s
 			return std::nullopt;
 		}
 		mLocalDatabase->finalise(*stmt);
-		return rel->empty(); // if select it means product is in this invoice in this supplier
+		return !rel->empty(); // if select it means product is in this invoice in this supplier
 	}
 	return std::nullopt;
 }

@@ -331,7 +331,6 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	fgSizer21->Add(mInvoiceText, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	mInvoiceValue = new wxTextCtrl(mProductInvenPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mInvoiceValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	fgSizer21->Add(mInvoiceValue, 0, wxALL | wxEXPAND, 5);
 
 
