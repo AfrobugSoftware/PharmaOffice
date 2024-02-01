@@ -1092,11 +1092,11 @@ bool pof::ProductManager::RemoveInventoryFromInvoice(pof::base::data::const_iter
 	return false;
 }
 
-std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::base::currency>> 
+std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::base::currency, pof::base::data::datetime_t>> 
 	pof::ProductManager::GetProductsInInvoice(std::uint64_t suppid, const std::string& in)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, CostMulti(i.cost, i.stock_count) 
+		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, CostMulti(i.cost, i.stock_count), i.input_date 
 		FROM products p, inventory i, invoice ii 
 		WHERE p.uuid = ii.prod_uuid AND i.id = ii.inventory_id AND i.uuid = p.uuid AND ii.supp_id = ? AND ii.invoice_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1108,7 +1108,11 @@ std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::b
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(suppid, in));
 		assert(stmt);
 
-		auto rel = mLocalDatabase->retrive<pof::base::data::text_t, std::uint64_t, pof::base::currency>(*stmt);
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::text_t, 
+			std::uint64_t, 
+			pof::base::currency, 
+			pof::base::data::datetime_t>(*stmt);
 		if (!rel.has_value()) {
 			mLocalDatabase->finalise(*stmt);
 		}
@@ -1309,6 +1313,27 @@ bool pof::ProductManager::RemoveProductInPoisonBook(pof::base::data::const_itera
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(DELETE FROM poison_book WHERE puid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(boost::variant2::get<boost::uuids::uuid>(iter->first[pof::ProductManager::PRODUCT_UUID])));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::ProductManager::RemoveProductInInvoice(pof::base::data::const_iterator iter)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(DELETE FROM invoice WHERE prod_uuid = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 

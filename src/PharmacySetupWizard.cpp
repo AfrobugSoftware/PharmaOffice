@@ -17,6 +17,7 @@ pof::PharmacySetupWizard::PharmacySetupWizard(wxFrame* frame)
     SetBitmapPlacement(wxWIZARD_TILE);
     SetBackgroundColour(*wxWHITE);
     SetSize(wxSize(700, 400));
+   
     wxIcon appIcon;
     appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
     SetIcon(appIcon);
@@ -24,6 +25,7 @@ pof::PharmacySetupWizard::PharmacySetupWizard(wxFrame* frame)
     SetBitmapPlacement(wxWIZARD_VALIGN_CENTRE);
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
 
+   
     CreateFirstPage();
     CreateContactPage();
     CreateAddressPage();

@@ -214,7 +214,8 @@ namespace pof {
 		std::optional<pof::base::relation<
 			pof::base::data::text_t,
 			std::uint64_t,
-			pof::base::currency
+			pof::base::currency,
+			pof::base::data::datetime_t
 		>> GetProductsInInvoice(std::uint64_t suppid, const std::string& in);
 		std::optional<bool> CheckIfProductInInvoice(std::uint64_t suppid, const std::string& in, const pof::base::data::duuid_t&);
 		//do remove product
@@ -227,6 +228,7 @@ namespace pof {
 		bool RemoveProductInExpiredStock(pof::base::data::const_iterator iter);
 		bool RemoveProductInMedication(pof::base::data::const_iterator iter);
 		bool RemoveProductInPoisonBook(pof::base::data::const_iterator iter);
+		bool RemoveProductInInvoice(pof::base::data::const_iterator iter);
 
 		//the first arg is the uuid
 		template<typename... Args>

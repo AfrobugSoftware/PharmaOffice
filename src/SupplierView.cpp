@@ -5,7 +5,11 @@ BEGIN_EVENT_TABLE(pof::SupplierView, wxPanel)
 	EVT_TOOL(pof::SupplierView::ID_ADD_SUPPLIER, pof::SupplierView::OnCreateSupplier)
 	EVT_TOOL(pof::SupplierView::ID_REMV_SUPPLIER, pof::SupplierView::OnRemoveSupplier)
 
+	EVT_MENU(pof::SupplierView::ID_REMOVE_INVOICE, pof::SupplierView::OnRemoveInvoice)
+	EVT_MENU(pof::SupplierView::ID_COPY_INVOICE_NAME, pof::SupplierView::OnCopyInvoice)
+
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnContextMenu)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceContextMenu)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnSupplierActivated)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceActivated)
 
@@ -104,7 +108,8 @@ void pof::SupplierView::CreateViews()
 	mInvoiceProductModel->Adapt<
 		pof::base::data::text_t,
 		std::uint64_t,
-		pof::base::currency
+		pof::base::currency,
+		pof::base::data::datetime_t
 	>();
 	mInvoiceProductView->AssociateModel(mInvoiceProductModel);
 	mInvoiceProductModel->DecRef();
@@ -112,6 +117,7 @@ void pof::SupplierView::CreateViews()
 	mInvoiceProductView->AppendTextColumn("Product", 0, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mInvoiceProductView->AppendTextColumn("Stock entry", 1, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mInvoiceProductView->AppendTextColumn("Cost", 2, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Entry date", 3, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
 	mCSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer4;
@@ -398,6 +404,11 @@ void pof::SupplierView::OnBack(wxCommandEvent& evt)
 
 void pof::SupplierView::OnCreateSupplier(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Supplier", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	auto str = wxGetTextFromUser("Please enter the name of the supplier", "Supplier").ToStdString();
 	if (str.empty()) return;
 
@@ -420,7 +431,7 @@ void pof::SupplierView::OnCreateSupplier(wxCommandEvent& evt)
 void pof::SupplierView::OnRemoveSupplier(wxCommandEvent& evt)
 {
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
-		wxMessageBox("User account cannot perform this function", "Stock check", wxICON_INFORMATION | wxOK);
+		wxMessageBox("User account cannot perform this function", "Supplier", wxICON_INFORMATION | wxOK);
 		return;
 	}
 	if (wxMessageBox("Are you sure you want to remove supplier?\nThis wouold remove all invoices associtated with the supplier", "Supplier", wxICON_WARNING | wxYES_NO) == wxNO) return;
@@ -433,6 +444,20 @@ void pof::SupplierView::OnRemoveSupplier(wxCommandEvent& evt)
 	wxMessageBox("Removed supplier from store!", "Supplier", wxICON_INFORMATION | wxOK);
 }
 
+void pof::SupplierView::OnRemoveInvoice(wxCommandEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Invoice", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (wxMessageBox("Are you sure you want to remove invoice?", "Invoice", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	auto item = mInvoiceView->GetSelection();
+	if (!item.IsOk()) return;
+
+	wxGetApp().mProductManager.GetInvoices()->RemoveData(item);
+}
+
 void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
@@ -442,6 +467,18 @@ void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
 	menu->Append(ID_REMV_SUPPLIER, "Remove supplier", nullptr);
 
 	mView->PopupMenu(menu);
+}
+
+void pof::SupplierView::OnInvoiceContextMenu(wxDataViewEvent& evt)
+{
+	auto item = mInvoiceView->GetSelection();
+	if (!item.IsOk()) return;
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_COPY_INVOICE_NAME, "Copy invoice name", nullptr);
+	menu->AppendSeparator();
+	menu->Append(ID_REMOVE_INVOICE, "Remove invoice", nullptr);
+
+	mInvoiceView->PopupMenu(menu);
 }
 
 void pof::SupplierView::OnSearch(wxCommandEvent& evt)
@@ -473,4 +510,24 @@ void pof::SupplierView::OnSearchCleared(wxCommandEvent& evt)
 	mView->Thaw();
 
 	CheckEmpty(SUPPLIER_VIEW);
+}
+
+void pof::SupplierView::OnCopyInvoice(wxCommandEvent& evt)
+{
+	auto item = mInvoiceView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mProductManager.GetInvoices()->GetDatastore()[idx];
+
+	wxClipboardLocker clipLocker;
+	if (!clipLocker) {
+		spdlog::error("Can't open the clipboard");
+		return;
+	}
+
+	auto str = boost::variant2::get<std::string>(row.first[pof::ProductManager::INVOICE_ID]);
+	wxTextDataObject* tObj = new wxTextDataObject(std::move(str));
+	wxTheClipboard->Clear();
+	wxTheClipboard->AddData(tObj);
 }

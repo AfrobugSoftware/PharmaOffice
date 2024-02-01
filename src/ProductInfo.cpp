@@ -1038,6 +1038,11 @@ void pof::ProductInfo::OnAddBarcode(wxCommandEvent& evt)
 
 void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Create Invoice", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	wxBusyCursor cursor;
 	auto item = InventoryView->GetSelection();
 	if (!item.IsOk()) return;

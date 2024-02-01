@@ -591,8 +591,14 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 			showFailedStatus(); return;
 		}
 
-		stop = dlg.Update(90, "Removing product from posion book");
+		stop = dlg.Update(85, "Removing product from posion book");
 		status = wxGetApp().mProductManager.RemoveProductInPoisonBook(next);
+		if (!stop || !status) {
+			showFailedStatus(); return;
+		}
+
+		stop = dlg.Update(90, "Removing product from posion book");
+		status = wxGetApp().mProductManager.RemoveProductInInvoice(next);
 		if (!stop || !status) {
 			showFailedStatus(); return;
 		}
@@ -696,6 +702,12 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 				if (!status) {
 					showFailedStatus(name); continue;
 				}
+
+				status = wxGetApp().mProductManager.RemoveProductInInvoice(next);
+				if (!status) {
+					showFailedStatus(name); continue;
+				}
+
 				removeSignal(next);
 				items.push_back(item);
 				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Remove {} product from store", name));
@@ -1877,6 +1889,7 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 			break;
 		case 2:
 			empty.Show();
+			CheckEmpty(); //possible to add product while in supplier view, check empty to see if we are still empty
 			break;
 		default:
 			break;
@@ -2327,6 +2340,9 @@ void pof::ProductView::CheckEmpty()
 {
 	auto& e = m_mgr.GetPane("Empty");
 	auto& d = m_mgr.GetPane("DataView");
+	auto& pane = m_mgr.GetPane("Supplier");
+	if (pane.IsShown()) return;
+
 	if (!d.IsOk() || !e.IsOk()) return;
 
 	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()){

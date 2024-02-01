@@ -199,6 +199,11 @@ pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, co
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	wxIcon appIcon;
+	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	SetIcon(appIcon);
+
 }
 
 pof::RegistrationDialog::~RegistrationDialog()
