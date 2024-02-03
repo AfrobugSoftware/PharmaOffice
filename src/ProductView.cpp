@@ -1896,6 +1896,7 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 		}
 	}
 	m_mgr.Update();
+	mSupplierView->CheckEmpty(pof::SupplierView::SUPPLIER_VIEW);
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
