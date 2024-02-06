@@ -18,7 +18,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
 	EVT_TOOL(pof::ProductInfo::ID_RESET, pof::ProductInfo::OnReset)
 	EVT_TOOL(pof::ProductInfo::ID_ADD_BARCODE, pof::ProductInfo::OnAddBarcode)
-
+	EVT_TOOL(pof::ProductInfo::ID_SAVE_CHART_IMAGE, pof::ProductInfo::OnSaveChartImage)
 
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
@@ -454,6 +454,102 @@ void pof::ProductInfo::CreateEmptyPanel()
 	mEmpty->SetSizer(bSizer6);
 	mEmpty->Layout();
 
+}
+
+void pof::ProductInfo::CreatChartPanel()
+{
+	mChartPanel = new wxChartPanel(this); // this should be inside hist book
+#ifdef wxUSE_GRAPHICS_CONTEXT
+	mChartPanel->SetAntialias(true);
+#endif
+
+}
+
+Chart* pof::ProductInfo::CreateChart()
+{
+	wxString names[] = { // category names
+			  wxT("Cat 1"),
+			  wxT("Cat 2"),
+			  wxT("Cat 3"),
+			  wxT("Cat 4"),
+			  wxT("Cat 5"),
+	};
+	// serie 1 values - we have only one serie
+	double values[] = {
+			10.0,
+			20.0,
+			5.0,
+			50.0,
+			25.0,
+	};
+
+	// Create dataset
+	CategorySimpleDataset* dataset = new CategorySimpleDataset(names, WXSIZEOF(names));
+
+	// add serie to it
+	dataset->AddSerie(wxT("Serie 0"), values, WXSIZEOF(values));
+
+	// create normal bar type with bar width = 10
+	BarType* barType = new NormalBarType(30);
+
+	// Set bar renderer for it
+	dataset->SetRenderer(new BarRenderer(barType));
+
+	// create line marker
+	LineMarker* lineMarker = new LineMarker(wxPen(wxColour("#DDF4FF"), 1, wxPENSTYLE_SHORT_DASH));
+
+	// set value to be marked, in our case horizontal line with x=25
+	lineMarker->SetHorizontalLine(25);
+
+	// and add marker to dataset
+	dataset->AddMarker(lineMarker);
+
+	// Create bar plot
+	BarPlot* plot = new BarPlot();
+
+	// Create left number axis, set it's margins, and add it to plot
+	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+	leftAxis->SetMargins(5, 0);
+	leftAxis->SetLabelTextColour(wxColour("#DADADA"));
+	leftAxis->SetLabelPen(wxPen(wxColour("#DADADA")));
+	leftAxis->SetMajorGridlinePen(wxPen(wxColour("#DADADA")));
+	plot->AddAxis(leftAxis);
+
+	// Create bottom axis, set it's margins, and add it to plot
+	CategoryAxis* bottomAxis = new CategoryAxis(AXIS_BOTTOM);
+	bottomAxis->SetMargins(20, 20);
+	bottomAxis->SetLabelTextColour(wxColour("#DADADA"));
+	bottomAxis->SetLabelPen(wxPen(wxColour("#DADADA")));
+	plot->AddAxis(bottomAxis);
+
+	// Add dataset to plot
+	plot->AddDataset(dataset);
+
+	plot->SetBackground(new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+
+	// Link first dataset with horizontal axis
+	plot->LinkDataHorizontalAxis(0, 0);
+
+	// Link first dataset with vertical axis
+	plot->LinkDataVerticalAxis(0, 0);
+
+	// Show a legend at the centre-right position.
+	Legend* legend = new Legend(wxCENTER, wxRIGHT, new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+	plot->SetLegend(legend);
+
+	// Create a custom title.
+	TextElement title(GetName());
+	title.SetColour(wxColour("#DADADA"));
+
+	// and finally construct and return chart
+	Chart* chart = new Chart(plot, new Header(title));
+
+	// Create a radial gradient background.
+	// Warning: Radial gradients are slow to draw in wxWidgets!
+	chart->SetBackground(new GradientAreaDraw(*wxTRANSPARENT_PEN,
+		wxColour("#8A8A8A"), wxColour("#707070"), wxALL));
+
+	return chart;
 }
 
 void pof::ProductInfo::RemoveCheckedState(wxAuiToolBarItem* item)
@@ -1113,6 +1209,24 @@ void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
 		wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));	
 	}
 	wxMessageBox(fmt::format("Created invoice {} for {} successfully!", str, suppname), "Add stock", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ProductInfo::OnSaveChartImage(wxCommandEvent& evt)
+{
+	Chart* chart = mChartPanel->GetChart();
+	if (chart != NULL) {
+		wxFileDialog dlg(this, wxT("Choose file..."), wxEmptyString, wxEmptyString,
+			wxString(wxT("PNG files (*.png)|*.png")), wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+		if (dlg.ShowModal() != wxID_OK)
+			return;
+
+		wxBitmap bitmap = mChartPanel->CopyBackbuffer();
+		bitmap.ConvertToImage().SaveFile(dlg.GetPath(), wxBITMAP_TYPE_PNG);
+	}
+	else {
+		spdlog::error("No chart is chosen!");
+	}
 }
 
 void pof::ProductInfo::RemovePropertyModification()
