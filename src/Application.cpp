@@ -276,6 +276,7 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame->Perspective(readData.ToStdString());
 
 	CreateMysqlDatabase(); //for testing
+	SetTopWindow(mMainFrame);
 
 	return mMainFrame->Show();
 }

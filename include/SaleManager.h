@@ -58,6 +58,7 @@ namespace pof {
 
 		bool LoadHistoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt);
 		void LoadProductSaleHistory(const boost::uuids::uuid& productUUID);
+		std::optional<pof::base::relation<pof::base::data::datetime_t, std::uint64_t>> GetProductSaleHistoryChart(const boost::uuids::uuid& puid);
 		inline std::unique_ptr<pof::DataModel>& GetSaleData() { return SaleData; }
 		inline std::unique_ptr<pof::DataModel>& GetProductHistory() { return ProductSaleHistory; }
 

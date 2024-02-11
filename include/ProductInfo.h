@@ -113,6 +113,12 @@ namespace pof
 				PAGE_EMPTY,
 			};
 
+			//hist pages
+			enum {
+				HIST_TABLE = 0,
+				HIST_CHART = 1,
+			};
+
 			using back_signal_t = boost::signals2::signal<void(void)>;
 			using update_signal_t = boost::signals2::signal<void(const PropertyUpdate&)>;
 			using stock_remv_signal = boost::signals2::signal<void(const pof::base::data::duuid_t&, std::uint64_t)>;
@@ -133,6 +139,8 @@ namespace pof
 				ID_ADD_BARCODE,
 				ID_INVEN_MENU_CREATE_INVOICE,
 				ID_SAVE_CHART_IMAGE,
+				ID_SHOW_HIST_TABLE,
+				ID_SHOW_HIST_CHART,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -146,7 +154,7 @@ namespace pof
 			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
 			void UpdateDropDowns();
-
+			void LoadChart();
 
 			void m_splitter1OnIdle(wxIdleEvent&);
 
@@ -180,6 +188,8 @@ namespace pof
 		void OnCreateInvoice(wxCommandEvent& evt);
 		void OnSaveChartImage(wxCommandEvent& evt);
 
+		void OnShowHist(wxCommandEvent& evt);
+
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;
 		pof::base::data::text_t CreatePeriodString();
@@ -194,5 +204,8 @@ namespace pof
 		pof::base::data::row_t mProductData;
 		std::optional<PropertyUpdate> mPropertyUpdate;
 		std::unordered_map<std::string, size_t> mNameToProductElem;
+
+		wxAuiToolBarItem* mShowHistChart = nullptr;
+		wxAuiToolBarItem* mShowHistTable = nullptr;
 	};	
 }

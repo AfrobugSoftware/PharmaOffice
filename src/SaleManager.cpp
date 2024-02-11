@@ -147,6 +147,32 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 
 }
 
+std::optional<pof::base::relation<pof::base::data::datetime_t, std::uint64_t>> pof::SaleManager::GetProductSaleHistoryChart(const boost::uuids::uuid& puid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(
+		SELECT s.sale_date, SUM(s.product_quantity)
+		FROM sales s
+		WHERE s.product_uuid = ?
+		GROUP BY Days(s.sale_date);
+		)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t, std::uint64_t>(*stmt);
+		if (!rel.has_value()) spdlog::error(mLocalDatabase->err_msg());
+		mLocalDatabase->finalise(*stmt);
+
+		return rel;
+	}
+	return std::nullopt;
+}
+
 bool pof::SaleManager::CreateSaleTable()
 {
 	if (mLocalDatabase) {
