@@ -281,8 +281,9 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	//dc->SetFont(mPharmacyNameFont);
 	wxString name(wxT("Bits"));
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
-
-	dc->SetFont(font);
+	//test this
+	wxFontInfo info = wxFontInfo(wxFONTSIZE_SMALL).AntiAliased().FaceName(name).Family(wxFONTFAMILY_DEFAULT).Style(wxFONTSTYLE_NORMAL).Weight(wxFONTWEIGHT_NORMAL);
+	dc->SetFont(info);
 
 
 	wxCoord xExtent = 0, yExtent = 0;

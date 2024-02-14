@@ -1088,12 +1088,12 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 						}
 						iv->Clear();
 					}
-					wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod.get()));
-
-					i++;
-					pg = static_cast<int>(std::clamp(static_cast<float>(((float)i / (float)count) * 90.f), 0.0f, 90.0f));
-					dlg.Update(pg);
 				}
+				wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod.get()));
+
+				i++;
+				pg = static_cast<int>(std::clamp(static_cast<float>(((float)i / (float)count) * 90.f), 0.0f, 90.0f));
+				dlg.Update(pg);
 			}
 			wxMessageBox(fmt::format("Added {:d} products to the store from {} formulary", products.size(), static_cast<std::string>(header["pharmacy"])),
 				"Formulary", wxICON_INFORMATION | wxOK);
@@ -1113,7 +1113,6 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 				}
 			}
 			wxGetApp().mProductManager.GetProductData()->StoreData(std::move(prod));
-
 		}
 		mProductView->CheckEmpty();
 	}

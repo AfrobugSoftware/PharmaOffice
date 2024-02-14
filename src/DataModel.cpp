@@ -179,9 +179,9 @@ bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	reg.reserve(search_for.size() * 2);
 	for (auto& c : search_for)
 	{
-		if (!std::isalnum(c)) {
+		if (!std::isalnum(c) && !std::isspace(c)) {
 			//what to do
-			return false;
+			return true;
 		}
 		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
 	}
@@ -211,9 +211,9 @@ bool pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& sea
 	reg.reserve(searchFor.size() * 2);
 	for (auto& c : searchFor)
 	{
-		if (!std::isalnum(c)) {
+		if (!std::isalnum(c) && !std::isspace(c)) {
 			//what to do
-			return false;
+			return true;
 		}
 		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
 	}
