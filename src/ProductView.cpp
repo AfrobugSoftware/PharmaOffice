@@ -1088,8 +1088,12 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		}
 		auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
 		auto inc = menu->Append(ID_INCR_PRICE, "Increase store prices", nullptr);
-		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Download as excel", nullptr);
-		
+		if (mSelections.empty()) {
+			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Export products as excel", nullptr);
+		}
+		else {
+			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, fmt::format("Export {:d} products as excel", mSelections.size()), nullptr);
+		}
 
 		wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
 		wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
