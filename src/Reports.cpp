@@ -218,6 +218,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 		wxTheClipboard->AddData(tObj);
 
 		}, ID_COPY_RECIEPT_ID);
+	mListReport->Bind(wxEVT_MENU, std::bind_front(&pof::ReportsDialog::OnDoReturn, this), ID_RETURN_SALE);
 }
 
 pof::ReportsDialog::~ReportsDialog()
@@ -252,7 +253,7 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 
 bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t month)
 {
-	auto data = wxGetApp().mProductManager.GetConsumptionPattern(month);
+	data = wxGetApp().mProductManager.GetConsumptionPattern(month);
 	if (!data.has_value()) return false;
 
 	if (data->empty()) {
@@ -348,8 +349,6 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 
 bool pof::ReportsDialog::LoadEndOFDay()
 {
-
-	std::optional<pof::base::data> data = std::nullopt;
 	std::string tt; 
 
 	if (mCurReportType == ReportType::EOD){
@@ -370,6 +369,23 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		//wxMessageBox("No end of day, No sale has happened yet.", "END OF DAY", wxICON_INFORMATION | wxOK);
 		return true;
 	}
+
+	if (bFilterReturns){
+		auto& tab = data->tab();
+		auto i = std::ranges::remove_if(tab, [&](const pof::base::data::row_t& row) -> bool {
+			auto& pt = boost::variant2::get<std::string>(row.first[6]);
+			return pt == "Returned";
+		});
+		tab.erase(i.begin(), i.end());
+		if (data->empty()) {
+			mBook->SetSelection(REPORT_EMPTY_EOD);
+			text->SetLabelText(wxEmptyString);
+			textItem->SetMinSize(text->GetSize());
+
+			return true;
+		}
+	}
+
 	auto& report = *mListReport;
 	{
 		//load data into grid
@@ -538,8 +554,10 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 		};
 		
 		wxMenu* menu = new wxMenu;
-		auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
-	
+		auto x = menu->Append(ID_RETURN_SALE, "Return sale", nullptr);
+		menu->AppendSeparator();
+		if(bShowSaleID) auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
+
 		wxMenu* submenu = new wxMenu;
 		submenu->Append(0, opts[0].data(), nullptr);
 		submenu->Append(1, opts[1].data(), nullptr);
@@ -610,13 +628,13 @@ void pof::ReportsDialog::OnChangePaymentOption(wxCommandEvent& evt)
 	
 
 	wxBusyCursor cursor;
-	std::optional<pof::base::data> data = std::nullopt;
-	if (mCurReportType == ReportType::EOD) {
-		data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
-	}
-	else if (mCurReportType == ReportType::EOM) {
-		data = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
-	}
+	//std::optional<pof::base::data> data = std::nullopt;
+	//if (mCurReportType == ReportType::EOD) {
+	//	data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
+	//}
+	//else if (mCurReportType == ReportType::EOM) {
+	//	data = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
+	//}
 
 	if (!data.has_value()) {
 		wxMessageBox("Error in getting data", "Report", wxICON_ERROR | wxOK);
@@ -651,6 +669,78 @@ void pof::ReportsDialog::OnChangePaymentOption(wxCommandEvent& evt)
 		UpdateTotals(data.value());
 	}
 	else wxMessageBox("Failed to change payment option", "Report", wxICON_ERROR | wxOK);
+}
+
+void pof::ReportsDialog::OnDoReturn(wxCommandEvent& evt)
+{
+	if (wxMessageBox("Are you sure you want to return this product?", "Return", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	
+	size_t id = mSelItem.GetId();
+	if (!data.has_value() || data->empty()) return; //not possible but still
+
+	wxBusyCursor cur;
+	auto& row = data.value()[id];
+	auto& pid = boost::variant2::get<pof::base::data::duuid_t>(row.first[0]);
+	auto& sid = boost::variant2::get<pof::base::data::duuid_t>(row.first[5]);
+	if (wxGetApp().mSaleManager.CheckReturned(sid, pid)) {
+		wxMessageBox("Product has already been returned", "Return", wxICON_WARNING | wxOK);
+		return;
+	}
+	auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, sid);
+	if (!retQuan.has_value()) {
+		wxMessageBox("Invalid return quantity", "Return", wxICON_ERROR | wxOK);
+		return;
+	}
+	bool status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
+	if (!status) {
+		wxMessageBox("Failed to return product", "Return", wxICON_ERROR | wxOK);
+		return;
+	}
+	status = wxGetApp().mSaleManager.ReturnFromSales(sid, pid);
+	if (!status) {
+		wxMessageBox("Failed to return product", "Return", wxICON_ERROR | wxOK);
+		return;
+	}
+	std::string newstr = "Returned";
+	status = wxGetApp().mSaleManager.ChangePaymentOption(sid, pid, newstr);
+	if (status){
+
+		mSelItem.SetColumn(4);
+		mSelItem.SetText(newstr);
+		mSelItem.SetMask(wxLIST_MASK_TEXT);
+		mListReport->SetItem(mSelItem);
+
+		row.first[6] = std::move(newstr);
+		UpdateTotals(data.value());
+	}
+
+	//update the product
+	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto prodIter = std::ranges::find_if(prodDatastore,
+		[&](auto& r) -> bool {
+			return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
+			== pid;
+		});
+
+	if (std::end(prodDatastore) != prodIter) {
+		wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
+	}
+
+	auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, boost::lexical_cast<std::string>(sid)));
+}
+
+void pof::ReportsDialog::OnFilterReturns(wxCommandEvent& evt)
+{
+	bFilterReturns = evt.IsChecked();
+	m_panel5->Freeze();
+	mListReport->Freeze();
+	mListReport->ClearAll();
+	LoadEndOFDay();
+	mListReport->Thaw();
+	mListReport->Refresh();
+	m_panel5->Thaw();
+	m_panel5->Refresh();
 }
 
 void pof::ReportsDialog::CreateToolBar()
@@ -690,8 +780,8 @@ void pof::ReportsDialog::CreateEODToolBar()
 	mTools->AddControl(mSaleIdSearch);
 	mTools->AddControl(new wxButton(mTools, ID_SEARCH_SALEID, "Search"), "Text");
 	mTools->AddStretchSpacer();
-
-	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxArtProvider::GetBitmap("application"), "Show/Hide the receipt ID", wxITEM_CHECK);
+	mTools->AddTool(ID_REMOVE_RETURNS, "Filter returns", wxNullBitmap, "Remove returns from report", wxITEM_CHECK);
+	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxNullBitmap, "Show/Hide the receipt ID", wxITEM_CHECK);
 	mTools->AddSpacer(5);
 	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
@@ -711,7 +801,9 @@ void pof::ReportsDialog::CreateEODToolBar()
 		m_panel5->Thaw();
 		m_panel5->Refresh();
 
-	}, ID_SHOW_SALE_ID); 
+	}, ID_SHOW_SALE_ID);
+
+	this->Bind(wxEVT_TOOL, std::bind_front(&pof::ReportsDialog::OnFilterReturns, this), ID_REMOVE_RETURNS);
 }
 
 void pof::ReportsDialog::CreateEmptyEodPage()

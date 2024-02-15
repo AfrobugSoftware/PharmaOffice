@@ -81,6 +81,8 @@ namespace pof
 			ID_COPY_RECIEPT_ID,
 			ID_SEARCH_SALEID,
 			ID_CHANGE_PAYMENT_OPT,
+			ID_RETURN_SALE,
+			ID_REMOVE_RETURNS,
 		};
 
 		enum {
@@ -117,6 +119,8 @@ namespace pof
 		void OnSaleIdSearch(wxCommandEvent& evt);
 		void OnSaleIdCleared(wxCommandEvent& evt);
 		void OnChangePaymentOption(wxCommandEvent& evt);
+		void OnDoReturn(wxCommandEvent& evt);
+		void OnFilterReturns(wxCommandEvent& evt);
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();
@@ -130,8 +134,11 @@ namespace pof
 		void UpdateTotals(const pof::base::data& data);
 		void UpdateConsumptionTotals(const pof::base::data& data);
 		bool bShowSaleID = false;
+		bool bFilterReturns = false;
+
 		ReportType mCurReportType;
 		wxListItem mSelItem;
+		std::optional<pof::base::data> data = std::nullopt;
 		DECLARE_EVENT_TABLE()
 	};
 
