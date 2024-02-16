@@ -26,6 +26,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_ROLLBACK, pof::MainFrame::OnRollbackData)
 	EVT_MENU(pof::MainFrame::ID_IMPORT_FORMULARY, pof::MainFrame::OnImportFormulary)
 	EVT_MENU(pof::MainFrame::ID_EXPORT_FORMULARY, pof::MainFrame::OnExportFormulary)
+	EVT_MENU(pof::MainFrame::ID_CHANGE_FONT, pof::MainFrame::OnChangeFont)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -129,6 +130,8 @@ void pof::MainFrame::CreateMenuBar()
 	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
 
 	//pharmacy menu
+	Menus[1]->Append(ID_CHANGE_FONT, "Font", nullptr, "Change the font of views");
+	Menus[1]->AppendSeparator();
 	Menus[1]->Append(ID_MENU_PHARMACY_BACKUP, "Backup Store Data", nullptr, "Back up the current data in the database");
 	Menus[1]->Append(ID_MENU_PHARMACY_ROLLBACK, "Roll back Store Data", nullptr, "Roll back database to a backed up database");
 
@@ -646,6 +649,15 @@ void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
 void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
 {
 	wxGetApp().ShowSettings();
+}
+
+void pof::MainFrame::OnChangeFont(wxCommandEvent& evt)
+{
+	wxFontDialog dialog(nullptr);
+	if (dialog.ShowModal() != wxID_OK) return;
+
+	wxGetApp().mFontSettings = dialog.GetFontData();
+	wxGetApp().mfontSignal();
 }
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)

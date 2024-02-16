@@ -162,6 +162,7 @@ namespace pof
 		void OnAuiThemeChange();
 		void CheckEmpty();
 
+		void OnFontChanged();
 
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);

@@ -10,6 +10,7 @@
 #include <wx/progdlg.h>
 #include <wx/infobar.h>
 #include <wx/creddlg.h>
+#include <wx/fontdlg.h>
 
 #include "AuiTheme.h"
 #include "LogSink.h"
@@ -95,6 +96,7 @@ namespace pof {
 			ID_MENU_PHARMACY_ROLLBACK,
 			ID_IMPORT_FORMULARY,
 			ID_EXPORT_FORMULARY,
+			ID_CHANGE_FONT,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -135,6 +137,7 @@ namespace pof {
 		void OnNotif(wxCommandEvent& evt);
 		void OnSaleAlerts(wxCommandEvent& evt);
 		void OnShowSettings(wxCommandEvent& evt);
+		void OnChangeFont(wxCommandEvent& evt);
 		//test 
 		void OnTestSave(wxCommandEvent& evt);
 		void OnTestLoad(wxCommandEvent& evt);

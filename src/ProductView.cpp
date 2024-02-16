@@ -2357,6 +2357,10 @@ void pof::ProductView::CheckEmpty()
 	m_mgr.Update();
 }
 
+void pof::ProductView::OnFontChanged()
+{
+}
+
 void pof::ProductView::ShowNoResult(const std::string& search)
 {
 	mNoResult->Freeze();
