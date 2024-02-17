@@ -6,6 +6,7 @@
 #include <functional>
 #include <algorithm>
 #include <exception>
+#include <future>
 
 #include <boost/signals2.hpp>
 #include <boost/mysql.hpp>
@@ -35,6 +36,7 @@ namespace pof {
 
 			boost::mysql::diagnostics m_diag; //server diagonis
 			std::shared_ptr<manager> m_manager; //must be the database manager
+			std::promise<std::shared_ptr<pof::base::data>> m_promise;
 
 			query(std::shared_ptr<manager> man = nullptr) : m_manager(man) {
 				m_data = std::make_shared<pof::base::data>();
@@ -42,6 +44,8 @@ namespace pof {
 
 			//Text query
 			virtual boost::asio::awaitable<void> operator()() {
+				auto this_ = shared_t::shared_from_this(); //hold till we leave the coroutine
+
 				boost::mysql::results result;
 
 				timer_t timer(co_await boost::asio::this_coro::executor);
@@ -61,22 +65,25 @@ namespace pof {
 					case 1:
 						//what happens if we timeout ?
 						//signal the query on timeout ...
-						//ec = std::error_code(boost::asio::error::timed_out);
 						ec = boost::system::error_code(boost::asio::error::timed_out);
+						throw std::system_error(ec);
 						break; //
 					default:
 						break;
 					}
 
 					if (ec) {
-						//spdlog::error("{:ec}", std::error_code(ec));
-						m_sig(ec, shared_t::shared_from_this());
+						throw std::system_error(ec);
+					}
+
+					if (!result.has_value()) {
+						//query did not return a value, is this an error ?
+						m_promise.set_value(nullptr); //set an empty data ? 
 						co_return;
 					}
-					if (!result.has_value()) {
-						//query did not return a value
-						//spdlog::info("{:ec}, {}", std::error_code(ec), result.info());
-						m_sig(ec, shared_t::shared_from_this());
+					else if (result.rows().empty()) {
+						m_promise.set_value(m_data); //set an empty data ? 
+						co_return;
 					}
 					else {
 						const auto& meta = result.meta();
@@ -121,17 +128,70 @@ namespace pof {
 							}
 						}
 						const auto& rows = result.rows();
+						const auto& meta = result.meta();
+
 						m_data->reserve(rows.size());
 						for (const auto& row : rows) {
 							//copy data
+							size_t i = 0;
+							std::vector<pof::base::data::data_t> v;
+							v.resize(meta.size()); //
 
+							for (const auto& m : meta)
+							{
+								auto k = m.type();
+								
+								switch (k)
+								{
+								case boost::mysql::column_type::int_:
+								case boost::mysql::column_type::bigint:
+								case boost::mysql::column_type::decimal:
+									v[i] = row.at(i).as_int64();
+									break;
+								case boost::mysql::column_type::float_:
+									v[i] = row.at(i).as_float();
+									break;
+								case boost::mysql::column_type::double_:
+									v[i] = row.at(i).as_double();
+									break;
+								case boost::mysql::column_type::bit:
+								case boost::mysql::column_type::binary:
+								case boost::mysql::column_type::varbinary:
+								case boost::mysql::column_type::blob:
+									v[i] = row.at(i).as_blob();
+									break;
+								case boost::mysql::column_type::time:
+
+								case boost::mysql::column_type::date:
+								case boost::mysql::column_type::datetime:
+								case boost::mysql::column_type::timestamp:
+									v[i] = row.at(i).as_datetime().as_time_point(); // wrong type
+									break;
+								case boost::mysql::column_type::char_:
+								case boost::mysql::column_type::varchar:
+								case boost::mysql::column_type::text:
+									break;
+									break;
+								case boost::mysql::column_type::enum_:
+									break;
+								case boost::mysql::column_type::set:
+									break;
+								case boost::mysql::column_type::json:
+									break;
+								case boost::mysql::column_type::unknown:
+									break;
+								default:
+									break;
+								}
+								i++; //next column
+							}
+							m_data->emplace(std::move(v));
 
 						}
-						m_sig(ec, shared_t::shared_from_this()); //data moved into the datamodels cache
+						m_promise.set_value(m_data); //set the data
 					}
-				}catch (std::exception& exp) {
-					auto why = exp.what();
-					spdlog::info("{}", why);
+				}catch (...) {
+					m_promise.set_exception(std::current_exception());
 			    }
 			}
 		};
