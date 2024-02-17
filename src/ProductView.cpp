@@ -377,6 +377,24 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 		m_dataViewCtrl1->EnsureVisible(pof::DataModel::GetItemFromIdx(count - 1), mProductNameCol);
 		m_dataViewCtrl1->Select(pof::DataModel::GetItemFromIdx(count - 1));
 
+		pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
+		if (!m_searchCtrl1->IsEmpty()) {
+			//in search sat
+			bool empty = false;
+			std::string search = m_searchCtrl1->GetValue().ToStdString();
+
+			if (!mActiveCategory.empty()) {
+				empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			}
+			else {
+				empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			}
+
+		}
+		else if (!mActiveCategory.empty()){
+			datam->ReloadSet(); //reloads the active category
+		}
+
 		mInfoBar->ShowMessage("Product Added Sucessfully", wxICON_INFORMATION);
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, "Created A product");
 	}
@@ -731,6 +749,26 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 			wxMessageBox("Critial error in remove multiple products", "Critical error", wxICON_INFORMATION | wxOK);
 		}
 	}
+
+	//reload the view when we modify the contents
+	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
+	if (!m_searchCtrl1->IsEmpty()) {
+		//in search sat
+		bool empty = false;
+		std::string search = m_searchCtrl1->GetValue().ToStdString();
+
+		if (!mActiveCategory.empty()) {
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+		else {
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+
+	}
+	else if (!mActiveCategory.empty()) {
+		datam->ReloadSet(); //reloads the active category
+	}
+
 	CheckEmpty();
 }
 
@@ -2058,6 +2096,8 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
 		if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+
+		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
 	}
 	else {
