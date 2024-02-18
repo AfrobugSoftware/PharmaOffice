@@ -85,7 +85,8 @@ namespace pof {
 		bool CheckReturned(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid);
 		bool ChangePaymentOption(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid,
 		 const std::string& option);
-		
+		bool ResellItem(const boost::uuids::uuid& saleID, const boost::uuids::uuid& puid, size_t quan);
+
 		bool SaveInfo(const boost::uuids::uuid& saleID, const std::string& info);
 		std::optional<std::string> GetInfo(const boost::uuids::uuid& saleID);
 		bool RemoveInfo(const boost::uuids::uuid& saleID);

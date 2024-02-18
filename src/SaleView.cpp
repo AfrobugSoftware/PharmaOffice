@@ -1659,8 +1659,8 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		}
 		bool status = CheckProductClass(*iter);
 		if (status) {
-			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale",
-				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO)) return;
+			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue?",
+				boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
 		}
 
 		CheckControlled(*iter);

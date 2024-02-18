@@ -83,6 +83,7 @@ namespace pof
 			ID_CHANGE_PAYMENT_OPT,
 			ID_RETURN_SALE,
 			ID_REMOVE_RETURNS,
+			ID_ADD_RETURNS,
 		};
 
 		enum {
@@ -121,6 +122,7 @@ namespace pof
 		void OnChangePaymentOption(wxCommandEvent& evt);
 		void OnDoReturn(wxCommandEvent& evt);
 		void OnFilterReturns(wxCommandEvent& evt);
+		void OnAddReturns(wxCommandEvent& evt);
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();

@@ -1049,6 +1049,11 @@ void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
 
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& irow = wxGetApp().mProductManager.GetInventory()->GetDatastore()[idx];
+	auto& manuname = boost::variant2::get<std::string>(irow.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
+	if (manuname == "RETURN"){
+		wxMessageBox("Cannot create invoice for a \'RETURN\' inventory", "Add invoice", wxICON_WARNING | wxOK);
+		return;
+	}
 
 	std::string str = wxGetTextFromUser("Please enter invoice number for inventory entry", "Add invoice").ToStdString();
 	if (str.empty()) return;

@@ -5,6 +5,7 @@
 BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
 EVT_TOOL(pof::ReportsDialog::ID_EXCEL, pof::ReportsDialog::OnDownloadExcel)
+EVT_MENU(pof::ReportsDialog::ID_ADD_RETURNS, pof::ReportsDialog::OnAddReturns)
 EVT_DATE_CHANGED(pof::ReportsDialog::ID_EOD_DATE, pof::ReportsDialog::OnDateChange)
 EVT_BUTTON(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdSearch)
 EVT_SEARCH_CANCEL(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdCleared)
@@ -554,7 +555,15 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 		};
 		
 		wxMenu* menu = new wxMenu;
-		auto x = menu->Append(ID_RETURN_SALE, "Return sale", nullptr);
+		size_t id = mSelItem.GetId();
+		auto& sale_type = boost::variant2::get<std::string>(data.value()[id].first[6]);
+		if (sale_type == "Returned"){
+			auto x = menu->Append(ID_ADD_RETURNS, "Resell item", nullptr);
+		}
+		else {
+			auto x = menu->Append(ID_RETURN_SALE, "Return sale", nullptr);
+		}
+
 		menu->AppendSeparator();
 		if(bShowSaleID) auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
 
@@ -741,6 +750,65 @@ void pof::ReportsDialog::OnFilterReturns(wxCommandEvent& evt)
 	mListReport->Refresh();
 	m_panel5->Thaw();
 	m_panel5->Refresh();
+}
+
+void pof::ReportsDialog::OnAddReturns(wxCommandEvent& evt)
+{
+	if (wxMessageBox("Are you sure you want to resell this product?", "Return", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxCredentialEntryDialog dialog(this, "User credentials are required resell the item", "Roll back database");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid user name or password", "Roll back", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+	size_t id = mSelItem.GetId();
+	auto& v = data.value()[id].first;
+	const auto& pid = boost::variant2::get<boost::uuids::uuid>(v[0]);
+	const auto& saleid = boost::variant2::get<boost::uuids::uuid>(v[5]);
+	const auto& quan = boost::variant2::get<std::uint64_t>(v[3]);
+
+	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
+		return (pid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+		});
+	
+	if (boost::variant2::get<std::uint64_t>(pIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]) < quan) {
+		wxMessageBox("Cannot resell this item, there is no stock for the item", "Resell item", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	//update the quantity
+	pIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+		boost::variant2::get<std::uint64_t>(pIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]) - quan;
+
+	
+	if (wxGetApp().mSaleManager.ResellItem(saleid, pid, quan)){
+		std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
+		
+		quans.emplace_back(std::make_tuple(pid, boost::variant2::get<std::uint64_t>(pIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+		std::string newstr = "Cash"s;
+
+		wxGetApp().mProductManager.UpdateProductQuan(quans);
+		mSelItem.SetColumn(4);
+		mSelItem.SetText(newstr);
+		mSelItem.SetMask(wxLIST_MASK_TEXT);
+		mListReport->SetItem(mSelItem);
+
+		v[6] = std::move(newstr);
+		UpdateTotals(data.value());
+	}
 }
 
 void pof::ReportsDialog::CreateToolBar()
