@@ -366,69 +366,44 @@ bool pof::SignInDialog::ValidateGlobal()
 	std::string Username = mUserName->GetValue().ToStdString();
 	std::string UserPassword = mPassword->GetValue().ToStdString();
 	bool check = mKeepMeSigned->IsChecked();
-
+	
 	try {
-		//do verification how ??
-			//send to chws?
-		wxProgressDialog dlg("SIGING IN", "CONNECTING TO FILODOXIA...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
-
-		js::json payload;
-		payload["Username"] = Username;
-		payload["Password"] = UserPassword;
-#if 0
-		//not implemented yet, still an idea
-		std::string NetAddress = wxGetApp()["network.address"s].get_value<std::string>();
-		std::string NetPort = wxGetApp()["network.port"s].get_value<std::string>();
-#endif
-		auto sess = std::make_shared<pof::base::ssl::session<http::string_body, http::string_body>>(wxGetApp().mNetManager.io(), wxGetApp().mNetManager.ssl());
-		auto fut = sess->req<http::verb::post>("localhost", "/accounts/signin", "80", payload.dump());
-
-		dlg.Update(10, "Sending requests...");
-
-		//cache the sign in if the keep signed in was checked.
-
-		std::future_status s = fut.wait_for(3ms);
-		constexpr std::array<std::string_view, 3> wait_text{ ".", "..", "..." };
-		size_t i = 0, count = 10;
-		while (s != std::future_status::ready) {
-			//display visual feedback
-			auto end = dlg.Update(count, fmt::format("Waiting{}", wait_text[i]));
-			if (!end) {
-				if (wxMessageBox("Do you really want to cancel sign in", "SIGN IN", wxICON_WARNING | wxYES_NO) == wxYES) {
-					sess->cancel();
-					break;
-				}
-			}
-			i = ++i % 3;
-			count = ++count % 80;
-			s = fut.wait_for(3us);
-		}
-
-		auto data = fut.get();
-		mUserData = data.body();
-#if 0
-		wxGetApp()["session"].put("sesion.keep_alive", check);
-#endif
-		dlg.Update(100);
+		
+	
 	}
-	catch (const std::exception& exp) {
-		wxMessageBox(exp.what(), "SIGN IN");
-		return false;
+	catch (std::exception& exp){
+		wxMessageBox(exp.what(), "Sign-in", wxICON_ERROR | wxOK);
 	}
+
 	return true;
 }
 
 bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 {
-	constexpr const std::string_view sql = "INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);";
-	auto& dbPtr = wxGetApp().mLocalDatabase;
-	if (!dbPtr) return false;
+	if (wxGetApp().mLocalDatabase) {
+		constexpr const std::string_view sql = "INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);";
+		auto& dbPtr = wxGetApp().mLocalDatabase;
+		if (!dbPtr) return false;
 
-	auto stmt = dbPtr->prepare(sql);
-	assert(stmt.has_value());
-	dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
-		acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
-	bool ret = dbPtr->execute(*stmt);
-	dbPtr->finalise(*stmt);
-	return ret;
+		auto stmt = dbPtr->prepare(sql);
+		assert(stmt.has_value());
+		dbPtr->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
+			acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+		bool ret = dbPtr->execute(*stmt);
+		dbPtr->finalise(*stmt);
+		return ret;
+	}
+	else {
+	
+		auto q = std::make_shared<pof::base::querystmt<pof::base::databasemysql>>(wxGetApp().mMysqlDatabase,
+			"INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);",
+			std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
+				acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+
+
+	
+	}
+	return false;
 }

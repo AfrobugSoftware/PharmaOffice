@@ -96,6 +96,7 @@ namespace pof {
 		bool CheckForUpdate();
 		bool LunchWizard();
 		bool OpenLocalDatabase();
+		bool OpenMysqlDatabase();
 		bool SetUpPaths();
 		bool LoadSettings();
 		bool SaveSettings();

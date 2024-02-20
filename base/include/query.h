@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <exception>
 #include <future>
+#include <tuple>
+#include <type_traits>
 
 #include <boost/signals2.hpp>
 #include <boost/mysql.hpp>
@@ -23,6 +25,66 @@
 using namespace boost::asio::experimental::awaitable_operators;
 namespace pof {
 	namespace base {
+
+		//convert bind datetime
+		template<size_t N, typename tuple_t, typename arg_type, std::enable_if_t<std::is_same_v<arg_type, pof::base::data::datetime_t>, int> = 0>
+		auto do_transform(const tuple_t& tup) -> std::tuple<boost::mysql::datetime>
+		{
+			pof::base::data::datetime_t tt = std::get<N>(tup);
+			boost::mysql::datetime::time_point pt(tt);
+			return std::make_tuple(boost::mysql::datetime(pt));
+		}
+
+		template<size_t N, typename tuple_t, typename arg_type>
+		auto do_transform(const tuple_t& tup) -> std::tuple<arg_type>
+		{
+			return std::make_tuple(std::get<N>(tup));
+		}
+		
+
+		template<size_t N>
+		struct ll {
+			template<typename tuple_t>
+			static auto transform(const tuple_t& tup)
+			{
+				/*using arg_type = std::decay_t<std::tuple_element_t<N, tuple_t>>;
+				
+				auto t = ll<N - 1>::template transform<tuple_t>(tup);
+
+				if constexpr (std::is_same_v<arg_type, pof::base::data::datetime_t>){
+					pof::base::data::datetime_t tt = std::get<N>(tup);
+					boost::mysql::datetime::time_point pt(tt);
+
+					return std::tuple_cat(std::make_tuple(boost::mysql::datetime(pt)), t);
+				}
+				else {
+					return std::tuple_cat(std::make_tuple(std::get<N>(tup)), t);
+				}*/
+
+			}
+
+		};
+
+		template<>
+		struct ll<0>
+		{
+			template<typename tuple_t>
+			static auto transform(const tuple_t& tup){
+			/*	using arg_type = std::decay_t<std::tuple_element_t<0, tuple_t>>;
+				
+				if constexpr (std::is_same_v<arg_type, pof::base::data::datetime_t>) {
+					pof::base::data::datetime_t tt = std::get<0>(tup);
+					boost::mysql::datetime::time_point pt(tt);
+
+					return std::make_tuple(boost::mysql::datetime(pt));
+				}
+				else {
+					return std::make_tuple(std::get<0>(tup));
+				}*/
+
+			}
+		};
+
 		template<typename manager>
 		struct query : public std::enable_shared_from_this<query<manager>> {
 			using default_token = boost::asio::as_tuple_t<boost::asio::use_awaitable_t<>>;
@@ -31,7 +93,6 @@ namespace pof {
 			using shared_t = std::enable_shared_from_this<query<manager>>;
 			static constexpr auto tuple_awaitable = boost::asio::as_tuple(boost::asio::use_awaitable);
 
-			boost::signals2::signal<void(std::error_code, std::shared_ptr<query>)> m_sig;
 			std::string m_sql;
 			std::shared_ptr<pof::base::data> m_data;
 
@@ -132,7 +193,6 @@ namespace pof {
 							}
 						}
 						const auto& rows = result.rows();
-						const auto& meta = result.meta();
 
 						m_data->reserve(rows.size());
 						for (const auto& row : rows) {
@@ -214,9 +274,13 @@ namespace pof {
 			querystmt(std::shared_ptr<manager> manager = nullptr) : base_t(manager) {}
 			querystmt(std::shared_ptr<manager> manager,
 				const std::string& sql, std::tuple<args...>&& arguments) : base_t(manager), base_t::m_sql(sql){
-				m_arguments.emplace_back(std::forward<std::tuple<args...>>(arguments));
+					m_arguments.emplace_back(std::forward<std::tuple<args...>>(arguments));
 				
 				}
+			querystmt(std::shared_ptr<manager> manager,
+				const std::string& sql, pof::base::relation<args...>&& rels)
+			: base_t(manager), base_t::m_sql(sql), m_arguments(rels){
+			}
 
 			virtual boost::asio::awaitable<void> operator()() override {
 				auto this_ = base_t::shared_t::shared_from_this(); //hold till we leave the coroutine
@@ -224,16 +288,17 @@ namespace pof {
 				boost::mysql::statement stmt;
 				std::error_code ec;
 				auto& conn = base_t::m_manager->connection();
-				try{
-					base_t::timer_t timer(co_await boost::asio::this_coro::executor);
+				try {
+					typename base_t::timer_t timer(co_await boost::asio::this_coro::executor);
 					timer.expires_after(std::chrono::minutes(1));
 
-					auto complete = co_await(conn.async_prepare_statement(base_t::m_sql, stmt, base_t::m_diag, base_t::tuple_awaitable) || timer.async_wait());
+					auto complete = co_await(conn.async_prepare_statement(base_t::m_sql, base_t::m_diag, base_t::tuple_awaitable) || timer.async_wait());
 					switch (complete.index())
 					{
 					case 0:
 						timer.cancel();
 						ec = std::get<0>(std::get<0>(complete));
+						stmt = std::get<1>(std::get<0>(complete));
 						break;
 					case 1:
 						//what happens if we timeout ?
@@ -248,12 +313,13 @@ namespace pof {
 						throw std::system_error(ec);
 					}
 
-
-					for(auto& tup : m_arguments){
+					constexpr const size_t s = sizeof...(args);
+					for (auto& tup : m_arguments) {
 						boost::mysql::results result;
 						timer.expires_after(std::chrono::minutes(1));
-						auto comp = co_await (conn.async_execute(tup, result, base_t::mDiag, base_t::tuple_awaitable) ||
-							 timer.async_wait());
+						auto ttup = ll<s>::template transform<std::tuple<args...>>(tup);
+						auto comp = co_await(conn.async_execute(ttup, result, base_t::mDiag, base_t::tuple_awaitable) ||
+							timer.async_wait());
 						switch (comp.index())
 						{
 						case 0:
@@ -280,115 +346,115 @@ namespace pof {
 							base_t::m_promise.set_value(base_t::m_data);
 						}
 						else {
-					const auto& meta = result.meta();
-					auto& datameta = base_t::m_data->get_metadata();
-					datameta.reserve(meta.size());
-					for (const auto& m : meta) {
-						auto k = m.type();
-						switch (k)
-						{
-						case boost::mysql::column_type::bigint:
-							datameta.emplace_back(pof::base::data::kind::uint64);
-							break;
-						case boost::mysql::column_type::smallint:
-							datameta.emplace_back(pof::base::data::kind::uint32);
-							break;
-						case boost::mysql::column_type::text:
-							datameta.emplace_back(pof::base::data::kind::text);
-							break;
-						case boost::mysql::column_type::json:
-							datameta.emplace_back(pof::base::data::kind::text);
-							break;
-						case boost::mysql::column_type::double_:
-							datameta.emplace_back(pof::base::data::kind::float64);
-							break;
-						case boost::mysql::column_type::float_:
-							datameta.emplace_back(pof::base::data::kind::float32);
-							break;
-						case boost::mysql::column_type::datetime:
-							datameta.emplace_back(pof::base::data::kind::datetime);
-							break;
-						case boost::mysql::column_type::blob:
-							datameta.emplace_back(pof::base::data::kind::float32);
-							break;
-						case boost::mysql::column_type::int_:
-							datameta.push_back(pof::base::data::kind::int32);
-							break;
-						case boost::mysql::column_type::unknown:
-							datameta.push_back(pof::base::data::kind::null);
-							break;
-						default:
-							break;
-						}
-					}
-					const auto& rows = result.rows();
-					const auto& meta = result.meta();
-
-					base_t::m_data->reserve(rows.size());
-					for (const auto& row : rows) {
-						//copy data
-						size_t i = 0;
-						std::vector<pof::base::data::data_t> v;
-						v.resize(meta.size()); //
-
-						for (const auto& m : meta)
-						{
-							auto k = m.type();
-
-							switch (k)
-							{
-							case boost::mysql::column_type::int_:
-							case boost::mysql::column_type::bigint:
-							case boost::mysql::column_type::decimal:
-								v[i] = row.at(i).as_int64();
-								break;
-							case boost::mysql::column_type::float_:
-								v[i] = row.at(i).as_float();
-								break;
-							case boost::mysql::column_type::double_:
-								v[i] = row.at(i).as_double();
-								break;
-
-							case boost::mysql::column_type::bit:
-							case boost::mysql::column_type::binary:
-							case boost::mysql::column_type::varbinary:
-							case boost::mysql::column_type::blob:
-							{
-								auto bv = row.at(i).as_blob();
-								pof::base::data::blob_t blob;
-								blob.reserve(bv.size());
-
-								std::ranges::copy(bv, std::back_inserter(blob));
-								v[i] = std::move(blob);
+							const auto& meta = result.meta();
+							auto& datameta = base_t::m_data->get_metadata();
+							datameta.reserve(meta.size());
+							for (const auto& m : meta) {
+								auto k = m.type();
+								switch (k)
+								{
+								case boost::mysql::column_type::bigint:
+									datameta.emplace_back(pof::base::data::kind::uint64);
+									break;
+								case boost::mysql::column_type::smallint:
+									datameta.emplace_back(pof::base::data::kind::uint32);
+									break;
+								case boost::mysql::column_type::text:
+									datameta.emplace_back(pof::base::data::kind::text);
+									break;
+								case boost::mysql::column_type::json:
+									datameta.emplace_back(pof::base::data::kind::text);
+									break;
+								case boost::mysql::column_type::double_:
+									datameta.emplace_back(pof::base::data::kind::float64);
+									break;
+								case boost::mysql::column_type::float_:
+									datameta.emplace_back(pof::base::data::kind::float32);
+									break;
+								case boost::mysql::column_type::datetime:
+									datameta.emplace_back(pof::base::data::kind::datetime);
+									break;
+								case boost::mysql::column_type::blob:
+									datameta.emplace_back(pof::base::data::kind::float32);
+									break;
+								case boost::mysql::column_type::int_:
+									datameta.push_back(pof::base::data::kind::int32);
+									break;
+								case boost::mysql::column_type::unknown:
+									datameta.push_back(pof::base::data::kind::null);
+									break;
+								default:
+									break;
+								}
 							}
-							break;
+							const auto& rows = result.rows();
+							const auto& meta = result.meta();
 
-							case boost::mysql::column_type::time:
-							case boost::mysql::column_type::date:
-							case boost::mysql::column_type::datetime:
-							case boost::mysql::column_type::timestamp:
-								v[i] = pof::base::data::datetime_t(row.at(i).as_datetime().as_time_point().time_since_epoch()); // wrong type
-								break;
-							case boost::mysql::column_type::char_:
-							case boost::mysql::column_type::varchar:
-							case boost::mysql::column_type::text:
-							case boost::mysql::column_type::enum_:
-							case boost::mysql::column_type::set:
-							case boost::mysql::column_type::json:
-								v[i] = pof::base::data::text_t(row.at(i).as_string());
-								break;
-							case boost::mysql::column_type::unknown:
-								break;
-							default:
-								break;
+							base_t::m_data->reserve(rows.size());
+							for (const auto& row : rows) {
+								//copy data
+								size_t i = 0;
+								std::vector<pof::base::data::data_t> v;
+								v.resize(meta.size()); //
+
+								for (const auto& m : meta)
+								{
+									auto k = m.type();
+
+									switch (k)
+									{
+									case boost::mysql::column_type::int_:
+									case boost::mysql::column_type::bigint:
+									case boost::mysql::column_type::decimal:
+										v[i] = row.at(i).as_int64();
+										break;
+									case boost::mysql::column_type::float_:
+										v[i] = row.at(i).as_float();
+										break;
+									case boost::mysql::column_type::double_:
+										v[i] = row.at(i).as_double();
+										break;
+
+									case boost::mysql::column_type::bit:
+									case boost::mysql::column_type::binary:
+									case boost::mysql::column_type::varbinary:
+									case boost::mysql::column_type::blob:
+									{
+										auto bv = row.at(i).as_blob();
+										pof::base::data::blob_t blob;
+										blob.reserve(bv.size());
+
+										std::ranges::copy(bv, std::back_inserter(blob));
+										v[i] = std::move(blob);
+									}
+									break;
+
+									case boost::mysql::column_type::time:
+									case boost::mysql::column_type::date:
+									case boost::mysql::column_type::datetime:
+									case boost::mysql::column_type::timestamp:
+										v[i] = pof::base::data::datetime_t(row.at(i).as_datetime().as_time_point().time_since_epoch()); // wrong type
+										break;
+									case boost::mysql::column_type::char_:
+									case boost::mysql::column_type::varchar:
+									case boost::mysql::column_type::text:
+									case boost::mysql::column_type::enum_:
+									case boost::mysql::column_type::set:
+									case boost::mysql::column_type::json:
+										v[i] = pof::base::data::text_t(row.at(i).as_string());
+										break;
+									case boost::mysql::column_type::unknown:
+										break;
+									default:
+										break;
+									}
+									i++; //next column
+								}
+								base_t::m_data->emplace(std::move(v));
 							}
-							i++; //next column
 						}
-						base_t::m_data->emplace(std::move(v));
+						base_t::m_promise.set_value(base_t::m_data); //data moved into the datamodels cache
 					}
-				}
-					base_t::m_promise.set_value(base_t::m_data); //data moved into the datamodels cache
-				}
 				} catch (...) {
 					base_t::m_promise.set_exception(std::current_exception());
 				}

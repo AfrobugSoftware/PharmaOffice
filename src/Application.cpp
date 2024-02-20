@@ -140,6 +140,7 @@ bool pof::Application::OnInit()
 		}
 	}
 	else {
+		OpenMysqlDatabase(); 
 		if (!SignIn()) {
 			//failed signed in
 			OnExit();
@@ -330,6 +331,13 @@ bool pof::Application::OpenLocalDatabase()
 	mPatientManager.CreateDatabaseFunctions();
 
 	return true;
+}
+
+bool pof::Application::OpenMysqlDatabase()
+{
+	CreateMysqlDatabase();
+	CreateMysqlTables(); //create the table
+	return false;
 }
 
 bool pof::Application::SetUpPaths()
@@ -645,13 +653,7 @@ void pof::Application::CreateMysqlDatabase()
 		
 			qptr->m_sql = R"(CREATE DATABASE IF NOT EXISTS pharmaoffice;)";
 			qptr2->m_sql = R"(USE pharmaoffice;)";
-			qptr->m_sig.connect([&](std::error_code ec, auto sqpr) {
-				spdlog::info("{:ec}", ec);
-			});
-			qptr2->m_sig.connect([&](std::error_code ec, auto sqpr) {
-				spdlog::info("{:ec}", ec);
-				CreateMysqlTables();
-			});
+			
 			mMysqlDatabase->push(qptr);
 			mMysqlDatabase->push(qptr2);
 	});
@@ -682,10 +684,22 @@ void pof::Application::CreateMysqlTables()
 		min_stock_count integer, 
 		expire_period text, 
 		expire_date integer);)"s;
-	query->m_sig.connect([&](std::error_code ec, std::shared_ptr<pof::base::query<pof::base::databasemysql>> ptr) {
-		spdlog::info("Created table with: {:ec}", ec);
-	});
+	auto fut = query->get_future();
 	mMysqlDatabase->push(query);
+
+	std::future_status stat = fut.wait_for(3ms);
+	if (stat == std::future_status::ready) {
+		try {
+			auto d = fut.get();
+			if (d == nullptr) {
+				wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
+			}
+		}
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+		}
+	}
+	
 }
 
 void pof::Application::ReadSettingsFlags()
