@@ -673,45 +673,8 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		return;
 	}
 	wxGetApp().mSaleManager.mCurPaymentType = paymentTypes[mPaymentTypes->GetSelection()].ToStdString();
-
-	pof::base::currency totalAmount;
-	try {
-		totalAmount = std::accumulate(dataStore.begin(),
-			dataStore.end(), totalAmount, [&](pof::base::currency v, const pof::base::data::row_t& i) {
-				return v + boost::variant2::get<pof::base::currency>(i.first[pof::SaleManager::PRODUCT_EXT_PRICE]);
-
-		});
-	}
-	catch (const std::exception& exp) {
-		wxMessageBox(exp.what(), "Fatal error", wxICON_ERROR | wxOK);
-		spdlog::error(exp.what());
-		return;
-	}
 	//update the stocks of the sold items, set date
 	auto now = pof::base::data::clock_t::now();
-	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
-	quans.reserve(dataStore.size());
-
-	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	for (pof::base::data::row_t& r : dataStore) {
-		r.first[pof::SaleManager::SALE_DATE] = now;
-		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::SaleManager::PRODUCT_UUID]);
-		auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
-			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
-		});
-		auto& v = pIter->first;
-		//stock count is guranteed from the sale checks not to be less than the amount sold
-		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
-			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
-			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
-		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
-
-		if (!mPosionBookEntries.empty()) {
-			auto poiter = mPosionBookEntries.find(puid);
-			if (poiter == mPosionBookEntries.end()) continue;
-			poiter->second.first[pof::PoisonBookManager::RUNBALANCE] = v[pof::ProductManager::PRODUCT_STOCK_COUNT];
-		}
-	};
 	wxIcon cop;
 	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
 	wxBusyInfo info
@@ -726,17 +689,13 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		.Transparency(4 * wxALPHA_OPAQUE / 5)
 	);
 
-	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
-	wxGetApp().mSaleManager.StoreSale();
-
+	for (pof::base::data::row_t& r : dataStore) {
+		r.first[pof::SaleManager::SALE_DATE] = now;
+	};
+	
 	//Print receipt
-	SaveLabelInfo(mCurSaleuuid);
-
 	wxGetApp().mPrintManager->gPrintState = pof::PrintManager::RECEIPT;
 	wxGetApp().mPrintManager->PrintSaleReceipt(nullptr);
-	//wxGetApp().mPrintManager->PrintSaleReceiptHtml(CreateHtmlReciept(), CreateHtmlReciept());
-	mLocked = false;
-
 	CheckEmpty();
 }
 
@@ -752,6 +711,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			spdlog::error("Printing failed");
 			return;
 		}
+		BookSale(); //save the sale to database
 
 		//signal the module that created the sale
 		mSaleCompleted(mCurSaleuuid, mSaleType);
@@ -2393,6 +2353,44 @@ void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
 	}
 
 
+}
+
+void pof::SaleView::BookSale()
+{
+	//update the stocks of the sold items, set date
+		//sale dialog
+	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	pof::base::data& dataStore = model->GetDatastore();
+
+	auto now = pof::base::data::clock_t::now();
+	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
+	quans.reserve(dataStore.size());
+
+	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	for (pof::base::data::row_t& r : dataStore) {
+		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::SaleManager::PRODUCT_UUID]);
+		auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
+			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+			});
+		auto& v = pIter->first;
+		//stock count is guranteed from the sale checks not to be less than the amount sold
+		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
+			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
+		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+
+		if (!mPosionBookEntries.empty()) {
+			auto poiter = mPosionBookEntries.find(puid);
+			if (poiter == mPosionBookEntries.end()) continue;
+			poiter->second.first[pof::PoisonBookManager::RUNBALANCE] = v[pof::ProductManager::PRODUCT_STOCK_COUNT];
+		}
+	};
+
+	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
+	wxGetApp().mSaleManager.StoreSale();
+
+	SaveLabelInfo(mCurSaleuuid);
+	mLocked = false;
 }
 
 void pof::SaleView::StorePoisonBookEnteries()

@@ -223,6 +223,7 @@ namespace pof
 		void SetActiveSaleIdText(const boost::uuids::uuid& saleId);
 		void SaveLabelInfo(const pof::base::data::duuid_t& suid);
 		void ReloadLabelInfo(const pof::base::data::duuid_t& suid);
+		void BookSale(); 
 		void StorePoisonBookEnteries();
 		wxHtmlPrintout* CreateHtmlReciept();
 	private:
