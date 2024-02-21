@@ -84,6 +84,7 @@ namespace pof
 			ID_RETURN_SALE,
 			ID_REMOVE_RETURNS,
 			ID_ADD_RETURNS,
+			ID_REMOVE_SALE,
 		};
 
 		enum {
@@ -123,7 +124,7 @@ namespace pof
 		void OnDoReturn(wxCommandEvent& evt);
 		void OnFilterReturns(wxCommandEvent& evt);
 		void OnAddReturns(wxCommandEvent& evt);
-	
+		void OnRemoveSale(wxCommandEvent& evt);
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();

@@ -862,6 +862,29 @@ bool pof::SaleManager::RemoveProductFromSale(const pof::base::data::duuid_t& pid
 	return false;
 }
 
+bool pof::SaleManager::RemoveProductFromSale(size_t rowid, const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(DELETE FROM sales WHERE product_uuid = ? AND uuid = ? AND ROWID = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pid, sid, rowid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+
+	}
+	return false;
+}
+
 std::optional<std::tuple<std::uint64_t, pof::base::data::currency_t>> pof::SaleManager::GetReturnedProductQuan(const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid)
 {
 	if (mLocalDatabase){

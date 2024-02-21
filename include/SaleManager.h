@@ -98,6 +98,7 @@ namespace pof {
 		bool RemoveProductSaveSale(pof::base::data::const_iterator iterator);
 
 		bool RemoveProductFromSale(const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid);
+		bool RemoveProductFromSale(size_t rowid, const pof::base::data::duuid_t& pid, const pof::base::data::duuid_t& sid);
 		std::optional<std::tuple<std::uint64_t, pof::base::data::currency_t>> GetReturnedProductQuan(const pof::base::data::duuid_t& pid,
 			const pof::base::data::duuid_t& sid);
 		std::optional<pof::base::data::datetime_t> GetSaleDate(const pof::base::data::duuid_t& saleID);

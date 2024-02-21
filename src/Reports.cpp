@@ -6,6 +6,7 @@ BEGIN_EVENT_TABLE(pof::ReportsDialog, wxDialog)
 EVT_TOOL(pof::ReportsDialog::ID_PRINT, pof::ReportsDialog::OnPrint)
 EVT_TOOL(pof::ReportsDialog::ID_EXCEL, pof::ReportsDialog::OnDownloadExcel)
 EVT_MENU(pof::ReportsDialog::ID_ADD_RETURNS, pof::ReportsDialog::OnAddReturns)
+EVT_MENU(pof::ReportsDialog::ID_REMOVE_SALE, pof::ReportsDialog::OnRemoveSale)
 EVT_DATE_CHANGED(pof::ReportsDialog::ID_EOD_DATE, pof::ReportsDialog::OnDateChange)
 EVT_BUTTON(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdSearch)
 EVT_SEARCH_CANCEL(pof::ReportsDialog::ID_SEARCH_SALEID, pof::ReportsDialog::OnSaleIdCleared)
@@ -364,10 +365,15 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 	if (data->empty()) {
 		mBook->SetSelection(REPORT_EMPTY_EOD);
-		text->SetLabelText(wxEmptyString);
+		if (mCurReportType == ReportType::EOD) {
+			tt = fmt::format("No transaction for {:%d/%m/%Y}", mSelectDay);
+		}
+		else if (mCurReportType == ReportType::EOM) {
+			tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
+		}
+		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
 
-		//wxMessageBox("No end of day, No sale has happened yet.", "END OF DAY", wxICON_INFORMATION | wxOK);
 		return true;
 	}
 
@@ -563,6 +569,7 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 		else {
 			auto x = menu->Append(ID_RETURN_SALE, "Return sale", nullptr);
 		}
+		
 
 		menu->AppendSeparator();
 		if(bShowSaleID) auto p = menu->Append(ID_COPY_RECIEPT_ID, "Copy receipt ID", nullptr);
@@ -578,6 +585,12 @@ void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
 
 
 		auto a = menu->Append(ID_CHANGE_PAYMENT_OPT, "Change payment option", submenu);
+		menu->AppendSeparator();
+
+		if (mCurReportType == ReportType::EOD){
+			auto ip = menu->Append(ID_REMOVE_SALE, "Remove sale from databaase", nullptr, "This removes the sale from the system, requires admin previlages");
+		}
+
 		mListReport->PopupMenu(menu);
 	}
 }
@@ -754,13 +767,13 @@ void pof::ReportsDialog::OnFilterReturns(wxCommandEvent& evt)
 
 void pof::ReportsDialog::OnAddReturns(wxCommandEvent& evt)
 {
-	if (wxMessageBox("Are you sure you want to resell this product?", "Return", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	if (wxMessageBox("Are you sure you want to resell this product?", "Reports", wxICON_WARNING | wxYES_NO) == wxNO) return;
 	
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
-		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
+		wxMessageBox("User account cannot perform this function", "Reports", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	wxCredentialEntryDialog dialog(this, "User credentials are required resell the item", "Roll back database");
+	wxCredentialEntryDialog dialog(this, "User credentials are required resell the item", "Reports");
 	dialog.Center(wxBOTH);
 	dialog.SetBackgroundColour(*wxWHITE);
 	while (1) {
@@ -768,7 +781,7 @@ void pof::ReportsDialog::OnAddReturns(wxCommandEvent& evt)
 		auto cred = dialog.GetCredentials();
 		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
 			cred.GetPassword().GetAsString().ToStdString())) {
-			wxMessageBox("Invalid user name or password", "Roll back", wxICON_WARNING | wxOK);
+			wxMessageBox("Invalid user name or password", "Reports", wxICON_WARNING | wxOK);
 			continue;
 		}
 		break;
@@ -798,7 +811,7 @@ void pof::ReportsDialog::OnAddReturns(wxCommandEvent& evt)
 		std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
 		
 		quans.emplace_back(std::make_tuple(pid, boost::variant2::get<std::uint64_t>(pIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT])));
-		std::string newstr = "Cash"s;
+		const std::string newstr = "Cash"s;
 
 		wxGetApp().mProductManager.UpdateProductQuan(quans);
 		mSelItem.SetColumn(4);
@@ -809,6 +822,48 @@ void pof::ReportsDialog::OnAddReturns(wxCommandEvent& evt)
 		v[6] = std::move(newstr);
 		UpdateTotals(data.value());
 	}
+}
+
+void pof::ReportsDialog::OnRemoveSale(wxCommandEvent& evt)
+{
+	if (wxMessageBox("Are you sure you want to remove sale of this product?", "Reports", wxICON_WARNING | wxYES_NO) == wxNO) return;
+
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxCredentialEntryDialog dialog(this, "Admin credentials are required remove this item", "Reports");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (cred.GetUser() != "Admin") {
+			wxMessageBox("You need admin privilages to remove a sale, contact D-GLOPA admin to continue", "Reports", wxICON_WARNING | wxOK);
+			return;
+		}
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid username or password", "Reports", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+	const size_t id = mSelItem.GetId();
+	const auto& v = data.value()[id].first;
+	std::uint64_t rowid = boost::variant2::get<std::uint64_t>(v[7]);
+	const auto& pid = boost::variant2::get<boost::uuids::uuid>(v[0]);
+	const auto& saleid = boost::variant2::get<boost::uuids::uuid>(v[5]);
+
+	if(wxGetApp().mSaleManager.RemoveProductFromSale(rowid, pid, saleid)){
+		data.value().erase(std::next(data.value().begin(), id));
+
+		mListReport->Freeze();
+		mListReport->ClearAll();
+		LoadEndOFDay();
+		mListReport->Thaw();
+	}
+
 }
 
 void pof::ReportsDialog::CreateToolBar()
