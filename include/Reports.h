@@ -123,6 +123,7 @@ namespace pof
 		void OnDoReturn(wxCommandEvent& evt);
 		void OnFilterReturns(wxCommandEvent& evt);
 		void OnAddReturns(wxCommandEvent& evt);
+	
 
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();
