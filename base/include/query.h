@@ -16,6 +16,7 @@
 
 #include <spdlog/spdlog.h>
 #include <boost/asio/experimental/awaitable_operators.hpp>
+#include <boost/noncopyable.hpp>
 
 #include "Data.h"
 #include "errc.h"
@@ -26,67 +27,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 namespace pof {
 	namespace base {
 
-		//convert bind datetime
-		template<size_t N, typename tuple_t, typename arg_type, std::enable_if_t<std::is_same_v<arg_type, pof::base::data::datetime_t>, int> = 0>
-		auto do_transform(const tuple_t& tup) -> std::tuple<boost::mysql::datetime>
-		{
-			pof::base::data::datetime_t tt = std::get<N>(tup);
-			boost::mysql::datetime::time_point pt(tt);
-			return std::make_tuple(boost::mysql::datetime(pt));
-		}
-
-		template<size_t N, typename tuple_t, typename arg_type>
-		auto do_transform(const tuple_t& tup) -> std::tuple<arg_type>
-		{
-			return std::make_tuple(std::get<N>(tup));
-		}
-		
-
-		template<size_t N>
-		struct ll {
-			template<typename tuple_t>
-			static auto transform(const tuple_t& tup)
-			{
-				/*using arg_type = std::decay_t<std::tuple_element_t<N, tuple_t>>;
-				
-				auto t = ll<N - 1>::template transform<tuple_t>(tup);
-
-				if constexpr (std::is_same_v<arg_type, pof::base::data::datetime_t>){
-					pof::base::data::datetime_t tt = std::get<N>(tup);
-					boost::mysql::datetime::time_point pt(tt);
-
-					return std::tuple_cat(std::make_tuple(boost::mysql::datetime(pt)), t);
-				}
-				else {
-					return std::tuple_cat(std::make_tuple(std::get<N>(tup)), t);
-				}*/
-
-			}
-
-		};
-
-		template<>
-		struct ll<0>
-		{
-			template<typename tuple_t>
-			static auto transform(const tuple_t& tup){
-			/*	using arg_type = std::decay_t<std::tuple_element_t<0, tuple_t>>;
-				
-				if constexpr (std::is_same_v<arg_type, pof::base::data::datetime_t>) {
-					pof::base::data::datetime_t tt = std::get<0>(tup);
-					boost::mysql::datetime::time_point pt(tt);
-
-					return std::make_tuple(boost::mysql::datetime(pt));
-				}
-				else {
-					return std::make_tuple(std::get<0>(tup));
-				}*/
-
-			}
-		};
-
 		template<typename manager>
-		struct query : public std::enable_shared_from_this<query<manager>> {
+		struct query : public std::enable_shared_from_this<query<manager>>, private boost::noncopyable {
 			using default_token = boost::asio::as_tuple_t<boost::asio::use_awaitable_t<>>;
 			using timer_t = default_token::as_default_on_t<boost::asio::steady_timer>;
 
@@ -266,22 +208,19 @@ namespace pof {
 		};
 
 		//Statement queries may require arguments
-		template<typename manager, typename... args>
+		template<typename manager>
 		struct querystmt : public query<manager> {
 			using base_t = query<manager>;
-			pof::base::relation<args...> m_arguments;
+			using row_t = std::vector<boost::mysql::field>;
+			using data_t = std::vector<row_t>;
+
+			data_t m_arguments;
 
 			querystmt(std::shared_ptr<manager> manager = nullptr) : base_t(manager) {}
-			querystmt(std::shared_ptr<manager> manager,
-				const std::string& sql, std::tuple<args...>&& arguments) : base_t(manager), base_t::m_sql(sql){
-					m_arguments.emplace_back(std::forward<std::tuple<args...>>(arguments));
-				
-				}
-			querystmt(std::shared_ptr<manager> manager,
-				const std::string& sql, pof::base::relation<args...>&& rels)
-			: base_t(manager), base_t::m_sql(sql), m_arguments(rels){
+			querystmt(std::shared_ptr<manager> manager, const std::string& sql) : base_t(manager){
+				base_t::m_sql = sql;
 			}
-
+		
 			virtual boost::asio::awaitable<void> operator()() override {
 				auto this_ = base_t::shared_t::shared_from_this(); //hold till we leave the coroutine
 
@@ -304,21 +243,19 @@ namespace pof {
 						//what happens if we timeout ?
 						//signal the query on timeout ...
 						ec = boost::system::error_code(boost::asio::error::timed_out);
-						throw std::system_error(ec);
+						boost::mysql::throw_on_error(ec, base_t::m_diag);
 					default:
 						break;
 					}
 
 					if (ec) {
-						throw std::system_error(ec);
+						boost::mysql::throw_on_error(ec, base_t::m_diag);
 					}
 
-					constexpr const size_t s = sizeof...(args);
-					for (auto& tup : m_arguments) {
+					for (auto& arg : m_arguments) {
 						boost::mysql::results result;
 						timer.expires_after(std::chrono::minutes(1));
-						auto ttup = ll<s>::template transform<std::tuple<args...>>(tup);
-						auto comp = co_await(conn.async_execute(ttup, result, base_t::mDiag, base_t::tuple_awaitable) ||
+						auto comp = co_await(conn.async_execute(stmt.bind(arg.begin(), arg.end()), result, base_t::m_diag, base_t::tuple_awaitable) ||
 							timer.async_wait());
 						switch (comp.index())
 						{
@@ -330,13 +267,13 @@ namespace pof {
 							//what happens if we timeout ?
 							//signal the query on timeout ...
 							ec = boost::system::error_code(boost::asio::error::timed_out);
-							throw std::system_error(ec);
+							boost::mysql::throw_on_error(ec, base_t::m_diag);
 						default:
 							break;
 						}
 
 						if (ec) {
-							throw std::system_error(ec);
+							boost::mysql::throw_on_error(ec, base_t::m_diag);
 						}
 						if (!result.has_value()) {
 							base_t::m_promise.set_value(nullptr);
@@ -388,7 +325,6 @@ namespace pof {
 								}
 							}
 							const auto& rows = result.rows();
-							const auto& meta = result.meta();
 
 							base_t::m_data->reserve(rows.size());
 							for (const auto& row : rows) {

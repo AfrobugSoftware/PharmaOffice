@@ -75,7 +75,6 @@ namespace pof {
 
 		using dataquerybase = pof::base::query<databasemysql>;
 
-		template<typename... Args>
-		using datastmtquery = pof::base::querystmt<databasemysql, Args...>;
+		using datastmtquery = pof::base::querystmt<databasemysql>;
 	}
 };

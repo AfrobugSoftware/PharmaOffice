@@ -394,16 +394,22 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 		return ret;
 	}
 	else {
-	
-		auto q = std::make_shared<pof::base::querystmt<pof::base::databasemysql>>(wxGetApp().mMysqlDatabase,
-			"INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);",
-			std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
-				acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+		 auto q = std::make_shared<pof::base::querystmt<pof::base::databasemysql>>(wxGetApp().mMysqlDatabase,
+			"INSERT INTO USERS (priv, name, last_name, email, phonenumber, regnumber, username, password) VALUES (?,?,?,?,?,?,?,?);"s);
+		 pof::base::datastmtquery::row_t row;
+		 row.reserve(8);
+		 row.emplace_back(boost::mysql::field(acc.priv.to_ullong()));
+		 row.emplace_back(boost::mysql::field(acc.name));
+		 row.emplace_back(boost::mysql::field(acc.lastname));
+		 row.emplace_back(boost::mysql::field(acc.email));
+		 row.emplace_back(boost::mysql::field(acc.phonenumber));
+		 row.emplace_back(boost::mysql::field(acc.regnumber));
+		 row.emplace_back(boost::mysql::field(acc.username));
+		 row.emplace_back(boost::mysql::field(acc.passhash));
+
+		 q->m_arguments.push_back(std::move(row));
 		auto fut = q->get_future();
 		wxGetApp().mMysqlDatabase->push(q);
-
-
-	
 	}
 	return false;
 }
