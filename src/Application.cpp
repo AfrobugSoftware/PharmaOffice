@@ -104,6 +104,9 @@ bool pof::Application::OnInit()
 	mSaleManager.mCurAccount = MainAccount;
 	mSaleManager.mCurPharmacy = MainPharmacy;
 
+	//testing the database
+	bUsingLocalDatabase = false;
+
 	if (bUsingLocalDatabase) {
 		try {
 			OpenLocalDatabase();
@@ -140,7 +143,7 @@ bool pof::Application::OnInit()
 		}
 	}
 	else {
-		OpenMysqlDatabase(); 
+		OpenMysqlDatabase();
 		if (!SignIn()) {
 			//failed signed in
 			OnExit();
@@ -179,6 +182,7 @@ bool pof::Application::OnInit()
 	}
 
 	mProductManager.UpdateTimeCheck(today);
+	
 	bool status = CreateMainFrame();
 	
 	SaveSettings();
@@ -265,8 +269,6 @@ bool pof::Application::CreateMainFrame()
 			wxID_ANY, wxPoint(x,y), wxSize(w, h));
 	}
 
-
-
 	mMainFrame->mAccount = MainAccount;
 	mMainFrame->Center(wxBOTH);
 	if (bMaximizeOnLoad) mMainFrame->Maximize();
@@ -275,8 +277,6 @@ bool pof::Application::CreateMainFrame()
 	config->Read(wxT("Perspective"), &readData);
 	spdlog::info(readData.ToStdString());
 	mMainFrame->Perspective(readData.ToStdString());
-
-	CreateMysqlDatabase(); //for testing
 
 	return mMainFrame->Show();
 }
@@ -336,7 +336,6 @@ bool pof::Application::OpenLocalDatabase()
 bool pof::Application::OpenMysqlDatabase()
 {
 	CreateMysqlDatabase();
-	CreateMysqlTables(); //create the table
 	return false;
 }
 
@@ -551,6 +550,42 @@ bool pof::Application::SignOut()
 	return false;
 }
 
+bool pof::Application::BusyWait(const std::future<std::shared_ptr<pof::base::data>>& fut,
+	const std::string& message, std::chrono::system_clock::duration dur)
+{
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
+	constexpr static std::array<std::string_view, 3> dots = { ".", "..", "..." };
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(nullptr)
+		.Icon(cop)
+		.Title(message)
+		.Text("Please wait")
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
+	int i = 0;
+	while (dur >= std::chrono::system_clock::duration(0)){
+		auto fs = fut.wait_for(1s);
+		if (fs == std::future_status::ready){
+			return true;
+		}
+		info.UpdateText(fmt::format("Please wait{}", std::string(dots[++i % 3])));
+		dur -= 1s;
+	}
+	return false;
+}
+
+bool pof::Application::DatabaseError(const std::string& what)
+{
+	if (what.empty()) return false;
+	wxMessageBox(what, "Database error", wxICON_ERROR | wxOK);
+	return true;
+}
+
 void pof::Application::TestAccountAndPharmacy()
 {
 	MainPharmacy->contact.website = "www.zino.com";
@@ -643,23 +678,33 @@ void pof::Application::CreateMysqlDatabase()
 	mMysqlDatabase = std::make_shared<pof::base::databasemysql>(mNetManager.io(),
 		mNetManager.ssl());
 	boost::asio::co_spawn(mNetManager.io(),
-	mMysqlDatabase->connect("localhost"s, "3306"s, "root"s, "Topdollar123"s), [&](std::exception_ptr ptr, std::error_code ec) {
-		spdlog::info("{:ec}", ec);
-		if (ec) return;
-
-		//open the database
-		auto qptr = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
-		auto qptr2 = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
-		
-			qptr->m_sql = R"(CREATE DATABASE IF NOT EXISTS pharmaoffice;)";
-			qptr2->m_sql = R"(USE pharmaoffice;)";
-			
-			mMysqlDatabase->push(qptr);
-			mMysqlDatabase->push(qptr2);
+		mMysqlDatabase->connect("localhost"s, "3306"s, "root"s, "Topdollar123"s), [&](std::exception_ptr ptr, std::error_code ec) {
+			mMysqlDatabase->m_isconnected = !ptr;
 	});
+
+	//open the database
+	auto qptr = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
+	auto qptr2 = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
+
+	qptr->m_sql = R"(CREATE DATABASE IF NOT EXISTS pharmaoffice;)";
+	qptr2->m_sql = R"(USE pharmaoffice;)";
+
+	mMysqlDatabase->push(qptr);
+	mMysqlDatabase->push(qptr2);
+
+	CreateMysqlTables();
 }
 
 void pof::Application::CreateMysqlTables()
+{
+	CreateProductTable();
+	CreateUsersTable();
+	CreateInventoryTable();
+	CreateCategoryTable();
+	
+}
+
+void pof::Application::CreateProductTable()
 {
 	auto query = std::make_shared<pof::base::query<pof::base::databasemysql>>(mMysqlDatabase);
 	query->m_sql = R"(CREATE TABLE IF NOT EXISTS products (
@@ -683,23 +728,99 @@ void pof::Application::CreateMysqlTables()
 		category integer, 
 		min_stock_count integer, 
 		expire_period text, 
-		expire_date integer);)"s;
+		expire_date datetime);)"s;
 	auto fut = query->get_future();
 	mMysqlDatabase->push(query);
-
-	std::future_status stat = fut.wait_for(3ms);
-	if (stat == std::future_status::ready) {
-		try {
-			auto d = fut.get();
-			if (d == nullptr) {
-				wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
-			}
-		}
-		catch (std::exception& exp) {
-			spdlog::error(exp.what());
+	try {
+		auto d = fut.get();
+		if (d == nullptr) {
+			wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
 		}
 	}
-	
+	catch (boost::mysql::error_with_diagnostics& err) {
+		spdlog::error(err.what());
+	}
+}
+
+void pof::Application::CreateUsersTable()
+{
+	auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
+	q->m_sql = R"(
+		CREATE TABLE IF NOT EXISTS users (
+		id integer AUTO_INCREMENT, 
+		priv integer, 
+		name text, 
+		last_name text, 
+		email text, 
+		phonenumber text, 
+		regnumber text, 
+		username text, 
+		password text,
+        PRIMARY KEY (id));
+	)";
+	auto fut = q->get_future();
+	wxGetApp().mMysqlDatabase->push(q);
+	try {
+		auto d = fut.get();
+		if (d == nullptr) {
+			wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
+		}
+	}
+	catch (boost::mysql::error_with_diagnostics& err) {
+		spdlog::error(err.what());
+		wxMessageBox(err.what());
+
+	}
+}
+
+void pof::Application::CreateInventoryTable()
+{
+	auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
+	q->m_sql = R"(
+	CREATE TABLE IF NOT EXISTS inventory (
+	id integer, 
+	uuid blob, 
+	expire_date datetime, 
+	input_date datetime, 
+	stock_count integer, 
+	cost blob, 
+	manufacturer_name text, 
+	manufacturer_address_id integer, 
+	lot_number text);
+	)";
+	auto fut = q->get_future();
+	wxGetApp().mMysqlDatabase->push(q);
+	try {
+		auto d = fut.get();
+		if (d == nullptr) {
+			wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
+		}
+	}
+	catch (boost::mysql::error_with_diagnostics& err) {
+		spdlog::error(err.what());
+	}
+}
+
+void pof::Application::CreateCategoryTable()
+{
+	auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
+	q->m_sql = R"(CREATE TABLE IF NOT EXISTS category (
+		id integer, 
+		name text,
+		PRIMARY KEY(id));
+	)";
+	auto fut = q->get_future();
+	wxGetApp().mMysqlDatabase->push(q);
+	try {
+		auto d = fut.get();
+		if (d == nullptr) {
+			wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
+		}
+	}
+	catch (boost::mysql::error_with_diagnostics& err) {
+		spdlog::error(err.what());
+		wxMessageBox(fmt::format("{} {}", err.what(), err.get_diagnostics().client_message()));
+	}
 }
 
 void pof::Application::ReadSettingsFlags()

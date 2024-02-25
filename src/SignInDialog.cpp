@@ -410,6 +410,18 @@ bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)
 		 q->m_arguments.push_back(std::move(row));
 		auto fut = q->get_future();
 		wxGetApp().mMysqlDatabase->push(q);
+
+		//busy wait for the completion
+		if (wxGetApp().BusyWait(fut)){
+			try {
+				auto gt = fut.get();
+				return static_cast<bool>(gt);
+			}
+			catch (boost::mysql::error_with_diagnostics& err){
+				wxGetApp().DatabaseError(err.what());
+				return false;
+			}
+		}
 	}
 	return false;
 }

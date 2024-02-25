@@ -56,7 +56,7 @@ namespace pof {
 				boost::mysql::results result;
 
 				timer_t timer(co_await boost::asio::this_coro::executor);
-				timer.expires_after(std::chrono::minutes(1));
+				timer.expires_after(std::chrono::seconds(60));
 				try {
 					std::error_code ec;
 					auto complete
@@ -68,19 +68,16 @@ namespace pof {
 					case 0:
 						timer.cancel();
 						ec = std::get<0>(std::get<0>(complete));
+						boost::mysql::throw_on_error(ec, m_diag);
 						break;
 					case 1:
 						//what happens if we timeout ?
 						//signal the query on timeout ...
 						ec = boost::system::error_code(boost::asio::error::timed_out);
-						throw std::system_error(ec);
+						boost::mysql::throw_on_error(ec, m_diag);
 						break; //
 					default:
 						break;
-					}
-
-					if (ec) {
-						throw std::system_error(ec);
 					}
 
 					if (!result.has_value()) {
@@ -248,10 +245,7 @@ namespace pof {
 						break;
 					}
 
-					if (ec) {
-						boost::mysql::throw_on_error(ec, base_t::m_diag);
-					}
-
+					boost::mysql::throw_on_error(ec, base_t::m_diag);
 					for (auto& arg : m_arguments) {
 						boost::mysql::results result;
 						timer.expires_after(std::chrono::minutes(1));
@@ -272,9 +266,7 @@ namespace pof {
 							break;
 						}
 
-						if (ec) {
-							boost::mysql::throw_on_error(ec, base_t::m_diag);
-						}
+						boost::mysql::throw_on_error(ec, base_t::m_diag);
 						if (!result.has_value()) {
 							base_t::m_promise.set_value(nullptr);
 							co_return;

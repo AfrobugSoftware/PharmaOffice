@@ -60,7 +60,7 @@ namespace pof {
 
 			//also closes 
 			void disconnect();
-
+			bool m_isconnected = false;
 		private:
 			std::shared_mutex m_querymut;
 			std::deque<std::shared_ptr<pof::base::query<databasemysql>>> m_queryque;

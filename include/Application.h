@@ -108,6 +108,10 @@ namespace pof {
 		bool SignIn();
 		bool SignOut();
 
+		//busy waiting on the future
+		bool BusyWait(const std::future<std::shared_ptr<pof::base::data>>& fut, const std::string& message = "Fetching data"s, std::chrono::system_clock::duration dur = 1min);
+		bool DatabaseError(const std::string& what);
+
 		const fs::path& GetAssertsPath() const { return mAsserts; }
 		void TestAccountAndPharmacy();
 		void CreateTables();
@@ -128,6 +132,13 @@ namespace pof {
 
 		void CreateMysqlDatabase();
 		void CreateMysqlTables();
+
+		//mysql tables
+		void CreateProductTable();
+		void CreateUsersTable();
+		void CreateInventoryTable();
+		void CreateCategoryTable();
+
 		//settings flags
 		void ReadSettingsFlags();
 		void SaveSettingsFlags();
