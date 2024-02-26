@@ -27,6 +27,15 @@ using namespace boost::asio::experimental::awaitable_operators;
 namespace pof {
 	namespace base {
 
+		boost::mysql::datetime to_mysql_datetime(const pof::base::data::datetime_t& tt){
+			return std::chrono::time_point_cast<boost::mysql::datetime::time_point::duration,
+				pof::base::data::clock_t, std::chrono::system_clock::duration>(tt);
+		}
+
+		boost::mysql::blob to_mysql_uuid(const pof::base::data::duuid_t& duuid){
+			return boost::mysql::blob(duuid.begin(), duuid.end());
+		}
+
 		template<typename manager>
 		struct query : public std::enable_shared_from_this<query<manager>>, private boost::noncopyable {
 			using default_token = boost::asio::as_tuple_t<boost::asio::use_awaitable_t<>>;
@@ -46,13 +55,15 @@ namespace pof {
 				m_data = std::make_shared<pof::base::data>();
 			}
 
+			virtual ~query() {}
+
 			std::future<std::shared_ptr<pof::base::data>> get_future(){
 				return m_promise.get_future();
 			}
 			//Text query
 			virtual boost::asio::awaitable<void> operator()() {
 				auto this_ = shared_t::shared_from_this(); //hold till we leave the coroutine
-
+				
 				boost::mysql::results result;
 
 				timer_t timer(co_await boost::asio::this_coro::executor);
@@ -210,18 +221,20 @@ namespace pof {
 			using base_t = query<manager>;
 			using row_t = std::vector<boost::mysql::field>;
 			using data_t = std::vector<row_t>;
-
+			boost::mysql::statement stmt;
 			data_t m_arguments;
 
 			querystmt(std::shared_ptr<manager> manager = nullptr) : base_t(manager) {}
 			querystmt(std::shared_ptr<manager> manager, const std::string& sql) : base_t(manager){
 				base_t::m_sql = sql;
 			}
-		
+			virtual ~querystmt() {
+				auto& conn = base_t::m_manager->connection();
+				conn.close_statement(stmt); //blocks might be a bottle neck
+			}
 			virtual boost::asio::awaitable<void> operator()() override {
 				auto this_ = base_t::shared_t::shared_from_this(); //hold till we leave the coroutine
 
-				boost::mysql::statement stmt;
 				std::error_code ec;
 				auto& conn = base_t::m_manager->connection();
 				try {
@@ -332,9 +345,11 @@ namespace pof {
 									switch (k)
 									{
 									case boost::mysql::column_type::int_:
+										v[i] = row.at(i).as_int64();
+										break;
 									case boost::mysql::column_type::bigint:
 									case boost::mysql::column_type::decimal:
-										v[i] = row.at(i).as_int64();
+										v[i] = row.at(i).as_uint64();
 										break;
 									case boost::mysql::column_type::float_:
 										v[i] = row.at(i).as_float();

@@ -119,38 +119,33 @@ bool pof::Application::OnInit()
 			OnExit();
 			return false;
 		}
-
-		//lunch register pharmacy
-		if (MainPharmacy->name.empty()) {
-			bool registerd = LunchWizard();
-			if (!registerd) {
-				OnExit();
-				return false;
-			}
-		}
-
-		//check if in active session, if we are asked to keep the signin
-		bool ssin = false;
-		if (bKeepMeSignedIn) {
-			ssin = MainAccount->SignInFromSession();
-		}
-		if (!ssin) {
-			if (!SignIn()) {
-				//failed signed in from local database
-				OnExit();
-				return false;
-			}
-		}
 	}
 	else {
 		OpenMysqlDatabase();
-		if (!SignIn()) {
-			//failed signed in
+		//test	
+	}
+	//lunch register pharmacy
+	if (MainPharmacy->name.empty()) {
+		bool registerd = LunchWizard();
+		if (!registerd) {
 			OnExit();
 			return false;
 		}
-		//test	
 	}
+
+	//check if in active session, if we are asked to keep the signin
+	bool ssin = false;
+	if (bKeepMeSignedIn) {
+		ssin = MainAccount->SignInFromSession();
+	}
+	if (!ssin) {
+		if (!SignIn()) {
+			//failed signed in from local database
+			OnExit();
+			return false;
+		}
+	}
+	
 
 	//check if time is increasing, very important that a changed time cause
 	//check that we are in West central africa
@@ -377,6 +372,7 @@ bool pof::Application::SaveSettings()
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
 	config->Write(wxT("Type"), MainPharmacy->GetPharmacyType().to_ullong());
+	config->Write(wxT("SessionID"), wxString(boost::lexical_cast<std::string>(sSessionID)));
 
 	//addy
 	config->Write(wxT("Addy.country"), wxString(MainPharmacy->addy.country));
@@ -448,6 +444,9 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Type"), &type);
 	MainPharmacy->SetPharmacyType({ type });
 	//brach ID and pharmacy ID
+
+	config->Read(wxT("SessionID"), &readData);
+	sSessionID = boost::lexical_cast<boost::uuids::uuid>(readData.ToStdString());
 
 
 	//addy
@@ -701,6 +700,10 @@ void pof::Application::CreateMysqlTables()
 	CreateUsersTable();
 	CreateInventoryTable();
 	CreateCategoryTable();
+
+	MainAccount->CreateAccountInfoTable();
+	MainAccount->CreateSessionTable();
+
 	
 }
 

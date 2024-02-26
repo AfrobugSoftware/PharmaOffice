@@ -207,6 +207,7 @@ namespace pof {
 
 		//allow main frame to be visable through out the system
 		pof::MainFrame* mMainFrame;
+		pof::base::data::duuid_t sSessionID; 
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 

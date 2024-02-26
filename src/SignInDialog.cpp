@@ -368,14 +368,55 @@ bool pof::SignInDialog::ValidateGlobal()
 	bool check = mKeepMeSigned->IsChecked();
 	
 	try {
-		
-	
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase, "SELECT * FROM USERS WHERE username = ?;"s);
+		auto fut = q->get_future();
+		pof::base::datastmtquery::row_t row;
+		row.emplace_back(boost::mysql::field(Username));
+		q->m_arguments.push_back(std::move(row));
+
+		wxGetApp().mMysqlDatabase->push(q);
+
+		if (wxGetApp().BusyWait(fut, "Signing in")){
+			try {
+				auto data = fut.get();
+				if (data) {
+					if (data->empty()) {
+						wxMessageBox(fmt::format("Username \"{}\" does not exists", Username), "Sign in", wxICON_WARNING | wxOK);
+						return false;
+					}
+					auto& r = *data->begin();
+					if (!bcrypt::validatePassword(UserPassword, boost::variant2::get<std::string>(r.first[8]))) {
+						wxMessageBox("Password is incorrect", "Sign in", wxICON_WARNING | wxOK);
+						return false;
+					}
+					auto& account = wxGetApp().MainAccount;
+					account->signintime = pof::Account::clock_t::now();
+					account->accountID = boost::variant2::get<std::int64_t>(r.first[0]); //cannot be int32
+					account->priv = pof::Account::privilage_set_t(boost::variant2::get<std::int64_t>(r.first[1]));
+					account->name = boost::variant2::get<std::string>(r.first[2]);
+					account->lastname = boost::variant2::get<std::string>(r.first[3]);
+					account->email = boost::variant2::get<std::string>(r.first[4]);
+					account->phonenumber = boost::variant2::get<std::string>(r.first[5]);
+					account->regnumber = boost::variant2::get<std::string>(r.first[6]);
+					account->username = boost::variant2::get<std::string>(r.first[7]);
+					account->passhash = boost::variant2::get<std::string>(r.first[8]);
+					//account->SetSignInTime();
+					return true;
+				}
+			}
+			catch (boost::mysql::error_with_diagnostics& err) {
+				wxGetApp().DatabaseError(err.what());
+				return false;
+			}
+		}
+		else {
+			wxMessageBox("Cannot read database", "Sign in", wxICON_ERROR | wxOK);
+		}
 	}
 	catch (std::exception& exp){
 		wxMessageBox(exp.what(), "Sign-in", wxICON_ERROR | wxOK);
 	}
-
-	return true;
+	return false;
 }
 
 bool pof::SignInDialog::InsertUserDataIntoDatabase(const pof::Account& acc)

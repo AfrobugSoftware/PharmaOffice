@@ -43,6 +43,27 @@ bool pof::Account::CreateAccountInfoTable()
 		mLocalDatabase->finalise(*stmt);
 		return true;
 	}
+	else {
+		auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(CREATE TABLE IF NOT EXISTS users_info
+					 (user_id integer PRIMARY KEY, 
+					 sec_question text,
+					 sec_ans_hash text, 
+					 signin_time datetime, 
+					 signout_time datetime);
+		)";
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		if (wxGetApp().BusyWait(fut)) {
+			try {
+				auto data = fut.get();
+				return static_cast<bool>(data);
+			}
+			catch (boost::mysql::error_with_diagnostics& err){
+				spdlog::error(err.what());
+			}
+		}
+	}
 	return false;
 }
 
@@ -104,6 +125,10 @@ bool pof::Account::CreateAccountInfo()
 		mLocalDatabase->finalise(*stmt);
 		return true;
 	}
+	else {
+		
+	
+	}
 	return false;
 }
 
@@ -141,6 +166,20 @@ bool pof::Account::CreateSessionTable()
 		mLocalDatabase->finalise(*stmt);
 		return status;
 	}
+	else {
+		auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(CREATE TABLE IF NOT EXISTS session (sid blob, uid integer, date datetime);)";
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Setting up session")){
+				return static_cast<bool>(fut.get());
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err){
+			wxGetApp().DatabaseError(err.what());
+		}
+	}
 	return false;
 }
 
@@ -161,7 +200,31 @@ bool pof::Account::InsertSession()
 			spdlog::error(mLocalDatabase->err_msg());
 		}
 		mLocalDatabase->finalise(*stmt);
+		wxGetApp().sSessionID = sid;
 		return status;
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(INSERT INTO session VALUES(?, ?, ?);)";
+
+		pof::base::data::duuid_t sid = boost::uuids::random_generator_mt19937{}();
+		auto tt = std::chrono::time_point_cast<boost::mysql::datetime::time_point::duration, 
+				pof::base::data::clock_t, std::chrono::system_clock::duration>(pof::base::data::clock_t::now());
+
+		pof::base::datastmtquery::row_t row = { boost::mysql::field(boost::mysql::blob(sid.begin(), sid.end())),
+				boost::mysql::field(accountID), boost::mysql::field(boost::mysql::datetime(tt)) };
+		q->m_arguments.emplace_back(std::move(row));
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Setting up session")) {
+				wxGetApp().sSessionID = sid;
+				return static_cast<bool>(fut.get());
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
 	}
 	return false;
 }
@@ -184,6 +247,24 @@ bool pof::Account::CheckForUsername(const std::string& usersname)
 
 		return (!rel->empty());
 
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(SELECT 1 FROM users WHERE username = ?;)";
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Setting up session")) {
+				auto data = fut.get();
+				return (data && !data->empty());
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
+	
 	}
 	return false;
 }
@@ -213,7 +294,7 @@ bool pof::Account::SignInFromSession()
 
 			return false;
 		}
-
+		wxGetApp().sSessionID = std::get<0>(tup);
 		constexpr const std::string_view sql2 = R"(SELECT u.id, u.priv, u.name, u.last_name, 
 		u.email, u.phonenumber, u.regnumber, u.username, u.password FROM users u, session s WHERE s.uid = u.id AND s.sid = ?;)";
 		stmt = mLocalDatabase->prepare(sql2);
@@ -255,6 +336,55 @@ bool pof::Account::SignInFromSession()
 		mLocalDatabase->finalise(*stmt);
 		return true;
 	}
+	else {
+		if (wxGetApp().sSessionID == boost::uuids::nil_uuid()) {
+			wxMessageBox("There is no active session, try signing in.", "Session", wxICON_INFORMATION | wxOK);
+			return false;
+		}
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(SELECT s.date, u.id, u.priv, u.name, u.last_name, 
+				u.email, u.phonenumber, u.regnumber, u.username, u.password FROM users u, session s WHERE s.uid = u.id AND s.sid = ?;)";
+		pof::base::datastmtquery::row_t r = { boost::mysql::field(pof::base::to_mysql_uuid(wxGetApp().sSessionID)) };
+		q->m_arguments.emplace_back(std::move(r));
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Setting up session")) {
+				auto data = fut.get();
+				if (!data) {
+					wxMessageBox("Cannot access data in database", "Session", wxICON_ERROR | wxOK);
+					return false;
+				}
+				if (data->empty()) {
+					wxMessageBox("There is no active session, try signing in.", "Session", wxICON_INFORMATION | wxOK);
+				}
+
+				auto& rp = *data->begin();
+				auto& v = rp.first;
+				pof::base::data::datetime_t tt = boost::variant2::get<pof::base::data::datetime_t>(v[0]);
+				if ( tt + sessionDuration < (std::chrono::system_clock::now())) {
+					wxMessageBox("Session has expired, please sign in again.", "Session", wxICON_INFORMATION | wxOK);
+					RemoveSession();
+					return false;
+				}
+
+				signintime = pof::Account::clock_t::now();
+				accountID = boost::variant2::get<std::int64_t>(v[1]);
+				priv = pof::Account::privilage_set_t(boost::variant2::get<std::int64_t>(v[2]));
+				name = boost::variant2::get<std::string>(v[3]);
+				lastname = boost::variant2::get<std::string>(v[4]);
+				email = boost::variant2::get<std::string>(v[5]);
+				phonenumber = boost::variant2::get<std::string>(v[6]);
+				regnumber = boost::variant2::get<std::string>(v[7]);
+				username = boost::variant2::get<std::string>(v[8]);
+				passhash = boost::variant2::get<std::string>(v[9]);
+				SetSignInTime();
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
+	}
 
 	return false;
 }
@@ -270,7 +400,30 @@ bool pof::Account::RemoveSession()
 		bool status = mLocalDatabase->execute(*stmt);
 		assert(stmt);
 		mLocalDatabase->finalise(*stmt);
+
+		wxGetApp().sSessionID = boost::uuids::nil_uuid();
 		return status;
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(DELETE FROM session WHERE sid = ?;)";
+		q->m_arguments = { {boost::mysql::field(pof::base::to_mysql_uuid(wxGetApp().sSessionID))}};
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+
+		try {
+			if (wxGetApp().BusyWait(fut, "Setting up session")) {
+				auto data = fut.get();
+				if (data) {
+					wxGetApp().sSessionID = boost::uuids::nil_uuid();
+					return true;
+				}
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
+		
 	}
 	return false;
 }
@@ -299,6 +452,23 @@ bool pof::Account::ChangePassword(const std::string& newPass)
 		}
 		mLocalDatabase->finalise(s);
 	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(UPDATE users set password = ? WHERE id = ?;)";
+		const auto hash = bcrypt::generateHash(newPass);
+		q->m_arguments = { {boost::mysql::field(hash), boost::mysql::field(accountID)}};
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Changing user name")) {
+				auto data = fut.get();
+				return (data && !data->empty());
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
+	}
 	return false;
 }
 
@@ -306,6 +476,7 @@ bool pof::Account::AddNewRole(const Privilage& p)
 {
 	if (priv.to_ullong() & static_cast<unsigned long long>(p)) return false;
 	priv |= static_cast<unsigned long long>(p);
+
 	if (mLocalDatabase)
 	{
 		constexpr const std::string_view sql = R"(UPDATE users set privilage = ? WHERE id = ?;)";
@@ -317,6 +488,23 @@ bool pof::Account::AddNewRole(const Privilage& p)
 		assert(status);
 
 		mLocalDatabase->finalise(*stmt);
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(UPDATE users set privilage = ? WHERE id = ?;)";
+		q->m_arguments = { {boost::mysql::field(priv.to_ullong()), boost::mysql::field(accountID)} };
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Adding new role")) {
+				auto data = fut.get();
+				return (data && !data->empty());
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
+	
 	}
 	
 	return true;
@@ -342,6 +530,26 @@ std::optional<std::string> pof::Account::GetSecurityQuestion(const std::string& 
 		}
 		mLocalDatabase->finalise(*stmt);
 		return std::get<0>(*rel->begin());
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(SELECT ui.sec_question 
+					FROM users u, users_info ui
+					WHERE u.id = ui.user_id AND u.username = ?;)";
+		q->m_arguments = { {boost::mysql::field(un)}};
+		auto fut = q->get_future();
+
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			auto data = fut.get();
+			if (data && !data->empty()){
+				auto& r = *data->begin();
+				return boost::variant2::get<std::string>(r.first[0]);
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err){
+			spdlog::error(err.what());
+		}
 	}
 	return std::nullopt;
 }
@@ -382,6 +590,10 @@ bool pof::Account::DeleteAccount()
 
 		mLocalDatabase->finalise(*stmt);
 		return true;
+	}
+	else {
+		
+	
 	}
 	return false;
 }
