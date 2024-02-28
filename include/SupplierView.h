@@ -49,6 +49,7 @@ namespace pof
 			ID_INVOICE_PRODUCT_VIEW,
 			ID_REMOVE_INVOICE,
 			ID_COPY_INVOICE_NAME,
+			ID_REMOVE_PRODUCT_IN_INVOICE,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		SupplierView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
@@ -77,6 +78,7 @@ namespace pof
 		void OnCreateSupplier(wxCommandEvent& evt);
 		void OnRemoveSupplier(wxCommandEvent& evt);
 		void OnRemoveInvoice(wxCommandEvent& evt);
+		void OnRemoveProductInInvoice(wxCommandEvent& evt);
 		void OnContextMenu(wxDataViewEvent& evt);
 		void OnInvoiceContextMenu(wxDataViewEvent& evt);
 		void OnSearch(wxCommandEvent& evt);

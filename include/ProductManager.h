@@ -210,7 +210,7 @@ namespace pof {
 		bool AddInvoice(pof::base::data::const_iterator iter);
 		bool RemoveInvoice(pof::base::data::const_iterator iter);
 		bool UpdateInvoice(pof::base::data::const_iterator iter);
-		bool RemoveInventoryFromInvoice(pof::base::data::const_iterator iter); //iter is in inventory
+		bool RemoveInventoryFromInvoice(pof::base::data::const_iterator iter,std::uint64_t suppid, const std::string& invoice); //iter is in inventory
 		std::optional<pof::base::relation<
 			pof::base::data::text_t,
 			std::uint64_t,

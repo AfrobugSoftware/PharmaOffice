@@ -581,11 +581,23 @@ void pof::MainFrame::OnMarkupSettings(wxCommandEvent& evt)
 
 	wxTextEntryDialog dialog(this, "Please enter the precentage(%) Mark-Up\nRange ( 0 - 100 )", "Product Markup");
 	dialog.SetTextValidator(wxTextValidator{wxFILTER_DIGITS});
+
 	if (dialog.ShowModal() == wxID_OK) {
-		float input =  static_cast<float>(std::atoi(dialog.GetValue().ToStdString().c_str()));
-		input = std::max(0.0f, std::min(input, 100.0f));
-		input /= 100.0f;
-		wxGetApp().mProductManager.gMarkup = input;
+		float percent = 0.0f;
+		try {
+			percent = boost::lexical_cast<float>(dialog.GetValue().ToStdString());
+			if (percent > 100.0f || percent < 0.0f) {
+				wxMessageBox("Price should be between 0 and 100", "Mark up", wxICON_WARNING | wxOK);
+				return;
+			}
+		}
+		catch (std::exception& exp) {
+			spdlog::error(exp.what());
+			wxMessageBox("Invalid input", "Mark up", wxICON_ERROR | wxOK);
+			return;
+		} 
+		wxGetApp().mProductManager.gMarkup = percent;
+		wxMessageBox(fmt::format("Mark-up percent updated to {:.2f}%", percent), "Mark up", wxICON_INFORMATION | wxOK);
 	}
 }
 

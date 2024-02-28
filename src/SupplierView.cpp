@@ -7,9 +7,11 @@ BEGIN_EVENT_TABLE(pof::SupplierView, wxPanel)
 
 	EVT_MENU(pof::SupplierView::ID_REMOVE_INVOICE, pof::SupplierView::OnRemoveInvoice)
 	EVT_MENU(pof::SupplierView::ID_COPY_INVOICE_NAME, pof::SupplierView::OnCopyInvoice)
+	EVT_MENU(pof::SupplierView::ID_REMOVE_PRODUCT_IN_INVOICE, pof::SupplierView::OnRemoveProductInInvoice)
 
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceContextMenu)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_INVOICE_PRODUCT_VIEW, pof::SupplierView::OnContextMenu)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnSupplierActivated)
 	EVT_DATAVIEW_ITEM_ACTIVATED(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceActivated)
 
@@ -458,14 +460,30 @@ void pof::SupplierView::OnRemoveInvoice(wxCommandEvent& evt)
 	wxGetApp().mProductManager.GetInvoices()->RemoveData(item);
 }
 
+void pof::SupplierView::OnRemoveProductInInvoice(wxCommandEvent& evt)
+{
+}
+
 void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
+	wxWindowID id = evt.GetId();
 	if (!item.IsOk()) return;
-
+	
 	wxMenu* menu = new wxMenu;
-	menu->Append(ID_REMV_SUPPLIER, "Remove supplier", nullptr);
-
+	switch (id)
+	{
+	case ID_SUPPLIER_VIEW:
+		menu->Append(ID_REMV_SUPPLIER, "Remove supplier", nullptr);
+		break;
+	case ID_INVOICE_VIEW:
+		break;
+	case ID_INVOICE_PRODUCT_VIEW:
+		menu->Append(ID_REMOVE_PRODUCT_IN_INVOICE, "Remove from invoice", nullptr);
+		break;
+	default:
+		break;
+	}
 	mView->PopupMenu(menu);
 }
 

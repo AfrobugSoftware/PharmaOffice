@@ -1176,26 +1176,35 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 
 	if (wxMessageBox(fmt::format("Are you sure you want to mark-up to {:.2f}% of the cost price?", wxGetApp().mProductManager.gMarkup * 100.0f), "Products",
 		wxICON_INFORMATION | wxYES_NO) == wxNO) return;
+	if (wxGetApp().mProductManager.gMarkup <= 0.01f) {
+		wxMessageBox("No mark up set, please set mark up percent", "Mark up", wxICON_WARNING | wxOK);
+		return;
+	}
 
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 
 	//the actual markup should come from the settings of the pharmaoffice
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
-	auto& row = datastore[idx];
-	auto& v = row.first;
-	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::PRODUCT_UUID]);
-	wxGetApp().mProductManager.MarkUpProducts(uid); //30% mark up for texts
-	m_dataViewCtrl1->Freeze();
-	wxGetApp().mProductManager.RefreshRowFromDatabase(uid, row);
-	m_dataViewCtrl1->Thaw();
-	m_dataViewCtrl1->Update();
+	auto& prod = datastore[idx];
+	
+	pof::base::currency& price =
+		boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+	pof::base::currency& cost_price =
+		boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+	pof::base::data::duuid_t& uuid =
+		boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
 
+	//round up ??
+	const float rnd = (100.0f + wxGetApp().mProductManager.gMarkup) / 100.0f;
+	price = cost_price * static_cast<double>(rnd);
 
-	//FIX THE OVERWRITE
-	row.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+	price.nearest_hundred(); //round to nearest hundred
+
+	prod.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
 	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
-	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Marked up {}",
-		boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])));
+	prod.second.second.reset();
+
+	wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
 
 }
 
@@ -1207,16 +1216,40 @@ void pof::ProductView::OnMarkUpProducts(wxCommandEvent& evt)
 	}
 	if (wxMessageBox("Mark up changes the price for all products in the store, are you sure you want to continue?" , "Mark up",
 		wxICON_WARNING | wxYES_NO) == wxNO) return;
+	if (wxGetApp().mProductManager.gMarkup <= 0.01f) {
+		wxMessageBox("No mark up set, please set mark up percent", "Mark up", wxICON_WARNING | wxOK);
+		return;
+	}
 
-	wxGetApp().mProductManager.MarkUpProducts();
-	
-	//refresh the display
-	m_dataViewCtrl1->Freeze();
-	wxGetApp().mProductManager.GetProductData()->Clear();
-	wxGetApp().mProductManager.LoadProductsFromDatabase();
-	wxGetApp().mProductManager.GetProductData()->Reload();
-	m_dataViewCtrl1->Thaw();
-	m_dataViewCtrl1->Refresh();
+	wxProgressDialog dlg("Marking up products", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	size_t i = 0;
+	float pg = 0.0f;
+	const size_t count = wxGetApp().mProductManager.GetProductData()->GetDatastore().size();
+
+	for (auto& prod : wxGetApp().mProductManager.GetProductData()->GetDatastore()){
+		pof::base::currency& price =
+			boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+		pof::base::currency& cost_price = 
+			boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_COST_PRICE]);
+		pof::base::data::duuid_t& uuid =
+			boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+
+		//round up ??
+		const float rnd = (100.0f + wxGetApp().mProductManager.gMarkup) / 100.0f;
+		price = cost_price * static_cast<double>(rnd);
+
+		price.nearest_hundred(); //round to nearest hundred
+
+		prod.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+		wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, i);
+		prod.second.second.reset();
+
+		wxGetApp().mProductManager.GetProductData()->ItemChanged(pof::DataModel::GetItemFromIdx(i));
+		pg = static_cast<float>(((float)i / (float)count) * 100.f);
+		i++;
+		dlg.Update(pg);
+	}
+	wxMessageBox("Successfully marked up products");
 }
 
 void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
@@ -1837,6 +1870,10 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 	float percent = 0.0f;
 	try {
 		percent = boost::lexical_cast<float>(str);
+		if (percent > 100.0f || percent < 0.0f){
+			wxMessageBox("Price should be between 0 and 100", "Increase price", wxICON_WARNING | wxOK);
+			return;
+		}
 	}
 	catch (std::exception& exp) {
 		spdlog::error(exp.what());
@@ -1860,7 +1897,15 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 				boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
 				
 			//round up ??
-			price += price * static_cast<double>((percent * 0.001f));
+			const float rnd = (100.0f + percent) / 100.0f;
+			price = price * static_cast<double>(rnd);
+
+			price.nearest_hundred(); //round to nearest hundred
+
+
+			prod.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+			wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, i);
+			prod.second.second.reset();
 
 			wxGetApp().mProductManager.GetProductData()->ItemChanged(pof::DataModel::GetItemFromIdx(i));
 			pg = static_cast<float>(((float)i / (float)count) * 100.f);
@@ -1887,7 +1932,17 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 					boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
 
 				//round up ??
-				price += price * static_cast<double>((percent * 0.001f));
+					//round up ??
+				const float rnd = (100.0f + percent) / 100.0f;
+				price = price * static_cast<double>(rnd);
+
+				price.nearest_hundred(); //round to nearest hundred
+
+
+				prod.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+				wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+				prod.second.second.reset();
+
 				wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
 
 
@@ -1896,7 +1951,7 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 
 		}
 		else {
-			auto item = m_dataViewCtrl1->GetSelection();
+ 			auto item = m_dataViewCtrl1->GetSelection();
 			if (!item.IsOk()) return;
 			
 			const size_t idx = pof::DataModel::GetIdxFromItem(item);
@@ -1908,7 +1963,16 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 				boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
 
 			//round up ??
-			price += price * std::ceil(static_cast<double>((percent * 0.001f)));
+				//round up ??
+			const float rnd = (100.0f + percent) / 100.0f;
+			price = price * static_cast<double>(rnd);
+
+			price.nearest_hundred(); //round to nearest hundred
+			
+			prod.second.second.set(pof::ProductManager::PRODUCT_UNIT_PRICE);
+			wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, idx);
+			prod.second.second.reset();
+
 			wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
 
 		}

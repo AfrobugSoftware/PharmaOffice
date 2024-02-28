@@ -1087,8 +1087,28 @@ bool pof::ProductManager::UpdateInvoice(pof::base::data::const_iterator iter)
 	return false;
 }
 
-bool pof::ProductManager::RemoveInventoryFromInvoice(pof::base::data::const_iterator iter)
+bool pof::ProductManager::RemoveInventoryFromInvoice(pof::base::data::const_iterator iter, 
+		std::uint64_t suppid, const std::string& inoice)
 {
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(DELETE FROM invoice WHERE prod_id = ? AND invoice_id = ? AND inventory_id = ? AND supp_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		const auto& v = iter->first;
+		const auto& prod_id = boost::variant2::get<pof::base::data::duuid_t>(v[pof::ProductManager::INVENTORY_PRODUCT_UUID]);
+		const auto& inven_id = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::INVENTORY_ID]);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(prod_id, inoice, inven_id, suppid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
 	return false;
 }
 

@@ -71,6 +71,7 @@ namespace pof {
 			operator double() const;
 
 			//literal
+			void nearest_hundred();
 
 			inline constexpr const cur_t& data() const { return m_data; }
 			inline constexpr cur_t& data() { return m_data; }
