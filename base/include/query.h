@@ -27,14 +27,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 namespace pof {
 	namespace base {
 
-		boost::mysql::datetime to_mysql_datetime(const pof::base::data::datetime_t& tt){
-			return std::chrono::time_point_cast<boost::mysql::datetime::time_point::duration,
-				pof::base::data::clock_t, std::chrono::system_clock::duration>(tt);
-		}
-
-		boost::mysql::blob to_mysql_uuid(const pof::base::data::duuid_t& duuid){
-			return boost::mysql::blob(duuid.begin(), duuid.end());
-		}
+		boost::mysql::datetime to_mysql_datetime(const pof::base::data::datetime_t& tt);
+		boost::mysql::blob to_mysql_uuid(const pof::base::data::duuid_t& duuid);
 
 		template<typename manager>
 		struct query : public std::enable_shared_from_this<query<manager>>, private boost::noncopyable {

@@ -149,34 +149,36 @@ bool pof::Application::OnInit()
 
 	//check if time is increasing, very important that a changed time cause
 	//check that we are in West central africa
-	auto curzone = std::chrono::current_zone();
-	auto info = curzone->get_info(std::chrono::system_clock::now());
-	const std::string zz = std::format("{:%z}", info);
-	if (zz != "+0100"){
-		wxMessageBox("Please change time zone in settings to (UTC + 01:00)", "PharamOffice System checks", wxICON_ERROR | wxOK);
-		return false;
-	}
+	//only important in personal
+	if (bUsingLocalDatabase) {
+		auto curzone = std::chrono::current_zone();
+		auto info = curzone->get_info(std::chrono::system_clock::now());
+		const std::string zz = std::format("{:%z}", info);
+		if (zz != "+0100") {
+			wxMessageBox("Please change time zone in settings to (UTC + 01:00)", "PharamOffice System checks", wxICON_ERROR | wxOK);
+			return false;
+		}
 
-	auto today = pof::base::data::clock_t::now();
-	auto checkTime = mProductManager.GetLastCheckedTime();
-	if (!checkTime.has_value()) {
-		wxMessageBox("Database corrupted", "PharmaOffice System Checks", wxICON_ERROR | wxOK);
-		OnExit();
-		return false;
-	}
-	if (checkTime->time_since_epoch().count() == static_cast<pof::base::data::clock_t::duration::rep>(0)){
-		//first time creating
-		mProductManager.AddAction(ProductManager::CHECK_TIME);
-	}
-	else {
-		if (checkTime > today){
-			wxMessageBox("System time is less than last recorded time", "PharmaOffice System checks", wxICON_ERROR | wxOK);
+		auto today = pof::base::data::clock_t::now();
+		auto checkTime = mProductManager.GetLastCheckedTime();
+		if (!checkTime.has_value()) {
+			wxMessageBox("Database corrupted", "PharmaOffice System Checks", wxICON_ERROR | wxOK);
 			OnExit();
 			return false;
 		}
+		if (checkTime->time_since_epoch().count() == static_cast<pof::base::data::clock_t::duration::rep>(0)) {
+			//first time creating
+			mProductManager.AddAction(ProductManager::CHECK_TIME);
+		}
+		else {
+			if (checkTime > today) {
+				wxMessageBox("System time is less than last recorded time", "PharmaOffice System checks", wxICON_ERROR | wxOK);
+				OnExit();
+				return false;
+			}
+		}
+		mProductManager.UpdateTimeCheck(today);
 	}
-
-	mProductManager.UpdateTimeCheck(today);
 	
 	bool status = CreateMainFrame();
 	
@@ -446,8 +448,12 @@ bool pof::Application::LoadSettings()
 	//brach ID and pharmacy ID
 
 	config->Read(wxT("SessionID"), &readData);
-	sSessionID = boost::lexical_cast<boost::uuids::uuid>(readData.ToStdString());
-
+	try {
+		sSessionID = boost::lexical_cast<boost::uuids::uuid>(readData.ToStdString());
+	}
+	catch (...) {
+		sSessionID = boost::uuids::nil_uuid();
+	}
 
 	//addy
 	config->Read(wxT("Addy.country"), &readData);

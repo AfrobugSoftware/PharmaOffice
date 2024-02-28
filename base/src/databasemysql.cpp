@@ -1,5 +1,17 @@
 #include "databasemysql.h"
 
+
+boost::mysql::datetime pof::base::to_mysql_datetime(const pof::base::data::datetime_t& tt) {
+	auto dt = std::chrono::time_point_cast<boost::mysql::datetime::time_point::duration,
+		pof::base::data::clock_t, std::chrono::system_clock::duration>(tt);
+	return boost::mysql::datetime(dt);
+}
+
+boost::mysql::blob pof::base::to_mysql_uuid(const pof::base::data::duuid_t& duuid) {
+	return boost::mysql::blob(duuid.begin(), duuid.end());
+}
+
+
 pof::base::databasemysql::databasemysql(boost::asio::io_context& ios, boost::asio::ssl::context& ssl)
 	: m_resolver(boost::asio::make_strand(ios.get_executor())), 
 	  m_connection(boost::asio::make_strand(ios.get_executor()), ssl), 

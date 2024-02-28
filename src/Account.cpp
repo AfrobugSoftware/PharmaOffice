@@ -379,6 +379,7 @@ bool pof::Account::SignInFromSession()
 				username = boost::variant2::get<std::string>(v[8]);
 				passhash = boost::variant2::get<std::string>(v[9]);
 				SetSignInTime();
+				return true;
 			}
 		}
 		catch (boost::mysql::error_with_diagnostics& err) {
@@ -638,6 +639,23 @@ void pof::Account::SetSignInTime()
 		status = mLocalDatabase->execute(*stmt);
 		assert(status);
 		mLocalDatabase->finalise(*stmt);
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(UPDATE users_info set signin_time = ? WHERE user_id = ?;)";
+		q->m_arguments = { {boost::mysql::field(pof::base::to_mysql_datetime(signintime)), boost::mysql::field(accountID)}};
+
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+
+		try {
+			if (wxGetApp().BusyWait(fut, "Signing in")) {
+				auto data = fut.get();
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			spdlog::error(err.what());
+		}
 	}
 }
 

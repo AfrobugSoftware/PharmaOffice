@@ -48,6 +48,27 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 
 		mLocalDatabase->finalise(*stmt);
 	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(CREATE TABLE IF NOT EXISTS poison_book (
+			puid blob,
+			patient_name text,
+			patient_addy text,
+			pharmacist_name text,
+			is_verified integer,
+			quantity integer,
+			start_stock integer,
+			running_balance integer,
+			date datetime);)";
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+		try {
+			if (wxGetApp().BusyWait(fut, "Creating posion book")){}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			spdlog::error(err.what());
+		}
+	}
 }
 
 bool pof::PoisonBookManager::CreateNewBook(pof::base::data::row_t&& row)
@@ -293,6 +314,35 @@ std::optional<pof::base::relation<pof::base::data::duuid_t,std::string,std::stri
 		>(*stmt);
 		mLocalDatabase->finalise(*stmt);
 		return rel;
+	}
+	else {
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		q->m_sql = R"(SELECT DISTINCT pb.puid, p.name, p.strength, p.formulation  FROM products p, poison_book pb WHERE p.uuid = pb.puid;)";
+		auto fut = q->get_future();
+		wxGetApp().mMysqlDatabase->push(q);
+
+		try {
+			if (wxGetApp().BusyWait(fut, "Fetching posion books"))
+			{
+				auto data = fut.get();
+				if (!data) return std::nullopt;
+
+				pof::base::relation<pof::base::data::duuid_t, std::string, std::string, std::string> ret;
+				ret.reserve(data->size());
+				for (auto& r : *data){
+					auto tup = pof::base::make_tuple_from_row<pof::base::relation<
+							pof::base::data::duuid_t,
+							std::string, 
+							std::string,
+							std::string>::tuple_t>(r.first);
+					ret.emplace_back(std::move(tup));
+				}
+				return ret;
+			}
+		}
+		catch (boost::mysql::error_with_diagnostics& err) {
+			wxGetApp().DatabaseError(err.what());
+		}
 	}
 	return std::nullopt;
 }

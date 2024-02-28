@@ -400,7 +400,7 @@ bool pof::SignInDialog::ValidateGlobal()
 					account->regnumber = boost::variant2::get<std::string>(r.first[6]);
 					account->username = boost::variant2::get<std::string>(r.first[7]);
 					account->passhash = boost::variant2::get<std::string>(r.first[8]);
-					//account->SetSignInTime();
+					account->SetSignInTime();
 					return true;
 				}
 			}
