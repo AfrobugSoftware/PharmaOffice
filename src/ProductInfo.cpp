@@ -537,13 +537,13 @@ Chart* pof::ProductInfo::CreateChart()
 
 	std::vector<wxString> cats;
 	std::vector<double> quantites;
-	//for (auto&& tup : rel.value())
-	//{
-	//	cats.emplace_back(fmt::format("{:%d/%m/%y}", std::get<0>(tup)));
-	//	quantites.emplace_back(static_cast<double>(std::get<1>(tup)));
-	//}
-	cats.emplace_back("two");
-	quantites.emplace_back(5.00);
+	for (auto&& tup : rel.value())
+	{
+		cats.emplace_back(fmt::format("{:%d/%m/%y}", std::get<0>(tup)));
+		quantites.emplace_back(static_cast<double>(std::get<1>(tup)));
+	}
+	//cats.emplace_back("two");
+	//quantites.emplace_back(5.00);
 	//quantites.emplace_back(20.00);
 	//quantites.emplace_back(5.00);
 	//quantites.emplace_back(1.00);
