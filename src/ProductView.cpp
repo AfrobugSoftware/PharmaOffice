@@ -1174,7 +1174,7 @@ void pof::ProductView::OnMarkUp(wxCommandEvent& evt)
 	auto item = m_dataViewCtrl1->GetSelection();
 	if (!item.IsOk()) return;
 
-	if (wxMessageBox(fmt::format("Are you sure you want to mark-up to {:.2f}% of the cost price?", wxGetApp().mProductManager.gMarkup * 100.0f), "Products",
+	if (wxMessageBox(fmt::format("Are you sure you want to mark-up to {:.2f}% of the cost price?", wxGetApp().mProductManager.gMarkup), "Products",
 		wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 	if (wxGetApp().mProductManager.gMarkup <= 0.01f) {
 		wxMessageBox("No mark up set, please set mark up percent", "Mark up", wxICON_WARNING | wxOK);
@@ -1921,6 +1921,11 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 		wxBusyCursor cursor;
 		if (!mSelections.empty())
 		{
+			wxProgressDialog dlg("Increasing prices", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+			int i = 0;
+			int pg = 0;
+			const size_t count = mSelections.size();
+
 			for (const auto& item : mSelections)
 			{
 				const size_t idx = pof::DataModel::GetIdxFromItem(item);
@@ -1945,6 +1950,9 @@ void pof::ProductView::OnIncrPrice(wxCommandEvent& evt)
 
 				wxGetApp().mProductManager.GetProductData()->ItemChanged(item);
 
+				pg = static_cast<float>(((float)i / (float)count) * 100.f);
+				i++;
+				dlg.Update(pg);
 
 			}
 			wxMessageBox(fmt::format("Successfully increased {:d} store prices", mSelections.size()), "Increase price", wxICON_INFORMATION | wxOK);

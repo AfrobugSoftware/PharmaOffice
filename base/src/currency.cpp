@@ -159,13 +159,7 @@ pof::base::currency::operator double() const
 void pof::base::currency::nearest_hundred()
 {
 	auto f = static_cast<double>(*this);
-	if (f < 100.0) {
-		//round to the nearest 10 ?
-		f = 10 * round(f / 10.0);
-	}
-	else {
-		f = 100 * round(f / 100.0);
-	}
+	f = 10 * round(f / 10.0);
 	*this = f;
 }
 
