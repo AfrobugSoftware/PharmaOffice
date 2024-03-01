@@ -82,7 +82,7 @@ namespace pof {
 		};
 
 		using signoutsig_t = boost::signals2::signal<void(void)>;
-		using fontsig = boost::signals2::signal<void(void)>;
+		using fontsig = boost::signals2::signal<void(const wxFont&)>;
 		using clock_t = std::chrono::system_clock;
 
 		Application();
@@ -199,6 +199,10 @@ namespace pof {
 		//allow main frame to be visable through out the system
 		pof::MainFrame* mMainFrame;
 		wxFontData mFontSettings;
+
+		void SaveFont();
+		void LoadFont();
+
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 

@@ -1899,6 +1899,13 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 	mSupplierView->CheckEmpty(pof::SupplierView::SUPPLIER_VIEW);
 }
 
+void pof::ProductView::OnDataViewFontChange(const wxFont& font)
+{
+	m_dataViewCtrl1->Freeze();
+	m_dataViewCtrl1->SetFont(font);
+	m_dataViewCtrl1->Thaw();
+}
+
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
 {
 	auto& DatModelptr = wxGetApp().mProductManager.GetProductData();
@@ -2078,7 +2085,10 @@ void pof::ProductView::CreateDataView()
 	auto& pm = wxGetApp().mProductManager;
 	m_dataViewCtrl1->AssociateModel(pm.GetProductData().get());
 	pm.GetProductData()->DecRef();
-	
+
+	//wxFont font(wxFontInfo(12).AntiAliased());
+	//m_dataViewCtrl1->SetFont(font);
+
 	//mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), pof::ProductManager::PRODUCT_SERIAL_NUM, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 450, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
@@ -2355,10 +2365,6 @@ void pof::ProductView::CheckEmpty()
 		d.Show();
 	}
 	m_mgr.Update();
-}
-
-void pof::ProductView::OnFontChanged()
-{
 }
 
 void pof::ProductView::ShowNoResult(const std::string& search)

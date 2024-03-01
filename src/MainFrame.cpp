@@ -294,6 +294,8 @@ void pof::MainFrame::CreateViews()
 
 	mSaleView->mSaleCompleted.connect(std::bind_front(&pof::PatientView::OnPatientSaleCompleted, mPatientView));
 
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::ProductView::OnDataViewFontChange, mProductView));
+
 	mProductView->Hide();
 	mSaleView->Hide();
 	mPrescriptionView->Hide();
@@ -657,7 +659,8 @@ void pof::MainFrame::OnChangeFont(wxCommandEvent& evt)
 	if (dialog.ShowModal() != wxID_OK) return;
 
 	wxGetApp().mFontSettings = dialog.GetFontData();
-	wxGetApp().mfontSignal();
+	wxGetApp().mfontSignal(wxGetApp().mFontSettings.GetChosenFont());
+	wxGetApp().SaveFont();
 }
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)
