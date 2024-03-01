@@ -388,6 +388,8 @@ namespace pof {
 		bool UpdateTimeCheck(pof::base::data::datetime_t time);
 
 		bool ReturnToInventory(const pof::base::data::duuid_t& pid, std::tuple<std::uint64_t, pof::base::data::currency_t> quan);
+
+		std::optional<pof::base::data> GetInventoryForMonth(const pof::base::data::datetime_t& dt);
 	private:
 		std::shared_mutex mCategoryMutex;
 		pof::base::data mCategories; 

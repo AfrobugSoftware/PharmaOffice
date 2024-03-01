@@ -96,6 +96,7 @@ namespace pof
 			ID_INCR_PRODUCT_PRICE,
 			ID_OPEN_PRODUCT_INFO,
 			ID_SHOW_SUPPLIER,
+			ID_REPORTS_INVENTORY,
 		};
 
 		size_t mRowHeights;
