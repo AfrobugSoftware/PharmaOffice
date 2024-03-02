@@ -130,8 +130,6 @@ void pof::MainFrame::CreateMenuBar()
 	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
 
 	//pharmacy menu
-	Menus[1]->Append(ID_CHANGE_FONT, "Font", nullptr, "Change the font of views");
-	Menus[1]->AppendSeparator();
 	Menus[1]->Append(ID_MENU_PHARMACY_BACKUP, "Backup Store Data", nullptr, "Back up the current data in the database");
 	Menus[1]->Append(ID_MENU_PHARMACY_ROLLBACK, "Roll back Store Data", nullptr, "Roll back database to a backed up database");
 
@@ -183,6 +181,8 @@ void pof::MainFrame::CreateMenuBar()
 #endif	
 	auto item =Menus[5]->AppendCheckItem(ID_MENU_VIEW_SHOW_MODULES, "Modules\tCtrl-M");
 	item->Check();
+	Menus[5]->AppendSeparator();
+	Menus[5]->Append(ID_CHANGE_FONT, "Font", nullptr, "Change the font of views");
 
 
 	//about
@@ -252,6 +252,9 @@ void pof::MainFrame::CreateModules()
 		mProductView->CategoryAddSignal(name);
 	});
 
+	//font
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::Modules::OnChangeFont, mModules));
+	
 	//load pinned patients
 	LoadPinnedPatients();
 }
@@ -294,7 +297,10 @@ void pof::MainFrame::CreateViews()
 
 	mSaleView->mSaleCompleted.connect(std::bind_front(&pof::PatientView::OnPatientSaleCompleted, mPatientView));
 
+	//font settings
 	wxGetApp().mfontSignal.connect(std::bind_front(&pof::ProductView::OnDataViewFontChange, mProductView));
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::SaleView::OnDataViewFontChange, mSaleView));
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::PatientView::OnChangeFont, mPatientView));
 
 	mProductView->Hide();
 	mSaleView->Hide();
@@ -655,7 +661,7 @@ void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
 
 void pof::MainFrame::OnChangeFont(wxCommandEvent& evt)
 {
-	wxFontDialog dialog(nullptr);
+	wxFontDialog dialog(nullptr, wxGetApp().mFontSettings);
 	if (dialog.ShowModal() != wxID_OK) return;
 
 	wxGetApp().mFontSettings = dialog.GetFontData();

@@ -69,6 +69,7 @@ namespace pof
 		void UpdateTotals();
 		void OnAuiThemeChange();
 		void ShowTitle(const std::string& text);
+		void OnChangeFont(const wxFont& font);
 	protected:
 		void OnSupplierActivated(wxDataViewEvent& evt);
 		void OnInvoiceActivated(wxDataViewEvent& evt);

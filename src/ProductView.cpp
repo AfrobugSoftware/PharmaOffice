@@ -1904,6 +1904,10 @@ void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 	m_dataViewCtrl1->Freeze();
 	m_dataViewCtrl1->SetFont(font);
 	m_dataViewCtrl1->Thaw();
+
+	mNoResultText->SetFont(font);
+	mInfoBar->SetFont(font);
+	mProductinfo->OnChangeFont(font);
 }
 
 void pof::ProductView::OnProductInfoUpdated(const pof::ProductInfo::PropertyUpdate& mUpdatedElem)
@@ -2269,6 +2273,7 @@ void pof::ProductView::CreateSupplierView()
 	mSupplierView = new pof::SupplierView(this);
 	mSupplierView->LoadSuppliers();
 	m_mgr.AddPane(mSupplierView, wxAuiPaneInfo().Name("Supplier").CenterPane().Hide());
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::SupplierView::OnChangeFont, mSupplierView));
 }
 
 void pof::ProductView::Style()

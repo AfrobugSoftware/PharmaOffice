@@ -29,6 +29,7 @@ namespace pof {
 		void CaptureFocus();
 		void PushSpecialCol(pof::DataModel::SpeicalColHandler_t&& spc,
 			size_t col);
+		void ChangeFont(const wxFont& font);
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
 		void CreateNoResultPanel();

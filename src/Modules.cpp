@@ -48,6 +48,22 @@ void pof::Modules::OnActivated(wxTreeEvent& evt)
 	mSig(winIter, Evt::ACTIVATED);
 }
 
+void pof::Modules::OnChangeFont(const wxFont& font)
+{
+	/*
+		mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased().Bold()));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased().Family(wxFONTFAMILY_SWISS)));	
+	*/
+	int pointsize = std::max(std::min(13, font.GetPointSize()), 10);
+
+	mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(pointsize).Family(font.GetFamily()).AntiAliased().Bold().FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
+
+	Style();
+}
+
 void pof::Modules::OnSelected(wxTreeEvent& evt)
 {
 	const auto item = evt.GetItem();
@@ -373,6 +389,7 @@ void pof::Modules::CreateTree()
 
 void pof::Modules::Style()
 {
+	mModuleTree->Freeze();
 	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
 	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
 	
@@ -385,6 +402,8 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mAuditTrails, mFonts[FONT_CHILD]);
 
+	mModuleTree->SetSpacing(mFonts[FONT_MAIN].GetPointSize());
+	mModuleTree->Thaw();
 }
 
 void pof::Modules::activateModule(wxTreeItemId mod)

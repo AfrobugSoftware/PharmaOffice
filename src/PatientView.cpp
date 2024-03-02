@@ -658,9 +658,9 @@ void pof::PatientView::CreateEmptyMedsPanel()
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No medication for patient"), wxDefaultPosition, wxDefaultSize, 0);
-	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	mNoResultMedsText = new wxStaticText(m7, wxID_ANY, wxT("No medication for patient"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultMedsText->Wrap(-1);
+	bSizer9->Add(mNoResultMedsText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
 	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
@@ -716,9 +716,9 @@ void pof::PatientView::CreateEmptyMedHistPanel()
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No medication history for patient"), wxDefaultPosition, wxDefaultSize, 0);
-	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	mNoResultMedsHistText = new wxStaticText(m7, wxID_ANY, wxT("No medication history for patient"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultMedsHistText->Wrap(-1);
+	bSizer9->Add(mNoResultMedsHistText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	
 
@@ -967,6 +967,32 @@ void pof::PatientView::SwitchToolBar()
 		topPane.Hide();
 	}
 	mManager.Update();
+}
+
+void pof::PatientView::OnChangeFont(const wxFont& font)
+{
+	mPatientSelect->Freeze();
+	mPatientSelect->SetFont(font);
+	mPatientSelect->Thaw();
+
+	mCurrentMedicationView->Freeze();
+	mCurrentMedicationView->SetFont(font);
+	mCurrentMedicationView->Thaw();
+
+	mMedHistoryView->Freeze();
+	mMedHistoryView->SetFont(font);
+	mMedHistoryView->Thaw();
+
+	mPatientDetails->SetFont(font);
+	//mMedicationDetails->SetFont(font);
+	mNoResultText->SetFont(font);
+
+	mPatientNameText->SetFont(font);
+	mDobText->SetFont(font);
+	mGenderText->SetFont(font);
+	mPhoneText->SetFont(font);
+	mNoResultMedsHistText->SetFont(font);
+	mNoResultMedsText->SetFont(font);
 }
 
 void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
