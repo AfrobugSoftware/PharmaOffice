@@ -62,6 +62,7 @@ void pof::Modules::OnChangeFont(const wxFont& font)
 	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
 
 	Style();
+	
 }
 
 void pof::Modules::OnSelected(wxTreeEvent& evt)
@@ -340,7 +341,7 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	bSizer3 = new wxBoxSizer(wxVERTICAL);
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
-		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER);
+		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT);
 	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 5 );
 	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();

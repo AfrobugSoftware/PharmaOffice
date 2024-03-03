@@ -220,6 +220,7 @@ namespace pof {
 		wxStaticText* mNoResultText = nullptr;
 		wxStaticText* mNoResultMedsText = nullptr;
 		wxStaticText* mNoResultMedsHistText = nullptr;
+		wxStaticText* mNoResultPatientText = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

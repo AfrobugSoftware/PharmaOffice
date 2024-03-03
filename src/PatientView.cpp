@@ -600,9 +600,9 @@ void pof::PatientView::CreateEmptyPanel()
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("doctor"), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No patients in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
-	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	mNoResultPatientText = new wxStaticText(m7, wxID_ANY, wxT("No patients in pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
+	mNoResultPatientText->Wrap(-1);
+	bSizer9->Add(mNoResultPatientText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PATIENTS);
 	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
@@ -987,12 +987,15 @@ void pof::PatientView::OnChangeFont(const wxFont& font)
 	//mMedicationDetails->SetFont(font);
 	mNoResultText->SetFont(font);
 
+	mPatientInfoBar->SetFont(font);
 	mPatientNameText->SetFont(font);
 	mDobText->SetFont(font);
 	mGenderText->SetFont(font);
 	mPhoneText->SetFont(font);
 	mNoResultMedsHistText->SetFont(font);
 	mNoResultMedsText->SetFont(font);
+	mNoResult->SetFont(font);
+	mNoResultPatientText->SetFont(font);
 }
 
 void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
