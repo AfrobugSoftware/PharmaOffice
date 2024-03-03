@@ -107,6 +107,8 @@ namespace pof {
 			return mPatientChildRemvSignal.connect(std::forward<patientChildSignal::slot_type>(slot));
 
 		}
+
+		void OnChangeFont(const wxFont& font);
 	protected:
 		void OnActivated(wxTreeEvent& evt);
 		void OnSelected(wxTreeEvent& evt);

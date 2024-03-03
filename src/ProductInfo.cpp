@@ -364,6 +364,19 @@ void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)
 	m_splitter1->Disconnect(wxEVT_IDLE, wxIdleEventHandler(ProductInfo::m_splitter1OnIdle), NULL, this);
 }
 
+void pof::ProductInfo::OnChangeFont(const wxFont& font)
+{
+	InventoryView->Freeze();
+	InventoryView->SetFont(font);
+	InventoryView->Thaw();
+
+	mHistView->Freeze();
+	mHistView->SetFont(font);
+	mHistView->Thaw();
+
+	m_propertyGridManager1->SetFont(font);
+}
+
 void pof::ProductInfo::CreateInventoryView()
 {
 	InventoryView->AssociateModel(wxGetApp().mProductManager.GetInventory().get());

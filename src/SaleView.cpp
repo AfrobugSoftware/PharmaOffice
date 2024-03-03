@@ -187,7 +187,7 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Extact Price"), pof::SaleManager::PRODUCT_EXT_PRICE);
 	
 	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, wxSize(400, -1),
-		wxPG_SPLITTER_AUTO_CENTER | wxPG_STATIC_SPLITTER);
+		wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED);
 	mPropertyManager->Hide();
 	CreateProductDetails();
 
@@ -1874,6 +1874,40 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 	CheckEmpty();
 	UpdateSaleDisplay();
 	return ret;
+}
+
+void pof::SaleView::OnDataViewFontChange(const wxFont& font)
+{
+	m_dataViewCtrl1->Freeze();
+	m_dataViewCtrl1->SetFont(font);
+	m_dataViewCtrl1->Thaw();
+
+	mPropertyManager->Freeze();
+	mPropertyManager->SetFont(font);
+	mPropertyManager->Thaw();
+	const int fontSize = std::max(std::min(12, font.GetPointSize()), 9);;
+	const int valueFontSize = std::max(std::min(12, font.GetPointSize()), 10);
+	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle()));
+
+	auto f = std::move(wxFont(wxFontInfo(fontSize).Family(font.GetFamily()).AntiAliased().FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mInfoBar->SetFont(f);
+	mSearchPopup->ChangeFont(font);
+
+	mQuantity->SetFont(f);
+	mQuantityValue->SetFont(valueFont);
+	mExtQuantity->SetFont(f);
+	mExtQuantityItem->SetFont(valueFont);
+	mDiscountAmount->SetFont(f);
+	mDiscountValue->SetFont(valueFont);
+	mTotalQuantity->SetFont(f);
+	mTotalQuantityValue->SetFont(valueFont);
+
+	int pointsize = std::max(std::min(20, font.GetPointSize()), 15);
+	auto ff = std::move(wxFont(wxFontInfo(pointsize).Family(font.GetFamily()).AntiAliased().Bold().FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mTotalAmountLabel->SetFont(ff);
+	mTotalAmount->SetFont(ff);
+
+	UpdateSaleDisplay();
 }
 
 bool pof::SaleView::CheckInStock(const pof::base::data::row_t& product)

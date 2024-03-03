@@ -336,6 +336,13 @@ void pof::SupplierView::ShowTitle(const std::string& text)
 	mManager.Update();
 }
 
+void pof::SupplierView::OnChangeFont(const wxFont& font)
+{
+	mView->SetFont(font);
+	mInvoiceView->SetFont(font);
+	mInvoiceProductView->SetFont(font);
+}
+
 void pof::SupplierView::OnSupplierActivated(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();

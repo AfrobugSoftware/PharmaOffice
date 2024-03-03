@@ -134,6 +134,7 @@ namespace pof
 		std::chrono::system_clock::time_point mExpireProductWatchDog;
 		std::chrono::system_clock::time_point mOutOfStockProductWatchDog;
 		std::chrono::system_clock::duration mWatchDogDuration = std::chrono::minutes(30);
+
 	public:
 		boost::signals2::signal<void(const std::string&)> CategoryAddSignal;
 		boost::signals2::signal<void(pof::base::data::const_iterator)> removeSignal;
@@ -161,6 +162,9 @@ namespace pof
 		void OnResize(wxSizeEvent& evt);
 		void OnAuiThemeChange();
 		void CheckEmpty();
+
+		//slots
+		void OnDataViewFontChange(const wxFont& font);
 
 
 		void OnProductActivated(wxDataViewEvent& evt);

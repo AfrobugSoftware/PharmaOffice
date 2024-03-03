@@ -26,6 +26,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_MENU_PHARMACY_ROLLBACK, pof::MainFrame::OnRollbackData)
 	EVT_MENU(pof::MainFrame::ID_IMPORT_FORMULARY, pof::MainFrame::OnImportFormulary)
 	EVT_MENU(pof::MainFrame::ID_EXPORT_FORMULARY, pof::MainFrame::OnExportFormulary)
+	EVT_MENU(pof::MainFrame::ID_CHANGE_FONT, pof::MainFrame::OnChangeFont)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -180,6 +181,8 @@ void pof::MainFrame::CreateMenuBar()
 #endif	
 	auto item =Menus[5]->AppendCheckItem(ID_MENU_VIEW_SHOW_MODULES, "Modules\tCtrl-M");
 	item->Check();
+	Menus[5]->AppendSeparator();
+	Menus[5]->Append(ID_CHANGE_FONT, "Font", nullptr, "Change the font of views");
 
 
 	//about
@@ -249,6 +252,9 @@ void pof::MainFrame::CreateModules()
 		mProductView->CategoryAddSignal(name);
 	});
 
+	//font
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::Modules::OnChangeFont, mModules));
+	
 	//load pinned patients
 	LoadPinnedPatients();
 }
@@ -290,6 +296,11 @@ void pof::MainFrame::CreateViews()
 	mPatientView->fSaleSignal.connect(std::bind_front(&pof::SaleView::OnAddMedicationsToSale,mSaleView));
 
 	mSaleView->mSaleCompleted.connect(std::bind_front(&pof::PatientView::OnPatientSaleCompleted, mPatientView));
+
+	//font settings
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::ProductView::OnDataViewFontChange, mProductView));
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::SaleView::OnDataViewFontChange, mSaleView));
+	wxGetApp().mfontSignal.connect(std::bind_front(&pof::PatientView::OnChangeFont, mPatientView));
 
 	mProductView->Hide();
 	mSaleView->Hide();
@@ -658,6 +669,16 @@ void pof::MainFrame::OnSaleAlerts(wxCommandEvent& evt)
 void pof::MainFrame::OnShowSettings(wxCommandEvent& evt)
 {
 	wxGetApp().ShowSettings();
+}
+
+void pof::MainFrame::OnChangeFont(wxCommandEvent& evt)
+{
+	wxFontDialog dialog(nullptr, wxGetApp().mFontSettings);
+	if (dialog.ShowModal() != wxID_OK) return;
+
+	wxGetApp().mFontSettings = dialog.GetFontData();
+	wxGetApp().mfontSignal(wxGetApp().mFontSettings.GetChosenFont());
+	wxGetApp().SaveFont();
 }
 
 void pof::MainFrame::OnIdle(wxIdleEvent& evt)

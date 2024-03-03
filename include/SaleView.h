@@ -166,6 +166,8 @@ namespace pof
 		void CreateEmptyPanel();
 
 		bool OnAddMedicationsToSale(const pof::base::data& data);
+		void OnDataViewFontChange(const wxFont& font);
+
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();

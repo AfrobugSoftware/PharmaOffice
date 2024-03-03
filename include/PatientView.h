@@ -143,6 +143,7 @@ namespace pof {
 		std::set<wxDataViewItem> mPatientSelections;
 		size_t mSearchColumn = pof::PatientManager::PATIENT_NAME;
 		boost::signals2::signal<bool(const pof::base::data&)> fSaleSignal;
+		void OnChangeFont(const wxFont& font);
 	protected:
 		void OnPatientActivated(wxDataViewEvent& evt);
 		void OnAddPatient(wxCommandEvent& evt);
@@ -217,6 +218,9 @@ namespace pof {
 		wxPanel* mEmptyMedsHist = nullptr;
 		wxPanel* mNoResult = nullptr;
 		wxStaticText* mNoResultText = nullptr;
+		wxStaticText* mNoResultMedsText = nullptr;
+		wxStaticText* mNoResultMedsHistText = nullptr;
+		wxStaticText* mNoResultPatientText = nullptr;
 
 		wxSplitterWindow * mPatientPanel;
 		wxPanel* mSPanel = nullptr;

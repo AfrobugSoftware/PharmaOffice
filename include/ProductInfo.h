@@ -141,6 +141,7 @@ namespace pof
 			void m_splitter1OnIdle(wxIdleEvent&);
 
 			stock_remv_signal mStockRemvSig;
+			void OnChangeFont(const wxFont& font);
 	protected:
 		void CreateInventoryView();
 		void CreateHistoryView();

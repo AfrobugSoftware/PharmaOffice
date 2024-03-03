@@ -276,7 +276,8 @@ bool pof::Application::CreateMainFrame()
 	mMainFrame->Perspective(readData.ToStdString());
 
 	CreateMysqlDatabase(); //for testing
-
+	auto font = mFontSettings.GetChosenFont();
+	if(font.IsOk()) mfontSignal(font); //send the chosen font
 	return mMainFrame->Show();
 }
 
@@ -396,6 +397,7 @@ bool pof::Application::SaveSettings()
 		config->Write(wxT("SizeH"), size.y);
 	}
 	config->Write(wxT("Perspective"), wxString(mMainFrame->Perspective()));
+	SaveFont(); //save the font
 	return true;
 }
 
@@ -476,6 +478,7 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("Contact.website"), &readData);
 	MainPharmacy->contact.website = readData;
 
+	LoadFont(); //loads the saved font
 	return true;
 }
 
@@ -1410,6 +1413,45 @@ void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
 		== wxNO) return;
 
 
+}
+
+void pof::Application::SaveFont()
+{
+	wxFont f = mFontSettings.GetChosenFont();
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/Font"));
+	if (f.IsOk()) {
+		config->Write(wxT("PointSize"), f.GetPointSize());
+		config->Write(wxT("Family"), static_cast<int>(f.GetFamily()));
+		config->Write(wxT("Style"), static_cast<int>(f.GetStyle()));
+		config->Write(wxT("Face"), f.GetFaceName());
+	}
+}
+
+void pof::Application::LoadFont()
+{
+	wxFont f;
+	
+	wxConfigBase* config = wxConfigBase::Get();
+	wxString readData;
+
+	int pointsize = 0;
+	int ff = 0;
+	int style = 0;
+
+	config->SetPath(wxT("/Font"));
+	config->Read(wxT("PointSize"), &pointsize);
+	config->Read(wxT("Style"), &style);
+	config->Read(wxT("Family"), &ff);
+	config->Read(wxT("Face"), &readData);
+	
+	if (pointsize != 0) {
+		f.SetPointSize(pointsize);
+		f.SetFamily(ff);
+		f.SetStyle(style);
+		f.SetFaceName(readData);
+		mFontSettings.SetChosenFont(f);
+	}
 }
 
 void pof::Application::LoadFormulationChoices()

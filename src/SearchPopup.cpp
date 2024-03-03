@@ -118,6 +118,12 @@ void pof::SearchPopup::PushSpecialCol(pof::DataModel::SpeicalColHandler_t&& spc,
 	mTableModel->SetSpecialColumnHandler(col, std::forward<pof::DataModel::SpeicalColHandler_t>(spc));
 }
 
+void pof::SearchPopup::ChangeFont(const wxFont& font)
+{
+	mTable->SetFont(font);
+	mNoResultText->SetFont(font);
+}
+
 void pof::SearchPopup::OnDataItemSelected(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
