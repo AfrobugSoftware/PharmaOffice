@@ -25,6 +25,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_CREATE_INVOICE, pof::ProductInfo::OnCreateInvoice)
+	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_CHANGE_SUPPLIER_NAME, pof::ProductInfo::OnChangeSupplierName)
 	EVT_BUTTON(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 
 END_EVENT_TABLE()
@@ -980,6 +981,7 @@ void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
 	if (!InventoryView->GetSelection().IsOk()) return;
 	wxMenu* menu = new wxMenu;
 	auto s = menu->Append(ID_INVEN_MENU_CREATE_INVOICE, "Create invoice for inventory", nullptr);
+	auto m = menu->Append(ID_INVEN_MENU_CHANGE_SUPPLIER_NAME, "Change supplier name for inventory", nullptr);
 	menu->AppendSeparator();
 	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
 
@@ -1131,6 +1133,41 @@ void pof::ProductInfo::OnCreateInvoice(wxCommandEvent& evt)
 		wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));	
 	}
 	wxMessageBox(fmt::format("Created invoice {} for {} successfully!", str, suppname), "Add stock", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ProductInfo::OnChangeSupplierName(wxCommandEvent& evt)
+{
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Change supplier name", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	if (wxMessageBox("Changing name may change your supplier invoice, do you wish to continue?", "Change supplier name", wxICON_WARNING | wxYES_NO) == wxNO) return;
+
+	wxBusyCursor cursor;
+	auto item = InventoryView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& irow = wxGetApp().mProductManager.GetInventory()->GetDatastore()[idx];
+	auto& manuname = boost::variant2::get<std::string>(irow.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
+	if (manuname == "RETURN") {
+		wxMessageBox("Cannot change supplier name for a \'RETURN\' inventory", "Change supplier name", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	std::string str = wxGetTextFromUser("Please enter a supplier name for inventory entry", "Add invoice").ToStdString();
+	if (str.empty()) return;
+
+	if (str == "RETURN") {
+		wxMessageBox("Cannot change supplier name to a \'RETURN\' inventory", "Change supplier name", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	irow.first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME] = str;
+	irow.second.second.set(pof::ProductManager::INVENTORY_MANUFACTURER_NAME);
+
+	wxGetApp().mProductManager.GetInventory()->UpdateItem(item);
+	irow.second.second.reset();
 }
 
 void pof::ProductInfo::RemovePropertyModification()

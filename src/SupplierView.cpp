@@ -8,6 +8,7 @@ BEGIN_EVENT_TABLE(pof::SupplierView, wxPanel)
 	EVT_MENU(pof::SupplierView::ID_REMOVE_INVOICE, pof::SupplierView::OnRemoveInvoice)
 	EVT_MENU(pof::SupplierView::ID_COPY_INVOICE_NAME, pof::SupplierView::OnCopyInvoice)
 	EVT_MENU(pof::SupplierView::ID_REMOVE_PRODUCT_IN_INVOICE, pof::SupplierView::OnRemoveProductInInvoice)
+	EVT_MENU(pof::SupplierView::ID_COPY_SUPPLIER_NAME, pof::SupplierView::OnCopySupplierName)
 
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_SUPPLIER_VIEW, pof::SupplierView::OnContextMenu)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::SupplierView::ID_INVOICE_VIEW, pof::SupplierView::OnInvoiceContextMenu)
@@ -270,6 +271,8 @@ void pof::SupplierView::CheckEmpty(int viewIdx)
 	default:
 		break;
 	}
+
+	SwitchTool(viewIdx);
 }
 
 void pof::SupplierView::ShowEmpty(const std::string& text)
@@ -292,6 +295,7 @@ void pof::SupplierView::SwitchTool(int viewIdx)
 	case SUPPLIER_VIEW:
 		mManager.GetPane("Tools").Show();
 		break;
+	case INVOICE_PRODUCT_VIEW:
 	case INVOICE_VIEW:
 		mManager.GetPane("InvoiceTools").Show();
 		break;
@@ -341,6 +345,7 @@ void pof::SupplierView::OnChangeFont(const wxFont& font)
 	mView->SetFont(font);
 	mInvoiceView->SetFont(font);
 	mInvoiceProductView->SetFont(font);
+	mEmptyStr->SetFont(font);
 }
 
 void pof::SupplierView::OnSupplierActivated(wxDataViewEvent& evt)
@@ -375,6 +380,7 @@ void pof::SupplierView::OnInvoiceActivated(wxDataViewEvent& evt)
 	
 	ShowTitle(fmt::format("Supplier - {} - {}", boost::variant2::get<std::string>(srow.first[pof::ProductManager::SUPPLIER_NAME]), invoice_id));
 	LoadInvoiceProducts(mCurSupplier, invoice_id);
+	mCurInvoice = invoice_id;
 	CheckEmpty(INVOICE_PRODUCT_VIEW);
 	page = INVOICE_PRODUCT_VIEW;
 }
@@ -404,6 +410,7 @@ void pof::SupplierView::OnBack(wxCommandEvent& evt)
 		}
 
 		page = INVOICE_VIEW;
+		mCurInvoice.clear();
 	}
 		break;
 	default:
@@ -451,6 +458,7 @@ void pof::SupplierView::OnRemoveSupplier(wxCommandEvent& evt)
 	wxBusyCursor cursor;
 	wxGetApp().mProductManager.GetSupplier()->RemoveData(item);
 	wxMessageBox("Removed supplier from store!", "Supplier", wxICON_INFORMATION | wxOK);
+	CheckEmpty(SUPPLIER_VIEW);
 }
 
 void pof::SupplierView::OnRemoveInvoice(wxCommandEvent& evt)
@@ -465,10 +473,27 @@ void pof::SupplierView::OnRemoveInvoice(wxCommandEvent& evt)
 	if (!item.IsOk()) return;
 
 	wxGetApp().mProductManager.GetInvoices()->RemoveData(item);
+	CheckEmpty(INVOICE_VIEW);
 }
 
 void pof::SupplierView::OnRemoveProductInInvoice(wxCommandEvent& evt)
 {
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Invoice", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	if (wxMessageBox("Are you sure you want to remove product from invoice?", "Invoice", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	auto item = mInvoiceProductView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = mInvoiceProductModel->GetDatastore()[idx];
+	const auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[4]);
+	wxGetApp().mProductManager.RemoveProductFromInvoice(uid, mCurSupplier, mCurInvoice);
+
+	LoadInvoiceProducts(mCurSupplier, mCurInvoice);
+	CheckEmpty(INVOICE_PRODUCT_VIEW);
 }
 
 void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
@@ -481,6 +506,8 @@ void pof::SupplierView::OnContextMenu(wxDataViewEvent& evt)
 	switch (id)
 	{
 	case ID_SUPPLIER_VIEW:
+		menu->Append(ID_COPY_SUPPLIER_NAME, "Copy supplier name", nullptr);
+		menu->AppendSeparator();
 		menu->Append(ID_REMV_SUPPLIER, "Remove supplier", nullptr);
 		break;
 	case ID_INVOICE_VIEW:
@@ -552,6 +579,25 @@ void pof::SupplierView::OnCopyInvoice(wxCommandEvent& evt)
 	}
 
 	auto str = boost::variant2::get<std::string>(row.first[pof::ProductManager::INVOICE_ID]);
+	wxTextDataObject* tObj = new wxTextDataObject(std::move(str));
+	wxTheClipboard->Clear();
+	wxTheClipboard->AddData(tObj);
+}
+
+void pof::SupplierView::OnCopySupplierName(wxCommandEvent& evt)
+{
+	auto item = mView->GetSelection();
+	if (!item.IsOk()) return;
+
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	wxClipboardLocker clipLocker;
+	if (!clipLocker) {
+		spdlog::error("Can't open the clipboard");
+		return;
+	}
+
+	auto& r = wxGetApp().mProductManager.GetSupplier()->GetDatastore()[idx];
+	auto str = boost::variant2::get<std::string>(r.first[pof::ProductManager::SUPPLIER_NAME]);
 	wxTextDataObject* tObj = new wxTextDataObject(std::move(str));
 	wxTheClipboard->Clear();
 	wxTheClipboard->AddData(tObj);

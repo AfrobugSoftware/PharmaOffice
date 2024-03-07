@@ -123,6 +123,7 @@ namespace pof
 				ID_RESET,
 				ID_ADD_BARCODE,
 				ID_INVEN_MENU_CREATE_INVOICE,
+				ID_INVEN_MENU_CHANGE_SUPPLIER_NAME,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -165,7 +166,7 @@ namespace pof
 		void OnReset(wxCommandEvent& evt);
 		void OnAddBarcode(wxCommandEvent& evt);
 		void OnCreateInvoice(wxCommandEvent& evt);
-
+		void OnChangeSupplierName(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;

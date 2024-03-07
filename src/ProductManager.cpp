@@ -958,6 +958,27 @@ bool pof::ProductManager::UpdateSupplier(pof::base::data::const_iterator iter)
 	return false;
 }
 
+bool pof::ProductManager::RemoveProductFromInvoice(const boost::uuids::uuid& puid,std::uint64_t supid,  const std::string& invoiceid)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(DELETE FROM invoice WHERE prod_uuid = ? AND invoice_id = ? AND supp_id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid, invoiceid, supid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
 std::optional<std::vector<std::string>> pof::ProductManager::GetInvoices(std::uint64_t suppId)
 {
 	if (mLocalDatabase)
@@ -1112,11 +1133,11 @@ bool pof::ProductManager::RemoveInventoryFromInvoice(pof::base::data::const_iter
 	return false;
 }
 
-std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::base::currency, pof::base::data::datetime_t>> 
+std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::base::currency, pof::base::data::datetime_t, pof::base::data::duuid_t>> 
 	pof::ProductManager::GetProductsInInvoice(std::uint64_t suppid, const std::string& in)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, CostMulti(i.cost, i.stock_count), i.input_date 
+		constexpr const std::string_view sql = R"(SELECT p.name, i.stock_count, CostMulti(i.cost, i.stock_count), i.input_date, p.uuid
 		FROM products p, inventory i, invoice ii 
 		WHERE p.uuid = ii.prod_uuid AND i.id = ii.inventory_id AND i.uuid = p.uuid AND ii.supp_id = ? AND ii.invoice_id = ?;)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1132,7 +1153,8 @@ std::optional<pof::base::relation<pof::base::data::text_t, std::uint64_t, pof::b
 			pof::base::data::text_t, 
 			std::uint64_t, 
 			pof::base::currency, 
-			pof::base::data::datetime_t>(*stmt);
+			pof::base::data::datetime_t,
+			pof::base::data::duuid_t>(*stmt);
 		if (!rel.has_value()) {
 			mLocalDatabase->finalise(*stmt);
 		}
@@ -1458,6 +1480,67 @@ bool pof::ProductManager::StoreInventoryData(pof::base::data::const_iterator ite
 
 bool pof::ProductManager::UpdateInventoryData(pof::base::data::const_iterator iter)
 {
+	if (mLocalDatabase){
+		constexpr const std::array<std::string_view, pof::ProductManager::INVENTORY_MAX> names
+			= { "id", "uuid", "expire_date", "input_date", "stock_count", "cost", "manufacturer_name", "manufacturer_address_id", "lot_number"};
+		
+		std::ostringstream str;
+		std::vector<size_t> upIdx;
+		auto& updateFlag = iter->second.second;
+		
+		str << "UPDATE inventory SET ";
+		for (int i = 1; i < names.size(); i++) {
+			if (updateFlag.test(i)) {
+				if (upIdx.size() != 0) {
+					str << ", ";
+				}
+				upIdx.push_back(i);
+				str << names[i] << "= ?";
+			}
+		}
+		str << " WHERE id = ?;";
+		upIdx.push_back(pof::ProductManager::INVENTORY_ID);
+		auto stmt = mLocalDatabase->prepare(str.str());
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
+		size_t i = 1;
+		auto& meta = mInventoryData->GetDatastore().get_metadata();
+		auto& v = iter->first;
+		for (size_t d : upIdx) {
+			auto kind = meta[d];
+			switch (kind)
+			{
+			case pof::base::data::kind::uuid:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::duuid_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::currency:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::currency_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::uint64:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<std::uint64_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::datetime:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::datetime_t>(v[d]), i);
+				break;
+			case pof::base::data::kind::text:
+				mLocalDatabase->bind(*stmt, boost::variant2::get<pof::base::data::text_t>(v[d]), i);
+				break;
+			default:
+				break;
+			}
+			i++;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status)
+		{
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		return status;
+	}
+
 	return false;
 }
 

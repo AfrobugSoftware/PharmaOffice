@@ -203,6 +203,8 @@ namespace pof {
 		bool AddSupplier(pof::base::data::const_iterator iter);
 		bool RemoveSupplier(pof::base::data::const_iterator iter);
 		bool UpdateSupplier(pof::base::data::const_iterator iter);
+		bool RemoveProductFromInvoice(const boost::uuids::uuid& puid,
+				std::uint64_t supid, const std::string& invoiceid);
 
 		std::optional<std::vector<std::string>> GetInvoices(std::uint64_t suppId);
 		inline std::unique_ptr<pof::DataModel>& GetInvoices() { return mInvoices; }
@@ -215,7 +217,8 @@ namespace pof {
 			pof::base::data::text_t,
 			std::uint64_t,
 			pof::base::currency,
-			pof::base::data::datetime_t
+			pof::base::data::datetime_t,
+			pof::base::data::duuid_t
 		>> GetProductsInInvoice(std::uint64_t suppid, const std::string& in);
 		std::optional<bool> CheckIfProductInInvoice(std::uint64_t suppid, const std::string& in, const pof::base::data::duuid_t&);
 		//do remove product
