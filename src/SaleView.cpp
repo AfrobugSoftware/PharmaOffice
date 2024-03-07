@@ -2422,6 +2422,7 @@ void pof::SaleView::BookSale()
 
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
 	wxGetApp().mSaleManager.StoreSale();
+	wxGetApp().mSaleManager.AddSaleCost();
 
 	SaveLabelInfo(mCurSaleuuid);
 	mLocked = false;

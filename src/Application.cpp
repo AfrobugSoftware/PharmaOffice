@@ -622,6 +622,7 @@ void pof::Application::CreateTables()
 	mSaleManager.CreateSaveSaleTable();
 	mSaleManager.CreateSaleLabelTable();
 	mSaleManager.CreateSaleInfoTable();
+	mSaleManager.CreateSaleCostTable();
 
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();

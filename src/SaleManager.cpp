@@ -394,6 +394,47 @@ void pof::SaleManager::CreateSaleInfoTable()
 	}
 }
 
+void pof::SaleManager::CreateSaleCostTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sale_cost (suid blob, puid blob, date integer, cost blob);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+//add the current sale items to cost
+void pof::SaleManager::AddSaleCost()
+{
+	if (!SaleData || SaleData->GetDatastore().empty()) return;
+
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO sale_cost (suid, puid, date, cost) VALUES 
+		(?, ?, ?, (SELECT p.cost_price FROM products WHERE p.uuid = ?));)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = false;
+		for (const auto& s : SaleData->GetDatastore()) {
+			auto& suid = boost::variant2::get<pof::base::data::duuid_t>(s.first[pof::SaleManager::SALE_UUID]);
+			auto& puid = boost::variant2::get<pof::base::data::duuid_t>(s.first[pof::SaleManager::PRODUCT_UUID]);
+			auto& dt = boost::variant2::get<pof::base::data::datetime_t>(s.first[pof::SaleManager::SALE_DATE]);
+
+			status = mLocalDatabase->bind(*stmt, std::make_tuple(suid, puid, dt, puid));
+			assert(status);
+
+			status = mLocalDatabase->execute(*stmt);
+		}
+
+	}
+}
+
 bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)

@@ -72,6 +72,11 @@ namespace pof {
 		void CreateSaveSaleTable();
 		void CreateSaleLabelTable();
 		void CreateSaleInfoTable();
+		void CreateSaleCostTable();
+
+
+		//sale cost
+		void AddSaleCost();
 
 		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
 		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
