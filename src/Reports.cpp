@@ -554,6 +554,64 @@ bool pof::ReportsDialog::LoadInventoryMonth()
 	return true;
 }
 
+bool pof::ReportsDialog::LoadProfitLoss()
+{
+	return false;
+}
+
+bool pof::ReportsDialog::LoadProductSoldForMonth()
+{
+	data = wxGetApp().mSaleManager.GetProductSoldForMonth(mSelectDay);
+	if (!data.has_value()) return false; //this makes no sense
+	if (data->empty()) {
+		std::string tt;
+		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		return true;
+	}
+
+	auto& report = *mListReport;
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
+
+	size_t i = 0;
+	for (auto iter = data->begin(); iter != data->end(); iter++) {
+		auto& v = iter->first;
+		wxListItem item;
+
+		item.SetColumn(0);
+		item.SetId(i);
+		item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.InsertItem(item);
+
+		std::uint64_t quan = boost::variant2::get<std::uint64_t>(v[2]);
+		item.SetColumn(1);
+		item.SetId(i);
+		item.SetText(fmt::format("{:d}", quan));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		auto& amount = boost::variant2::get<pof::base::data::currency_t>(v[3]);
+		item.SetColumn(2);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		i++;
+	}
+	if (mBook->GetSelection() == REPORT_EMPTY_EOD) {
+		mBook->SetSelection(REPORT_VIEW);
+	}
+	UpdateTotals(data.value());
+	return true;
+}
+
 void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 {
 }
@@ -613,7 +671,7 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 	}
 	else if (mCurReportType == ReportType::IM){
 		auto set = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-		set += date::days(1); //correct for time zone
+		set += date::days(2); //correct for time zone
 
 		if (date::floor<date::months>(mSelectDay) == date::floor<date::months>(set)) return;
 		auto w = date::floor<date::months>(mSelectDay);

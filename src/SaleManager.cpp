@@ -901,6 +901,46 @@ bool pof::SaleManager::UpdateInfo(const boost::uuids::uuid& saleID, const std::s
 	return false;
 }
 
+std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, SUM(s.product_quantity) as quan, SumCost(s.product_ext_price), s.sale_date
+		FROM sales s, products p 
+		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ?
+		GROUP BY p.uuid
+		ORDER BY quan DESC;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+
+		assert(status);
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::currency
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (auto&& tup : *rel){
+			ret.emplace(pof::base::make_row_from_tuple(std::move(tup)));
+		}
+		ret.shrink_to_fit();
+		return ret;
+	}
+	return std::nullopt;
+}
+
 bool pof::SaleManager::RemoveProductSaleHistory(pof::base::data::const_iterator iterator)
 {
 	if (mLocalDatabase){
