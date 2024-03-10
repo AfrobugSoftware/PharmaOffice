@@ -39,6 +39,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
 	EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_INVENTORY, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 	EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
@@ -1078,6 +1079,7 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 	menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
 	menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
 	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
+	menu->Append(ID_REPORTS_INVENTORY, "Stock report for month", nullptr);
 
 	wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
 	wxSize sz = mReportItem->GetSizerItem()->GetSize();
@@ -1098,8 +1100,22 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
+	wxWindowID id = evt.GetId();
+	pof::ReportsDialog::ReportType rep;
+	switch (id)
+	{
+	case ID_REPORTS_ENDOFDAY:
+		rep = pof::ReportsDialog::ReportType::EOD;
+		break;
+	case ID_REPORTS_INVENTORY:
+		rep = pof::ReportsDialog::ReportType::IM;
+		break;
+	default:
+		return;
+	}
+
 	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
-	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOD, pof::base::data::clock_t::now())) dialog.ShowModal();
+	if (dialog.LoadReport(rep, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnPacks(wxCommandEvent& evt)

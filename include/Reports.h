@@ -97,6 +97,7 @@ namespace pof
 			COMSUMPTION_PATTARN,
 			EOD,
 			EOM,
+			IM,
 		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
@@ -110,6 +111,7 @@ namespace pof
 		bool LoadConsumptionPattern(pof::base::data::datetime_t month);
 		bool LoadEndOFDay();
 		bool LoadEndOfMonth();
+		bool LoadInventoryMonth();
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
@@ -129,12 +131,14 @@ namespace pof
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();
 		void CreateEODToolBar();
+		void CreateIMToolBar();
 		void CreateEmptyEodPage();
 
 
 		//download for the report type
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
+		void InventoryMonthReportExcel();
 		void UpdateTotals(const pof::base::data& data);
 		void UpdateConsumptionTotals(const pof::base::data& data);
 		bool bShowSaleID = false;
