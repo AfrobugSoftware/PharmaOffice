@@ -535,7 +535,7 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 	}
 	else if (mCurReportType == ReportType::EOM){
 		auto set = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-		set += date::days(1); //correct for time zone
+		set += date::days(2); //correct for time zone,  does not feel like a fix
 		
 		if (date::floor<date::months>(mSelectDay) == date::floor<date::months>(set)) return;
 		auto w = date::floor<date::months>(mSelectDay);

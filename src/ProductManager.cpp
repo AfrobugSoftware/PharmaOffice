@@ -2219,7 +2219,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfMonth(pof::base::dat
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price, s.uuid, s.sale_payment_type
 		FROM sales s, products p
-		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;  )";
+		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
 
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);

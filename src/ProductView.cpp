@@ -54,6 +54,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
+	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnProfitLoss)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -1073,16 +1074,15 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 
 void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 {
-	if (evt.IsDropDownClicked()) {
-		wxMenu* menu = new wxMenu;
-		menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
-		menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
+	menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
+	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
 
-		wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
-		wxSize sz = mReportItem->GetSizerItem()->GetSize();
+	wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
+	wxSize sz = mReportItem->GetSizerItem()->GetSize();
 
-		m_auiToolBar1->PopupMenu(menu, wxPoint{pos.x, pos.y + sz.y + 2});
-	}
+	m_auiToolBar1->PopupMenu(menu, wxPoint{pos.x, pos.y + sz.y + 2});
 }
 
 
@@ -2041,6 +2041,10 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 	}
 	m_mgr.Update();
 	mSupplierView->CheckEmpty(pof::SupplierView::SUPPLIER_VIEW);
+}
+
+void pof::ProductView::OnProfitLoss(wxCommandEvent& evt)
+{
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)

@@ -77,6 +77,7 @@ namespace pof {
 
 		//sale cost
 		void AddSaleCost();
+		std::optional<pof::base::data> GetProfitloss(const pof::base::data::datetime_t& dt);
 
 		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
 		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
