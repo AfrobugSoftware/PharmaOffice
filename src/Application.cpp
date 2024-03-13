@@ -366,6 +366,7 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("AutomaticBatchNumber"), bAutomaticBatchNumber);
 	config->Write(wxT("NotifyStockCheckInComplete"), bNotifyStockCheckInComplete);
 	config->Write(wxT("ShowPageSetup"), bShowPageSetup);
+	config->Write(wxT("UseSavedCost"), bUseSavedCost);
 	config->Write(wxT("PaperType"), mPaperType);
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
@@ -426,6 +427,7 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("AutomaticBatchNumber"), &bAutomaticBatchNumber);
 	config->Read(wxT("NotifyStockCheckInComplete"), &bNotifyStockCheckInComplete);
 	config->Read(wxT("ShowPageSetup"), &bShowPageSetup);
+	config->Read(wxT("UseSavedCost"), &bUseSavedCost);
 	config->Read(wxT("PaperType"), &mPaperType);
 
 	wxString version;
@@ -1355,10 +1357,12 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	auto pp0 = grid->Append(new wxBoolProperty("Show preview on Sale", "0", bShowPreviewOnSale));
 	auto pp1 = grid->Append(new wxBoolProperty("Show print prompt on Sale", "1", bShowPrintPrompt));
 	auto pp2 = grid->Append(new wxBoolProperty("Show print page setup", "2", bShowPageSetup));
+	auto pp3 = grid->Append(new wxBoolProperty("Use saved costs", "3", bUseSavedCost));
 
-	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
-	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing");
-	grid->SetPropertyHelpString(pp2, "Show printing page setup before printing");
+	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing.");
+	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing.");
+	grid->SetPropertyHelpString(pp2, "Show printing page setup before printing.");
+	grid->SetPropertyHelpString(pp3, "Use the saved cost for calulating profit/loss. If false, it would use the current cost of the item.");
 	mSettingProperties[3]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
 		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
 			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
@@ -1383,6 +1387,9 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 			break;
 		case 2:
 			bShowPageSetup = v.GetBool();
+		case 3:
+			bUseSavedCost = v.GetBool();
+			break;
 		default:
 			break;
 		}

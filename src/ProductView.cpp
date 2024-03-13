@@ -37,9 +37,13 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 	EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
 	EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
+
 	EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_INVENTORY, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_PRODUCT_SOLD, pof::ProductView::OnEndOfDayReport)
+
 	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 	EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
@@ -55,7 +59,6 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
-	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnProfitLoss)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -1079,7 +1082,8 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 	menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
 	menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
 	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
-	menu->Append(ID_REPORTS_INVENTORY, "Stock report for month", nullptr);
+	menu->Append(ID_REPORTS_INVENTORY, "Stock purchase report for month", nullptr);
+	menu->Append(ID_REPORTS_PRODUCT_SOLD, "Product sold report for month", nullptr);
 
 	wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
 	wxSize sz = mReportItem->GetSizerItem()->GetSize();
@@ -1109,6 +1113,12 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 		break;
 	case ID_REPORTS_INVENTORY:
 		rep = pof::ReportsDialog::ReportType::IM;
+		break;
+	case ID_REPORTS_PRODUCT_SOLD:
+		rep = pof::ReportsDialog::ReportType::PSM;
+		break;
+	case ID_REPORTS_PROFITLOSS:
+		rep = pof::ReportsDialog::ReportType::PL;
 		break;
 	default:
 		return;
@@ -2135,7 +2145,7 @@ void pof::ProductView::OnCategorySelected(const std::string& name)
 void pof::ProductView::ShowCostPriceColumn()
 {
 	mProductUnitPriceCol->SetWidth(100);
-	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("Cost Price", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("Cost Price", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 }
 
 void pof::ProductView::HideCostPriceColumn()
@@ -2264,9 +2274,9 @@ void pof::ProductView::CreateDataView()
 	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Class"), pof::ProductManager::PRODUCT_CLASS, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductFormulation = m_dataViewCtrl1->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE |  wxDATAVIEW_COL_REORDERABLE);
 
 	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 2));
 	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));

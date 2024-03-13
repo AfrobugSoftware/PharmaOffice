@@ -144,6 +144,8 @@ namespace pof
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
 		void InventoryMonthReportExcel();
+		void ProfitLossExcel();
+
 		void UpdateTotals(const pof::base::data& data);
 		void UpdateConsumptionTotals(const pof::base::data& data);
 		bool bShowSaleID = false;

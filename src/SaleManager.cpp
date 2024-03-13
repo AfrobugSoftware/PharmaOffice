@@ -449,11 +449,27 @@ void pof::SaleManager::AddSaleCost()
 std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::data::datetime_t& dt)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT s.date, p.name, s.product_quantity, s.product_ext_price, sc.cost 
-		FROM products p, sales s, sale_cost sc
-		WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND p.product_uuid = sc.puid AND Months(dt) = ?;)";
-		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
+		std::optional<pof::base::database::stmt_t> stmt = std::nullopt;
+		if (wxGetApp().bUseSavedCost) {
+			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, sc.cost 
+			FROM products p, sales s, sale_cost sc
+			WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND s.product_uuid = sc.puid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+		}
+		else {
+			constexpr const std::string_view ss = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, p.cost_price 
+			FROM products p, sales s
+			WHERE p.uuid = s.product_uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(ss);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+		}
 
 		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
@@ -922,7 +938,8 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 			pof::base::data::duuid_t,
 			pof::base::data::text_t,
 			std::uint64_t,
-			pof::base::currency
+			pof::base::currency,
+			pof::base::data::datetime_t
 		>(*stmt);
 		if (!rel.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
