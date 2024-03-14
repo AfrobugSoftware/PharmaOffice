@@ -99,6 +99,7 @@ namespace pof
 			ID_REPORTS_PROFITLOSS,
 			ID_REPORTS_INVENTORY,
 			ID_REPORTS_PRODUCT_SOLD,
+			ID_DOWNLOAD_ACTUAL_STOCK,
 		};
 
 		size_t mRowHeights;

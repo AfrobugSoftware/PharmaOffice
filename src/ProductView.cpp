@@ -59,6 +59,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
+	EVT_MENU(pof::ProductView::ID_DOWNLOAD_ACTUAL_STOCK, pof::ProductView::OnDownloadActualStock)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -1158,6 +1159,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		else {
 			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, fmt::format("Export {:d} products as excel", mSelections.size()), nullptr);
 		}
+		auto ddd = menu->Append(ID_DOWNLOAD_ACTUAL_STOCK, "Download actual stock", nullptr);
 
 		wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
 		wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
@@ -2071,6 +2073,103 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 
 void pof::ProductView::OnProfitLoss(wxCommandEvent& evt)
 {
+}
+
+void pof::ProductView::OnDownloadActualStock(wxCommandEvent& evt)
+{
+	std::optional<pof::base::data> datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (datastore->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save actual stock as excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Actual stock");
+
+	const size_t colSize = 4; //name, stock, unit price, actual price
+	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+
+	writeHeader("Product");
+	writeHeader("Stock count");
+	writeHeader("Unit price");
+	writeHeader("Actual price");
+	
+	pof::base::currency totalAmount;
+	wxProgressDialog dlg("Downloading actual stock", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	int i = 0;
+	int pg = 0;
+	const int count = datastore->size();
+	for (auto& prod : datastore.value()) {
+		const auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
+		const auto& stock = boost::variant2::get<std::uint64_t>(prod.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		const auto& unit_price = boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+
+		iter->value().set(name);
+		iter++;
+
+		iter->value().set(stock);
+		iter++;
+
+		iter->value().set(fmt::format("{:cu}", unit_price));
+		iter++;
+
+		const pof::base::currency actual_price = unit_price * static_cast<double>(stock);
+
+		iter->value().set(fmt::format("{:cu}", actual_price));
+		iter++;
+
+		totalAmount += actual_price;
+
+		pg = static_cast<float>(((float)i / (float)count) * 100.f);
+		i++;
+		if (!dlg.Update(pg)) {
+			doc.close();
+			std::filesystem::remove(fullPath); //remove the file
+			return;
+		}
+	}	
+	//total amount
+	iter++;
+	iter++;
+
+	iter->value().set("Total stock amount");
+	iter++;
+	iter->value().set(fmt::format("{:cu}", totalAmount));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Download Actual stock", wxICON_INFORMATION | wxOK);
+	
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
