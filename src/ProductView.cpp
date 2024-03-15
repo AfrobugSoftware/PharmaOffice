@@ -2302,12 +2302,44 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 	items.shrink_to_fit();
 	if (!items.empty()) {
+		//check for expired 
+		std::vector<std::string> f;
+		if (wxGetApp().bCheckExpiredOnUpdate) {
+			auto expitems = wxGetApp().mProductManager.DoExpiredProducts();
+			if(expitems.has_value() && !expitems->empty()) {
+				int quan = 0;;
+				for (auto& i : items) {
+					const bool found = std::ranges::binary_search(expitems.value(), i);
+					if (found) quan++;
+				}
+				if(quan != 0) f.push_back(fmt::format("{:d} products in store has expired", expitems->size()));
+			}
+		}
+
+		if (wxGetApp().bCheckOutOfStockOnUpdate) {
+			auto ositems = wxGetApp().mProductManager.DoOutOfStock();
+			if (ositems.has_value() && !ositems->empty()) {
+				int quan = 0;
+				for (auto& i : items){
+					const bool found = std::ranges::binary_search(ositems.value(), i);
+					if (found) quan++;
+				}
+				if(quan != 0) f.push_back(fmt::format("{:d} products in store are out of stock", quan));
+			}
+		}
+		if (!f.empty()) {
+			mInfoBar->ShowMessage("");
+			mInfoBar->ShowMessage(fmt::format("{} in {}", fmt::join(f, " and "), name), wxICON_INFORMATION);
+		}
+		else {
+			if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+		}
+
 		m_dataViewCtrl1->Freeze();
 		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
 		mActiveCategory = name;
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
-		if (mInfoBar->IsShown()) mInfoBar->Dismiss();
 
 		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
