@@ -61,6 +61,7 @@ bool pof::Application::OnInit()
 	//set up other things
 	// check for updates
 	//lunch mainframe
+try{
 	if (!wxApp::OnInit()) return false;
 	mChecker = std::make_unique<wxSingleInstanceChecker>();
 	if (mChecker->IsAnotherRunning()) {
@@ -69,7 +70,7 @@ bool pof::Application::OnInit()
 		return false;
 	}
 
-	
+
 
 
 	SetUseBestVisual(true, true);
@@ -83,9 +84,9 @@ bool pof::Application::OnInit()
 	SetUpPaths();
 	wxInitAllImageHandlers();
 	wxArtProvider::Push(new pof::ArtProvider);
-	
+
 	wxBitmap bitmap = wxArtProvider::GetBitmap("splash");
-	
+
 	SetUpColorTable();
 	//do system settings here?
 	wxSystemOptions::SetOption(wxT("msw.remap"), 1);
@@ -98,7 +99,7 @@ bool pof::Application::OnInit()
 	pof::Account::CreateSecurityQuestions();
 	LoadFormulationChoices();
 	LoadStrengthChoices();
-	
+
 	//TestAccountAndPharmacy();
 	mAuditManager.mCurrentAccount = MainAccount;
 	mSaleManager.mCurAccount = MainAccount;
@@ -109,7 +110,7 @@ bool pof::Application::OnInit()
 			OpenLocalDatabase();
 			CreateTables();
 			mProductManager.bUsingLocalDatabase = bUsingLocalDatabase;
-			
+
 		}
 		catch (std::exception& exp) {
 			spdlog::critical("Cannot open databse: {}", exp.what());
@@ -128,15 +129,22 @@ bool pof::Application::OnInit()
 
 		//check if in active session, if we are asked to keep the signin
 		bool ssin = false;
-		if (bKeepMeSignedIn) {
-			ssin = MainAccount->SignInFromSession();
-		}
-		if (!ssin) {
-			if (!SignIn()) {
-				//failed signed in from local database
-				OnExit();
-				return false;
+		try {
+			if (bKeepMeSignedIn) {
+				ssin = MainAccount->SignInFromSession();
 			}
+			if (!ssin) {
+				if (!SignIn()) {
+					//failed signed in from local database
+					OnExit();
+					return false;
+				}
+			}
+		}
+		catch (const std::exception& exp) {
+			wxMessageBox(exp.what(), "FATAL ERROR", wxICON_ERROR | wxOK);
+			OnExit();
+			return false;
 		}
 	}
 	else {
@@ -153,7 +161,7 @@ bool pof::Application::OnInit()
 	auto curzone = std::chrono::current_zone();
 	auto info = curzone->get_info(std::chrono::system_clock::now());
 	const std::string zz = std::format("{:%z}", info);
-	if (zz != "+0100"){
+	if (zz != "+0100") {
 		wxMessageBox("Please change time zone in settings to (UTC + 01:00)", "PharamOffice System checks", wxICON_ERROR | wxOK);
 		return false;
 	}
@@ -165,12 +173,12 @@ bool pof::Application::OnInit()
 		OnExit();
 		return false;
 	}
-	if (checkTime->time_since_epoch().count() == static_cast<pof::base::data::clock_t::duration::rep>(0)){
+	if (checkTime->time_since_epoch().count() == static_cast<pof::base::data::clock_t::duration::rep>(0)) {
 		//first time creating
 		mProductManager.AddAction(ProductManager::CHECK_TIME);
 	}
 	else {
-		if (checkTime > today){
+		if (checkTime > today) {
 			wxMessageBox("System time is less than last recorded time", "PharmaOffice System checks", wxICON_ERROR | wxOK);
 			OnExit();
 			return false;
@@ -179,9 +187,16 @@ bool pof::Application::OnInit()
 
 	mProductManager.UpdateTimeCheck(today);
 	bool status = CreateMainFrame();
-	
+
 	SaveSettings();
 	return status;
+	}
+	catch (const std::exception& exp)
+	{
+		wxMessageBox(exp.what(), "FATAL ERROR", wxICON_ERROR | wxOK);
+		OnExit();
+		return false;
+	}
 }
 
 int pof::Application::OnExit()
@@ -302,6 +317,7 @@ bool pof::Application::LunchWizard()
 	delete wizard;
 	wizard = nullptr;
 
+	SaveSettings();
 	return state;
 }
 
