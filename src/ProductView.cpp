@@ -2279,6 +2279,10 @@ void pof::ProductView::HideSelectionColumn()
 
 void pof::ProductView::OnCategoryActivated(const std::string& name)
 {
+	//check if ProductInfo is shown
+	auto& prodinfo = m_mgr.GetPane("ProductInfo");
+	if (prodinfo.IsOk() && prodinfo.IsShown()) return; //do not activate if on prodinfo
+
 	auto& cats = wxGetApp().mProductManager.GetCategories();
 	auto iter = std::ranges::find_if(cats, [&](auto& row) -> bool {return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == name);});
 	if (iter == cats.end()) {
@@ -2302,7 +2306,13 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 	items.shrink_to_fit();
 	if (!items.empty()) {
-		//check for expired 
+		//check for expired
+		m_dataViewCtrl1->Freeze();
+		wxGetApp().mProductManager.GetProductData()->Reload(items);
+		mActiveCategory = name;
+		m_dataViewCtrl1->Thaw();
+		m_dataViewCtrl1->Refresh();
+
 		std::vector<std::string> f;
 		if (wxGetApp().bCheckExpiredOnUpdate) {
 			auto expitems = wxGetApp().mProductManager.DoExpiredProducts();
@@ -2312,7 +2322,9 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 					const bool found = std::ranges::binary_search(expitems.value(), i);
 					if (found) quan++;
 				}
-				if(quan != 0) f.push_back(fmt::format("{:d} products in store has expired", expitems->size()));
+				if(quan != 0)
+					if(quan == 1)f.push_back(fmt::format("{:d} product has expired", expitems->size()));
+					else f.push_back(fmt::format("{:d} products has expired", expitems->size()));
 			}
 		}
 
@@ -2322,9 +2334,18 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 				int quan = 0;
 				for (auto& i : items){
 					const bool found = std::ranges::binary_search(ositems.value(), i);
-					if (found) quan++;
+					if (found) {
+						quan++;
+						if (wxGetApp().bHighlightOutOfStockInCategory) {
+							//use audit attribute
+							auto& sa = wxGetApp().mAuditManager.auditAttr[static_cast<int>(pof::AuditManager::auditType::SALE)];
+							wxGetApp().mProductManager.GetProductData()->AddAttr(i, sa);
+						}
+					}
 				}
-				if(quan != 0) f.push_back(fmt::format("{:d} products in store are out of stock", quan));
+				if(quan != 0) 
+					if(quan == 1)f.push_back(fmt::format("{:d} product is out of stock", quan));
+					else f.push_back(fmt::format("{:d} products are out of stock", quan));
 			}
 		}
 		if (!f.empty()) {
@@ -2334,12 +2355,6 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 		else {
 			if (mInfoBar->IsShown()) mInfoBar->Dismiss();
 		}
-
-		m_dataViewCtrl1->Freeze();
-		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
-		mActiveCategory = name;
-		m_dataViewCtrl1->Thaw();
-		m_dataViewCtrl1->Refresh();
 
 		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));

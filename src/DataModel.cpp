@@ -274,7 +274,10 @@ bool pof::DataModel::IsVirtualListModel() const
 
 bool pof::DataModel::GetAttr(const wxDataViewItem& item, unsigned int col, wxDataViewItemAttr& attr) const
 {
-	if (col >= GetColumnCount()) return false;
+	const auto iter = mSpecialColHandlers.find(col);
+	if (iter == mSpecialColHandlers.end()) {
+		if (col >= GetColumnCount()) return false; //col not a specail col and not in range
+	}
 	if (!item.IsOk()) return false;
 	auto attrIter = attributes.find(item);
 	if (attrIter != attributes.end()) {

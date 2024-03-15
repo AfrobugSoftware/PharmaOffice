@@ -368,6 +368,7 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("ShowPageSetup"), bShowPageSetup);
 	config->Write(wxT("UseSavedCost"), bUseSavedCost);
 	config->Write(wxT("PaperType"), mPaperType);
+	config->Write(wxT("HighlightOutOfStockInCategory"), bHighlightOutOfStockInCategory);
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
@@ -429,6 +430,7 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("ShowPageSetup"), &bShowPageSetup);
 	config->Read(wxT("UseSavedCost"), &bUseSavedCost);
 	config->Read(wxT("PaperType"), &mPaperType);
+	config->Read(wxT("HighlightOutOfStockInCategory"), &bHighlightOutOfStockInCategory);
 
 	wxString version;
 	config->Read(wxT("Version"), &version);
@@ -886,6 +888,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp12 = grid->Append(new wxBoolProperty("Notify stock check before end of month", "12", bNotifyStockCheckInComplete));	
 	auto pp13 = grid->Append(new wxBoolProperty("Allow sale of controlled medication", "13", bAllowSellControlledMed));	
 	auto pp14 = grid->Append(new wxBoolProperty("Create poison book entry for each controlled drug sale", "14", bAlwaysCreateEntryIntoRegister));	
+	auto pp17 = grid->Append(new wxBoolProperty("Highlight out of stock in category", "17", bHighlightOutOfStockInCategory));
 	auto ct1 = grid->Append(new wxPropertyCategory("Product settings"));
 	auto pp15 = grid->Append(new wxArrayStringProperty("Product formulation", "15", FormulationChoices));
 	auto pp16 = grid->Append(new wxArrayStringProperty("Product Strength", "16", StrengthChoices));
@@ -911,6 +914,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp14, "Create posion book entry for the medications that are controlled");
 	grid->SetPropertyHelpString(pp15, "Add or remove product formulations");
 	grid->SetPropertyHelpString(pp16, "Add or remove product strength");
+	grid->SetPropertyHelpString(pp17, "Highlight out of stock products in category");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -988,6 +992,9 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 				SaveStrengthChoices();
 				mUpdateChoices();
 			}
+			case 17:
+				bHighlightOutOfStockInCategory = v.GetBool();
+				break;
 			default:
 				evt.Skip();
 				return;
