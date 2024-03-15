@@ -711,6 +711,9 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 	case ReportType::IM:
 		InventoryMonthReportExcel();
 		break;
+	case ReportType::PL:
+		ProfitLossExcel();
+		break;
 	default:
 		break;
 	}
@@ -1549,26 +1552,65 @@ void pof::ReportsDialog::ProfitLossExcel()
 	auto wks = doc.workbook().worksheet("Sheet1");
 	wks.setName(fmt::format("PROFIT LOSS for {:%m/%Y}", mSelectDay));
 
-	const size_t colSize = mListReport->GetColumnCount();
-	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
+	const size_t colSize = 5;
+	const size_t rowSize = datastore.value().size() + 4; //plus title and total row and date
 	const size_t firstRow = 1;
 	const size_t firstCol = 1;
 
 	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
 	auto iter = range.begin();
 	//write header
-	auto writeHeader = [&](const std::string& name) {
+	auto writeexecel = [&](const std::string& name) {
 		iter->value().set(name);
 		iter++;
 	};
-	writeHeader("Product");
-	writeHeader("Quantity");
-	writeHeader("Amount Sell");
-	writeHeader("Amount Cost");
-	writeHeader("Amount Profit/Loss");
+	auto dt = pof::base::data::clock_t::now();
+	writeexecel(fmt::format("Report generated on {:%d/%m/%Y %H:%M:%S}", dt));
+	iter++;
+	iter++;
+	iter++;
+	iter++;
 
 
+	writeexecel("Product");
+	writeexecel("Quantity");
+	writeexecel("Amount Sell");
+	writeexecel("Amount Cost");
+	writeexecel("Amount Profit/Loss");
 
+	pof::base::currency totalAmountSell;
+	pof::base::currency totalAmountCost;
+	pof::base::currency totalAmountPL;
+	for (auto& f : data.value()) {
+		const auto& name = boost::variant2::get<std::string>(f.first[1]);
+		const auto& quan = boost::variant2::get<std::uint64_t>(f.first[2]);
+		const auto& sellamount = boost::variant2::get<pof::base::currency>(f.first[3]);
+		const auto& costamount = boost::variant2::get<pof::base::currency>(f.first[4]);
+		const pof::base::currency pl = sellamount - costamount;
+
+		totalAmountCost += costamount;
+		totalAmountSell += sellamount;
+		totalAmountPL += pl;
+
+		writeexecel(name);
+		iter->value().set(quan);
+		iter++;
+
+		writeexecel(fmt::format("{:cu}", sellamount));
+		writeexecel(fmt::format("{:cu}", costamount));
+		writeexecel(fmt::format("{:cu}", pl));
+	}
+	
+	writeexecel("TOTAL");
+	iter++;
+
+	writeexecel(fmt::format("{:cu}", totalAmountSell));
+	writeexecel(fmt::format("{:cu}", totalAmountCost));
+	writeexecel(fmt::format("{:cu}", totalAmountPL));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
