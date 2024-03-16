@@ -236,6 +236,15 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	bool ret = false;
 	mCurReportType = repType;
 	CreateToolBar();
+	if (mCurReportType == ReportType::EOD) {
+		//mSelectDay = pof::base::data::clock_t::now();
+	}
+	else {
+		auto set = pof::base::data::clock_t::now();
+		set += date::days(2); //correct for time zone,  does not feel like a fix, leap year, looks like it does not account for leap year
+		mSelectDay = set;
+	}
+
 	switch (repType)
 	{
 	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:

@@ -75,9 +75,9 @@ namespace pof {
 
 			inline constexpr const cur_t& data() const { return m_data; }
 			inline constexpr cur_t& data() { return m_data; }
+			bool issigned = false;
 		private:
 			cur_t m_data = {0};
-
 		};	
 		currency operator""_cu(long double fig);
 		class  curlocale : public std::numpunct<char>

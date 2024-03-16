@@ -453,7 +453,7 @@ std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::
 		if (wxGetApp().bUseSavedCost) {
 			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, sc.cost 
 			FROM products p, sales s, sale_cost sc
-			WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND s.product_uuid = sc.puid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND s.product_uuid = sc.puid AND s.sale_payment_type IS NOT 'Returned' AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
 			stmt = mLocalDatabase->prepare(sql);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -463,7 +463,7 @@ std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::
 		else {
 			constexpr const std::string_view ss = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, p.cost_price 
 			FROM products p, sales s
-			WHERE p.uuid = s.product_uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			WHERE p.uuid = s.product_uuid AND s.sale_payment_type IS NOT 'Returned' AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
 			stmt = mLocalDatabase->prepare(ss);
 			if (!stmt.has_value()) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -471,8 +471,9 @@ std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::
 			}
 		}
 
-		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		auto month = date::floor<date::months>(dt);
+		auto dur = month.time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -930,9 +931,10 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 			spdlog::error(mLocalDatabase->err_msg());
 			return std::nullopt;
 		}
-		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
-
+		
+		auto month = date::floor<date::months>(dt);
+		auto dur = month.time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,

@@ -8,9 +8,9 @@ void pof::base::month_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
 	}
 	std::uint64_t duration = sqlite3_value_int64(vals[0]);
 	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
-	auto month = std::chrono::duration_cast<date::months>(tt.time_since_epoch());
-	//spdlog::info("month count {:d}", month.count());
-	sqlite3_result_int64(conn, pof::base::data::datetime_t(month).time_since_epoch().count());
+	auto month = date::floor<date::months>(tt + date::days(1));
+	sqlite3_result_int64(conn, static_cast<std::int64_t>(month.time_since_epoch().count()));
+	//sqlite3_result_int64(conn, duration);
 }
 
 void pof::base::day_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
@@ -31,8 +31,9 @@ void pof::base::cost_step_func(sqlite3_context* con, int row, sqlite3_value** va
 	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(con, sizeof(pof::base::currency)));
 	if (cur) {
 		pof::base::currency temp;
-		const currency_ptr val = (const currency_ptr)(sqlite3_value_blob(vals[0]));
-		std::copy(val->data().begin(), val->data().end(), temp.data().begin());
+		const pof::base::data::blob_t::value_type* val = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[0]));
+		size_t size = sqlite3_value_bytes(vals[0]);
+		std::copy(val, val + size, temp.data().begin());
 		*cur += temp;
 	}
 }
@@ -42,29 +43,39 @@ void pof::base::cost_final_func(sqlite3_context* conn) {
 	currency_ptr cur = reinterpret_cast<currency_ptr>(sqlite3_aggregate_context(conn, sizeof(pof::base::currency)));
 	if (cur) {
 		//spdlog::info("{:cu}", *cur);
-		sqlite3_result_blob(conn, (const void*)cur, pof::base::currency::max, SQLITE_TRANSIENT);
+		sqlite3_result_blob(conn, (const void*)cur->data().data(), pof::base::currency::max, SQLITE_TRANSIENT);
 	}
 }
 
 void pof::base::cost_multi_add(sqlite3_context* conn, int arg, sqlite3_value** vals)
 {
 	using currency_ptr = std::add_pointer_t<pof::base::currency>;
-	const currency_ptr cur = (const currency_ptr)(sqlite3_value_blob(vals[0]));
+	
+	pof::base::currency cur;
+	const pof::base::data::blob_t::value_type* val = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[0]));
+	size_t size = sqlite3_value_bytes(vals[0]);
+	std::copy(val, val + size, cur.data().begin());
+
 	const double scale = (sqlite3_value_double(vals[1]));
 	pof::base::currency temp;
 
-	temp = *(cur) + (*(cur) * scale);
+	temp = cur + (cur * scale);
 	sqlite3_result_blob(conn, (const void*)temp.data().data(),  pof::base::currency::max, SQLITE_TRANSIENT);
 }
 
 void pof::base::cost_multi(sqlite3_context* conn, int arg, sqlite3_value** vals)
 {
 	using currency_ptr = std::add_pointer_t<pof::base::currency>;
-	const currency_ptr cur = (const currency_ptr)(sqlite3_value_blob(vals[0]));
+	
+	pof::base::currency cur;
+	const pof::base::data::blob_t::value_type* val = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[0]));
+	size_t size = sqlite3_value_bytes(vals[0]);
+	std::copy(val, val + size, cur.data().begin());
+
 	const double scale = (sqlite3_value_double(vals[1]));
 	pof::base::currency temp;
 
-	temp = (*(cur) * scale);
+	temp = (cur * scale);
 	sqlite3_result_blob(conn, (const void*)temp.data().data(), pof::base::currency::max, SQLITE_TRANSIENT);
 }
 

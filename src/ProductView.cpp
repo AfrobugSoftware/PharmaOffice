@@ -2041,6 +2041,7 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 	if (evt.IsChecked())
 	{
 		pane.Show();
+		m_searchCtrl1->Clear();
 
 		if (dataview.IsShown()) {
 			dataview.Hide();

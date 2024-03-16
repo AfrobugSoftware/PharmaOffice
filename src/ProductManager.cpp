@@ -2307,8 +2307,9 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfMonth(pof::base::dat
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
-		auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		auto month = date::floor<date::months>(m);
+		auto dur = month.time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 
 
@@ -3720,8 +3721,9 @@ std::optional<pof::base::data> pof::ProductManager::GetInventoryForMonth(const p
 			return std::nullopt;
 		}
 
-		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		auto month = date::floor<date::months>(dt);
+		auto dur = month.time_since_epoch().count();
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
