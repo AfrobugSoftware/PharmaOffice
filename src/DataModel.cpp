@@ -369,25 +369,32 @@ void pof::DataModel::SetSpecialSetColumnHandler(size_t column, set_function_t&& 
 
 int pof::DataModel::Compare(const wxDataViewItem& item1, const wxDataViewItem& item2, unsigned int column, bool ascending) const
 {
-	if (column >= GetColumnCount()) return 0;
 	const size_t i = GetIdxFromItem(item1);
 	const size_t i2 = GetIdxFromItem(item2);
-	const auto& [r, s] = (*datastore)[i];
-	const auto& [r2, s2] = (*datastore)[i2];
-	const auto& val1 = r[column];
-	const auto& val2 = r2[column];
+	const auto iter = mSpecialColHandlers.find(column);
+	if (iter == mSpecialColHandlers.end()) {
+		if (column >= GetColumnCount()) return 0; //col not a specail col and not in range
 
-	if (ascending) {
-		if (val1 < val2) return -1;
-		else if (val1 > val2) return 1;
-		else return 0;
+		const auto& [r, s] = (*datastore)[i];
+		const auto& [r2, s2] = (*datastore)[i2];
+		const auto& val1 = r[column];
+		const auto& val2 = r2[column];
+
+		if (ascending) {
+			if (val1 < val2) return -1;
+			else if (val1 > val2) return 1;
+			else return 0;
+		}
+		else {
+			if (val1 > val2) return -1;
+			else if (val1 < val2) return 1;
+			else return 0;
+		}
 	}
 	else {
-		if (val1 > val2) return -1;
-		else if (val1 < val2) return 1;
-		else return 0;
+		//need a compare function for
+		return 0;
 	}
-	return 0;
 }
 
 bool pof::DataModel::HasValue(const wxDataViewItem& item, unsigned col) const

@@ -48,7 +48,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l1 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l1 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -59,7 +60,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l2 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l2 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -71,7 +73,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l3 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l3 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -83,7 +86,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l4 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l4, wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -248,11 +252,15 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	case ReportType::IM:
 		SetTitle("Stock inventory report");
 		ret = LoadInventoryMonth();
+		l3->Hide();
+		l4->Hide();
 		mSPanel->Show();
 		break;
 	case ReportType::PSM:
 		SetTitle("Products sold for month");
 		ret = LoadProductSoldForMonth();
+		l3->Hide();
+		l4->Hide();
 		mSPanel->Show();
 		break;
 	case ReportType::PL:
@@ -658,7 +666,7 @@ bool pof::ReportsDialog::LoadProductSoldForMonth()
 	auto& report = *mListReport;
 	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
 	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
 
 	size_t i = 0;
 	for (auto iter = data->begin(); iter != data->end(); iter++) {
@@ -713,6 +721,9 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 		break;
 	case ReportType::PL:
 		ProfitLossExcel();
+		break;
+	case ReportType::PSM:
+		ProductSoldExcel();
 		break;
 	default:
 		break;
@@ -1607,6 +1618,92 @@ void pof::ReportsDialog::ProfitLossExcel()
 	writeexecel(fmt::format("{:cu}", totalAmountSell));
 	writeexecel(fmt::format("{:cu}", totalAmountCost));
 	writeexecel(fmt::format("{:cu}", totalAmountPL));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ReportsDialog::ProductSoldExcel()
+{
+	if (!data.has_value()) {
+		wxMessageBox("Cannot create Products sold report from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (data->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save Product sold report excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	try {
+		doc.create(fullPath.string());
+		if (!doc.isOpen()) {
+			spdlog::error("Canont open xlsx file");
+			return;
+		}
+	}
+	catch (excel::XLException& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Error in creating and excel file, check if file with the same name is opened.", "Export excel", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName(fmt::format("PROFIT LOSS for {:%m/%Y}", mSelectDay));
+
+	const size_t colSize = 3;
+	const size_t rowSize = data.value().size() + 4; //plus title and total row and date
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeexecel = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	auto dt = pof::base::data::clock_t::now();
+	writeexecel(fmt::format("Report generated on {:%d/%m/%Y %H:%M:%S}", dt));
+	iter++;
+	iter++;
+
+
+	writeexecel("Product");
+	writeexecel("Quantity");
+	writeexecel("Amount Sell");
+
+	pof::base::currency totalAmountSell;
+	for (auto& f : data.value()) {
+		const auto& name = boost::variant2::get<std::string>(f.first[1]);
+		const auto& quan = boost::variant2::get<std::uint64_t>(f.first[2]);
+		const auto& sellamount = boost::variant2::get<pof::base::currency>(f.first[3]);
+
+		totalAmountSell += sellamount;
+
+		writeexecel(name);
+		iter->value().set(quan);
+		iter++;
+
+		writeexecel(fmt::format("{:cu}", sellamount));
+	}
+
+	writeexecel("TOTAL");
+	iter++;
+
+	writeexecel(fmt::format("{:cu}", totalAmountSell));
 
 	doc.save();
 	doc.close();
