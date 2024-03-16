@@ -96,6 +96,10 @@ namespace pof
 			ID_INCR_PRODUCT_PRICE,
 			ID_OPEN_PRODUCT_INFO,
 			ID_SHOW_SUPPLIER,
+			ID_REPORTS_PROFITLOSS,
+			ID_REPORTS_INVENTORY,
+			ID_REPORTS_PRODUCT_SOLD,
+			ID_DOWNLOAD_ACTUAL_STOCK,
 		};
 
 		size_t mRowHeights;
@@ -207,6 +211,8 @@ namespace pof
 		void OnIncrPrice(wxCommandEvent& evt);
 		void OnOpenProductInfo(wxCommandEvent& evt);
 		void OnShowSupplier(wxCommandEvent& evt);
+		void OnProfitLoss(wxCommandEvent& evt);
+		void OnDownloadActualStock(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

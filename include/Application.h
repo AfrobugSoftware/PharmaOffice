@@ -162,6 +162,8 @@ namespace pof {
 		bool bAllowSellControlledMed = true;
 		bool bAlwaysCreateEntryIntoRegister = false;
 		bool bShowPageSetup = false;
+		bool bUseSavedCost = false;
+		bool bHighlightOutOfStockInCategory = false;
 
 		wxPaperSize sPaperSize; //may not need it
 		date::days gSessionLast;

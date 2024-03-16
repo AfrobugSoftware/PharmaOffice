@@ -2302,7 +2302,7 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfMonth(pof::base::dat
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT p.uuid, s.sale_date, p.name,s.product_quantity, s.product_ext_price, s.uuid, s.sale_payment_type
 		FROM sales s, products p
-		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;  )";
+		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
 
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
@@ -3702,6 +3702,59 @@ bool pof::ProductManager::ReturnToInventory(const pof::base::data::duuid_t& pid,
 		return status;	
 	}
 	return false;
+}
+
+std::optional<pof::base::data> pof::ProductManager::GetInventoryForMonth(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(SELECT 
+		p.uuid, p.name, SUM(i.stock_count),  SumCost(CostMulti(i.cost, i.stock_count))
+		FROM products p, inventory i
+		WHERE p.uuid = i.uuid AND Months(i.input_date) = ? 
+		GROUP BY p.uuid;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		//assert(stmt);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::data::currency_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return pof::base::data{};
+		pof::base::data ret;
+		ret.get_metadata() = {
+			pof::base::data::kind::uuid,
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency,
+		};
+		ret.reserve(rel->size());
+		for (auto&& tup : rel.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+			/*auto& b = ret.tab().back();
+			boost::variant2::get<pof::base::currency>(b.first[3]) = boost::variant2::get<pof::base::currency>(b.first[3])
+				 * static_cast<double>(boost::variant2::get<std::uint64_t>(b.first[2]));*/
+
+		}
+		return ret;
+	}
+	return std::nullopt;
 }
 
 void pof::ProductManager::Finialize()

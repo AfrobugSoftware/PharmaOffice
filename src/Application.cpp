@@ -382,7 +382,9 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("AutomaticBatchNumber"), bAutomaticBatchNumber);
 	config->Write(wxT("NotifyStockCheckInComplete"), bNotifyStockCheckInComplete);
 	config->Write(wxT("ShowPageSetup"), bShowPageSetup);
+	config->Write(wxT("UseSavedCost"), bUseSavedCost);
 	config->Write(wxT("PaperType"), mPaperType);
+	config->Write(wxT("HighlightOutOfStockInCategory"), bHighlightOutOfStockInCategory);
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
@@ -442,7 +444,9 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("AutomaticBatchNumber"), &bAutomaticBatchNumber);
 	config->Read(wxT("NotifyStockCheckInComplete"), &bNotifyStockCheckInComplete);
 	config->Read(wxT("ShowPageSetup"), &bShowPageSetup);
+	config->Read(wxT("UseSavedCost"), &bUseSavedCost);
 	config->Read(wxT("PaperType"), &mPaperType);
+	config->Read(wxT("HighlightOutOfStockInCategory"), &bHighlightOutOfStockInCategory);
 
 	wxString version;
 	config->Read(wxT("Version"), &version);
@@ -638,6 +642,7 @@ void pof::Application::CreateTables()
 	mSaleManager.CreateSaveSaleTable();
 	mSaleManager.CreateSaleLabelTable();
 	mSaleManager.CreateSaleInfoTable();
+	mSaleManager.CreateSaleCostTable();
 
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();
@@ -899,6 +904,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	auto pp12 = grid->Append(new wxBoolProperty("Notify stock check before end of month", "12", bNotifyStockCheckInComplete));	
 	auto pp13 = grid->Append(new wxBoolProperty("Allow sale of controlled medication", "13", bAllowSellControlledMed));	
 	auto pp14 = grid->Append(new wxBoolProperty("Create poison book entry for each controlled drug sale", "14", bAlwaysCreateEntryIntoRegister));	
+	auto pp17 = grid->Append(new wxBoolProperty("Highlight out of stock in category", "17", bHighlightOutOfStockInCategory));
 	auto ct1 = grid->Append(new wxPropertyCategory("Product settings"));
 	auto pp15 = grid->Append(new wxArrayStringProperty("Product formulation", "15", FormulationChoices));
 	auto pp16 = grid->Append(new wxArrayStringProperty("Product Strength", "16", StrengthChoices));
@@ -924,6 +930,7 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 	grid->SetPropertyHelpString(pp14, "Create posion book entry for the medications that are controlled");
 	grid->SetPropertyHelpString(pp15, "Add or remove product formulations");
 	grid->SetPropertyHelpString(pp16, "Add or remove product strength");
+	grid->SetPropertyHelpString(pp17, "Highlight out of stock products in category");
 
 	pp0->SetBackgroundColour(*wxWHITE);
 	mSettingProperties[0]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
@@ -1001,6 +1008,9 @@ void pof::Application::ShowGeneralSettings(wxPropertySheetDialog& sd)
 				SaveStrengthChoices();
 				mUpdateChoices();
 			}
+			case 17:
+				bHighlightOutOfStockInCategory = v.GetBool();
+				break;
 			default:
 				evt.Skip();
 				return;
@@ -1370,10 +1380,12 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	auto pp0 = grid->Append(new wxBoolProperty("Show preview on Sale", "0", bShowPreviewOnSale));
 	auto pp1 = grid->Append(new wxBoolProperty("Show print prompt on Sale", "1", bShowPrintPrompt));
 	auto pp2 = grid->Append(new wxBoolProperty("Show print page setup", "2", bShowPageSetup));
+	auto pp3 = grid->Append(new wxBoolProperty("Use saved costs", "3", bUseSavedCost));
 
-	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing");
-	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing");
-	grid->SetPropertyHelpString(pp2, "Show printing page setup before printing");
+	grid->SetPropertyHelpString(pp0, "Show the receipt as preview before printing.");
+	grid->SetPropertyHelpString(pp1, "Show printing prompt before printing.");
+	grid->SetPropertyHelpString(pp2, "Show printing page setup before printing.");
+	grid->SetPropertyHelpString(pp3, "Use the saved cost for calulating profit/loss. If false, it would use the current cost of the item.");
 	mSettingProperties[3]->Bind(wxEVT_PG_CHANGING, [&](wxPropertyGridEvent& evt) {
 		if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
 			wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
@@ -1398,6 +1410,9 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 			break;
 		case 2:
 			bShowPageSetup = v.GetBool();
+		case 3:
+			bUseSavedCost = v.GetBool();
+			break;
 		default:
 			break;
 		}

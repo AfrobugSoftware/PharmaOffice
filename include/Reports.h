@@ -24,6 +24,7 @@
 #include <wx/simplebook.h>
 #include <wx/clipbrd.h>
 #include <wx/srchctrl.h>
+#include <wx/statline.h>
 
 namespace excel = OpenXLSX;
 namespace pof
@@ -97,6 +98,9 @@ namespace pof
 			COMSUMPTION_PATTARN,
 			EOD,
 			EOM,
+			IM,
+			PL, //PROFIT/LOSS
+			PSM, //PRODUCT SOLD FOR MONTH
 		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
@@ -110,6 +114,10 @@ namespace pof
 		bool LoadConsumptionPattern(pof::base::data::datetime_t month);
 		bool LoadEndOFDay();
 		bool LoadEndOfMonth();
+		bool LoadInventoryMonth();
+		bool LoadProfitLoss();
+		bool LoadProductSoldForMonth();
+
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
@@ -129,16 +137,26 @@ namespace pof
 		void CreateToolBar();
 		void CreateComsumptionPatternToolBar();
 		void CreateEODToolBar();
+		void CreateIMToolBar();
 		void CreateEmptyEodPage();
 
 
 		//download for the report type
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
+		void InventoryMonthReportExcel();
+		void ProfitLossExcel();
+		void ProductSoldExcel();
+
 		void UpdateTotals(const pof::base::data& data);
 		void UpdateConsumptionTotals(const pof::base::data& data);
 		bool bShowSaleID = false;
 		bool bFilterReturns = false;
+
+		wxStaticLine* l1 = nullptr;
+		wxStaticLine* l2 = nullptr;
+		wxStaticLine* l3 = nullptr;
+		wxStaticLine* l4 = nullptr;
 
 		ReportType mCurReportType;
 		wxListItem mSelItem;

@@ -37,8 +37,13 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_REMOVE_PRODUCT, pof::ProductView::OnRemoveProduct)
 	EVT_MENU(pof::ProductView::ID_ADD_ORDER_LIST, pof::ProductView::OnAddProductToOrderList)
 	EVT_MENU(pof::ProductView::ID_ADD_INVENTORY, pof::ProductView::OnAddInventory)
+
 	EVT_MENU(pof::ProductView::ID_REPORTS_CONSUMPTION_PATTERN, pof::ProductView::OnConsumptionPattern)
 	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFDAY, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_INVENTORY, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_PRODUCT_SOLD, pof::ProductView::OnEndOfDayReport)
+
 	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
 	EVT_MENU(pof::ProductView::ID_FUNCTION_BROUGHT_FORWARD, pof::ProductView::OnBFFunction)
@@ -54,6 +59,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
+	EVT_MENU(pof::ProductView::ID_DOWNLOAD_ACTUAL_STOCK, pof::ProductView::OnDownloadActualStock)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -1073,16 +1079,17 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 
 void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 {
-	if (evt.IsDropDownClicked()) {
-		wxMenu* menu = new wxMenu;
-		menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
-		menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
+	menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
+	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
+	menu->Append(ID_REPORTS_INVENTORY, "Stock purchase report for month", nullptr);
+	menu->Append(ID_REPORTS_PRODUCT_SOLD, "Product sold report for month", nullptr);
 
-		wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
-		wxSize sz = mReportItem->GetSizerItem()->GetSize();
+	wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
+	wxSize sz = mReportItem->GetSizerItem()->GetSize();
 
-		m_auiToolBar1->PopupMenu(menu, wxPoint{pos.x, pos.y + sz.y + 2});
-	}
+	m_auiToolBar1->PopupMenu(menu, wxPoint{pos.x, pos.y + sz.y + 2});
 }
 
 
@@ -1098,8 +1105,28 @@ void pof::ProductView::OnConsumptionPattern(wxCommandEvent& evt)
 
 void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 {
+	wxWindowID id = evt.GetId();
+	pof::ReportsDialog::ReportType rep;
+	switch (id)
+	{
+	case ID_REPORTS_ENDOFDAY:
+		rep = pof::ReportsDialog::ReportType::EOD;
+		break;
+	case ID_REPORTS_INVENTORY:
+		rep = pof::ReportsDialog::ReportType::IM;
+		break;
+	case ID_REPORTS_PRODUCT_SOLD:
+		rep = pof::ReportsDialog::ReportType::PSM;
+		break;
+	case ID_REPORTS_PROFITLOSS:
+		rep = pof::ReportsDialog::ReportType::PL;
+		break;
+	default:
+		return;
+	}
+
 	pof::ReportsDialog dialog(nullptr, wxID_ANY, wxEmptyString);
-	if (dialog.LoadReport(pof::ReportsDialog::ReportType::EOD, pof::base::data::clock_t::now())) dialog.ShowModal();
+	if (dialog.LoadReport(rep, pof::base::data::clock_t::now())) dialog.ShowModal();
 }
 
 void pof::ProductView::OnPacks(wxCommandEvent& evt)
@@ -1132,6 +1159,7 @@ void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 		else {
 			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, fmt::format("Export {:d} products as excel", mSelections.size()), nullptr);
 		}
+		auto ddd = menu->Append(ID_DOWNLOAD_ACTUAL_STOCK, "Download actual stock", nullptr);
 
 		wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
 		wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
@@ -2043,6 +2071,107 @@ void pof::ProductView::OnShowSupplier(wxCommandEvent& evt)
 	mSupplierView->CheckEmpty(pof::SupplierView::SUPPLIER_VIEW);
 }
 
+void pof::ProductView::OnProfitLoss(wxCommandEvent& evt)
+{
+}
+
+void pof::ProductView::OnDownloadActualStock(wxCommandEvent& evt)
+{
+	std::optional<pof::base::data> datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	if (datastore->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save actual stock as excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Actual stock");
+
+	const size_t colSize = 4; //name, stock, unit price, actual price
+	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+
+	writeHeader("Product");
+	writeHeader("Stock count");
+	writeHeader("Unit price");
+	writeHeader("Actual price");
+	
+	pof::base::currency totalAmount;
+	wxProgressDialog dlg("Downloading actual stock", "please wait...", 100, this, wxPD_CAN_ABORT | wxPD_SMOOTH | wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	int i = 0;
+	int pg = 0;
+	const int count = datastore->size();
+	for (auto& prod : datastore.value()) {
+		const auto& name = boost::variant2::get<pof::base::data::text_t>(prod.first[pof::ProductManager::PRODUCT_NAME]);
+		const auto& stock = boost::variant2::get<std::uint64_t>(prod.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+		const auto& unit_price = boost::variant2::get<pof::base::currency>(prod.first[pof::ProductManager::PRODUCT_UNIT_PRICE]);
+
+		iter->value().set(name);
+		iter++;
+
+		iter->value().set(stock);
+		iter++;
+
+		iter->value().set(fmt::format("{:cu}", unit_price));
+		iter++;
+
+		const pof::base::currency actual_price = unit_price * static_cast<double>(stock);
+
+		iter->value().set(fmt::format("{:cu}", actual_price));
+		iter++;
+
+		totalAmount += actual_price;
+
+		pg = static_cast<float>(((float)i / (float)count) * 100.f);
+		i++;
+		if (!dlg.Update(pg)) {
+			doc.close();
+			std::filesystem::remove(fullPath); //remove the file
+			return;
+		}
+	}	
+	//total amount
+	iter++;
+	iter++;
+
+	iter->value().set("Total stock amount");
+	iter++;
+	iter->value().set(fmt::format("{:cu}", totalAmount));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Download Actual stock", wxICON_INFORMATION | wxOK);
+	
+}
+
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 {
 	m_dataViewCtrl1->Freeze();
@@ -2115,7 +2244,7 @@ void pof::ProductView::OnCategorySelected(const std::string& name)
 void pof::ProductView::ShowCostPriceColumn()
 {
 	mProductUnitPriceCol->SetWidth(100);
-	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("Cost Price", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductCostPriceCol = m_dataViewCtrl1->AppendTextColumn("Cost Price", pof::ProductManager::PRODUCT_COST_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 }
 
 void pof::ProductView::HideCostPriceColumn()
@@ -2150,6 +2279,10 @@ void pof::ProductView::HideSelectionColumn()
 
 void pof::ProductView::OnCategoryActivated(const std::string& name)
 {
+	//check if ProductInfo is shown
+	auto& prodinfo = m_mgr.GetPane("ProductInfo");
+	if (prodinfo.IsOk() && prodinfo.IsShown()) return; //do not activate if on prodinfo
+
 	auto& cats = wxGetApp().mProductManager.GetCategories();
 	auto iter = std::ranges::find_if(cats, [&](auto& row) -> bool {return (boost::variant2::get<pof::base::data::text_t>(row.first[pof::ProductManager::CATEGORY_NAME]) == name);});
 	if (iter == cats.end()) {
@@ -2173,12 +2306,55 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 	items.shrink_to_fit();
 	if (!items.empty()) {
+		//check for expired
 		m_dataViewCtrl1->Freeze();
-		wxGetApp().mProductManager.GetProductData()->Reload(std::move(items));
+		wxGetApp().mProductManager.GetProductData()->Reload(items);
 		mActiveCategory = name;
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
-		if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+
+		std::vector<std::string> f;
+		if (wxGetApp().bCheckExpiredOnUpdate) {
+			auto expitems = wxGetApp().mProductManager.DoExpiredProducts();
+			if(expitems.has_value() && !expitems->empty()) {
+				int quan = 0;;
+				for (auto& i : items) {
+					const bool found = std::ranges::binary_search(expitems.value(), i);
+					if (found) quan++;
+				}
+				if(quan != 0)
+					if(quan == 1)f.push_back(fmt::format("{:d} product has expired", expitems->size()));
+					else f.push_back(fmt::format("{:d} products has expired", expitems->size()));
+			}
+		}
+
+		if (wxGetApp().bCheckOutOfStockOnUpdate) {
+			auto ositems = wxGetApp().mProductManager.DoOutOfStock();
+			if (ositems.has_value() && !ositems->empty()) {
+				int quan = 0;
+				for (auto& i : items){
+					const bool found = std::ranges::binary_search(ositems.value(), i);
+					if (found) {
+						quan++;
+						if (wxGetApp().bHighlightOutOfStockInCategory) {
+							//use audit attribute
+							auto& sa = wxGetApp().mAuditManager.auditAttr[static_cast<int>(pof::AuditManager::auditType::SALE)];
+							wxGetApp().mProductManager.GetProductData()->AddAttr(i, sa);
+						}
+					}
+				}
+				if(quan != 0) 
+					if(quan == 1)f.push_back(fmt::format("{:d} product is out of stock", quan));
+					else f.push_back(fmt::format("{:d} products are out of stock", quan));
+			}
+		}
+		if (!f.empty()) {
+			mInfoBar->ShowMessage("");
+			mInfoBar->ShowMessage(fmt::format("{} in {}", fmt::join(f, " and "), name), wxICON_INFORMATION);
+		}
+		else {
+			if (mInfoBar->IsShown()) mInfoBar->Dismiss();
+		}
 
 		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
@@ -2244,9 +2420,9 @@ void pof::ProductView::CreateDataView()
 	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Class"), pof::ProductManager::PRODUCT_CLASS, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductFormulation = m_dataViewCtrl1->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_NOT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE |  wxDATAVIEW_COL_REORDERABLE);
 
 	sizer->Add(mInfoBar, wxSizerFlags().Expand().Border(wxALL, 2));
 	sizer->Add(m_dataViewCtrl1, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));

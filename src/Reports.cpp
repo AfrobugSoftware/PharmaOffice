@@ -48,7 +48,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l1 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l1 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -59,7 +60,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l2 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l2 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -71,7 +73,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l3 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l3 , wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -83,7 +86,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 
 	bSizer4->AddSpacer(5);
 
-	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+	l4 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
+	bSizer4->Add( l4, wxSizerFlags().Expand());
 
 	bSizer4->AddSpacer(5);
 
@@ -243,6 +247,25 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	case pof::ReportsDialog::ReportType::EOM:
 		SetTitle("Reports");
 		ret = LoadEndOFDay();
+		mSPanel->Show();
+		break;
+	case ReportType::IM:
+		SetTitle("Stock inventory report");
+		ret = LoadInventoryMonth();
+		l3->Hide();
+		l4->Hide();
+		mSPanel->Show();
+		break;
+	case ReportType::PSM:
+		SetTitle("Products sold for month");
+		ret = LoadProductSoldForMonth();
+		l3->Hide();
+		l4->Hide();
+		mSPanel->Show();
+		break;
+	case ReportType::PL:
+		SetTitle("Profit/Loss report");
+		ret = LoadProfitLoss();
 		mSPanel->Show();
 		break;
 	default:
@@ -496,6 +519,189 @@ bool pof::ReportsDialog::LoadEndOfMonth()
 	return false;
 }
 
+bool pof::ReportsDialog::LoadInventoryMonth()
+{
+	data = wxGetApp().mProductManager.GetInventoryForMonth(mSelectDay);
+	if(!data.has_value()) return false;
+	if (data->empty()) {
+		std::string tt;
+		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		return true;
+	}
+
+	auto& report = *mListReport;
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
+
+	size_t i = 0;
+	for (auto iter = data->begin(); iter != data->end(); iter++) {
+		auto& v = iter->first;
+		wxListItem item;
+
+		item.SetColumn(0);
+		item.SetId(i);
+		item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.InsertItem(item);
+
+		std::uint64_t quan = boost::variant2::get<std::uint64_t>(v[2]);
+		item.SetColumn(1);
+		item.SetId(i);
+		item.SetText(fmt::format("{:d}", quan));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		auto& amount = boost::variant2::get<pof::base::data::currency_t>(v[3]);
+		item.SetColumn(2);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+		
+		i++;
+	}
+	if (mBook->GetSelection() == REPORT_EMPTY_EOD) {
+		mBook->SetSelection(REPORT_VIEW);
+	}
+	UpdateTotals(data.value());
+	return true;
+}
+
+bool pof::ReportsDialog::LoadProfitLoss()
+{
+	data = wxGetApp().mSaleManager.GetProfitloss(mSelectDay);
+	if (!data.has_value()) return false;
+	if (data->empty()) {
+		std::string tt;
+		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		return true;
+	}
+	auto& report = *mListReport;
+	report.AppendColumn("Date", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount (Sell)", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Profit/Loss", wxLIST_FORMAT_LEFT, 200);
+
+	size_t i = 0;
+	for (auto iter = data->begin(); iter != data->end(); iter++) {
+		auto& v = iter->first;
+		wxListItem item;
+
+		item.SetColumn(0);
+		item.SetId(i);
+		item.SetText(fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[0])));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.InsertItem(item);
+
+
+		item.SetColumn(1);
+		item.SetId(i);
+		item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		std::uint64_t quan = boost::variant2::get<std::uint64_t>(v[2]);
+		item.SetColumn(2);
+		item.SetId(i);
+		item.SetText(fmt::format("{:d}", quan));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		auto amount = boost::variant2::get<pof::base::data::currency_t>(v[3]);
+		item.SetColumn(3);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		amount = boost::variant2::get<pof::base::data::currency_t>(v[4]);
+		item.SetColumn(4);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+
+		amount = (boost::variant2::get<pof::base::data::currency_t>(v[3]) - boost::variant2::get<pof::base::data::currency_t>(v[4]));
+		item.SetColumn(5);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		i++;
+	}
+	if (mBook->GetSelection() == REPORT_EMPTY_EOD) {
+		mBook->SetSelection(REPORT_VIEW);
+	}
+	UpdateTotals(data.value());
+	return true;
+}
+
+bool pof::ReportsDialog::LoadProductSoldForMonth()
+{
+	data = wxGetApp().mSaleManager.GetProductSoldForMonth(mSelectDay);
+	if (!data.has_value()) return false; //this makes no sense
+	if (data->empty()) {
+		std::string tt;
+		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+
+		mBook->SetSelection(REPORT_EMPTY_EOD);
+		return true;
+	}
+
+	auto& report = *mListReport;
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
+
+	size_t i = 0;
+	for (auto iter = data->begin(); iter != data->end(); iter++) {
+		auto& v = iter->first;
+		wxListItem item;
+
+		item.SetColumn(0);
+		item.SetId(i);
+		item.SetText(boost::variant2::get<pof::base::data::text_t>(v[1]));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.InsertItem(item);
+
+		std::uint64_t quan = boost::variant2::get<std::uint64_t>(v[2]);
+		item.SetColumn(1);
+		item.SetId(i);
+		item.SetText(fmt::format("{:d}", quan));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		auto& amount = boost::variant2::get<pof::base::data::currency_t>(v[3]);
+		item.SetColumn(2);
+		item.SetId(i);
+		item.SetText(fmt::format("{:cu}", amount));
+		item.SetMask(wxLIST_MASK_TEXT);
+		report.SetItem(item);
+
+		i++;
+	}
+	if (mBook->GetSelection() == REPORT_EMPTY_EOD) {
+		mBook->SetSelection(REPORT_VIEW);
+	}
+	UpdateTotals(data.value());
+	return true;
+}
+
 void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 {
 }
@@ -510,6 +716,14 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 	case ReportType::EOM:
 	case ReportType::EOD:
 		EODExcel();
+	case ReportType::IM:
+		InventoryMonthReportExcel();
+		break;
+	case ReportType::PL:
+		ProfitLossExcel();
+		break;
+	case ReportType::PSM:
+		ProductSoldExcel();
 		break;
 	default:
 		break;
@@ -524,33 +738,42 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 {
 	if (mCurReportType == ReportType::EOD) {
 		mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-		m_panel5->Freeze();
-		mListReport->Freeze();
-		mListReport->ClearAll();
-		LoadEndOFDay();
-		mListReport->Thaw();
-		mListReport->Refresh();
-		m_panel5->Thaw();
-		m_panel5->Refresh();
 	}
-	else if (mCurReportType == ReportType::EOM){
+	else {
 		auto set = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-		set += date::days(1); //correct for time zone
+		set += date::days(2); //correct for time zone,  does not feel like a fix, leap year, looks like it does not account for leap year
 		
 		if (date::floor<date::months>(mSelectDay) == date::floor<date::months>(set)) return;
-		auto w = date::floor<date::months>(mSelectDay);
-		auto q = date::floor<date::months>(set);
-
 		mSelectDay = set;
-		m_panel5->Freeze();
-		mListReport->Freeze();
-		mListReport->ClearAll();
-		LoadEndOFDay();
-		mListReport->Thaw();
-		mListReport->Refresh();
-		m_panel5->Thaw();
-		m_panel5->Refresh();
 	}
+
+	m_panel5->Freeze();
+	mListReport->Freeze();
+	mListReport->ClearAll();
+	switch (mCurReportType)
+	{
+	case pof::ReportsDialog::ReportType::COMSUMPTION_PATTARN:
+		break;
+	case pof::ReportsDialog::ReportType::EOD:
+	case pof::ReportsDialog::ReportType::EOM:
+		LoadEndOFDay();
+		break;
+	case pof::ReportsDialog::ReportType::IM:
+		LoadInventoryMonth();
+		break;
+	case pof::ReportsDialog::ReportType::PL:
+		LoadProfitLoss();
+		break;
+	case pof::ReportsDialog::ReportType::PSM:
+		LoadProductSoldForMonth();
+		break;
+	default:
+		break;
+	}
+	mListReport->Thaw();
+	mListReport->Refresh();
+	m_panel5->Thaw();
+	m_panel5->Refresh();
 }
 
 void pof::ReportsDialog::OnEodRightClick(wxListEvent& evt)
@@ -872,6 +1095,7 @@ void pof::ReportsDialog::CreateToolBar()
 	text->SetBackgroundColour(*wxWHITE);
 	textItem = mTools->AddControl(text, wxEmptyString);
 	mTools->AddStretchSpacer();
+
 	switch (mCurReportType)
 	{
 	case ReportType::COMSUMPTION_PATTARN:
@@ -881,6 +1105,10 @@ void pof::ReportsDialog::CreateToolBar()
 	case ReportType::EOD:
 		CreateEODToolBar();
 		break;
+	case ReportType::IM:
+	case ReportType::PSM:
+	case ReportType::PL:
+		CreateIMToolBar();
 	default:
 		break;
 	}
@@ -927,6 +1155,32 @@ void pof::ReportsDialog::CreateEODToolBar()
 	}, ID_SHOW_SALE_ID);
 
 	this->Bind(wxEVT_TOOL, std::bind_front(&pof::ReportsDialog::OnFilterReturns, this), ID_REMOVE_RETURNS);
+}
+
+void pof::ReportsDialog::CreateIMToolBar()
+{
+	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
+	mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
+	mTools->AddControl(mEodDate);
+
+	std::string t;
+	switch (mCurReportType)
+	{
+		case ReportType::IM:
+			t = fmt::format("Stock report for the month of {:%m/%Y}", mSelectDay);
+			break;
+		case ReportType::PSM:
+			t = fmt::format("Product sold for {:%m/%Y}", mSelectDay);
+			break;
+		case ReportType::PL:
+			t = fmt::format("Profit/Loss for {:%m/%Y}", mSelectDay);
+			break;
+		default:
+			break;
+	}
+	text->SetLabelText(t);
+	textItem->SetMinSize(text->GetSize());
 }
 
 void pof::ReportsDialog::CreateEmptyEodPage()
@@ -1085,15 +1339,9 @@ void pof::ReportsDialog::ConsumptionPatternExcel(pof::base::data::datetime_t mon
 
 void pof::ReportsDialog::EODExcel()
 {
-
-	std::optional<pof::base::data> datastore = std::nullopt;
-	if (mCurReportType == ReportType::EOD)
-		datastore = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
-	else
-		datastore = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
-
+	std::optional<pof::base::data> datastore = data;
 	if (!datastore.has_value()) {
-		wxMessageBox("Cannot get consumption pattern from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		wxMessageBox("Cannot get EOD OR EOM from database, call administrator", "Reports", wxICON_ERROR | wxOK);
 		return;
 	}
 	if (datastore->empty()) {
@@ -1124,7 +1372,7 @@ void pof::ReportsDialog::EODExcel()
 	auto wks = doc.workbook().worksheet("Sheet1");
 	if(mCurReportType == ReportType::EOD)
 		 wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
-	else wks.setName(fmt::format("EOM for {:%d/%m/%Y}", mSelectDay));
+	else wks.setName(fmt::format("EOM for {:%m/%Y}", mSelectDay));
 
 	const size_t colSize = mListReport->GetColumnCount();
 	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
@@ -1191,43 +1439,360 @@ void pof::ReportsDialog::EODExcel()
 
 }
 
+void pof::ReportsDialog::InventoryMonthReportExcel()
+{
+	std::optional<pof::base::data> datastore = data;
+	if (!datastore.has_value()) {
+		wxMessageBox("Cannot Inventory month report from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (datastore->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save inventory month report excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	try {
+		doc.create(fullPath.string());
+		if (!doc.isOpen()) {
+			spdlog::error("Canont open xlsx file");
+			return;
+		}
+	}
+	catch (excel::XLException& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Error in creating and excel file, check if file with the same name is opened.", "Export excel", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName(fmt::format("INVENTORY for {:%m/%Y}", mSelectDay));
+
+
+	const size_t colSize = mListReport->GetColumnCount();
+	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	writeHeader("Product");
+	writeHeader("Quantity");
+	writeHeader("Amount");
+
+	auto& v = datastore.value();
+	for (auto it = v.begin(); it != v.end() && iter != range.end(); it++) {
+		auto& row = it->first;
+		
+		iter->value().set(boost::variant2::get<pof::base::data::text_t>(row[1]));
+		iter++;
+
+		iter->value().set(boost::variant2::get<std::uint64_t>(row[2]));
+		iter++;
+
+		iter->value().set(fmt::format("{:cu}", boost::variant2::get<pof::base::data::currency_t>(row[3])));
+		iter++;
+	}
+
+
+	iter->value().set(mTotalQuantity->GetLabel().ToStdString());
+	iter++;
+
+	iter->value().set(mTotalAmount->GetLabel().ToStdString());
+	iter++;
+
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ReportsDialog::ProfitLossExcel()
+{
+	std::optional<pof::base::data> datastore = data;
+	if (!datastore.has_value()) {
+		wxMessageBox("Cannot create Profit/loss report from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (datastore->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save Profit/Loss report excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	try {
+		doc.create(fullPath.string());
+		if (!doc.isOpen()) {
+			spdlog::error("Canont open xlsx file");
+			return;
+		}
+	}
+	catch (excel::XLException& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Error in creating and excel file, check if file with the same name is opened.", "Export excel", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName(fmt::format("PROFIT LOSS for {:%m/%Y}", mSelectDay));
+
+	const size_t colSize = 5;
+	const size_t rowSize = datastore.value().size() + 4; //plus title and total row and date
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeexecel = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	auto dt = pof::base::data::clock_t::now();
+	writeexecel(fmt::format("Report generated on {:%d/%m/%Y %H:%M:%S}", dt));
+	iter++;
+	iter++;
+	iter++;
+	iter++;
+
+
+	writeexecel("Product");
+	writeexecel("Quantity");
+	writeexecel("Amount Sell");
+	writeexecel("Amount Cost");
+	writeexecel("Amount Profit/Loss");
+
+	pof::base::currency totalAmountSell;
+	pof::base::currency totalAmountCost;
+	pof::base::currency totalAmountPL;
+	for (auto& f : data.value()) {
+		const auto& name = boost::variant2::get<std::string>(f.first[1]);
+		const auto& quan = boost::variant2::get<std::uint64_t>(f.first[2]);
+		const auto& sellamount = boost::variant2::get<pof::base::currency>(f.first[3]);
+		const auto& costamount = boost::variant2::get<pof::base::currency>(f.first[4]);
+		const pof::base::currency pl = sellamount - costamount;
+
+		totalAmountCost += costamount;
+		totalAmountSell += sellamount;
+		totalAmountPL += pl;
+
+		writeexecel(name);
+		iter->value().set(quan);
+		iter++;
+
+		writeexecel(fmt::format("{:cu}", sellamount));
+		writeexecel(fmt::format("{:cu}", costamount));
+		writeexecel(fmt::format("{:cu}", pl));
+	}
+	
+	writeexecel("TOTAL");
+	iter++;
+
+	writeexecel(fmt::format("{:cu}", totalAmountSell));
+	writeexecel(fmt::format("{:cu}", totalAmountCost));
+	writeexecel(fmt::format("{:cu}", totalAmountPL));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+}
+
+void pof::ReportsDialog::ProductSoldExcel()
+{
+	if (!data.has_value()) {
+		wxMessageBox("Cannot create Products sold report from database, call administrator", "Reports", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (data->empty()) {
+		wxMessageBox("No transaction to save", "Reports", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxFileDialog dialog(this, "Save Product sold report excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	try {
+		doc.create(fullPath.string());
+		if (!doc.isOpen()) {
+			spdlog::error("Canont open xlsx file");
+			return;
+		}
+	}
+	catch (excel::XLException& exp) {
+		spdlog::error(exp.what());
+		wxMessageBox("Error in creating and excel file, check if file with the same name is opened.", "Export excel", wxICON_ERROR | wxOK);
+		return;
+	}
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName(fmt::format("PROFIT LOSS for {:%m/%Y}", mSelectDay));
+
+	const size_t colSize = 3;
+	const size_t rowSize = data.value().size() + 4; //plus title and total row and date
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeexecel = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+	auto dt = pof::base::data::clock_t::now();
+	writeexecel(fmt::format("Report generated on {:%d/%m/%Y %H:%M:%S}", dt));
+	iter++;
+	iter++;
+
+
+	writeexecel("Product");
+	writeexecel("Quantity");
+	writeexecel("Amount Sell");
+
+	pof::base::currency totalAmountSell;
+	for (auto& f : data.value()) {
+		const auto& name = boost::variant2::get<std::string>(f.first[1]);
+		const auto& quan = boost::variant2::get<std::uint64_t>(f.first[2]);
+		const auto& sellamount = boost::variant2::get<pof::base::currency>(f.first[3]);
+
+		totalAmountSell += sellamount;
+
+		writeexecel(name);
+		iter->value().set(quan);
+		iter++;
+
+		writeexecel(fmt::format("{:cu}", sellamount));
+	}
+
+	writeexecel("TOTAL");
+	iter++;
+
+	writeexecel(fmt::format("{:cu}", totalAmountSell));
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+}
+
 void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 {
 	if (data.empty()) return;
-	pof::base::currency totalAmount;
-	pof::base::currency totalAmountCash;
-	pof::base::currency totalAmountTransfer;
-	pof::base::currency totalAmountPos;
-	std::uint64_t totalQuantity = 0;
+	
+	if (mCurReportType == ReportType::EOD ||
+		mCurReportType == ReportType::EOM) {
+		pof::base::currency totalAmount;
+		pof::base::currency totalAmountCash;
+		pof::base::currency totalAmountTransfer;
+		pof::base::currency totalAmountPos;
+		std::uint64_t totalQuantity = 0;
 
 
-	for (const auto& d : data) {
-		//skip end of day that are returned
-		if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Returned") continue;
+		for (const auto& d : data) {
+			//skip end of day that are returned
+			if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Returned") continue;
 
-		totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
-		totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
-		if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Cash") {
-			totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
+			totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
+			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
+			if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Cash") {
+				totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
 
+			}
+			else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Transfer") {
+				totalAmountTransfer += boost::variant2::get<pof::base::currency>(d.first[4]);
+
+			}
+			else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "POS") {
+				totalAmountPos += boost::variant2::get<pof::base::currency>(d.first[4]);
+			}
 		}
-		else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Transfer") {
-			totalAmountTransfer += boost::variant2::get<pof::base::currency>(d.first[4]);
-
-		}
-		else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "POS") {
-			totalAmountPos += boost::variant2::get<pof::base::currency>(d.first[4]);
-		}
+		mSPanel->Freeze();
+		mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
+		mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+		mTotalAmountCash->SetLabelText(fmt::format("Total Cash Amount:   {:cu}", totalAmountCash));
+		mTotalAmountTransfer->SetLabelText(fmt::format("Total Transfer Amount:   {:cu}", totalAmountTransfer));
+		mTotalAmountPos->SetLabelText(fmt::format("Total POS Amount:   {:cu}", totalAmountPos));
+		mSPanel->Thaw();
+		mSPanel->Layout();
+		mSPanel->Refresh();
 	}
-	mSPanel->Freeze();
-	mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
-	mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
-	mTotalAmountCash->SetLabelText(fmt::format("Total Cash Amount:   {:cu}", totalAmountCash));
-	mTotalAmountTransfer->SetLabelText(fmt::format("Total Transfer Amount:   {:cu}", totalAmountTransfer));
-	mTotalAmountPos->SetLabelText(fmt::format("Total POS Amount:   {:cu}", totalAmountPos));
-	mSPanel->Thaw();
-	mSPanel->Layout();
-	mSPanel->Refresh();
+	else if (mCurReportType == ReportType::IM ||  mCurReportType == ReportType::PSM){
+		if (data.empty()) return;
+		pof::base::currency totalAmount;
+		std::uint64_t totalQuantity = 0;
+
+		for (const auto& d : data) {
+			//skip end of day that are returned
+
+			totalAmount += boost::variant2::get<pof::base::currency>(d.first[3]);
+			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[2]);
+		}
+		mSPanel->Freeze();
+		mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
+		mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
+		mSPanel->Thaw();
+		mSPanel->Layout();
+		mSPanel->Refresh();
+
+	}
+	else if (mCurReportType == ReportType::PL){
+		pof::base::currency totalAmountSell;
+		pof::base::currency totalAmountCost;
+		pof::base::currency totalAmountPL;
+		std::uint64_t totalQuantity = 0;
+
+		for (const auto& d : data) {
+			totalAmountSell += boost::variant2::get<pof::base::data::currency_t>(d.first[3]);
+			totalAmountCost += boost::variant2::get<pof::base::data::currency_t>(d.first[4]);
+			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[2]);
+
+			totalAmountPL += (boost::variant2::get<pof::base::data::currency_t>(d.first[3]) - 
+				boost::variant2::get<pof::base::data::currency_t>(d.first[4]));
+		}
+		mSPanel->Freeze();
+		mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
+		mTotalAmount->SetLabelText(fmt::format("Total Sale Amount:   {:cu}", totalAmountSell));
+		mTotalAmountCash->SetLabelText(fmt::format("Total Cost Amount:   {:cu}", totalAmountCost));
+		mTotalAmountTransfer->SetLabelText(fmt::format("Total Profit/Loss:   {:cu}", totalAmountPL));
+		mSPanel->Thaw();
+		mSPanel->Layout();
+		mSPanel->Refresh();
+	}
 }
 
 void pof::ReportsDialog::UpdateConsumptionTotals(const pof::base::data& data)

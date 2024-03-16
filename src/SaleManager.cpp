@@ -394,6 +394,124 @@ void pof::SaleManager::CreateSaleInfoTable()
 	}
 }
 
+void pof::SaleManager::CreateSaleCostTable()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS sale_cost (suid blob, puid blob, date integer, cost blob);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+//add the current sale items to cost
+void pof::SaleManager::AddSaleCost()
+{
+	if (!SaleData || SaleData->GetDatastore().empty()) return;
+
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT INTO sale_cost (suid, puid, date, cost) VALUES 
+		(?, ?, ?, (SELECT p.cost_price FROM products p WHERE p.uuid = ?));)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		bool status = false;
+		mLocalDatabase->begin_trans();
+		for (const auto& s : SaleData->GetDatastore()) {
+			auto& suid = boost::variant2::get<pof::base::data::duuid_t>(s.first[pof::SaleManager::SALE_UUID]);
+			auto& puid = boost::variant2::get<pof::base::data::duuid_t>(s.first[pof::SaleManager::PRODUCT_UUID]);
+			auto& dt = boost::variant2::get<pof::base::data::datetime_t>(s.first[pof::SaleManager::SALE_DATE]);
+
+			status = mLocalDatabase->bind(*stmt, std::make_tuple(suid, puid, dt, puid));
+			assert(status);
+
+			status = mLocalDatabase->execute(*stmt);
+			if (!status){
+				spdlog::error(mLocalDatabase->err_msg());
+				mLocalDatabase->end_trans();
+				mLocalDatabase->finalise(*stmt);
+				return;
+			}
+		}
+		mLocalDatabase->end_trans();
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase) {
+		std::optional<pof::base::database::stmt_t> stmt = std::nullopt;
+		if (wxGetApp().bUseSavedCost) {
+			constexpr const std::string_view sql = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, sc.cost 
+			FROM products p, sales s, sale_cost sc
+			WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND s.product_uuid = sc.puid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+		}
+		else {
+			constexpr const std::string_view ss = R"(SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price, p.cost_price 
+			FROM products p, sales s
+			WHERE p.uuid = s.product_uuid AND Months(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(ss);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+		}
+
+		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::datetime_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::currency,
+			pof::base::currency
+		>(*stmt);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		pof::base::data ret;
+		ret.get_metadata() = {
+			pof::base::data::kind::datetime,
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency,
+			pof::base::data::kind::currency
+		};
+		ret.reserve(rel->size());
+		for (auto& tup : rel.value()) {
+			auto v = pof::base::make_row_from_tuple(std::move(tup));
+			auto c = boost::variant2::get<pof::base::currency>(v[4]) *
+				static_cast<double>(boost::variant2::get<std::uint64_t>(v[2]));
+			c.nearest_hundred();
+			v[4] = c;
+
+			ret.emplace(std::move(v));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+
 bool pof::SaleManager::RestoreSaveSale(const boost::uuids::uuid& saleID)
 {
 	if (mLocalDatabase)
@@ -797,6 +915,47 @@ bool pof::SaleManager::UpdateInfo(const boost::uuids::uuid& saleID, const std::s
 		return status;
 	}
 	return false;
+}
+
+std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, SUM(s.product_quantity) as quan, SumCost(s.product_ext_price), s.sale_date
+		FROM sales s, products p 
+		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ?
+		GROUP BY p.uuid
+		ORDER BY quan DESC;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto month = std::chrono::duration_cast<date::months>(dt.time_since_epoch());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(pof::base::data::datetime_t(month)));
+
+		assert(status);
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			std::uint64_t,
+			pof::base::currency,
+			pof::base::data::datetime_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (auto&& tup : *rel){
+			ret.emplace(pof::base::make_row_from_tuple(std::move(tup)));
+		}
+		ret.shrink_to_fit();
+		return ret;
+	}
+	return std::nullopt;
 }
 
 bool pof::SaleManager::RemoveProductSaleHistory(pof::base::data::const_iterator iterator)

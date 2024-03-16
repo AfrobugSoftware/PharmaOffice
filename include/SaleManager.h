@@ -72,6 +72,12 @@ namespace pof {
 		void CreateSaveSaleTable();
 		void CreateSaleLabelTable();
 		void CreateSaleInfoTable();
+		void CreateSaleCostTable();
+
+
+		//sale cost
+		void AddSaleCost();
+		std::optional<pof::base::data> GetProfitloss(const pof::base::data::datetime_t& dt);
 
 		bool RestoreSaveSale(const boost::uuids::uuid& saleID);
 		bool RemoveSaveSale(const boost::uuids::uuid& saleID);
@@ -92,6 +98,9 @@ namespace pof {
 		bool RemoveInfo(const boost::uuids::uuid& saleID);
 		bool UpdateInfo(const boost::uuids::uuid& saleID, const std::string& info);
 
+		//sale analytics
+		//gets the rank of products sold for that month
+		std::optional<pof::base::data> GetProductSoldForMonth(const pof::base::data::datetime_t& dt);
 
 		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
