@@ -923,7 +923,7 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT p.uuid, p.name, SUM(s.product_quantity) as quan, SumCost(s.product_ext_price), s.sale_date
 		FROM sales s, products p 
-		WHERE s.product_uuid = p.uuid AND Months(s.sale_date) = ?
+		WHERE s.product_uuid = p.uuid AND s.sale_payment_type IS NOT 'Returned' AND Months(s.sale_date) = ?
 		GROUP BY p.uuid
 		ORDER BY quan DESC;)";
 		auto stmt = mLocalDatabase->prepare(sql);
