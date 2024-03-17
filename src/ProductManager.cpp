@@ -1701,62 +1701,47 @@ void pof::ProductManager::RemoveCategory(const std::string& name)
 		return boost::variant2::get<pof::base::data::text_t>(row.first[CATEGORY_NAME]);
 	});
 	if (iter == std::end(mCategories)) return; //does not exists
-
-
-	std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[CATEGORY_ID]);
-	pof::base::database::stmt_t updateStmt = nullptr;
-	if (mLocalDatabase) {
-		constexpr const std::string_view sql = "UPDATE products set category = ? WHERE uuid = ?;";
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = "UPDATE products set category = ? WHERE category = ?;";
 		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		std::uint64_t id = boost::variant2::get<std::uint64_t>(iter->first[CATEGORY_ID]);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(0, id));
+		assert(status);
+
+		std::ranges::for_each(mProductData->GetDatastore(), [&](pof::base::data::row_t& row) {
+			if (boost::variant2::get<std::uint64_t>(row.first[PRODUCT_CATEGORY]) == id) {
+				row.first[PRODUCT_CATEGORY] = static_cast<std::uint64_t>(0);
+			}
+		});
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		constexpr const std::string_view ss = "DELETE FROM category WHERE id = ?;";
+		stmt = mLocalDatabase->prepare(ss);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
 		}
-		updateStmt = *stmt;
-	}
 
-	std::ranges::for_each(mProductData->GetDatastore(), [&](pof::base::data::row_t& row) {
-		if (row.first[PRODUCT_CATEGORY].index() == static_cast<size_t>(pof::base::data::kind::uint64)
-		  && boost::variant2::get<std::uint64_t>(row.first[PRODUCT_CATEGORY]) == id) {
-			row.first[PRODUCT_CATEGORY] = 0;
-			if (mLocalDatabase) {
-				bool status = mLocalDatabase->bind(updateStmt,
-					std::make_tuple(id, boost::variant2::get<pof::base::data::duuid_t>(row.first[PRODUCT_UUID])));
-				if (!status) {
-					spdlog::error(mLocalDatabase->err_msg());
-					return;
-				}
-				status = mLocalDatabase->execute(updateStmt);
-				if (!status) {
-					spdlog::error(mLocalDatabase->err_msg());
-					return;
-				}
-			}
-		}
-	});
-	if (mLocalDatabase) {
-		mLocalDatabase->finalise(updateStmt);
-		if (!CategoryRemoveStmt) {
-			constexpr const std::string_view sql = "DELETE FROM category WHERE id = ?;";
-			auto stmt = mLocalDatabase->prepare(sql);
-			if (!stmt.has_value()) {
-				spdlog::error(mLocalDatabase->err_msg());
-				return;
-			}
-			CategoryRemoveStmt = *stmt;
-		}
-		bool status = mLocalDatabase->bind(CategoryRemoveStmt, std::make_tuple(id));
+		status = mLocalDatabase->bind(*stmt, std::make_tuple(id));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
-			return; 
-		}
-		status = mLocalDatabase->execute(CategoryRemoveStmt);
-		if (!status) {
-			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
 			return;
 		}
+		mLocalDatabase->finalise(*stmt);
+		mCategories.erase(iter);
 	}
-	mCategories.erase(iter);
 }
 
 void pof::ProductManager::UpdateCategory(pof::base::data::const_iterator iter)

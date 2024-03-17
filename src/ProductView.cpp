@@ -1846,17 +1846,30 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
+	auto font = wxGetApp().mFontSettings.GetChosenFont();
 
-	auto TitleText = new wxStaticText(m_panel1, wxID_ANY, wxT("Store summary:"), wxDefaultPosition, wxDefaultSize, 0);
+	wxPanel* cp = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+	wxBoxSizer* bS2;
+	bS2 = new wxBoxSizer(wxHORIZONTAL);
+
+	auto TitleText = new wxStaticText(cp, wxID_ANY, wxT("Store summary"), wxDefaultPosition, wxDefaultSize, 0);
+	const int valueFontSize = std::max(std::min(12, font.GetPointSize()), 10);
+	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Bold().Style(font.GetStyle()));
 	TitleText->Wrap(-1);
-	TitleText->SetFont(wxFontInfo().Bold().AntiAliased());
-	bSizer2->Add(TitleText, 0, wxEXPAND | wxALL, 5);
+	TitleText->SetFont(valueFont);
+	bS2->AddStretchSpacer(1);
+	bS2->Add(TitleText, 0, wxEXPAND | wxALL, 5);
+	bS2->AddStretchSpacer(1);
 
+	cp->SetSizer(bS2);
+	bS2->SetSizeHints(cp);
+
+	bSizer2->Add(cp, 0, wxEXPAND | wxALL, 5);
 	//total product
 	auto totalProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Products: {:d}",
 			wxGetApp().mProductManager.GetProductData()->GetDatastore().size()), wxDefaultPosition, wxDefaultSize, 0);
 	totalProducts->Wrap(-1);
-	totalProducts->SetFont(wxFontInfo().AntiAliased());
+	totalProducts->SetFont(font);
 	bSizer2->Add(totalProducts, 0, wxALL | wxEXPAND, 5);
 
 	auto exp = wxGetApp().mProductManager.DoExpiredProducts();
@@ -1864,15 +1877,22 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 
 	auto totalExpProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total expired products: {:d}", exp.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
 	totalExpProducts->Wrap(-1);
-	totalExpProducts->SetFont(wxFontInfo().AntiAliased());
+	totalExpProducts->SetFont(font);
 	bSizer2->Add(totalExpProducts, 0, wxALL | wxEXPAND, 5);
 
 	auto totalOsProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Out of stock products: {:d}", os.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
 	totalOsProducts->Wrap(-1);
-	totalOsProducts->SetFont(wxFontInfo().AntiAliased());
+	totalOsProducts->SetFont(font);
 	bSizer2->Add(totalOsProducts, 0, wxALL | wxEXPAND, 5);
 
-
+	auto dt = pof::base::data::clock_t::now();
+	auto rev = wxGetApp().mSaleManager.GetYearTotalRevenue(dt);
+	if (rev){
+		auto totalrev = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total revenue for {:%Y}: {:cu}", dt, rev.value()), wxDefaultPosition, wxDefaultSize, 0);
+		totalrev->Wrap(-1);
+		totalrev->SetFont(font);
+		bSizer2->Add(totalrev, 0, wxALL | wxEXPAND, 5);
+	}
 
 	m_panel1->SetSizer(bSizer2);
 	m_panel1->Layout();

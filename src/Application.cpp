@@ -345,6 +345,7 @@ bool pof::Application::OpenLocalDatabase()
 
 	//db extensions for the different modules
 	mPatientManager.CreateDatabaseFunctions();
+	mSaleManager.CreateDatabaseFunctions();
 
 	return true;
 }

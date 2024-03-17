@@ -73,7 +73,7 @@ namespace pof {
 		void CreateSaleLabelTable();
 		void CreateSaleInfoTable();
 		void CreateSaleCostTable();
-
+		void CreateDatabaseFunctions();
 
 		//sale cost
 		void AddSaleCost();
@@ -101,7 +101,7 @@ namespace pof {
 		//sale analytics
 		//gets the rank of products sold for that month
 		std::optional<pof::base::data> GetProductSoldForMonth(const pof::base::data::datetime_t& dt);
-
+		std::optional<pof::base::currency> GetYearTotalRevenue(const pof::base::data::datetime_t& dt);
 		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
 		bool RemoveProductSaveSale(pof::base::data::const_iterator iterator);
@@ -122,6 +122,10 @@ namespace pof {
 		
 		std::unique_ptr<pof::DataModel> SaleData;
 		std::unique_ptr<pof::DataModel> ProductSaleHistory; //loaded in per product
+
+		static void DBFuncYear(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
 
 		pof::base::database::stmt_t mLoadProductHistory = nullptr;
 		pof::base::database::stmt_t mStoreSale = nullptr;

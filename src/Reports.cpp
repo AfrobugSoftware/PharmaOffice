@@ -176,6 +176,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	mListReport->Bind(wxEVT_LIST_ITEM_SELECTED, [&](wxListEvent& evt) {
 		mSelItem = evt.GetItem();
 	});
+	mListReport->SetFont(wxGetApp().mFontSettings.GetChosenFont());
 	CreateEmptyEodPage();
 
 	sz->Add(mListReport, 1, wxEXPAND | wxALL, 0);
@@ -1771,6 +1772,7 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 			totalAmount += boost::variant2::get<pof::base::currency>(d.first[3]);
 			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[2]);
 		}
+		totalAmount.nearest_hundred();
 		mSPanel->Freeze();
 		mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
 		mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));

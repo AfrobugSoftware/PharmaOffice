@@ -409,6 +409,16 @@ void pof::SaleManager::CreateSaleCostTable()
 	}
 }
 
+void pof::SaleManager::CreateDatabaseFunctions()
+{
+	pof::base::func_aggregate yearfunc;
+	yearfunc.name = "Years"s;
+	yearfunc.arg_count = 1;
+	yearfunc.func = &pof::SaleManager::DBFuncYear;
+
+	mLocalDatabase->register_func(std::move(yearfunc));
+}
+
 //add the current sale items to cost
 void pof::SaleManager::AddSaleCost()
 {
@@ -960,6 +970,33 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 	return std::nullopt;
 }
 
+std::optional<pof::base::currency> pof::SaleManager::GetYearTotalRevenue(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT SumCost(s.product_ext_price) 
+		FROM sales s
+		WHERE Years(s.sale_date) = ? AND s.sale_payment_type IS NOT 'Returned';)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto year = date::floor<date::years>(dt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(year.time_since_epoch().count())));
+		assert(status);
+		
+		auto rel = mLocalDatabase->retrive<pof::base::currency>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		if (rel->empty()) return pof::base::currency{};
+		else {
+			return std::get<0>(*rel->begin());
+		}
+	}
+	return std::nullopt;
+}
+
 bool pof::SaleManager::RemoveProductSaleHistory(pof::base::data::const_iterator iterator)
 {
 	if (mLocalDatabase){
@@ -1135,4 +1172,13 @@ std::optional<pof::base::data> pof::SaleManager::GetLastSale()
 	}
 
 	return std::nullopt;
+}
+
+void pof::SaleManager::DBFuncYear(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	std::uint64_t dur = pof::base::database::arg<std::uint64_t>(conn, values);
+	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(dur));
+	auto year = date::floor<date::years>(tt);
+
+	pof::base::database::result(conn, static_cast<std::uint64_t>(year.time_since_epoch().count()));
 }
