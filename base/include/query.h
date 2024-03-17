@@ -253,6 +253,11 @@ namespace pof {
 					}
 
 					boost::mysql::throw_on_error(ec, base_t::m_diag);
+					if (m_arguments.empty()) {
+						//use a text query if no arguments are needed
+						ec = boost::system::error_code(std::make_error_code(pof::base::errc::no_arguments));
+						boost::mysql::throw_on_error(ec, base_t::m_diag);
+					}
 					for (auto& arg : m_arguments) {
 						boost::mysql::results result;
 						timer.expires_after(std::chrono::minutes(1));

@@ -368,7 +368,7 @@ bool pof::SignInDialog::ValidateGlobal()
 	bool check = mKeepMeSigned->IsChecked();
 	
 	try {
-		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase, "SELECT * FROM USERS WHERE username = ?;"s);
+		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase, "SELECT * FROM users WHERE username = ?;"s);
 		auto fut = q->get_future();
 		pof::base::datastmtquery::row_t row;
 		row.emplace_back(boost::mysql::field(Username));

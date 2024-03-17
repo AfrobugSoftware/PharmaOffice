@@ -357,6 +357,7 @@ bool pof::Account::SignInFromSession()
 				}
 				if (data->empty()) {
 					wxMessageBox("There is no active session, try signing in.", "Session", wxICON_INFORMATION | wxOK);
+					return false;
 				}
 
 				auto& rp = *data->begin();

@@ -707,6 +707,7 @@ void pof::Application::CreateMysqlTables()
 	CreateInventoryTable();
 	CreateCategoryTable();
 
+	mPoisonBookManager.CreatePoisonBookTable();
 	MainAccount->CreateAccountInfoTable();
 	MainAccount->CreateSessionTable();
 

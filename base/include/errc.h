@@ -38,6 +38,7 @@ namespace pof {
 			no_data,
 			metadata_mismatch,
 			no_database_hostname,
+			no_arguments,
 
 			//DO NOT INSERT AFTER THIS, MAX ERROR COUNT
 			max_size

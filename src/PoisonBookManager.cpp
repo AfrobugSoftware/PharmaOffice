@@ -39,8 +39,7 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 			quantity integer,
 			start_stock integer,
 			running_balance integer,
-			date integer 
-			);)";
+			date integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 		bool status = mLocalDatabase->execute(*stmt);
@@ -49,7 +48,7 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 		mLocalDatabase->finalise(*stmt);
 	}
 	else {
-		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
 		q->m_sql = R"(CREATE TABLE IF NOT EXISTS poison_book (
 			puid blob,
 			patient_name text,
@@ -63,7 +62,15 @@ void pof::PoisonBookManager::CreatePoisonBookTable()
 		auto fut = q->get_future();
 		wxGetApp().mMysqlDatabase->push(q);
 		try {
-			if (wxGetApp().BusyWait(fut, "Creating posion book")){}
+			try {
+				auto d = fut.get();
+				if (d == nullptr) {
+					wxMessageBox("Failed to create table", "Create mysql table", wxICON_ERROR | wxOK);
+				}
+			}
+			catch (boost::mysql::error_with_diagnostics& err) {
+				spdlog::error(err.what());
+			}
 		}
 		catch (boost::mysql::error_with_diagnostics& err) {
 			spdlog::error(err.what());
@@ -316,7 +323,7 @@ std::optional<pof::base::relation<pof::base::data::duuid_t,std::string,std::stri
 		return rel;
 	}
 	else {
-		auto q = std::make_shared<pof::base::datastmtquery>(wxGetApp().mMysqlDatabase);
+		auto q = std::make_shared<pof::base::dataquerybase>(wxGetApp().mMysqlDatabase);
 		q->m_sql = R"(SELECT DISTINCT pb.puid, p.name, p.strength, p.formulation  FROM products p, poison_book pb WHERE p.uuid = pb.puid;)";
 		auto fut = q->get_future();
 		wxGetApp().mMysqlDatabase->push(q);
