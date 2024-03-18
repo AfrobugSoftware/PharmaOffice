@@ -27,6 +27,7 @@
 #include "Reports.h"
 #include "StockCheck.h"
 #include "SupplierView.h"
+#include "ChartDialog.h"
 
 #include <boost/signals2/signal.hpp>
 #include <OpenXLSX.hpp>
@@ -100,6 +101,9 @@ namespace pof
 			ID_REPORTS_INVENTORY,
 			ID_REPORTS_PRODUCT_SOLD,
 			ID_DOWNLOAD_ACTUAL_STOCK,
+			ID_CHARTS,
+			ID_CHARTS_WEEKLY_SALES,
+			ID_TOOLBAR2,
 		};
 
 		size_t mRowHeights;
@@ -108,11 +112,13 @@ namespace pof
 
 
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
+		wxAuiToolBar* m_auiToolBar2 = nullptr;
 		wxSearchCtrl* m_searchCtrl1 = nullptr;
 		wxAuiToolBarItem* mOutOfStockItem = nullptr;
 		wxAuiToolBarItem* mExpireProductItem = nullptr;
 		wxAuiToolBarItem* mReportItem = nullptr;
 		wxAuiToolBarItem* mFuncDropItem = nullptr;
+		wxAuiToolBarItem* mChartsDropItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -213,6 +219,8 @@ namespace pof
 		void OnShowSupplier(wxCommandEvent& evt);
 		void OnProfitLoss(wxCommandEvent& evt);
 		void OnDownloadActualStock(wxCommandEvent& evt);
+		void OnWeeklySales(wxCommandEvent& evt);
+		void OnChartDropDown(wxAuiToolBarEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

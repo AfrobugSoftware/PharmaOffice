@@ -23,6 +23,8 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_TOOL(pof::ProductView::ID_SHOW_SUPPLIER, pof::ProductView::OnShowSupplier)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
+	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_CHARTS, pof::ProductView::OnChartDropDown)
+
 
 	//button
 	EVT_BUTTON(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
@@ -60,6 +62,8 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_ACTUAL_STOCK, pof::ProductView::OnDownloadActualStock)
+
+	EVT_MENU(pof::ProductView::ID_CHARTS_WEEKLY_SALES, pof::ProductView::OnWeeklySales)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -1139,33 +1143,30 @@ void pof::ProductView::OnPacks(wxCommandEvent& evt)
 
 void pof::ProductView::OnFunctions(wxAuiToolBarEvent& evt)
 {
-	if (evt.IsDropDownClicked())
-	{
-		wxMenu* menu = new wxMenu;
-		auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
-		auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
-		auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
-		auto scp = menu->AppendCheckItem(ID_SHOW_COST_PRICE, "Show cost price",wxT("Show the cost price for each product"));
+	wxMenu* menu = new wxMenu;
+	auto bf = menu->Append(ID_FUNCTION_BROUGHT_FORWARD, "Brougt Forward", nullptr);
+	auto scf = menu->Append(ID_FUNCTION_STOCK_CHECK, "Stock Check", nullptr);
+	auto mark = menu->Append(ID_FUNCTION_MARK_UP_PRODUCTS, "Markup Products", nullptr);
+	auto scp = menu->AppendCheckItem(ID_SHOW_COST_PRICE, "Show cost price",wxT("Show the cost price for each product"));
 
-		if (!mActiveCategory.empty()) {
-			wxMenu* catMenu = new wxMenu;
-			auto ctp = menu->Append(wxID_ANY, "Category functions", catMenu);
-		}
-		auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
-		auto inc = menu->Append(ID_INCR_PRICE, "Increase store prices", nullptr);
-		if (mSelections.empty()) {
-			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Export products as excel", nullptr);
-		}
-		else {
-			auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, fmt::format("Export {:d} products as excel", mSelections.size()), nullptr);
-		}
-		auto ddd = menu->Append(ID_DOWNLOAD_ACTUAL_STOCK, "Download actual stock", nullptr);
-
-		wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
-		wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
-
-		m_auiToolBar1->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
+	if (!mActiveCategory.empty()) {
+		wxMenu* catMenu = new wxMenu;
+		auto ctp = menu->Append(wxID_ANY, "Category functions", catMenu);
 	}
+	auto ss = menu->Append(ID_STORE_SUMMARY, "Pharmacy store summary", nullptr);
+	auto inc = menu->Append(ID_INCR_PRICE, "Increase store prices", nullptr);
+	if (mSelections.empty()) {
+		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, "Export products as excel", nullptr);
+	}
+	else {
+		auto dexl = menu->Append(ID_DOWNLOAD_EXCEL, fmt::format("Export {:d} products as excel", mSelections.size()), nullptr);
+	}
+	auto ddd = menu->Append(ID_DOWNLOAD_ACTUAL_STOCK, "Download actual stock", nullptr);
+
+	wxPoint pos = mFuncDropItem->GetSizerItem()->GetPosition();
+	wxSize sz = mFuncDropItem->GetSizerItem()->GetSize();
+
+	m_auiToolBar1->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 }
 
 void pof::ProductView::OnBFFunction(wxCommandEvent& evt)
@@ -2193,6 +2194,24 @@ void pof::ProductView::OnDownloadActualStock(wxCommandEvent& evt)
 	
 }
 
+void pof::ProductView::OnWeeklySales(wxCommandEvent& evt)
+{
+	pof::ChartDialog chart(this);
+	chart.LoadWeeklySalesChart();
+	chart.ShowModal();
+}
+
+void pof::ProductView::OnChartDropDown(wxAuiToolBarEvent& evt)
+{
+	wxMenu* menu = new wxMenu;
+	auto d = menu->Append(ID_CHARTS_WEEKLY_SALES, "Weekly sales", nullptr);
+
+	wxPoint pos = mChartsDropItem->GetSizerItem()->GetPosition();
+	wxSize sz = mChartsDropItem->GetSizerItem()->GetSize();
+
+	m_auiToolBar2->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
+}
+
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 {
 	m_dataViewCtrl1->Freeze();
@@ -2503,6 +2522,15 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->Realize();
 
 	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+
+	//tool bar 2
+	m_auiToolBar2 = new wxAuiToolBar(this, ID_TOOLBAR2, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	m_auiToolBar2->SetToolBitmapSize(wxSize(16, 16));
+	mChartsDropItem = m_auiToolBar2->AddTool(ID_CHARTS, "Charts", wxArtProvider::GetBitmap("file"), "Charts for different data");
+	mChartsDropItem->SetHasDropDown(true);
+
+	m_auiToolBar2->Realize();
+	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(-1, 30).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::ProductView::CreateProductInfo()

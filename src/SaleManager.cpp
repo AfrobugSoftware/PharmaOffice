@@ -1217,8 +1217,30 @@ std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base:
 		WHERE Weeks(s.sale_date) = ?
         GROUP BY Days(s.sale_date)
 		ORDER BY Days(s.sale_date);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
 
+		auto week = date::floor<date::weeks>(dt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(week.time_since_epoch().count())));
+		assert(status);
 
+		auto rel = mLocalDatabase->retrive<std::uint64_t,
+			pof::base::data::datetime_t,
+			pof::base::currency>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
 
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (auto&& tup : rel.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+		}
+		ret.shrink_to_fit();
+		return ret;
 	}
+	return std::nullopt;
 }

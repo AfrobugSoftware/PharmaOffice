@@ -252,11 +252,17 @@ void pof::Application::SetupDatabaseExt()
 		CostMulti.arg_count = 2;
 		CostMulti.func = pof::base::cost_multi;
 
+		pof::base::func_aggregate WeekFunc;
+		WeekFunc.name = "Weeks"s;
+		WeekFunc.arg_count = 1;
+		WeekFunc.func = pof::Application::DBFuncWeek;
+
 		mLocalDatabase->register_func(costAgg);
 		mLocalDatabase->register_func(monthFunc);
 		mLocalDatabase->register_func(daysFunc);
 		mLocalDatabase->register_func(scaleCost);
 		mLocalDatabase->register_func(CostMulti);
+		mLocalDatabase->register_func(WeekFunc);
 	}
 }
 
@@ -1465,7 +1471,7 @@ void pof::Application::SaveFont()
 void pof::Application::LoadFont()
 {
 	wxFont f;
-	
+
 	wxConfigBase* config = wxConfigBase::Get();
 	wxString readData;
 
@@ -1478,7 +1484,7 @@ void pof::Application::LoadFont()
 	config->Read(wxT("Style"), &style);
 	config->Read(wxT("Family"), &ff);
 	config->Read(wxT("Face"), &readData);
-	
+
 	if (pointsize != 0) {
 		f.SetPointSize(pointsize);
 		f.SetFamily(ff);
@@ -1486,8 +1492,14 @@ void pof::Application::LoadFont()
 		f.SetFaceName(readData);
 		mFontSettings.SetChosenFont(f);
 	}
-void pof::Application::DBFuncWeek(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
-{
+}
+
+void pof::Application::DBFuncWeek(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values) {
+	std::uint64_t dur = pof::base::database::arg<std::uint64_t>(conn, values);
+	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(dur));
+	auto week = date::floor<date::weeks>(tt);
+
+	pof::base::database::result(conn, static_cast<std::uint64_t>(week.time_since_epoch().count()));
 }
 
 void pof::Application::LoadFormulationChoices()
