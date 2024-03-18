@@ -17,6 +17,7 @@ pof::ChartDialog::ChartDialog(wxWindow* parent, wxWindowID id, const wxString& t
 	CreateEmptyPanel();
 	CreateChartPanel();
 
+	SetupAuiTheme();
 	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CaptionVisible(false).CenterPane());
 	mManager.Update();
 	this->Centre(wxBOTH);
@@ -52,6 +53,7 @@ void pof::ChartDialog::CreateChartPanel() {
 	mChartPanel = new wxChartPanel(mBook, ID_CHART); // this should be inside hist book
 #ifdef wxUSE_GRAPHICS_CONTEXT
 	mChartPanel->SetAntialias(true);
+	mChartPanel->SetWindowStyle(wxNO_BORDER);
 #endif
 	mBook->AddPage(mChartPanel, "Chart", false);
 }
@@ -151,6 +153,19 @@ void pof::ChartDialog::ShowEmpty(const std::string& text)
 	mBook->SetSelection(EMPTY);
 }
 
+void pof::ChartDialog::OnAuiThemeChange()
+{
+	auto auiArtProvider = mManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+}
+
+void pof::ChartDialog::SetupAuiTheme()
+{
+	auto auiArtProvider = mManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::ChartDialog::OnAuiThemeChange, this));
+}
+
 bool pof::ChartDialog::LoadWeeklySalesChart()
 {
 	data = wxGetApp().mSaleManager.GetWeeklySales(mSelectDay);
@@ -164,7 +179,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 	}
 	if (mCurrentChart == nullptr) {
 		BarPlot* plot = new BarPlot();
-		std::vector<wxString> dates = { "MON", "TUE", "WED", "THURS", "FRI", "SAT", "SUN" };
+		std::vector<wxString> dates = { "SUN", "MON", "TUE", "WED", "THURS", "FRI", "SAT"};
 		std::vector<double> amounts;
 		pof::base::currency average;
 
@@ -185,7 +200,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		BarType* barType = new NormalBarType(30);
 		dataset->SetRenderer(new BarRenderer(barType));
 
-		LineMarker* lineMarker = new LineMarker(wxPen(wxColour("#DDF4FF"), 1, wxPENSTYLE_SHORT_DASH));
+		LineMarker* lineMarker = new LineMarker(wxPen(wxColour(*wxBLACK), 1, wxPENSTYLE_SHORT_DASH));
 		lineMarker->SetHorizontalLine(static_cast<double>(average));
 
 		dataset->AddMarker(lineMarker);
@@ -198,7 +213,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		plot->AddAxis(leftAxis);
 
 		CategoryAxis* bottomAxis = new CategoryAxis(AXIS_BOTTOM);
-		bottomAxis->SetMargins(10, 10);
+		bottomAxis->SetMargins(5, 5);
 		bottomAxis->SetLabelTextColour(*wxBLACK);
 		bottomAxis->SetLabelPen(wxPen(*wxBLACK));
 		plot->AddAxis(bottomAxis);

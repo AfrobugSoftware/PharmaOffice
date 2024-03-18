@@ -57,7 +57,10 @@ namespace pof {
 		~ChartDialog();
 		void CreateToolbar();
 		void CreateChartPanel();
-		
+		void OnAuiThemeChange();
+		void SetupAuiTheme();
+
+
 		bool LoadWeeklySalesChart();
 		wxPanel* CreateEmptyPanel(const std::string& text = {});
 		void CheckEmpty(int viewIdx); //switch on book index
