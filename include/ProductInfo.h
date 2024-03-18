@@ -34,6 +34,13 @@
 #include "InventoryDialog.h"
 #include "WarningViewDialog.h"
 
+#include <wx/bars/barplot.h>
+#include <wx/axis/numberaxis.h>
+#include <wx/axis/categoryaxis.h>
+#include <wx/xy/xyhistorenderer.h>
+#include <wx/category/categorysimpledataset.h>
+
+
 namespace pof
 {
 	//aslo use for adding a product to the database
@@ -88,6 +95,8 @@ namespace pof
 			wxPGChoices ExpChoices;
 			wxPGChoices StrengthChoices;
 			wxPanel* mEmpty = nullptr;
+			wxSimplebook* mHistBook = nullptr;
+			wxChartPanel* mChartPanel = nullptr;
 			DECLARE_EVENT_TABLE();
 
 		public:
@@ -102,6 +111,12 @@ namespace pof
 				PAGE_INVENTORY = 0,
 				PAGE_SALE_HIST,
 				PAGE_EMPTY,
+			};
+
+			//hist pages
+			enum {
+				HIST_TABLE = 0,
+				HIST_CHART = 1,
 			};
 
 			using back_signal_t = boost::signals2::signal<void(void)>;
@@ -124,6 +139,9 @@ namespace pof
 				ID_ADD_BARCODE,
 				ID_INVEN_MENU_CREATE_INVOICE,
 				ID_INVEN_MENU_CHANGE_SUPPLIER_NAME,
+				ID_SAVE_CHART_IMAGE,
+				ID_SHOW_HIST_TABLE,
+				ID_SHOW_HIST_CHART,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -137,7 +155,7 @@ namespace pof
 			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
 			void UpdateDropDowns();
-
+			void LoadChart();
 
 			void m_splitter1OnIdle(wxIdleEvent&);
 
@@ -147,6 +165,10 @@ namespace pof
 		void CreateInventoryView();
 		void CreateHistoryView();
 		void CreateEmptyPanel();
+		void CreatChartPanel();
+		Chart* CreateChart();
+
+
 
 		void RemoveCheckedState(wxAuiToolBarItem* item);
 		void OnGoBack(wxCommandEvent& evt);
@@ -167,6 +189,9 @@ namespace pof
 		void OnAddBarcode(wxCommandEvent& evt);
 		void OnCreateInvoice(wxCommandEvent& evt);
 		void OnChangeSupplierName(wxCommandEvent& evt);
+		void OnSaveChartImage(wxCommandEvent& evt);
+
+		void OnShowHist(wxCommandEvent& evt);
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;
@@ -182,5 +207,8 @@ namespace pof
 		pof::base::data::row_t mProductData;
 		std::optional<PropertyUpdate> mPropertyUpdate;
 		std::unordered_map<std::string, size_t> mNameToProductElem;
+
+		wxAuiToolBarItem* mShowHistChart = nullptr;
+		wxAuiToolBarItem* mShowHistTable = nullptr;
 	};	
 }

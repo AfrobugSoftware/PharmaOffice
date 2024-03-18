@@ -205,6 +205,9 @@ namespace pof {
 		void SaveFont();
 		void LoadFont();
 
+
+		static void DBFuncWeek(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 

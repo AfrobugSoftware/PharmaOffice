@@ -18,7 +18,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_TOOL(pof::ProductInfo::ID_WARNINGS, pof::ProductInfo::OnWarnings)
 	EVT_TOOL(pof::ProductInfo::ID_RESET, pof::ProductInfo::OnReset)
 	EVT_TOOL(pof::ProductInfo::ID_ADD_BARCODE, pof::ProductInfo::OnAddBarcode)
-
+	EVT_TOOL(pof::ProductInfo::ID_SAVE_CHART_IMAGE, pof::ProductInfo::OnSaveChartImage)
 
 	EVT_DATE_CHANGED(pof::ProductInfo::ID_DATE, pof::ProductInfo::OnDateChange)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::ProductInfo::ID_DATA_VIEW, pof::ProductInfo::OnInvenContextMenu)
@@ -70,10 +70,45 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
+	
+	wxPanel* histPanel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer21;
+	bSizer21 = new wxBoxSizer(wxVERTICAL);
+	
+
+	wxAuiToolBar* histToolBar = new wxAuiToolBar(histPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	histToolBar->SetMinSize(wxSize(-1, 30));
+	mShowHistChart = histToolBar->AddTool(ID_SHOW_HIST_TABLE, "Table", wxNullBitmap, "Show sale history as table", wxITEM_CHECK);
+	mShowHistTable = histToolBar->AddTool(ID_SHOW_HIST_CHART, "Chart", wxNullBitmap, "Show sale history as chart", wxITEM_CHECK);
+
+	histToolBar->Bind(wxEVT_TOOL, std::bind_front(&pof::ProductInfo::OnShowHist, this), ID_SHOW_HIST_TABLE);
+	histToolBar->Bind(wxEVT_TOOL, std::bind_front(&pof::ProductInfo::OnShowHist, this), ID_SHOW_HIST_CHART);
+
+	histToolBar->Realize();
+
+	mHistBook = new wxSimplebook(histPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	
+	mHistView = new wxDataViewCtrl( mHistBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
+	CreatChartPanel();
+	mHistBook->AddPage(mHistView, wxEmptyString, true);
+	mHistBook->AddPage(mChartPanel, wxEmptyString, false);
+
+
+	bSizer21->Add(histToolBar, wxSizerFlags().Expand().Border(wxALL, 0));
+	bSizer21->Add(mHistBook, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
+
+	histPanel->SetSizer(bSizer21);
+	histPanel->Layout();
+	bSizer21->Fit(histPanel);
+	
+
 	InventoryView = new wxDataViewCtrl( mBook, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES);
-	mHistView = new wxDataViewCtrl( mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
+	
 	mBook->AddPage(InventoryView, wxEmptyString, false);
-	mBook->AddPage(mHistView, wxEmptyString, false);
+	mBook->AddPage(histPanel, wxEmptyString, false);
+	
+	
+	
 	CreateInventoryView();
 	CreateHistoryView();
 	CreateEmptyPanel();
@@ -226,8 +261,10 @@ void pof::ProductInfo::Load(const pof::base::data::row_t& row)
 
 		if (Model->GetDatastore().empty())
 			mBook->SetSelection(PAGE_EMPTY);
-		else
+		else {
 			mBook->SetSelection(PAGE_INVENTORY);
+			LoadChart();
+		}
 
  	}
 	catch (const std::exception& exp) {
@@ -359,6 +396,14 @@ void pof::ProductInfo::UpdateDropDowns()
 	qq->SetChoices(choice2);
 }
 
+void pof::ProductInfo::LoadChart()
+{
+	if (mChartPanel) {
+		//would this delete the old chart?
+		mChartPanel->SetChart(CreateChart());
+	}
+}
+
 void pof::ProductInfo::m_splitter1OnIdle(wxIdleEvent&)
 {
 	m_splitter1->SetSashPosition(550);
@@ -468,6 +513,122 @@ void pof::ProductInfo::CreateEmptyPanel()
 	mEmpty->SetSizer(bSizer6);
 	mEmpty->Layout();
 
+}
+
+void pof::ProductInfo::CreatChartPanel()
+{
+	//remove createChart from here
+	mChartPanel = new wxChartPanel(mHistBook, wxID_ANY); // this should be inside hist book
+#ifdef wxUSE_GRAPHICS_CONTEXT
+	mChartPanel->SetAntialias(true);
+#endif
+
+}
+
+Chart* pof::ProductInfo::CreateChart()
+{
+	wxString names[] = { // category names
+			  wxT("Cat 1"),
+			  wxT("Cat 2"),
+			  wxT("Cat 3"),
+			  wxT("Cat 4"),
+			  wxT("Cat 5"),
+	};
+	// serie 1 values - we have only one serie
+	double values[] = {
+			50.0,
+			20.0,
+			5.0,
+			10.0,
+			35.0,
+	};
+
+	auto rel = wxGetApp().mSaleManager.GetProductSaleHistoryChart(boost::variant2::get<boost::uuids::uuid>(mProductData.first[pof::ProductManager::PRODUCT_UUID]));
+	if (!rel.has_value()) {
+		wxMessageBox("Failed to get product sale history");
+		return nullptr;
+	}
+
+	std::vector<wxString> cats;
+	std::vector<double> quantites;
+	for (auto&& tup : rel.value())
+	{
+		cats.emplace_back(fmt::format("{:%d/%m/%y}", std::get<0>(tup)));
+		quantites.emplace_back(static_cast<double>(std::get<1>(tup)));
+	}
+	//cats.emplace_back("two");
+	//quantites.emplace_back(5.00);
+	//quantites.emplace_back(20.00);
+	//quantites.emplace_back(5.00);
+	//quantites.emplace_back(1.00);
+	//quantites.emplace_back(35.00);
+
+	// Create dataset
+	CategorySimpleDataset* dataset = new CategorySimpleDataset(cats.data(), cats.size());
+
+	// add serie to it
+	dataset->AddSerie(wxT("Product quntities"), quantites.data(), quantites.size());
+
+	// create normal bar type with bar width = 10
+	BarType* barType = new NormalBarType(30);
+
+	// Set bar renderer for it
+	dataset->SetRenderer(new BarRenderer(barType));
+
+	// create line marker
+	LineMarker* lineMarker = new LineMarker(wxPen(wxColour("#DDF4FF"), 1, wxPENSTYLE_SHORT_DASH));
+
+	// set value to be marked, in our case horizontal line with x=25
+	lineMarker->SetHorizontalLine(25);
+
+	// and add marker to dataset
+	dataset->AddMarker(lineMarker);
+
+	// Create bar plot
+	BarPlot* plot = new BarPlot();
+
+	// Create left number axis, set it's margins, and add it to plot
+	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+	leftAxis->SetMargins(5, 0);
+	leftAxis->SetLabelTextColour(*wxBLACK);
+	leftAxis->SetLabelPen(wxPen(*wxBLACK));
+	leftAxis->SetMajorGridlinePen(wxPen(*wxBLACK));
+	plot->AddAxis(leftAxis);
+
+	// Create bottom axis, set it's margins, and add it to plot
+	CategoryAxis* bottomAxis = new CategoryAxis(AXIS_BOTTOM);
+	bottomAxis->SetMargins(10, 10);
+	bottomAxis->SetLabelTextColour(*wxBLACK);
+	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
+	plot->AddAxis(bottomAxis);
+
+	// Add dataset to plot
+	plot->AddDataset(dataset);
+
+	plot->SetBackground(new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+
+	// Link first dataset with horizontal axis
+	plot->LinkDataHorizontalAxis(0, 0);
+
+	// Link first dataset with vertical axis
+	plot->LinkDataVerticalAxis(0, 0);
+
+	// Show a legend at the centre-right position.
+	Legend* legend = new Legend(wxCENTER, wxRIGHT, new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+	plot->SetLegend(legend);
+
+	// Create a custom title.
+	TextElement title("Product sale history");
+	title.SetColour(*wxBLACK);
+
+	// and finally construct and return chart
+	Chart* chart = new Chart(plot, new Header(title));
+
+	// Create a radial gradient background.
+	// Warning: Radial gradients are slow to draw in wxWidgets! so i cannot use it
+	chart->SetBackground(new FillAreaDraw());
+
+	return chart;
 }
 
 void pof::ProductInfo::RemoveCheckedState(wxAuiToolBarItem* item)
@@ -1181,5 +1342,51 @@ void pof::ProductInfo::RemovePropertyModification()
 			gridIter.GetProperty()->SetFlagRecursively(wxPG_PROP_MODIFIED, false);
 		}
 		gridIter++;
+	}
+}
+
+void pof::ProductInfo::OnSaveChartImage(wxCommandEvent& evt)
+{
+	Chart* chart = mChartPanel->GetChart();
+	if (chart != NULL) {
+		wxFileDialog dlg(this, wxT("Choose file..."), wxEmptyString, wxEmptyString,
+			wxString(wxT("PNG files (*.png)|*.png")), wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+		if (dlg.ShowModal() != wxID_OK)
+			return;
+
+		wxBitmap bitmap = mChartPanel->CopyBackbuffer();
+		bitmap.ConvertToImage().SaveFile(dlg.GetPath(), wxBITMAP_TYPE_PNG);
+	}
+	else {
+		spdlog::error("No chart is chosen!");
+	}
+}
+
+void pof::ProductInfo::OnShowHist(wxCommandEvent& evt)
+{
+	int id = evt.GetId();
+	switch (id)
+	{
+	case ID_SHOW_HIST_CHART:
+	{
+		std::bitset<32> bitset(mShowHistTable->GetState());
+		if(bitset.test(5)) bitset.set(5, false);
+		mShowHistTable->SetState(bitset.to_ulong());
+
+		mHistBook->SetSelection(HIST_CHART);
+	}
+		break;
+	case ID_SHOW_HIST_TABLE:
+	{
+		std::bitset<32> bitset(mShowHistChart->GetState());
+		if (bitset.test(5)) bitset.set(5, false);
+		mShowHistChart->SetState(bitset.to_ulong());
+
+		mHistBook->SetSelection(HIST_TABLE);
+	}
+		break;
+	default:
+		break;
 	}
 }

@@ -147,6 +147,32 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 
 }
 
+std::optional<pof::base::relation<pof::base::data::datetime_t, std::uint64_t>> pof::SaleManager::GetProductSaleHistoryChart(const boost::uuids::uuid& puid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(
+		SELECT s.sale_date, SUM(s.product_quantity)
+		FROM sales s
+		WHERE s.product_uuid = ?
+		GROUP BY Days(s.sale_date);
+		)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t, std::uint64_t>(*stmt);
+		if (!rel.has_value()) spdlog::error(mLocalDatabase->err_msg());
+		mLocalDatabase->finalise(*stmt);
+
+		return rel;
+	}
+	return std::nullopt;
+}
+
 bool pof::SaleManager::CreateSaleTable()
 {
 	if (mLocalDatabase) {
@@ -1181,4 +1207,18 @@ void pof::SaleManager::DBFuncYear(pof::base::database::conn_t conn, int arg, pof
 	auto year = date::floor<date::years>(tt);
 
 	pof::base::database::result(conn, static_cast<std::uint64_t>(year.time_since_epoch().count()));
+}
+
+std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base::data::datetime_t& dt)
+{
+	if(mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT Days(s.sale_date), s.sale_date, SumCost(s.product_ext_price)
+		FROM sales s
+		WHERE Weeks(s.sale_date) = ?
+        GROUP BY Days(s.sale_date)
+		ORDER BY Days(s.sale_date);)";
+
+
+
+	}
 }

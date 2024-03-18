@@ -293,6 +293,8 @@ bool pof::Application::CreateMainFrame()
 	CreateMysqlDatabase(); //for testing
 	auto font = mFontSettings.GetChosenFont();
 	if(font.IsOk()) mfontSignal(font); //send the chosen font
+	SetTopWindow(mMainFrame);
+
 	return mMainFrame->Show();
 }
 
@@ -1484,6 +1486,8 @@ void pof::Application::LoadFont()
 		f.SetFaceName(readData);
 		mFontSettings.SetChosenFont(f);
 	}
+void pof::Application::DBFuncWeek(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
 }
 
 void pof::Application::LoadFormulationChoices()
