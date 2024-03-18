@@ -956,3 +956,17 @@ std::optional<pof::base::data> pof::SaleManager::GetLastSale()
 
 	return std::nullopt;
 }
+
+std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base::data::datetime_t& dt)
+{
+	if(mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT Days(s.sale_date), s.sale_date, SumCost(s.product_ext_price)
+		FROM sales s
+		WHERE Weeks(s.sale_date) = ?
+        GROUP BY Days(s.sale_date)
+		ORDER BY Days(s.sale_date);)";
+
+
+
+	}
+}

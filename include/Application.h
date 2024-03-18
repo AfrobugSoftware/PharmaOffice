@@ -195,6 +195,9 @@ namespace pof {
 
 		//allow main frame to be visable through out the system
 		pof::MainFrame* mMainFrame;
+
+		static void DBFuncWeek(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
 	private:
 		std::array<wxPropertyGridManager*, 4> mSettingProperties;
 		boost::uuids::uuid mApplicationUUID; 
