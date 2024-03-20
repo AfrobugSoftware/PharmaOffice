@@ -96,7 +96,6 @@ namespace pof
 			wxPGChoices StrengthChoices;
 			wxPanel* mEmpty = nullptr;
 			wxSimplebook* mHistBook = nullptr;
-			wxChartPanel* mChartPanel = nullptr;
 			DECLARE_EVENT_TABLE();
 
 		public:
@@ -141,7 +140,6 @@ namespace pof
 				ID_INVEN_MENU_CHANGE_SUPPLIER_NAME,
 				ID_SAVE_CHART_IMAGE,
 				ID_SHOW_HIST_TABLE,
-				ID_SHOW_HIST_CHART,
 			};
 
 			ProductInfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 975,707 ), long style = wxTAB_TRAVERSAL ); 
@@ -155,7 +153,6 @@ namespace pof
 			void SignalUpdate(const PropertyUpdate& update);
 			void CreateNameToProductElemTable();
 			void UpdateDropDowns();
-			void LoadChart();
 
 			void m_splitter1OnIdle(wxIdleEvent&);
 
@@ -165,8 +162,6 @@ namespace pof
 		void CreateInventoryView();
 		void CreateHistoryView();
 		void CreateEmptyPanel();
-		void CreatChartPanel();
-		Chart* CreateChart();
 
 
 
@@ -189,7 +184,6 @@ namespace pof
 		void OnAddBarcode(wxCommandEvent& evt);
 		void OnCreateInvoice(wxCommandEvent& evt);
 		void OnChangeSupplierName(wxCommandEvent& evt);
-		void OnSaveChartImage(wxCommandEvent& evt);
 
 		void OnShowHist(wxCommandEvent& evt);
 
@@ -208,7 +202,5 @@ namespace pof
 		std::optional<PropertyUpdate> mPropertyUpdate;
 		std::unordered_map<std::string, size_t> mNameToProductElem;
 
-		wxAuiToolBarItem* mShowHistChart = nullptr;
-		wxAuiToolBarItem* mShowHistTable = nullptr;
 	};	
 }

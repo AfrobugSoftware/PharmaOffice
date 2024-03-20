@@ -1212,7 +1212,7 @@ void pof::SaleManager::DBFuncYear(pof::base::database::conn_t conn, int arg, pof
 std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base::data::datetime_t& dt)
 {
 	if(mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT Weeks(s.sale_date), s.sale_date, SumCost(s.product_ext_price)
+		constexpr const std::string_view sql = R"(SELECT Days(s.sale_date), s.sale_date, SumCost(s.product_ext_price)
 		FROM sales s
 		WHERE Weeks(s.sale_date) = ? AND s.sale_payment_type IS NOT 'Returned'
         GROUP BY Days(s.sale_date)
@@ -1244,3 +1244,51 @@ std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base:
 	}
 	return std::nullopt;
 }
+
+std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<pof::base::data::duuid_t>& prods, const std::pair<pof::base::data::datetime_t, pof::base::data::datetime_t>& dts)
+{
+	if (prods.empty()) return;
+	if (mLocalDatabase)
+	{
+		std::vector<char> marks;
+		marks.reserve(prods.size());
+		std::ranges::fill(marks, '?');
+		std::string sql =
+			fmt::format("SELECT p.uuid, p.name, s.sale_date, s.product_ext_price, s.product_quantity FROM sales s, product p WHERE Days(s.sale_date) BETWEEN Days(?) AND Days(?) AND p.uuid IN ({}) GROUP BY p.uuid ORDER BY s.sale_date;", fmt::join(marks, ","));
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		mLocalDatabase->bind(*stmt, dts.first, 1);
+		mLocalDatabase->bind(*stmt, dts.first, 2);
+		int i = 3;
+		for (auto& p : prods) {
+			mLocalDatabase->bind(*stmt, p, i);
+			i++;
+		}
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::duuid_t,
+			pof::base::data::text_t,
+			pof::base::data::datetime_t,
+			pof::base::data::currency_t,
+			std::uint64_t
+		>(*stmt);
+		if (!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (auto&& tup : rel.value()){
+			ret.emplace(pof::base::make_row_from_tuple(std::move(tup)));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+

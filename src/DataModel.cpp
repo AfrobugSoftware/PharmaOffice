@@ -594,8 +594,9 @@ void pof::DataModel::Reload(){
 	mItems.reserve(datastore->size());
 	for (size_t i = 0; i < datastore->size(); i++) {
 		mItems.push_back(wxDataViewItem(wxUIntToPtr(i + 1)));
+		ItemAdded(wxDataViewItem(0), mItems.back());
 	}
-	ItemsAdded(wxDataViewItem(0), mItems);
+	//ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 

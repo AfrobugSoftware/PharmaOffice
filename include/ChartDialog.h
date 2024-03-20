@@ -26,13 +26,14 @@
 #include <wx/srchctrl.h>
 #include <wx/infoBar.h>
 
-
+#include "Data.h"
 #include <wx/bars/barplot.h>
 #include <wx/axis/numberaxis.h>
 #include <wx/axis/categoryaxis.h>
 #include <wx/xy/xyhistorenderer.h>
 #include <wx/category/categorysimpledataset.h>
 
+#include <boost/container/flat_map.hpp>
 
 
 namespace pof {
@@ -45,29 +46,39 @@ namespace pof {
 			ID_BOOK,
 			ID_TOOLBAR,
 			ID_CHART,
+			ID_TO_DATE,
+			ID_FROM_DATE,
 		};
 
 		enum {
 			EMPTY = 0,
 			WEEKLY_SALES,
+			COMPARE_SALES,
 		};
 
 
-		ChartDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Charts"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
+		ChartDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Charts"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(948, 484), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
 		~ChartDialog();
 		void CreateToolbar();
+		void CreateWeeklyToolbar();
+		void CreateCompareToolbar();
 		void CreateChartPanel();
 		void OnAuiThemeChange();
 		void SetupAuiTheme();
 
 
+		bool LoadChart(int chart);
 		bool LoadWeeklySalesChart();
+		bool LoadCompareSales();
 		wxPanel* CreateEmptyPanel(const std::string& text = {});
 		void CheckEmpty(int viewIdx); //switch on book index
 		void ShowEmpty(const std::string& text);
+
+		std::vector<pof::base::data::duuid_t> mCompareSalesArg;
 	private:
 		void OnExportChartImage(wxCommandEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
+		void OnDateRange(wxDateEvent& evt);
 
 
 		wxAuiManager mManager;
@@ -82,6 +93,8 @@ namespace pof {
 		wxStaticText* mEmptyStr = nullptr;
 		int mCurrentChartIdx = wxNOT_FOUND;
 		wxSimplebook* mBook = nullptr;
+		wxDatePickerCtrl* toDate = nullptr;
+		wxDatePickerCtrl* fromDate = nullptr;
 
 		pof::base::data::datetime_t mSelectDay;
 		std::optional<pof::base::data> data;

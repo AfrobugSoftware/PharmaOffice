@@ -2,6 +2,8 @@
 #include "PofPch.h"
 BEGIN_EVENT_TABLE(pof::ChartDialog, wxDialog)
 	EVT_DATE_CHANGED(pof::ChartDialog::ID_DATE_PICKER, pof::ChartDialog::OnDateChanged)
+	EVT_DATE_CHANGED(pof::ChartDialog::ID_TO_DATE, pof::ChartDialog::OnDateRange)
+	EVT_DATE_CHANGED(pof::ChartDialog::ID_FROM_DATE, pof::ChartDialog::OnDateRange)
 	EVT_TOOL(pof::ChartDialog::ID_EXPORT_IMAGE, pof::ChartDialog::OnExportChartImage)
 END_EVENT_TABLE()
 
@@ -56,6 +58,25 @@ void pof::ChartDialog::CreateChartPanel() {
 	mChartPanel->SetWindowStyle(wxNO_BORDER);
 #endif
 	mBook->AddPage(mChartPanel, "Chart", false);
+}
+
+void pof::ChartDialog::CreateWeeklyToolbar() {
+	mTools = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mTools->SetToolBitmapSize(wxSize(16, 16));
+	mTools->AddStretchSpacer();
+	mDatePicker = new wxDatePickerCtrl(mTools, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mDatePicker->SetRange(wxDateTime{}, wxDateTime::Now());
+
+	mSelectDay = pof::base::data::clock_t::from_time_t(mDatePicker->GetValue().GetTicks());
+	mTools->AddControl(mDatePicker);
+	mTools->AddSpacer(5);
+	mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Export chart as image");
+	mTools->Realize();
+	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Toolbar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+}
+
+void pof::ChartDialog::CreateCompareToolbar() {
+
 }
 
 wxPanel* pof::ChartDialog::CreateEmptyPanel(const std::string& text)
@@ -130,7 +151,9 @@ void pof::ChartDialog::OnExportChartImage(wxCommandEvent& evt)
 
 void pof::ChartDialog::OnDateChanged(wxDateEvent& evt) {
 	mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-
+	mChartPanel->SetChart(nullptr);
+	mCurrentChart = nullptr;
+	LoadWeeklySalesChart();
 }
 
 void pof::ChartDialog::CheckEmpty(int viewIdx)
@@ -166,6 +189,22 @@ void pof::ChartDialog::SetupAuiTheme()
 	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::ChartDialog::OnAuiThemeChange, this));
 }
 
+bool pof::ChartDialog::LoadChart(int chart) {
+	if (chart == wxNOT_FOUND) return false;
+	bool ret = false;
+	switch (chart)
+	{
+	case WEEKLY_SALES:
+		ret = LoadWeeklySalesChart();
+		break;
+	case COMPARE_SALES:
+		ret = LoadCompareSales();
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
 bool pof::ChartDialog::LoadWeeklySalesChart()
 {
 	data = wxGetApp().mSaleManager.GetWeeklySales(mSelectDay);
@@ -177,6 +216,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		ShowEmpty("No weekly sales");
 		return true;
 	}
+	SetTitle("Chart - Weekly sales");
 	if (mCurrentChart == nullptr) {
 		BarPlot* plot = new BarPlot();
 		std::vector<wxString> dates = { "SUN", "MON", "TUE", "WED", "THURS", "FRI", "SAT"};
@@ -189,7 +229,9 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		std::ranges::fill(amounts, 0.0);
 		for (size_t i = 0; i < dates.size(); i++) {
 			if (i < data->size()) {
-				amounts[i] = static_cast<double>(boost::variant2::get<pof::base::currency>(data.value()[i].first[2]));
+				auto day = boost::variant2::get<std::uint64_t>(data.value()[i].first[0]);
+				int dayCount = static_cast<unsigned char>((day + 4) % 7);
+				amounts[dayCount] = static_cast<double>(boost::variant2::get<pof::base::currency>(data.value()[i].first[2]));
 				average += (boost::variant2::get<pof::base::currency>(data.value()[i].first[2]));
 			}
 		}
@@ -200,7 +242,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		BarType* barType = new NormalBarType(30);
 		dataset->SetRenderer(new BarRenderer(barType));
 
-		LineMarker* lineMarker = new LineMarker(wxPen(wxColour(*wxBLACK), 1, wxPENSTYLE_SHORT_DASH));
+		LineMarker* lineMarker = new LineMarker(wxPen(wxColour(*wxRED), 1, wxPENSTYLE_SHORT_DASH));
 		lineMarker->SetHorizontalLine(static_cast<double>(average));
 
 		dataset->AddMarker(lineMarker);
@@ -228,9 +270,49 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		Legend* legend = new Legend(wxCENTER, wxRIGHT, new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
 		plot->SetLegend(legend);
 
-		const auto header = new Header(fmt::format("Weekly sales for {:%d/%m:%Y}", mSelectDay));
+		const auto header = new Header(fmt::format("Weekly sales for {:%d/%m/%Y}", mSelectDay));
 		mCurrentChart = new Chart(plot, header);
 	}
 	mChartPanel->SetChart(mCurrentChart);
 	mBook->SetSelection(WEEKLY_SALES);
 }
+
+bool pof::ChartDialog::LoadCompareSales() {
+	wxBusyCursor cursor;
+	if (mCompareSalesArg.empty()) return;
+	pof::base::data::datetime_t to = pof::base::data::clock_t::from_time_t(toDate->GetValue().GetTicks());
+	pof::base::data::datetime_t from = pof::base::data::clock_t::from_time_t(fromDate->GetValue().GetTicks());
+
+	data = wxGetApp().mSaleManager.GetSalesFor(mCompareSalesArg, std::make_pair(from, to));
+	if (!data.has_value()) {
+		wxMessageBox("Cannot create chart, error in reading database", "Charts", wxICON_ERROR | wxOK);
+		return false;
+	}
+	if (data->empty()) {
+		ShowEmpty("No compare chart");
+		return true;
+	}
+
+	//prep data
+	boost::container::flat_map<pof::base::data::duuid_t, std::vector<double>> datapoints;
+	for (auto& p : data.value()) {
+		const auto& puid = boost::variant2::get<pof::base::data::duuid_t>(p.first[0]);
+		auto [iter, in] = datapoints.insert(std::make_pair(puid, std::vector<double>{}));
+		if (!in) {
+			//not new insert, finf it
+			auto i = datapoints.find(puid);
+			if (i != datapoints.end()) {
+				i->second.push_back(static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[2])));
+			}
+
+		}else{
+			iter->second.push_back(static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[2])));
+		}
+	}
+	if (datapoints.empty()) {
+		wxMessageBox("Fatal error in loading compare chart", "Chart", wxICON_ERROR | wxOK);
+		return false;
+	}
+
+}
+

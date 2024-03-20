@@ -104,6 +104,7 @@ namespace pof
 			ID_CHARTS,
 			ID_CHARTS_WEEKLY_SALES,
 			ID_TOOLBAR2,
+			ID_CHARTS_COMPARE_SALES,
 		};
 
 		size_t mRowHeights;
@@ -221,6 +222,7 @@ namespace pof
 		void OnDownloadActualStock(wxCommandEvent& evt);
 		void OnWeeklySales(wxCommandEvent& evt);
 		void OnChartDropDown(wxAuiToolBarEvent& evt);
+		void OnCompareSales(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

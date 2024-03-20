@@ -1497,7 +1497,7 @@ void pof::Application::LoadFont()
 void pof::Application::DBFuncWeek(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values) {
 	std::uint64_t dur = pof::base::database::arg<std::uint64_t>(conn, values);
 	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(dur));
-	auto week = date::floor<date::weeks>(tt + date::days(2));
+	auto week = date::floor<date::weeks>(tt);
 
 	pof::base::database::result(conn, static_cast<std::uint64_t>(week.time_since_epoch().count()));
 }
