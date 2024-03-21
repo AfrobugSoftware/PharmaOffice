@@ -1247,14 +1247,14 @@ std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base:
 
 std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<pof::base::data::duuid_t>& prods, const std::pair<pof::base::data::datetime_t, pof::base::data::datetime_t>& dts)
 {
-	if (prods.empty()) return;
+	if (prods.empty()) return std::nullopt;
 	if (mLocalDatabase)
 	{
 		std::vector<char> marks;
-		marks.reserve(prods.size());
+		marks.resize(prods.size());
 		std::ranges::fill(marks, '?');
 		std::string sql =
-			fmt::format("SELECT p.uuid, p.name, s.sale_date, s.product_ext_price, s.product_quantity FROM sales s, product p WHERE Days(s.sale_date) BETWEEN Days(?) AND Days(?) AND p.uuid IN ({}) GROUP BY p.uuid ORDER BY s.sale_date;", fmt::join(marks, ","));
+			fmt::format("SELECT p.uuid, p.name, s.sale_date, s.product_ext_price, s.product_quantity FROM sales s, products p WHERE p.uuid = s.product_uuid  AND Days(s.sale_date) BETWEEN Days(?) AND Days(?) AND p.uuid IN ({}) ORDER BY s.sale_date;", fmt::join(marks, ","));
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt){
 			spdlog::error(mLocalDatabase->err_msg());

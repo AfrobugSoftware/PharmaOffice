@@ -32,11 +32,30 @@
 #include <wx/axis/categoryaxis.h>
 #include <wx/xy/xyhistorenderer.h>
 #include <wx/category/categorysimpledataset.h>
+#include <wx/dataset.h>
+#include <wx/xy/timeseriesdataset.h>
+#include <wx/zoompan.h>
+#include <wx/xy/xydynamicdataset.h>
+#include <wx/axis/juliandateaxis.h>
+#include <wx/xy/xylinerenderer.h>
 
 #include <boost/container/flat_map.hpp>
 
 
 namespace pof {
+
+	class ChartPan : public PanMode
+	{
+	public:
+		virtual void Init(wxChartPanel* chartPanel);
+	};
+
+	class ChartZoom : public ZoomMode
+	{
+	public:
+		virtual void Init(wxChartPanel* chartPanel);
+	};
+
 	class ChartDialog : public wxDialog
 	{
 	public:
@@ -48,6 +67,9 @@ namespace pof {
 			ID_CHART,
 			ID_TO_DATE,
 			ID_FROM_DATE,
+			ID_PAN,
+			ID_ZOOM,
+			ID_APPLY_RANGE,
 		};
 
 		enum {
@@ -60,8 +82,6 @@ namespace pof {
 		ChartDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Charts"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(948, 484), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
 		~ChartDialog();
 		void CreateToolbar();
-		void CreateWeeklyToolbar();
-		void CreateCompareToolbar();
 		void CreateChartPanel();
 		void OnAuiThemeChange();
 		void SetupAuiTheme();
@@ -78,7 +98,9 @@ namespace pof {
 	private:
 		void OnExportChartImage(wxCommandEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
-		void OnDateRange(wxDateEvent& evt);
+		//void OnDateRange(wxDateEvent& evt);
+		void OnSetMode(wxCommandEvent& evt);
+		void OnApplyRange(wxCommandEvent& evt);
 
 
 		wxAuiManager mManager;

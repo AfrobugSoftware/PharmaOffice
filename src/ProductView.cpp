@@ -2198,7 +2198,7 @@ void pof::ProductView::OnDownloadActualStock(wxCommandEvent& evt)
 void pof::ProductView::OnWeeklySales(wxCommandEvent& evt)
 {
 	pof::ChartDialog chart(this);
-	chart.LoadWeeklySalesChart();
+	chart.LoadChart(pof::ChartDialog::WEEKLY_SALES);
 	chart.ShowModal();
 }
 
@@ -2218,8 +2218,23 @@ void pof::ProductView::OnChartDropDown(wxAuiToolBarEvent& evt)
 
 void pof::ProductView::OnCompareSales(wxCommandEvent& evt)
 {
-	pof::ChartDialog chart(this);
+	//if (mSelections.empty()) return;
+	if (mSelections.size() > 5) {
+		wxMessageBox("Trying to compare more than 5 products, not possible", "Compare sales", wxICON_ERROR | wxOK);
+		return;
+	}
+	std::vector<pof::base::data::duuid_t> duuids;
+	duuids.reserve(mSelections.size());
+	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	for (auto& s : mSelections){
+		size_t i = pof::DataModel::GetIdxFromItem(s);
+		const auto& puid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[pof::ProductManager::PRODUCT_UUID]);
+		duuids.emplace_back(puid);
+	}
 
+	pof::ChartDialog chart(this);
+	chart.mCompareSalesArg = std::move(duuids);
+	chart.LoadChart(pof::ChartDialog::COMPARE_SALES);
 	chart.ShowModal();
 }
 
@@ -2468,9 +2483,9 @@ void pof::ProductView::CreateDataView()
 
 	//mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Serial #"), pof::ProductManager::PRODUCT_SERIAL_NUM, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 450, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Class"), pof::ProductManager::PRODUCT_CLASS, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
-	mProductFormulation = m_dataViewCtrl1->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
+	m_dataViewCtrl1->AppendTextColumn(wxT("Strength"), 11111, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mSerialNumCol = m_dataViewCtrl1->AppendTextColumn(wxT("Class"), pof::ProductManager::PRODUCT_CLASS, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mProductFormulation = m_dataViewCtrl1->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductClass = m_dataViewCtrl1->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mStockLevel = m_dataViewCtrl1->AppendTextColumn(wxT("Stock Count"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_REORDERABLE);
 	mProductUnitPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Unit Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE |  wxDATAVIEW_COL_REORDERABLE);
