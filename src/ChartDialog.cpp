@@ -222,9 +222,11 @@ bool pof::ChartDialog::LoadChart(int chart) {
 	switch (chart)
 	{
 	case WEEKLY_SALES:
+		SetTitle("Charts - Weekly sales");
 		ret = LoadWeeklySalesChart();
 		break;
 	case COMPARE_SALES:
+		SetTitle("Charts - Sales compare");
 		ret = LoadCompareSales();
 		break;
 	default:
@@ -354,16 +356,16 @@ bool pof::ChartDialog::LoadCompareSales() {
 
 	//prep data
 	boost::container::flat_map<pof::base::data::duuid_t, wxRealPointArray> datapoints;
-
+	std::set<wxString> names;
 	for (auto& p : data.value()) {
 		const auto& puid = boost::variant2::get<pof::base::data::duuid_t>(p.first[0]);
 		wxRealPointArray dd;
 		dd.reserve(days);
 		pof::base::data::datetime_t temp = from;
-		dd.push_back(wxRealPoint(0,pof::base::data::clock_t::to_time_t(from)));
+		dd.push_back(wxRealPoint(pof::base::data::clock_t::to_time_t(from), 0));
 		while(temp <= to) {
 			temp += std::chrono::days(1);
-			dd.push_back(wxRealPoint(0,pof::base::data::clock_t::to_time_t(temp)));
+			dd.push_back(wxRealPoint(pof::base::data::clock_t::to_time_t(temp), 0));
 		}
 
 		auto [iter, in] = datapoints.insert(std::make_pair(puid, std::move(dd)));
@@ -377,9 +379,11 @@ bool pof::ChartDialog::LoadCompareSales() {
 				if (idx >= i->second.size()) {
 					continue;
 				}
-				i->second[idx].x = static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[3]));
+				i->second[idx].y = static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[3]));
 				//i->second[idx].y = pof::base::data::clock_t::to_time_t(dt);
-				spdlog::error("{:%d/%m/%Y} - {:cu}", dt, boost::variant2::get<pof::base::currency>(p.first[3]));
+				auto& name = boost::variant2::get<std::string>(p.first[1]);
+				names.insert(name);
+				spdlog::info("{} {:%d/%m/%Y} - {:cu}",name, dt, boost::variant2::get<pof::base::currency>(p.first[3]));
 
 			}
 
@@ -390,8 +394,10 @@ bool pof::ChartDialog::LoadCompareSales() {
 			if (idx >= iter->second.size()) {
 				continue;
 			}
-			iter->second[idx].x = static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[3]));
-			spdlog::error("{:%d/%m/%Y} - {:cu}", dt, boost::variant2::get<pof::base::currency>(p.first[3]));
+			iter->second[idx].y = static_cast<double>(boost::variant2::get<pof::base::currency>(p.first[3]));
+			auto& name = boost::variant2::get<std::string>(p.first[1]);
+			names.insert(name);
+;			spdlog::info("{} {:%d/%m/%Y} - {:cu}", name, dt, boost::variant2::get<pof::base::currency>(p.first[3]));
 
 			//iter->second[idx].y = pof::base::data::clock_t::to_time_t(dt);
 		}
@@ -401,14 +407,32 @@ bool pof::ChartDialog::LoadCompareSales() {
 		return false;
 	}
 	XYDynamicDataset* dxy = new XYDynamicDataset();
-	dxy->SetRenderer(new XYLineRenderer());
+	auto render = new XYLineRenderer(true);
+	dxy->SetRenderer(render);
 
-
+	int x = 0;
 	for (auto s = datapoints.begin(); s != datapoints.end(); s++) {
+		//dump
+		for (int i = 0; i < s->second.size(); i++) {
+			spdlog::info("{:f} {:f}", s->second[i].x, s->second[i].y);
+		}
 		dxy->AddSerie(new XYDynamicSerie(s->second));
+		dxy->SetSerieName(x, *(std::next(names.begin(), x)));
+		x++;
 	}
 
 	XYPlot* plot = new XYPlot();
+	
+
+	JulianDateAxis* bottomAxis = new JulianDateAxis(AXIS_BOTTOM);
+	bottomAxis->SetMargins(5, 5);
+	bottomAxis->SetLabelTextColour(*wxBLACK);
+	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
+	bottomAxis->SetDateFormat("%d-%m-%Y");
+	bottomAxis->SetFixedBounds(pof::base::data::clock_t::to_time_t(from), 
+		pof::base::data::clock_t::to_time_t(to));
+	plot->AddAxis(bottomAxis);
+
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
 	leftAxis->SetMargins(5, 0);
 	leftAxis->SetLabelTextColour(*wxBLACK);
@@ -416,11 +440,6 @@ bool pof::ChartDialog::LoadCompareSales() {
 	leftAxis->SetMajorGridlinePen(wxPen(*wxBLACK));
 	plot->AddAxis(leftAxis);
 
-	JulianDateAxis* bottomAxis = new JulianDateAxis(AXIS_BOTTOM);
-	bottomAxis->SetMargins(5, 5);
-	bottomAxis->SetLabelTextColour(*wxBLACK);
-	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
-	plot->AddAxis(bottomAxis);
 
 	plot->AddDataset(dxy);
 

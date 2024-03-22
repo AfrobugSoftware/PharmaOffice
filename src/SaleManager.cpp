@@ -1262,7 +1262,7 @@ std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<p
 		}
 
 		mLocalDatabase->bind(*stmt, dts.first, 1);
-		mLocalDatabase->bind(*stmt, dts.first, 2);
+		mLocalDatabase->bind(*stmt, dts.second, 2);
 		int i = 3;
 		for (auto& p : prods) {
 			mLocalDatabase->bind(*stmt, p, i);
