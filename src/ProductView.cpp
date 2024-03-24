@@ -2213,7 +2213,7 @@ void pof::ProductView::OnChartDropDown(wxAuiToolBarEvent& evt)
 	wxPoint pos = mChartsDropItem->GetSizerItem()->GetPosition();
 	wxSize sz = mChartsDropItem->GetSizerItem()->GetSize();
 
-	m_auiToolBar2->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
+	m_auiToolBar1->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 }
 
 void pof::ProductView::OnCompareSales(wxCommandEvent& evt)

@@ -11,6 +11,7 @@ END_EVENT_TABLE()
 pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) :
 	wxDialog( parent, id, title, pos, size, style )
 {
+	this->SetSize(FromDIP(wxSize(948, 584)));
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour( wxColour( 255, 255, 255 ) );
 	
@@ -25,9 +26,9 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	TitleText = new wxStaticText( m_panel1, wxID_ANY, wxT("Add Product"), wxDefaultPosition, wxDefaultSize, 0 );
 	TitleText->Wrap( -1 );
-	TitleText->SetFont( wxFont(wxFontInfo(10).AntiAliased().Bold()));
+	TitleText->SetFont( wxFont(wxFontInfo(FromDIP(10)).AntiAliased().Bold()));
 	
-	bSizer2->Add( TitleText, 1, wxALL, 5 );
+	bSizer2->Add( TitleText, 1, wxALL, FromDIP(5));
 
 	wxStaticText* ext = new wxStaticText(m_panel1, wxID_ANY, wxT("Creates a product for the pharmacy"), wxDefaultPosition, wxDefaultSize, 0);
 	ext->Wrap(-1);

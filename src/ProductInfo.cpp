@@ -117,15 +117,17 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, m_panel2->FromDIP(wxSize(350, -1)), wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER| wxPG_TOOLBAR | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
-	
+	auto propertyGrid = m_propertyGridManager1->GetGrid();
+	propertyGrid->SetSize(FromDIP(wxSize(350, -1)));
+
 	auto tool = m_propertyGridManager1->GetToolBar();
 	if (tool){
-		tool->SetSize(m_panel2->FromDIP(wxSize(-1, 30)));
+		tool->SetSize(FromDIP(wxSize(-1, 30)));
 		tool->SetBackgroundColour(*wxWHITE);
 		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
 		tool->AddStretchableSpace();
 		tool->AddSeparator();
-		tool->AddTool(ID_ADD_BARCODE, "Barcode", wxArtProvider::GetBitmap("action_add", wxART_OTHER, m_panel2->FromDIP(wxSize(16, 16))), "Add barcode to the product");
+		tool->AddTool(ID_ADD_BARCODE, "Barcode", wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16, 16))), "Add barcode to the product");
 
 		tool->Realize();
 		m_propertyGridManager1->Update();

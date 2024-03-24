@@ -362,15 +362,26 @@ void pof::MainFrame::CreateWelcomePage()
 
 	pharmName = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
 	pharmName->Wrap(-1);
-	bSizer9->Add(pharmName, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(pharmName, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
-	bSizer9->AddSpacer(20);
+	bSizer9->AddSpacer(FromDIP(20));
 
-	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, FromDIP(wxSize(380, 300)), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	wxPanel* tt = new wxPanel(m7, wxID_ANY);
+	auto bsz = new wxBoxSizer(wxHORIZONTAL);
+
+	mSelectList = new wxListCtrl(tt, wxID_ANY, wxDefaultPosition, FromDIP(wxSize(380, 300)), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 	CreateSelectList();
-	bSizer9->Add(mSelectList, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
+	bsz->AddStretchSpacer();
+	bsz->AddSpacer(FromDIP(20));
+	bsz->Add(mSelectList, 1, wxALL | wxEXPAND, FromDIP(5));
+	bsz->AddStretchSpacer();
+
+	tt->SetSizer(bsz);
+	bsz->Fit(tt);
+
+	bSizer9->Add(tt, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(10));
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 

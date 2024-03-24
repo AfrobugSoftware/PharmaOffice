@@ -67,10 +67,10 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
 	mTopTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTopTools->SetMinSize(wxSize(-1, 30));
+	mTopTools->SetMinSize(FromDIP(wxSize(-1, 30)));
 
 	mBottomTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mBottomTools->SetMinSize(wxSize(-1, 30));
+	mBottomTools->SetMinSize(FromDIP(wxSize(-1, 30)));
 	mBottomTools->SetDoubleBuffered(true);
 
 	mProductNameText = new wxStaticText(mTopTools, wxID_ANY, wxT("Product Name: "), wxDefaultPosition, wxDefaultSize, 0);
@@ -78,25 +78,25 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mProductNameText->Wrap(-1);
 	mTopTools->AddControl(mProductNameText);
 
-	mTopTools->AddSpacer(10);
+	mTopTools->AddSpacer(FromDIP(10));
 
-	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, wxSize(250, -1));
+	mProductNameValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SEARCH_NAME, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(250, -1)));
 	//mProductNameValue->SetValidator(wxTextValidator{wxFILTER_SPACE});
 	mProductNameValue->SetHint("Search product by name");
 	mProductNameValue->ShowCancelButton(true);
 
 	mTopTools->AddControl(mProductNameValue);
 
-	mTopTools->AddSpacer(10);
+	mTopTools->AddSpacer(FromDIP(10));
 
 	mScanProduct = new wxStaticText(mTopTools, wxID_ANY, wxT("Scan Product: "), wxDefaultPosition, wxDefaultSize, 0);
 	mScanProduct->SetBackgroundColour(*wxWHITE);
 	mScanProduct->Wrap(-1);
 	mTopTools->AddControl(mScanProduct);
 
-	mTopTools->AddSpacer(10);
+	mTopTools->AddSpacer(FromDIP(10));
 
-	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, wxSize(250, -1), 0);
+	mScanProductValue = new wxSearchCtrl(mTopTools, ID_PRODUCT_SCAN, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(250, -1)), 0);
 	mScanProductValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
 	mScanProductValue->SetHint("Scan products");
 	mScanProductValue->ShowCancelButton(true);
@@ -105,47 +105,47 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddStretchSpacer();
 	
-	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16,16)), "Product packs");
-	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download"), "Print labels of product sold");
-	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove"), "Remove product from sale list");
-	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("pen"), "View details about the product");
+	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Product packs");
+	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download", wxART_OTHER, FromDIP(wxSize(16,16))), "Print labels of product sold");
+	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove", wxART_OTHER, FromDIP(wxSize(16, 16))), "Remove product from sale list");
+	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("pen", wxART_OTHER, FromDIP(wxSize(16,16))), "View details about the product");
 	
 	mTopTools->Realize();
 
 	//mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
 	//mBottomTools->AddSpacer(5);
-	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci"));
-	mBottomTools->AddSpacer(5);
-	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Reprint a sale");
+	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci", wxART_OTHER, FromDIP(wxSize(16,16))));
+	mBottomTools->AddSpacer(FromDIP(5));
+	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Reprint a sale");
 	mReprintItem->SetHasDropDown(true);
-	mBottomTools->AddSpacer(5);
-	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)), "Return an item");
-	mBottomTools->AddSpacer(5);
-	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("action_add"), "Add discount to an item");
+	mBottomTools->AddSpacer(FromDIP(5));
+	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Return an item");
+	mBottomTools->AddSpacer(FromDIP(5));
+	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add discount to an item");
 	mReturnItem->SetHasDropDown(true);
-	mBottomTools->AddSpacer(5);
+	mBottomTools->AddSpacer(FromDIP(5));
 	//look for how to make this more dynamic
 	auto pt = new wxStaticText(mBottomTools, wxID_ANY, "Payment option:");
 	pt->SetBackgroundColour(*wxWHITE);
 	mBottomTools->AddControl(pt);
-	mBottomTools->AddSpacer(5);
+	mBottomTools->AddSpacer(FromDIP(5));
 
 	paymentTypes.push_back("Cash");
 	paymentTypes.push_back("Transfer");
 	paymentTypes.push_back("POS");
 	paymentTypes.push_back("No payment option");
 
-	mPaymentTypes = new wxChoice(mBottomTools, ID_PAYMENT_TYPE, wxDefaultPosition, wxSize(150, 20), paymentTypes);
+	mPaymentTypes = new wxChoice(mBottomTools, ID_PAYMENT_TYPE, wxDefaultPosition, FromDIP(wxSize(150, 20)), paymentTypes);
 	mPaymentTypes->SetSelection(paymentTypes.size() - 1);
 	mPaymentTypes->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
 		wxPaintDC dc(mPaymentTypes);
-	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+	wxRect rect(0, 0,dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
 
 	
 	dc.SetBrush(*wxWHITE);
 	dc.SetPen(*wxGREY_PEN);
 	dc.DrawRoundedRectangle(rect, 2.0f);
-	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - FromDIP(15), (rect.GetHeight() / 2) - FromDIP(5)));
 	auto sel = mPaymentTypes->GetStringSelection();
 		if (!sel.IsEmpty()) {
 			dc.DrawLabel(sel, rect, wxALIGN_CENTER);
@@ -180,13 +180,13 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mBook->AddPage(m_dataViewCtrl1, "DataPane", false);
 	CreateEmptyPanel();
 
-	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
-	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Quantity"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, 100, wxALIGN_CENTER);
-	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Price"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
-	mDiscountCol = m_dataViewCtrl1->AppendTextColumn(wxT("Discount"), 1000, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
-	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Extact Price"), pof::SaleManager::PRODUCT_EXT_PRICE);
+	mProductNameCol = m_dataViewCtrl1->AppendTextColumn(wxT("Product"), pof::SaleManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_CENTER);
+	mQuantityColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Quantity"), pof::SaleManager::PRODUCT_QUANTITY, wxDATAVIEW_CELL_EDITABLE, FromDIP(100), wxALIGN_CENTER);
+	mPriceCol = m_dataViewCtrl1->AppendTextColumn(wxT("Price"), pof::SaleManager::PRODUCT_PRICE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
+	mDiscountCol = m_dataViewCtrl1->AppendTextColumn(wxT("Discount"), 1000, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
+	mExtPriceColumn = m_dataViewCtrl1->AppendTextColumn(wxT("Extact Price"), pof::SaleManager::PRODUCT_EXT_PRICE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
 	
-	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, wxSize(400, -1),
+	mPropertyManager = new wxPropertyGrid(mDataPane, ID_PRODUCT_VIEW_PROPERTY, wxDefaultPosition, FromDIP(wxSize(400, -1)),
 		wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED);
 	mPropertyManager->Hide();
 	CreateProductDetails();
@@ -215,98 +215,98 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer3 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer3->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer3->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	mTextOutPut = new wxPanel(mSaleDisplayPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxGridSizer* gSizer1;
 	gSizer1 = new wxGridSizer(4, 2, 5, 5);
 
-	const int fontSize = 9;
-	const int valueFontSize = 10;
+	const int fontSize = FromDIP(9);
+	const int valueFontSize = FromDIP(10);
 	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased());
 	mQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Quantity"), wxDefaultPosition, wxDefaultSize, 0);
 	mQuantity->Wrap(-1);
 	mQuantity->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
-	gSizer1->Add(mQuantity, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mQuantity, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mQuantityValue = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mQuantityValue->Wrap(-1);
 	mQuantityValue->SetFont(valueFont);
-	gSizer1->Add(mQuantityValue, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mQuantityValue, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mExtQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Ext. Quantity"), wxDefaultPosition, wxDefaultSize, 0);
 	mExtQuantity->Wrap(-1);
 	mExtQuantity->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
-	gSizer1->Add(mExtQuantity, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mExtQuantity, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mExtQuantityItem = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mExtQuantityItem->Wrap(-1);
 	mExtQuantityItem->SetFont(valueFont);
-	gSizer1->Add(mExtQuantityItem, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mExtQuantityItem, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mDiscountAmount = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Discount"), wxDefaultPosition, wxDefaultSize, 0);
 	mDiscountAmount->Wrap(-1);
 	mDiscountAmount->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
-	gSizer1->Add(mDiscountAmount, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mDiscountAmount, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mDiscountValue = new wxStaticText(mTextOutPut, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
 	mDiscountValue->Wrap(-1);
 	mDiscountValue->SetFont(valueFont);
-	gSizer1->Add(mDiscountValue, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mDiscountValue, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mTotalQuantity = new wxStaticText(mTextOutPut, wxID_ANY, wxT("Total Quantity"), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalQuantity->Wrap(-1);
 	mTotalQuantity->SetFont(wxFont(wxFontInfo(fontSize).Bold().AntiAliased()));
-	gSizer1->Add(mTotalQuantity, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mTotalQuantity, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	mTotalQuantityValue = new wxStaticText(mTextOutPut, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalQuantityValue->Wrap(-1);
 	mTotalQuantityValue->SetFont(valueFont);
-	gSizer1->Add(mTotalQuantityValue, 0, wxALIGN_RIGHT | wxALL, 5);
+	gSizer1->Add(mTotalQuantityValue, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 
 	mTextOutPut->SetSizer(gSizer1);
 	mTextOutPut->Layout();
 	gSizer1->Fit(mTextOutPut);
-	bSizer3->Add(mTextOutPut, 0, wxEXPAND | wxALL, 5);
+	bSizer3->Add(mTextOutPut, 0, wxEXPAND | wxALL, FromDIP(5));
 
 
 	mSaleDisplayPane->SetSizer(bSizer3);
 	mSaleDisplayPane->Layout();
 	bSizer3->Fit(mSaleDisplayPane);
-	bSizer2->Add(mSaleDisplayPane, 1, wxEXPAND | wxALL, 5);
+	bSizer2->Add(mSaleDisplayPane, 1, wxEXPAND | wxALL, FromDIP(5));
 
 	mSalePaymentButtonsPane = new wxPanel(mSaleOutputPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDOUBLE_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
+	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
 	mClear->SetBackgroundColour(*wxWHITE);
-	bSizer4->Add(mClear, 0, wxALL, 5);
+	bSizer4->Add(mClear, 0, wxALL, FromDIP(5));
 
-	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
+	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
 	mSave->SetBackgroundColour(*wxWHITE);
-	bSizer4->Add(mSave, 0, wxALL, 5);
+	bSizer4->Add(mSave, 0, wxALL, FromDIP(5));
 
-	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, wxSize(120, 50), wxDOUBLE_BORDER);
+	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
 	mCheckout->SetBackgroundColour(*wxWHITE);
-	bSizer4->Add(mCheckout, 0, wxALL, 5);
+	bSizer4->Add(mCheckout, 0, wxALL, FromDIP(5));
 
-	bSizer4->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer4->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	mTotalAmountLabel = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, wxT("TOTAL AMOUNT: "), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountLabel->SetFont(wxFont(wxFontInfo(15).Bold().AntiAliased()));
-	bSizer4->Add(mTotalAmountLabel, 0, wxALIGN_BOTTOM | wxALL, 5);
+	bSizer4->Add(mTotalAmountLabel, 0, wxALIGN_BOTTOM | wxALL, FromDIP(5));
 
 	mTotalAmount = new wxStaticText(mSalePaymentButtonsPane, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmount->SetFont(wxFont(wxFontInfo(15).Bold().AntiAliased()));
-	bSizer4->Add(mTotalAmount, 0, wxALIGN_BOTTOM | wxALL, 5);
+	bSizer4->Add(mTotalAmount, 0, wxALIGN_BOTTOM | wxALL, FromDIP(5));
 	
 	mSalePaymentButtonsPane->SetSizer( bSizer4 );
 	mSalePaymentButtonsPane->Layout();
 	bSizer4->Fit( mSalePaymentButtonsPane );
-	bSizer2->Add( mSalePaymentButtonsPane, 0, wxEXPAND | wxALL, 5 );
+	bSizer2->Add( mSalePaymentButtonsPane, 0, wxEXPAND | wxALL, FromDIP(5) );
 	
 	
 	mSaleOutputPane->SetSizer( bSizer2 );
@@ -835,7 +835,7 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	wxSize sz = mProductNameValue->GetClientSize();
 
 	mSearchPopup->SetPosition(wxPoint{ pos.x, pos.y + sz.y  + 5});
-	mSearchPopup->SetSize(wxSize(sz.x + 500, 400));
+	mSearchPopup->SetSize(FromDIP(wxSize(sz.x + 500, 400)));
 
 	//mSearchPopup->Show();
 	mSearchPopup->CaptureFocus();

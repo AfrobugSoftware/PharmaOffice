@@ -41,7 +41,7 @@ void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, s
 	//columns
 	int i = 0;
 	for (auto& pair : colNames) {
-		mTable->AppendTextColumn(pair.first, pair.second, wxDATAVIEW_CELL_INERT, colSizes[i]);
+		mTable->AppendTextColumn(pair.first, pair.second, wxDATAVIEW_CELL_INERT, FromDIP(colSizes[i]));
 		i++;
 	}
 

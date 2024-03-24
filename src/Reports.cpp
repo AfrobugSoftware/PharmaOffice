@@ -17,6 +17,7 @@ END_EVENT_TABLE()
 pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
 	: wxDialog(parent, id, title, pos, size, style)
 {
+	this->SetSize(FromDIP(size));
 	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
 	wxBoxSizer* bSizer6;
@@ -29,9 +30,9 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer7 = new wxBoxSizer(wxVERTICAL);
 
 	mTools = new wxAuiToolBar(m_panel5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTools->SetMaxSize(wxSize(-1, 30));
+	mTools->SetMaxSize(FromDIP(wxSize(-1, 30)));
 	
-	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, 2);
+	bSizer7->Add(mTools, 1, wxALL | wxEXPAND, FromDIP(2));
 	mBook = new wxSimplebook(m_panel5, ID_BOOK, wxDefaultPosition, wxDefaultSize, 0);
 
 	panel = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
