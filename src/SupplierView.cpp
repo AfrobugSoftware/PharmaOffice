@@ -55,21 +55,21 @@ pof::SupplierView::~SupplierView()
 void pof::SupplierView::CreateToolbar()
 {
 	mTools = new wxAuiToolBar(this, ID_TOOLS, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTools->SetToolBitmapSize(wxSize(16, 16));
+	mTools->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
 
 	mTools->AddSpacer(5);
-	mSupplierSearch = new wxSearchCtrl(mTools, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
+	mSupplierSearch = new wxSearchCtrl(mTools, ID_SEARCH, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(400, -1)), wxWANTS_CHARS);
 	mTools->AddControl(mSupplierSearch);
 
 	mTools->AddStretchSpacer();
 	mTools->AddSeparator();
 	mTools->AddTool(ID_ADD_SUPPLIER, "Create supplier", wxArtProvider::GetBitmap("action_add"), "Create supplier");
-	mTools->AddSpacer(5);
+	mTools->AddSpacer(FromDIP(5));
 	mTools->Realize();
-	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Tools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Tools").Top().MinSize(FromDIP(wxSize(-1, 30))).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 	mInvoiceTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mInvoiceTools->SetToolBitmapSize(wxSize(16, 16));
+	mInvoiceTools->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
 	mInvoiceTools->AddTool(ID_BACK, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
 
 	mSupplierName =  new wxStaticText(mInvoiceTools, wxID_ANY, "TEST", wxDefaultPosition, wxDefaultSize, 0);
@@ -77,11 +77,11 @@ void pof::SupplierView::CreateToolbar()
 	mSupplierName->SetBackgroundColour(*wxWHITE);
 
 	mInvoiceTools->AddSeparator();
-	mInvoiceTools->AddSpacer(5);
+	mInvoiceTools->AddSpacer(FromDIP(5));
 	mSupplierNameItem = mInvoiceTools->AddControl(mSupplierName);
 	mInvoiceTools->Realize();
 
-	mManager.AddPane(mInvoiceTools, wxAuiPaneInfo().Name("InvoiceTools").Top().MinSize(-1, 30).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
+	mManager.AddPane(mInvoiceTools, wxAuiPaneInfo().Name("InvoiceTools").Top().MinSize(FromDIP(wxSize(-1, 30))).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 }
 
 void pof::SupplierView::CreateViews()
@@ -90,15 +90,15 @@ void pof::SupplierView::CreateViews()
 	mView = new wxDataViewCtrl(mBook, ID_SUPPLIER_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mView->AssociateModel(wxGetApp().mProductManager.GetSupplier().get());
 
-	mView->AppendTextColumn("Supplier Name", pof::ProductManager::SUPPLIER_NAME, wxDATAVIEW_CELL_INERT, 450, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
-	mView->AppendTextColumn("Date created", pof::ProductManager::SUPPLIER_DATE_CREATED, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
-	mView->AppendTextColumn("Date modified", pof::ProductManager::SUPPLIER_DATE_MODIFIED, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mView->AppendTextColumn("Supplier Name", pof::ProductManager::SUPPLIER_NAME, wxDATAVIEW_CELL_INERT, FromDIP(450), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mView->AppendTextColumn("Date created", pof::ProductManager::SUPPLIER_DATE_CREATED, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mView->AppendTextColumn("Date modified", pof::ProductManager::SUPPLIER_DATE_MODIFIED, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
 	mBook->AddPage(mView, "View", false);
 
 	mInvoiceView = new wxDataViewCtrl(mBook, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mInvoiceView->AssociateModel(wxGetApp().mProductManager.GetInvoices().get());
-	mInvoiceView->AppendTextColumn("Invoices", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceView->AppendTextColumn("Invoices", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
 
 	mBook->AddPage(mInvoiceView, "Invoice", false);
@@ -117,10 +117,10 @@ void pof::SupplierView::CreateViews()
 	mInvoiceProductView->AssociateModel(mInvoiceProductModel);
 	mInvoiceProductModel->DecRef();
 
-	mInvoiceProductView->AppendTextColumn("Product", 0, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
-	mInvoiceProductView->AppendTextColumn("Stock entry", 1, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
-	mInvoiceProductView->AppendTextColumn("Cost", 2, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
-	mInvoiceProductView->AppendTextColumn("Entry date", 3, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Product", 0, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Stock entry", 1, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Cost", 2, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceProductView->AppendTextColumn("Entry date", 3, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
 	mCSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer4;
@@ -131,25 +131,25 @@ void pof::SupplierView::CreateViews()
 	mTotalStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalStock->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased()));
 	mTotalStock->Wrap(-1);
-	bSizer4->Add(mTotalStock, 0, wxALL, 5);
+	bSizer4->Add(mTotalStock, 0, wxALL, FromDIP(5));
 
 	bSizer4->AddSpacer(5);
 
 	bSizer4->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmount = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmount->SetFont(wxFont(wxFontInfo(12).Bold().AntiAliased()));
 	mTotalAmount->Wrap(-1);
-	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
+	bSizer4->Add(mTotalAmount, 0, wxALL, FromDIP(5));
 
 	mCSPanel->SetSizer(bSizer4);
 	mCSPanel->Layout();
 	bSizer4->Fit(mCSPanel);
 
-	sz->Add(mInvoiceProductView, 1, wxEXPAND | wxALL, 0);
-	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, 0);
+	sz->Add(mInvoiceProductView, 1, wxEXPAND | wxALL, FromDIP(0));
+	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, FromDIP(0));
 	sz->AddSpacer(5);
 
 	panel->SetSizer(sz);

@@ -29,6 +29,7 @@ pof::PackView::PackView( wxWindow* parent, bool showSale, wxWindowID id, const w
 	wxDialog( parent, id, wxT("Pharmacy Packs"), pos, size, style),
 	mShowSale(showSale)
 {
+	this->SetSize(FromDIP(wxSize(957, 542)));
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;

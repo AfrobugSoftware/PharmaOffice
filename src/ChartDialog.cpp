@@ -13,6 +13,8 @@ END_EVENT_TABLE()
 pof::ChartDialog::ChartDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) 
 	: wxDialog(parent, id, title, pos, size, style) {
 
+	this->SetSize(FromDIP(wxSize(957, 542)));
+
 	mManager.SetManagedWindow(this);
 	mManager.SetFlags(463L);
 	SetBackgroundColour(*wxWHITE); //move to theme
@@ -41,24 +43,24 @@ pof::ChartDialog::~ChartDialog()
 
 void pof::ChartDialog::CreateToolbar() {
 	mTools = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mTools->SetToolBitmapSize(wxSize(16, 16));
-	mTools->AddTool(ID_ZOOM, "Zoom", wxArtProvider::GetBitmap(wxART_FIND, wxART_TOOLBAR, wxSize(16, 16)), "Set zoom");
-	mTools->AddSpacer(5);
-	mTools->AddTool(ID_PAN, "Pan", wxArtProvider::GetBitmap("file"), "Set pan");
-	mTools->AddSpacer(5);
+	mTools->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
+	mTools->AddTool(ID_ZOOM, "Zoom", wxArtProvider::GetBitmap(wxART_FIND, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Set zoom");
+	mTools->AddSpacer(FromDIP(5));
+	mTools->AddTool(ID_PAN, "Pan", wxArtProvider::GetBitmap("file", wxART_OTHER, FromDIP(wxSize(16,16))), "Set pan");
+	mTools->AddSpacer(FromDIP(5));
 
 
 	switch (mCurrentChartIdx)
 	{
 	case WEEKLY_SALES:
 		mTools->AddStretchSpacer();
-		mDatePicker = new wxDatePickerCtrl(mTools, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+		mDatePicker = new wxDatePickerCtrl(mTools, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 		mDatePicker->SetRange(wxDateTime{}, wxDateTime::Now());
 
 		mSelectDay = pof::base::data::clock_t::from_time_t(mDatePicker->GetValue().GetTicks());
 		mTools->AddControl(mDatePicker);
 		mTools->AddSpacer(5);
-		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Export chart as image");
+		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Export chart as image");
 		break;
 	case COMPARE_SALES:
 	{
@@ -66,18 +68,18 @@ void pof::ChartDialog::CreateToolbar() {
 		fromText->SetFont(wxFontInfo().AntiAliased().Bold());
 		fromText->SetBackgroundColour(*wxWHITE);
 		mTools->AddControl(fromText);
-		mTools->AddSpacer(5);
-		fromDate = new wxDatePickerCtrl(mTools, ID_FROM_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+		mTools->AddSpacer(FromDIP(5));
+		fromDate = new wxDatePickerCtrl(mTools, ID_FROM_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 		mTools->AddControl(fromDate);
 
-		mTools->AddSpacer(10);
+		mTools->AddSpacer(FromDIP(10));
 
 		auto toText = new wxStaticText(mTools, wxID_ANY, wxT("To: "));
 		toText->SetFont(wxFontInfo().AntiAliased().Bold());
 		toText->SetBackgroundColour(*wxWHITE);
 		mTools->AddControl(toText);
-		mTools->AddSpacer(5);
-		toDate = new wxDatePickerCtrl(mTools, ID_TO_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+		mTools->AddSpacer(FromDIP(5));
+		toDate = new wxDatePickerCtrl(mTools, ID_TO_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 		mTools->AddControl(toDate);
 
 		mTools->AddSpacer(5);
@@ -85,7 +87,7 @@ void pof::ChartDialog::CreateToolbar() {
 
 		mTools->AddStretchSpacer();
 		mTools->AddSeparator();
-		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Export chart as image");
+		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Export chart as image");
 		break;
 	}
 	default:
@@ -93,7 +95,7 @@ void pof::ChartDialog::CreateToolbar() {
 	}
 
 	mTools->Realize();
-	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Toolbar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Toolbar").ToolbarPane().Top().MinSize(FromDIP(wxSize(-1, 30))).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 	mManager.Update();
 }
 

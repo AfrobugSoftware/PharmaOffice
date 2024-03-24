@@ -43,15 +43,15 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
 	m_auiToolBar1 = new wxAuiToolBar( this , wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
-	m_auiToolBar1->SetMinSize( wxSize( -1,30 ) );
+	m_auiToolBar1->SetMinSize( FromDIP(wxSize( -1,30 )));
 	
 	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back to product list", wxITEM_NORMAL);
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
-	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
 	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("application"), "Show the products information", wxITEM_CHECK);
 	std::bitset<32> bitset(mShowAddInfo->GetState());
 	bitset.set(5);
@@ -59,13 +59,13 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 
 	m_auiToolBar1->AddSpacer(2);
 	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("sci"), "Show product history", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Warnings"), wxArtProvider::GetBitmap(wxART_WARNING, wxART_TOOLBAR, wxSize(16,16)), "Warnings associated with this product", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Warnings"), wxArtProvider::GetBitmap(wxART_WARNING, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Warnings associated with this product", wxITEM_NORMAL);
 	m_auiToolBar1->AddStretchSpacer();
-	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	
 	m_auiToolBar1->AddControl(mInventoryDate);
-	m_auiToolBar1->AddSpacer(5);
-	m_auiToolBar1->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REFRESH, wxART_TOOLBAR, wxSize(16,16)),"Reset date filter");
+	m_auiToolBar1->AddSpacer(FromDIP(5));
+	m_auiToolBar1->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REFRESH, wxART_TOOLBAR, FromDIP(wxSize(16,16))),"Reset date filter");
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
@@ -76,7 +76,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	
 
 	wxAuiToolBar* histToolBar = new wxAuiToolBar(histPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	histToolBar->SetMinSize(wxSize(-1, 30));
+	histToolBar->SetMinSize(FromDIP(wxSize(-1, 30)));
 
 	histToolBar->Realize();
 
@@ -86,8 +86,8 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mHistBook->AddPage(mHistView, wxEmptyString, true);
 
 
-	bSizer21->Add(histToolBar, wxSizerFlags().Expand().Border(wxALL, 0));
-	bSizer21->Add(mHistBook, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 0));
+	bSizer21->Add(histToolBar, wxSizerFlags().Expand().Border(wxALL, FromDIP(0)));
+	bSizer21->Add(mHistBook, wxSizerFlags().Expand().Proportion(1).Border(wxALL, FromDIP(0)));
 
 	histPanel->SetSizer(bSizer21);
 	histPanel->Layout();
@@ -115,16 +115,17 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, wxDefaultSize, wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER| wxPG_TOOLBAR | wxNO_BORDER);
+	m_propertyGridManager1 = new wxPropertyGridManager(m_panel2, ID_PROPERTY_GRID, wxDefaultPosition, m_panel2->FromDIP(wxSize(350, -1)), wxPGMAN_DEFAULT_STYLE|wxPG_BOLD_MODIFIED|wxPG_DESCRIPTION|wxPG_SPLITTER_AUTO_CENTER| wxPG_TOOLBAR | wxNO_BORDER);
 	m_propertyGridManager1->SetExtraStyle( wxPG_EX_MODE_BUTTONS | wxPG_EX_NATIVE_DOUBLE_BUFFERING); 
 	
 	auto tool = m_propertyGridManager1->GetToolBar();
 	if (tool){
+		tool->SetSize(m_panel2->FromDIP(wxSize(-1, 30)));
 		tool->SetBackgroundColour(*wxWHITE);
 		tool->SetWindowStyleFlag(wxTB_HORZ_TEXT);
 		tool->AddStretchableSpace();
 		tool->AddSeparator();
-		tool->AddTool(ID_ADD_BARCODE, "Barcode", wxArtProvider::GetBitmap("action_add"), "Add barcode to the product");
+		tool->AddTool(ID_ADD_BARCODE, "Barcode", wxArtProvider::GetBitmap("action_add", wxART_OTHER, m_panel2->FromDIP(wxSize(16, 16))), "Add barcode to the product");
 
 		tool->Realize();
 		m_propertyGridManager1->Update();
@@ -194,16 +195,16 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mCostPrice->SetValidator(val);
 
 	
-	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, 0 );
-	m_panel2->SetSize(wxSize(400, -1));
+	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, FromDIP(0));
+	m_panel2->SetSize(FromDIP(wxSize(400, -1)));
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
-	m_splitter1->SplitVertically( m_panel1, m_panel2, 0); //splitter posistion
+	m_splitter1->SplitVertically( m_panel1, m_panel2, FromDIP(0)); //splitter posistion
 	m_splitter1->SetSashGravity(1.0);
 	
-	bSizer1->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, 0 );
-	bSizer1->Add( m_splitter1, 1, wxEXPAND, 5 );
+	bSizer1->Add( m_auiToolBar1, 0, wxALL|wxEXPAND, FromDIP(0) );
+	bSizer1->Add( m_splitter1, 1, wxEXPAND, FromDIP(5) );
 	
 	
 	this->SetSizer( bSizer1 );
@@ -452,45 +453,45 @@ void pof::ProductInfo::CreateEmptyPanel()
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer(wxVERTICAL);
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
-	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No transaction avaliable for product"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	wxButton* btn = new wxButton(m7, ID_TOOL_ADD_INVENTORY);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	btn->SetLabel("Add stock");
 	btn->SetBackgroundColour(*wxWHITE);
-	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m7->SetSizer(bSizer9);
 	m7->Layout();
 	bSizer9->Fit(m7);
-	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, FromDIP(5));
 
 
 	mEmpty->SetSizer(bSizer6);

@@ -403,7 +403,7 @@ void pof::Modules::Style()
 	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemFont(mAuditTrails, mFonts[FONT_CHILD]);
 
-	mModuleTree->SetSpacing(mFonts[FONT_MAIN].GetPointSize());
+	mModuleTree->SetSpacing(FromDIP(mFonts[FONT_MAIN].GetPointSize()));
 	mModuleTree->Thaw();
 }
 
