@@ -656,7 +656,8 @@ void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 	mBook->SetSelection(PAGE_STOCK_LIST);
 	mBook->Refresh();
 	mBackButton->SetActive(true);
-	mStockSelect->ClearAll(); 
+	mStockSelect->ClearAll();
+	SetTitle(fmt::format("Stock check - {:%m/%Y}", *mSelectedMonth));
 }
 
 void pof::StockCheck::OnStockSelected(wxListEvent& evt)
@@ -689,6 +690,7 @@ void pof::StockCheck::OnBack(wxCommandEvent& evt)
 		}
 		LoadStockSelect();
 	}
+	SetTitle("Stock check");
 }
 
 void pof::StockCheck::OnRemoveStock(wxCommandEvent& evt)

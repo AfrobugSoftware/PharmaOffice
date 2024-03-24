@@ -38,6 +38,7 @@
 #include <wx/xy/xydynamicdataset.h>
 #include <wx/axis/juliandateaxis.h>
 #include <wx/xy/xylinerenderer.h>
+#include <wx/axis/dateaxis.h>
 
 #include <boost/container/flat_map.hpp>
 

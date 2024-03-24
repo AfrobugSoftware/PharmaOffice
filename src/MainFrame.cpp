@@ -225,7 +225,7 @@ void pof::MainFrame::CreateLogView()
 
 void pof::MainFrame::CreateModules()
 {
-	mModules = new pof::Modules(this, ID_MODULE);
+	mModules = new pof::Modules(this, ID_MODULE, wxDefaultPosition, FromDIP(wxSize(248, 600)), wxTAB_TRAVERSAL);
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlot, this));
 	mModules->SetSlot(std::bind_front(&pof::MainFrame::OnModuleSlotReload, this));
 	mModules->SetChildTreeSlot(std::bind_front(&pof::ProductView::OnCategoryActivated, mProductView));
@@ -235,7 +235,7 @@ void pof::MainFrame::CreateModules()
 	mModules->SetPatientChildRemvSlot(std::bind_front(&pof::PatientView::OnPatientUnpin, mPatientView));
 
 	mAuiManager.AddPane(mModules, wxAuiPaneInfo().Name("Modules")
-		.CaptionVisible(false).Left().BottomDockable(false).Floatable(false).TopDockable(false).Show());
+		.CaptionVisible(false).Left().PaneBorder().BottomDockable(false).Floatable(false).TopDockable(false).Show());
 
 	//set the module to view pipeline
 	mModules->mModuleViews.insert({mModules->mProducts, mProductView});
@@ -268,12 +268,12 @@ void pof::MainFrame::CreateWorkSpace()
 void pof::MainFrame::CreateImageList()
 {
 	const wxSize xy = wxArtProvider::GetSizeHint(wxART_LIST);
-	mImageList = std::make_unique<wxImageList>(xy.x, xy.y);
-	mImageList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST));
-	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST));
-	mImageList->Add(wxArtProvider::GetBitmap("folder_files"));
-	mImageList->Add(wxArtProvider::GetBitmap("user"));
-	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST));
+	mImageList = std::make_unique<wxImageList>(FromDIP(16), FromDIP(16));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FILE_OPEN, wxART_LIST, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER_OPEN, wxART_LIST, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("folder_files", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("user", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST, FromDIP(wxSize(16, 16))));
 		
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
@@ -323,14 +323,14 @@ void pof::MainFrame::CreateWelcomePage()
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer(wxVERTICAL);
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	auto today = std::chrono::system_clock::now();
@@ -351,14 +351,14 @@ void pof::MainFrame::CreateWelcomePage()
 	time1->SetFont(wxFontInfo(64).AntiAliased().Family(wxFONTFAMILY_SWISS));
 	time1->Wrap(-1);
 	time1->SetDoubleBuffered(true);
-	bSizer9->Add(time1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(time1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
 	date1 = new wxStaticText(m7, wxID_ANY, os.str(), wxDefaultPosition, wxDefaultSize, 0);
 	date1->SetFont(wxFontInfo(12).AntiAliased().Family(wxFONTFAMILY_SWISS));
 	date1->Wrap(-1);
 	date1->SetDoubleBuffered(true);
-	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(date1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	pharmName = new wxStaticText(m7, wxID_ANY, fmt::format("Welcome to {}", wxGetApp().MainPharmacy->name), wxDefaultPosition, wxDefaultSize, 0);
 	pharmName->Wrap(-1);
@@ -367,33 +367,31 @@ void pof::MainFrame::CreateWelcomePage()
 
 	bSizer9->AddSpacer(20);
 
-	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, wxSize(380, 300), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
+	mSelectList = new wxListCtrl(m7, wxID_ANY, wxDefaultPosition, FromDIP(wxSize(380, 300)), wxLC_ICON | wxLC_SINGLE_SEL | wxLC_AUTOARRANGE | wxFULL_REPAINT_ON_RESIZE | wxLC_EDIT_LABELS | wxNO_BORDER);
 	CreateSelectList();
-	bSizer9->Add(mSelectList, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(mSelectList, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m7->SetSizer(bSizer9);
 	m7->Layout();
 	bSizer9->Fit(m7);
-	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, FromDIP(5));
 
 
 	mWelcomePage->SetSizer(bSizer6);
 	mWelcomePage->Layout();
-
-
 }
 
 void pof::MainFrame::CreateSelectList()

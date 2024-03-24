@@ -44,7 +44,7 @@ void pof::ChartDialog::CreateToolbar() {
 	mTools->SetToolBitmapSize(wxSize(16, 16));
 	mTools->AddTool(ID_ZOOM, "Zoom", wxArtProvider::GetBitmap(wxART_FIND, wxART_TOOLBAR, wxSize(16, 16)), "Set zoom");
 	mTools->AddSpacer(5);
-	mTools->AddTool(ID_PAN, "Pan", wxArtProvider::GetBitmap("File"), "Set pan");
+	mTools->AddTool(ID_PAN, "Pan", wxArtProvider::GetBitmap("file"), "Set pan");
 	mTools->AddSpacer(5);
 
 
@@ -61,25 +61,33 @@ void pof::ChartDialog::CreateToolbar() {
 		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Export chart as image");
 		break;
 	case COMPARE_SALES:
-		mTools->AddControl(new wxStaticText(mTools, wxID_ANY, wxT("From: ")));
+	{
+		auto fromText = new wxStaticText(mTools, wxID_ANY, wxT("From: "));
+		fromText->SetFont(wxFontInfo().AntiAliased().Bold());
+		fromText->SetBackgroundColour(*wxWHITE);
+		mTools->AddControl(fromText);
 		mTools->AddSpacer(5);
 		fromDate = new wxDatePickerCtrl(mTools, ID_FROM_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 		mTools->AddControl(fromDate);
-		
+
 		mTools->AddSpacer(10);
 
-		mTools->AddControl(new wxStaticText(mTools, wxID_ANY, wxT("To: ")));
+		auto toText = new wxStaticText(mTools, wxID_ANY, wxT("To: "));
+		toText->SetFont(wxFontInfo().AntiAliased().Bold());
+		toText->SetBackgroundColour(*wxWHITE);
+		mTools->AddControl(toText);
 		mTools->AddSpacer(5);
 		toDate = new wxDatePickerCtrl(mTools, ID_TO_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 		mTools->AddControl(toDate);
 
 		mTools->AddSpacer(5);
 		mTools->AddControl(new wxButton(mTools, ID_APPLY_RANGE, "Apply"));
-		
+
 		mTools->AddStretchSpacer();
 		mTools->AddSeparator();
 		mTools->AddTool(ID_EXPORT_IMAGE, "Export chart", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, wxSize(16, 16)), "Export chart as image");
 		break;
+	}
 	default:
 		break;
 	}
@@ -170,6 +178,7 @@ void pof::ChartDialog::OnExportChartImage(wxCommandEvent& evt)
 		bitmap.ConvertToImage().SaveFile(dlg.GetPath(), wxBITMAP_TYPE_PNG);
 	}
 	else {
+		wxMessageBox("No chart to export", "Chart", wxICON_WARNING | wxOK);
 		spdlog::error("No chart is chosen!");
 	}
 }
@@ -429,8 +438,8 @@ bool pof::ChartDialog::LoadCompareSales() {
 	bottomAxis->SetLabelTextColour(*wxBLACK);
 	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
 	bottomAxis->SetDateFormat("%d-%m-%Y");
-	bottomAxis->SetFixedBounds(pof::base::data::clock_t::to_time_t(from), 
-		pof::base::data::clock_t::to_time_t(to));
+	bottomAxis->SetMajorGridlinePen(*wxGREY_PEN);
+	bottomAxis->SetFixedBounds(fromDate->GetValue().GetTicks(), toDate->GetValue().GetTicks());
 	plot->AddAxis(bottomAxis);
 
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
@@ -438,6 +447,8 @@ bool pof::ChartDialog::LoadCompareSales() {
 	leftAxis->SetLabelTextColour(*wxBLACK);
 	leftAxis->SetLabelPen(wxPen(*wxBLACK));
 	leftAxis->SetMajorGridlinePen(wxPen(*wxBLACK));
+	leftAxis->SetMinorGridlinePen(*wxGREY_PEN);
+	//leftAxis->SetMinorIntervalCount(6);
 	plot->AddAxis(leftAxis);
 
 

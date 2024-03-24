@@ -2504,17 +2504,19 @@ void pof::ProductView::CreateDataView()
 void pof::ProductView::CreateToolBar()
 {
 	m_auiToolBar1 = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	m_auiToolBar1->SetToolBitmapSize(wxSize(16,16));
+	m_auiToolBar1->SetToolBitmapSize(wxSize(FromDIP(16),FromDIP(16)));
 
-	m_auiToolBar1->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
-	m_auiToolBar1->AddSpacer(2);
+	mChartsDropItem = m_auiToolBar1->AddTool(ID_CHARTS, "Charts", wxArtProvider::GetBitmap("file"), "Charts for different data");
+	mChartsDropItem->SetHasDropDown(true);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
+
 	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("file"), wxT("Store reports"));
 	mReportItem->SetHasDropDown(true);
 	mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("file"), wxT("Run a function on all products in the store"));
 	mFuncDropItem->SetHasDropDown(true);
 	m_auiToolBar1->AddSeparator();
 
-	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(350, -1), wxWANTS_CHARS);
+	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(350), FromDIP(- 1)), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	m_searchCtrl1->ShowSearchButton(true);
 #endif
@@ -2526,39 +2528,39 @@ void pof::ProductView::CreateToolBar()
 	menu->Check(ID_SEARCH_BY_NAME, true);
 
 	m_searchCtrl1->SetMenu(menu);
-	m_auiToolBar1->AddSpacer(5);
+	m_auiToolBar1->AddSpacer(FromDIP(5));
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
 	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Suppliers", wxArtProvider::GetBitmap(wxART_FLOPPY, wxART_TOOLBAR, wxSize(16, 16)), "Show suppliers", wxITEM_CHECK);
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");
-	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_ADD_CATEGORY, wxT("Add category"), wxArtProvider::GetBitmap("application"), wxT("Creates a new Category for medical products"));
-	m_auiToolBar1->AddSpacer(2);
+	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_PACKS, wxT("Add pack"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(16, 16)), wxT("Pharamcy Packs"));
 	m_auiToolBar1->Realize();
 
-	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(FromDIP(-1), FromDIP(30)).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 	//tool bar 2
 	m_auiToolBar2 = new wxAuiToolBar(this, ID_TOOLBAR2, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	m_auiToolBar2->SetToolBitmapSize(wxSize(16, 16));
-	mChartsDropItem = m_auiToolBar2->AddTool(ID_CHARTS, "Charts", wxArtProvider::GetBitmap("file"), "Charts for different data");
-	mChartsDropItem->SetHasDropDown(true);
-
-	m_auiToolBar2->AddStretchSpacer();
+	m_auiToolBar2->SetToolBitmapSize(wxSize(FromDIP(16), FromDIP(16)));
+	m_auiToolBar2->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select multiple products", wxITEM_CHECK);
+	m_auiToolBar2->AddSpacer(FromDIP(2));
+	
+	//m_auiToolBar2->AddStretchSpacer();
 	m_auiToolBar2->AddSeparator();
 	mOutOfStockItem = m_auiToolBar2->AddTool(ID_OUT_OF_STOCK, wxT("Out of stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
-	m_auiToolBar2->AddSpacer(2);
+	m_auiToolBar2->AddSpacer(FromDIP(2));
 	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
-	m_auiToolBar2->AddSpacer(2);
-	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("file"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
-	m_auiToolBar2->AddSpacer(2);
+	m_auiToolBar2->AddSpacer(FromDIP(2));
+	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("pen"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
+	m_auiToolBar2->AddSpacer(FromDIP(2));
 
 	m_auiToolBar2->Realize();
-	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(-1, 30).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(- 1), FromDIP(30)).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::ProductView::CreateProductInfo()

@@ -291,10 +291,10 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
-	bSizer2->Add(0, 20, 0, wxEXPAND, 5);
+	bSizer2->Add(0, 20, 0, wxEXPAND, FromDIP(5));
 
 	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
-	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, 5);
+	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, FromDIP(5));
 
 	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
 	std::transform(AccountName.begin(), AccountName.end(),
@@ -302,14 +302,14 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText1->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText1->Wrap(-1);
-	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, 1);
+	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
 
 	//add the account type
 	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
 	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText3->Wrap(-1);
-	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, 1);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
 
 	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
 	std::transform(PharmacyName.begin(), PharmacyName.end(),
@@ -319,21 +319,21 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_staticText2->SetFont(mFonts[FONT_ACCOUNT]);
 	m_staticText2->Wrap(-1);
 	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
-	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, 1);
+	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
 
 	std::string pharmacyType = wxGetApp().MainPharmacy->GetPharmacyTypeAsString();
 	m_staticText4 = new wxStaticText(m_panel1, wxID_ANY, pharmacyType, wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText4->SetFont(wxFontInfo(6).AntiAliased());
 	m_staticText4->Wrap(-1);
-	bSizer2->Add(m_staticText4, 0, wxALIGN_CENTER | wxALL, 1);
+	bSizer2->Add(m_staticText4, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
 
-	bSizer2->Add(0, 5, 0, wxEXPAND, 5);
+	bSizer2->Add(0, 5, 0, wxEXPAND, FromDIP(5));
 
 
 	m_panel1->SetSizer(bSizer2);
 	m_panel1->Layout();
 	bSizer2->Fit(m_panel1);
-	bSizer1->Add(m_panel1, 0, wxEXPAND | wxALL, 0);
+	bSizer1->Add(m_panel1, 0, wxEXPAND | wxALL, FromDIP(0));
 	m_panel1->SetBackgroundColour(wxTheColourDatabase->Find("Aqua"));
 
 	m_panel2 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
@@ -342,14 +342,14 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 
 	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
 		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT);
-	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, 5 );
+	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, FromDIP(5) );
 	mModuleTree->SetDoubleBuffered(true);
 	CreateTree();
 	
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
-	bSizer1->Add( m_panel2, 1, wxEXPAND | wxALL, 0 );
+	bSizer1->Add( m_panel2, 1, wxEXPAND | wxALL, FromDIP(0) );
 	
 	Style(); //should it be here ?
 	

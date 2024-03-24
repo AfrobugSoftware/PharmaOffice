@@ -9,7 +9,7 @@ size_t pof::AuiTheme::sSashSize = 5;
 size_t pof::AuiTheme::sPaneBorderSize = 0;
 size_t pof::AuiTheme::sGradientType = wxAUI_GRADIENT_HORIZONTAL;
 
-wxColour pof::AuiTheme::sSashColour = *wxLIGHT_GREY;
+wxColour pof::AuiTheme::sSashColour = *wxWHITE;
 wxColour pof::AuiTheme::sBackgroundColour = *wxWHITE;
 wxColour pof::AuiTheme::sBorderColour = *wxBLACK;
 wxColour pof::AuiTheme::sActiveCaptionColour = *wxLIGHT_GREY;

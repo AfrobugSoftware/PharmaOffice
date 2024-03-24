@@ -124,6 +124,8 @@ namespace pof {
 		std::optional<pof::base::relation<pof::base::data::duuid_t,
 				pof::base::data::text_t>> GetRecentlyStopMedications(const pof::base::data::duuid_t& puid) const;
 
+		std::optional<std::vector<pof::base::data::duuid_t>> GetRemindedList();
+
 		std::optional<pof::base::relation<pof::base::data::text_t, 
 				pof::base::data::datetime_t,
 				std::uint64_t,

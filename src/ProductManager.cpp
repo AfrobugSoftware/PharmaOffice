@@ -2577,8 +2577,8 @@ void pof::ProductManager::LoadStockCheckDate(pof::base::data::datetime_t m)
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
 		}
-		//auto month = std::chrono::duration_cast<date::months>(m.time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(m));
+		auto month = date::floor<date::months>(m);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		if (!status) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return;
@@ -2697,8 +2697,8 @@ void pof::ProductManager::UpdateStockCheck(const pof::base::data::duuid_t& pid, 
 			spdlog::error(mLocalDatabase->err_msg());
 			return; 
 		}
-		auto month = std::chrono::duration_cast<date::months>(pof::base::data::clock_t::now().time_since_epoch());
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(stock, pid, pof::base::data::datetime_t(month)));
+		auto month = date::floor<date::months>(pof::base::data::clock_t::now());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(stock, pid, month.time_since_epoch().count()));
 		assert(status);
 		status = mLocalDatabase->execute(*stmt);
 		if (!status) spdlog::error(mLocalDatabase->err_msg());
@@ -2906,7 +2906,7 @@ bool pof::ProductManager::CheckIfDone(pof::base::data::duuid_t pid, pof::base::d
 	return false;
 }
 
-std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::base::data::datetime_t month)
+std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::base::data::datetime_t dt)
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = R"(SELECT 
@@ -2925,8 +2925,6 @@ std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::bas
 		SumCost(CostMulti(p.unit_price, sc.check_stock)) FROM stock_check sc, products p
 		WHERE sc.prod_uuid = p.uuid AND Months(sc.date) = ?;)";
 
-		auto m = pof::base::data::datetime_t(std::chrono::duration_cast<date::months>(month.time_since_epoch()));
-
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -2939,10 +2937,13 @@ std::optional<pof::base::currency> pof::ProductManager::GetShortageCost(pof::bas
 			return std::nullopt;
 		}
 
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(m));
+
+		auto month = date::floor<date::months>(dt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 
-		status = mLocalDatabase->bind(*stmt2, std::make_tuple(m));
+
+		status = mLocalDatabase->bind(*stmt2, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<pof::base::currency>(*stmt);
@@ -3019,7 +3020,7 @@ std::optional<std::vector<std::tuple<pof::base::data::datetime_t, std::uint64_t,
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(SELECT Months(date), COUNT(prod_uuid) 
+		constexpr const std::string_view sql = R"(SELECT date, COUNT(prod_uuid) 
 		FROM stock_check WHERE 1 GROUP BY Months(date);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt);

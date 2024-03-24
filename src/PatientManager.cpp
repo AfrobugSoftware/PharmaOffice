@@ -167,19 +167,20 @@ bool pof::PatientManager::CreateDatabaseFunctions()
 
 
 		pof::base::func_aggregate AddDayDuration;
-		isRemindAgg.name = "AddDays"s;
-		isRemindAgg.arg_count = 2;
-		isRemindAgg.func = &pof::PatientManager::DBFuncAddDuration;
+		AddDayDuration.name = "AddDays"s;
+		AddDayDuration.arg_count = 2;
+		AddDayDuration.func = &pof::PatientManager::DBFuncAddDuration;
 
-		pof::base::func_aggregate InSale;
-		isRemindAgg.name = "InSale"s;
-		isRemindAgg.arg_count = 2;
-		isRemindAgg.func = &pof::PatientManager::DBFuncInSale;
 
 		pof::base::func_aggregate isPinned;
-		isRemindAgg.name = "IsPinned"s;
-		isRemindAgg.arg_count = 1;
-		isRemindAgg.func = &pof::PatientManager::DBFuncIsPinned;
+		isPinned.name = "IsPinned"s;
+		isPinned.arg_count = 1;
+		isPinned.func = &pof::PatientManager::DBFuncIsPinned;
+
+		pof::base::func_aggregate InSale;
+		InSale.name = "InSale"s;
+		InSale.arg_count = 2;
+		InSale.func = &pof::PatientManager::DBFuncInSale;
 
 		mLocalDatabase->register_func(std::move(isRemindAgg));
 		mLocalDatabase->register_func(std::move(AddDayDuration));
@@ -829,6 +830,30 @@ std::optional<pof::base::relation<pof::base::data::duuid_t, pof::base::data::tex
 	return std::nullopt;
 }
 
+std::optional<std::vector<pof::base::data::duuid_t>> pof::PatientManager::GetRemindedList()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT pai.puid FROM patient_addinfo pai WHERE CheckReminded(pai.info) = 1;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		std::vector<pof::base::data::duuid_t> ret;
+		ret.reserve(rel->size());
+		for (auto&& p : rel.value()) {
+			ret.emplace_back(std::get<0>(p));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+
 std::optional<pof::base::relation<pof::base::data::text_t, pof::base::data::datetime_t, std::uint64_t, pof::base::currency>> pof::PatientManager::GetSaleForPatient(const pof::base::data::duuid_t& puid)
 {
 	if (mLocalDatabase){
@@ -867,7 +892,10 @@ std::optional<std::vector<std::tuple<pof::base::data::duuid_t, std::string>>> po
 		FROM patients p, patient_addinfo pai
 		WHERE p.uuid = pai.puid AND isPinned(pai.info) = 1;)";
 		auto stmt = mLocalDatabase->prepare(sql);
-		assert(stmt);
+		if (!stmt.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
 
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,

@@ -104,7 +104,7 @@ void pof::SaleManager::LoadProductSaleHistory(const boost::uuids::uuid& productU
 			constexpr const std::string_view sql = R"(
 				SELECT s.sale_date, p.name, s.product_quantity, s.product_ext_price
 				FROM sales s, products p
-				WHERE s.product_uuid = ? AND p.uuid = s.product_uuid
+				WHERE s.product_uuid = ? AND p.uuid = s.product_uuid AND s.sale_payment_type IS NOT 'Returned'
 				ORDER BY s.sale_date DESC;
 			)";
 			auto stmt = mLocalDatabase->prepare(sql);
@@ -153,7 +153,7 @@ std::optional<pof::base::relation<pof::base::data::datetime_t, std::uint64_t>> p
 		constexpr const std::string_view sql = R"(
 		SELECT s.sale_date, SUM(s.product_quantity)
 		FROM sales s
-		WHERE s.product_uuid = ?
+		WHERE s.product_uuid = ? AND s.sale_payment_type IS NOT 'Returned'
 		GROUP BY Days(s.sale_date);
 		)";
 		auto stmt = mLocalDatabase->prepare(sql);
@@ -1254,7 +1254,7 @@ std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<p
 		marks.resize(prods.size());
 		std::ranges::fill(marks, '?');
 		std::string sql =
-			fmt::format("SELECT p.uuid, p.name, s.sale_date, s.product_ext_price, s.product_quantity FROM sales s, products p WHERE p.uuid = s.product_uuid  AND Days(s.sale_date) BETWEEN Days(?) AND Days(?) AND p.uuid IN ({}) ORDER BY s.sale_date;", fmt::join(marks, ","));
+			fmt::format("SELECT p.uuid, p.name, s.sale_date, s.product_ext_price, s.product_quantity FROM sales s, products p WHERE p.uuid = s.product_uuid  AND Days(s.sale_date) BETWEEN Days(?) AND Days(?) AND p.uuid IN ({}) AND s.sale_payment_type IS NOT 'Returned' GROUP BY p.uuid ORDER BY s.sale_date;", fmt::join(marks, ","));
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt){
 			spdlog::error(mLocalDatabase->err_msg());
