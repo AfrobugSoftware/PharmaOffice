@@ -147,6 +147,9 @@ namespace pof {
 		static void DBFuncIsPinned(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
+		static void DBFuncGetDateOfBirth(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
 		std::unique_ptr<pof::DataModel> mPaitnets;
 		std::unique_ptr<pof::DataModel> mPatientMedications;
 		std::unique_ptr<pof::DataModel> mPatientHistory;

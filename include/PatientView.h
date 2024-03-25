@@ -128,6 +128,7 @@ namespace pof {
 		void LoadPatientDetails();
 		//load additional information data
 		void LoadPatientAddInfo(); //use the json to set settings
+		void AddDob(const std::string& dob);
 
 		void CheckStoppedMedication();
 		void ShowPatientDetails();

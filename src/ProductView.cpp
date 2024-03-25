@@ -88,6 +88,7 @@ static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
 pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) 
 	: wxPanel( parent, id, pos, size, style ), mStockCheckTimer(this, ID_STOCK_CHECK_TIMER)
 {
+	SetDoubleBuffered(true);
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(AUIMGRSTYLE);
 	SetBackgroundColour(*wxWHITE); //move to theme

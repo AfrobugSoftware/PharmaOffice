@@ -281,15 +281,15 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
+	mClear = new wxButton(mSalePaymentButtonsPane, ID_CLEAR, wxT("CLEAR"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxSIMPLE_BORDER);
 	mClear->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mClear, 0, wxALL, FromDIP(5));
 
-	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
+	mSave = new wxButton(mSalePaymentButtonsPane, ID_SAVE, wxT("SAVE"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxSIMPLE_BORDER);
 	mSave->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mSave, 0, wxALL, FromDIP(5));
 
-	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxDOUBLE_BORDER);
+	mCheckout = new wxButton(mSalePaymentButtonsPane, ID_CHECKOUT, wxT("CHECK OUT"), wxDefaultPosition, FromDIP(wxSize(120, 50)), wxSIMPLE_BORDER);
 	mCheckout->SetBackgroundColour(*wxWHITE);
 	bSizer4->Add(mCheckout, 0, wxALL, FromDIP(5));
 

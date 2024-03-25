@@ -564,6 +564,10 @@ bool pof::Application::SignOut()
 	pof::SignInDialog Dialog(nullptr);
 	while (1) {
 		if (Dialog.ShowModal() == wxID_OK) {
+			bKeepMeSignedIn = Dialog.GetKeepSignedIn();
+			if (bKeepMeSignedIn) {
+				MainAccount->InsertSession(); //starts new session
+			}
 			mMainFrame->ReloadFrame();
 			mMainFrame->Show();
 			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, fmt::format("{} signed in at {:%d/%M/%Y %H:%M:%S}", MainAccount->username, MainAccount->signintime));

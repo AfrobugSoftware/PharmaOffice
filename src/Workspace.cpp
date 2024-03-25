@@ -10,10 +10,11 @@ pof::Workspace::Workspace( wxWindow* parent, wxWindowID id, const wxPoint& pos, 
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
 	SetBackgroundColour(*wxWHITE);
+	//SetDoubleBuffered(true);
 
 	mWorkspacebook = new wxAuiNotebook( this, WORKSPACEBOOK, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE|wxAUI_NB_MIDDLE_CLICK_CLOSE|wxAUI_NB_SCROLL_BUTTONS|wxAUI_NB_TAB_EXTERNAL_MOVE|wxAUI_NB_TAB_MOVE|wxAUI_NB_TAB_SPLIT|wxAUI_NB_TOP|wxAUI_NB_WINDOWLIST_BUTTON |wxNO_BORDER );
 	//mWorkspacebook->SetBackgroundColour(wxTheColourDatabase->Find("Aqua"));
-	
+	//mWorkspacebook->SetDoubleBuffered(true);
 	auto workspacetabart = new pof::WorkspaceTabArt;
 	mWorkspacebook->SetArtProvider(workspacetabart);
 	

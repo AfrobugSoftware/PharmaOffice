@@ -40,6 +40,10 @@ namespace pof {
 		wxDataViewColumn* selectedCol;
 		wxChoice* mCategoryFilter;
 		wxChoice* mFormulationFilter;
+		wxPanel* mEmpty = nullptr;
+		wxStaticText* mEmptyStr = nullptr;
+		wxSimplebook* mBook = nullptr;
+
 
 		//id, name, price
 		pof::DataModel* mModel;
@@ -61,6 +65,10 @@ namespace pof {
 			ID_RESET,
 		};
 
+		enum {
+			EMPTY = 0,
+			VIEW
+		};
 
 		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1013, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		wxAuiManager m_mgr;
@@ -70,8 +78,11 @@ namespace pof {
 		void CreateToolBar();
 		void CreateSearchView();
 		void CreateViewManagerDefaultArt();
+		void CreateEmptyPanel(const std::string& text = {});
+
 
 		void SetUpView();
+		void ShowEmpty(const std::string& text);
 
 
 

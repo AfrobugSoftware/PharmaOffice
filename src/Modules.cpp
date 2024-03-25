@@ -61,7 +61,7 @@ void pof::Modules::OnChangeFont(const wxFont& font)
 	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
 	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
 
-	Style();
+	//Style();
 	
 }
 

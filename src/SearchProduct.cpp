@@ -21,16 +21,21 @@ END_EVENT_TABLE()
 pof::SearchProduct::SearchProduct(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : 
 	wxDialog(parent, id, title, pos, size, style), mSelectedProduct(-1)
 {
+	this->SetSize(FromDIP(size));
 	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(wxAUI_MGR_DEFAULT);
 	CreateViewManagerDefaultArt();
 	CreateToolBar();
+	mBook = new wxSimplebook(this, wxID_ANY);
+
+	CreateEmptyPanel();
 	CreateSearchView();
 
 	//load the whole product relation
 	SetUpView();
 
+	m_mgr.AddPane(mBook, wxAuiPaneInfo().Center().CaptionVisible(false).CloseButton(false).PaneBorder(false).Movable(false).Dock().Resizable().FloatingSize(wxDefaultSize).BottomDockable(false).TopDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).CentrePane());
 	m_mgr.Update();
 	this->Centre(wxBOTH);
 
@@ -70,7 +75,7 @@ void pof::SearchProduct::CreateToolBar()
 		choices.push_back(boost::variant2::get<pof::base::data::text_t>(value.first[pof::ProductManager::CATEGORY_NAME]));
 	}
 
-	mCategoryFilter = new wxChoice(SearchProductBar, ID_CATEGORY_FILTER, wxDefaultPosition, wxSize(200, -1), choices);
+	mCategoryFilter = new wxChoice(SearchProductBar, ID_CATEGORY_FILTER, wxDefaultPosition, FromDIP(wxSize(200, -1)), choices);
 	mCategoryFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
 		wxPaintDC dc(mCategoryFilter);
 	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
@@ -78,7 +83,7 @@ void pof::SearchProduct::CreateToolBar()
 	dc.SetBrush(*wxWHITE);
 	dc.SetPen(*wxGREY_PEN);
 	dc.DrawRoundedRectangle(rect, 2.0f);
-	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
 	auto sel = mCategoryFilter->GetStringSelection();
 	if (!sel.IsEmpty()) {
 		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
@@ -87,7 +92,7 @@ void pof::SearchProduct::CreateToolBar()
 	SearchProductBar->AddControl(mCategoryFilter, "Select Category");
 	SearchProductBar->AddSpacer(10);
 
-	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, wxSize(200, -1), wxGetApp().FormulationChoices);
+	mFormulationFilter = new wxChoice(SearchProductBar, ID_FORMULATION_FILTER, wxDefaultPosition, FromDIP(wxSize(200, -1)), wxGetApp().FormulationChoices);
 	mFormulationFilter->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
 		wxPaintDC dc(mFormulationFilter);
 	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
@@ -95,7 +100,7 @@ void pof::SearchProduct::CreateToolBar()
 	dc.SetBrush(*wxWHITE);
 	dc.SetPen(*wxGREY_PEN);
 	dc.DrawRoundedRectangle(rect, 2.0f);
-	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - FromDIP(15), (rect.GetHeight() / 2) - FromDIP(5)));
 	auto sel = mFormulationFilter->GetStringSelection();
 	if (!sel.IsEmpty()) {
 		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
@@ -106,31 +111,30 @@ void pof::SearchProduct::CreateToolBar()
 	SearchProductBar->AddSpacer(5);
 	SearchProductBar->AddTool(ID_FILTER, wxT("Filter"), wxArtProvider::GetBitmap("pen"));
 	SearchProductBar->AddSpacer(2);
-	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
+	SearchProductBar->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, FromDIP(wxSize(16,16))));
 	SearchProductBar->AddSpacer(2);
 	SearchProductBar->AddTool(ID_ADD_PRODUCT, wxT("Add Product"), wxArtProvider::GetBitmap("action_add"));
 	SearchProductBar->Realize();
-	m_mgr.AddPane(SearchProductBar, wxAuiPaneInfo().Name(wxT("SearchToolBar")).Top().MinSize(-1, 30).DockFixed().CloseButton(false).PaneBorder(false).Dock().Resizable().BottomDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).Layer(10).ToolbarPane());
+	m_mgr.AddPane(SearchProductBar, wxAuiPaneInfo().Name(wxT("SearchToolBar")).Top().MinSize(FromDIP(wxSize(- 1, 30))).DockFixed().CloseButton(false).PaneBorder(false).Dock().Resizable().BottomDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).Layer(10).ToolbarPane());
 
 }
 
 void pof::SearchProduct::CreateSearchView()
 {
-	m_panel1 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	m_mgr.AddPane(m_panel1, wxAuiPaneInfo().Center().CaptionVisible(false).CloseButton(false).PaneBorder(false).Movable(false).Dock().Resizable().FloatingSize(wxDefaultSize).BottomDockable(false).TopDockable(false).LeftDockable(false).RightDockable(false).Floatable(false).CentrePane());
-
+	m_panel1 = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	m_panel1->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
 	mModel = new DataModel(wxGetApp().mProductManager.GetProductData()->ShareDatastore());
 
 	SearchData = new wxDataViewCtrl(m_panel1, ID_SEARCH_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_ROW_LINES);
-	selectedCol = SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, 50);
-	SearchData->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, 300, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Stock"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	SearchData->AppendTextColumn(wxT("Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, 120, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	selectedCol = SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, FromDIP(50));
+	SearchData->AppendTextColumn(wxT("Name"), pof::ProductManager::PRODUCT_NAME, wxDATAVIEW_CELL_INERT, FromDIP(300), static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Formulation"), pof::ProductManager::PRODUCT_FORMULATION, wxDATAVIEW_CELL_INERT, FromDIP(100), static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Package Size"), pof::ProductManager::PRODUCT_PACKAGE_SIZE, wxDATAVIEW_CELL_INERT, FromDIP(100), static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Stock"), pof::ProductManager::PRODUCT_STOCK_COUNT, wxDATAVIEW_CELL_INERT, FromDIP(100), static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+	SearchData->AppendTextColumn(wxT("Price"), pof::ProductManager::PRODUCT_UNIT_PRICE, wxDATAVIEW_CELL_INERT, FromDIP(120), static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	bSizer1->Add(SearchData, 1, wxALL | wxEXPAND, 0);
 
 	SearchData->AssociateModel(mModel);
@@ -158,6 +162,8 @@ void pof::SearchProduct::CreateSearchView()
 	m_panel1->SetSizer(bSizer1);
 	m_panel1->Layout();
 	bSizer1->Fit(m_panel1);
+
+	mBook->AddPage(m_panel1, "SearchView", true);
 }
 
 void pof::SearchProduct::CreateViewManagerDefaultArt()
@@ -175,9 +181,70 @@ void pof::SearchProduct::CreateViewManagerDefaultArt()
 	m_mgr.SetFlags(m_mgr.GetFlags() | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_VENETIAN_BLINDS_HINT);
 }
 
+void pof::SearchProduct::CreateEmptyPanel(const std::string& text)
+{
+	mEmpty = new wxPanel(mBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mEmpty->SetBackgroundColour(*wxWHITE);
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer(wxVERTICAL);
+
+	wxPanel* m5 = new wxPanel(mEmpty, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer(wxVERTICAL);
+
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+	mEmptyStr = new wxStaticText(m7, wxID_ANY, text, wxDefaultPosition, wxDefaultSize, 0);
+	mEmptyStr->Wrap(-1);
+	bSizer9->Add(mEmptyStr, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+
+	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m7->SetSizer(bSizer9);
+	m7->Layout();
+	bSizer9->Fit(m7);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+
+	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+
+
+	m5->SetSizer(bSizer8);
+	m5->Layout();
+	bSizer8->Fit(m5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+
+
+	mEmpty->SetSizer(bSizer6);
+	mEmpty->Layout();
+	mBook->AddPage(mEmpty, "Empty", false);
+}
+
 void pof::SearchProduct::SetUpView()
 {
 	
+}
+
+void pof::SearchProduct::ShowEmpty(const std::string& text)
+{
+	mEmpty->Freeze();
+	mEmptyStr->SetLabelText(text);
+	mEmpty->Layout();
+	mEmpty->Thaw();
+
+	mBook->SetSelection(EMPTY);
 }
 
 void pof::SearchProduct::OnItemSelected(wxDataViewEvent& evt)
@@ -364,7 +431,15 @@ void pof::SearchProduct::DoSearch(const std::string& search_for)
 {
 	if (search_for.empty()) {
 		mModel->Reload();
-		return;
 	}
-	mModel->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search_for);
+	else {
+		bool empty = mModel->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search_for);
+		if (empty) {
+			ShowEmpty(fmt::format("No product \"{}\" in store", search_for));
+		}
+		else {
+			mBook->SetSelection(VIEW);
+		}
+	}
+
 }

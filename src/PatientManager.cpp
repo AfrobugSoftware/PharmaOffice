@@ -11,7 +11,7 @@ pof::PatientManager::PatientManager()
 		pof::base::data::duuid_t, //UUID
 		pof::base::data::text_t, //NAME
 		pof::base::data::text_t, //LAST NAME
-		pof::base::data::datetime_t, // DOB
+		pof::base::data::text_t, // DOB
 		pof::base::data::text_t,
 		pof::base::data::text_t, //PHONE NUMBER
 		pof::base::data::text_t, // ADDRESS
@@ -182,10 +182,16 @@ bool pof::PatientManager::CreateDatabaseFunctions()
 		InSale.arg_count = 2;
 		InSale.func = &pof::PatientManager::DBFuncInSale;
 
+		pof::base::func_aggregate getDob;
+		getDob.name = "GetDob"s;
+		getDob.arg_count = 1;
+		getDob.func = &pof::PatientManager::DBFuncGetDateOfBirth;
+
 		mLocalDatabase->register_func(std::move(isRemindAgg));
 		mLocalDatabase->register_func(std::move(AddDayDuration));
 		mLocalDatabase->register_func(std::move(InSale));
 		mLocalDatabase->register_func(std::move(isPinned));
+		mLocalDatabase->register_func(std::move(getDob));
 	}
 	return false;
 }
@@ -208,7 +214,9 @@ std::unique_ptr<pof::DataModel>& pof::PatientManager::GetPatientHistotyData()
 bool pof::PatientManager::LoadPatients()
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT * FROM patients LIMIT 1000;)";
+		constexpr const std::string_view sql = R"(SELECT 
+		p.uuid, p.name, p.lastname, GetDob(pi.info), p.gender, p.phonenumber, p.address, p.bmi, p.weight, p.hr, p.bpsys, p.bpdys, p.rr, p.tempreture, p.createdate, p.modifieddate, p.clinical 
+		FROM patients p, patient_addinfo pi WHERE p.uuid = pi.puid LIMIT 1000;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -218,8 +226,8 @@ bool pof::PatientManager::LoadPatients()
 			pof::base::data::duuid_t, //UUID
 			pof::base::data::text_t, //NAME
 			pof::base::data::text_t, //LAST NAME
-			pof::base::data::datetime_t, // AGE
-			pof::base::data::text_t,
+			pof::base::data::text_t, // AGE
+			pof::base::data::text_t, //GENDER
 			pof::base::data::text_t, //PHONE NUMBER
 			pof::base::data::text_t, // ADDRESS
 			std::uint64_t, // BMI
@@ -396,33 +404,35 @@ bool pof::PatientManager::IsPatientActive(const pof::base::data::duuid_t& pid)
 bool pof::PatientManager::OnAddPatient(pof::base::data::const_iterator iter)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(INSERT INTO patients VALUES (?,?,?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
+		constexpr const std::string_view sql = R"(INSERT INTO patients 
+		(uuid, name, lastname, gender, phonenumber, address, bmi, weight, hr, bpsys, bpdys, rr, tempreture, createdate, modifieddate, clinical)	
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);)";
+
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			return false;
 		}
-		std::tuple<
-			pof::base::data::duuid_t, //UUID
-			pof::base::data::text_t, //NAME
-			pof::base::data::text_t, //LAST NAME
-			pof::base::data::datetime_t, // AGE
-			pof::base::data::text_t, //GENDER
-			pof::base::data::text_t, //PHONE NUMBER
-			pof::base::data::text_t, // ADDRESS
-			std::uint64_t, // BMI
-			std::uint64_t, // WEIGHT
-			std::uint64_t, //HR
-			std::uint64_t, // BP
-			std::uint64_t, // BP_sys
-			std::uint64_t, // RR
-			std::uint64_t, // TEMPT
-			pof::base::data::datetime_t, // ENTERED DATE
-			pof::base::data::datetime_t,  // MODIFIED DATE
-			pof::base::data::text_t //CLINICAL
-		> tup;
-		pof::base::build(tup, *iter);
-		bool status = mLocalDatabase->bind(*stmt, tup);
+		auto& v = iter->first;
+		//skip age
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(
+			boost::variant2::get<pof::base::data::duuid_t>(v[pof::PatientManager::PATIENT_UUID]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_ADDRESS]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BMI]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_WEIGHT]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_HR]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BP_SYS]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_BP_DYS]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_RR]),
+			boost::variant2::get<std::uint64_t>(v[pof::PatientManager::PATIENT_TEMPT]),
+			boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_ENTERED_DATE]),
+			boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_MODIFIED_DATE]),
+			boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_CLINICAL_INDICATION])
+		));
 		assert(status);
 
 		status = mLocalDatabase->execute(*stmt);
@@ -985,6 +995,25 @@ void pof::PatientManager::DBFuncIsPinned(pof::base::database::conn_t conn, int a
 		ret = static_cast<bool>(*iter) ? 1 : 0 ;
 	}
 	catch (const std::exception& exp){
+		spdlog::error(exp.what());
+	}
+exit:
+	pof::base::database::result(conn, ret);
+}
+
+void pof::PatientManager::DBFuncGetDateOfBirth(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	auto json = pof::base::database::arg<std::string>(conn, values);
+	std::string ret;
+	try {
+		auto obj = nl::json::parse(json);
+		auto iter = obj.find("dob");
+		if (iter == obj.end()) goto exit;
+		else {
+			ret = static_cast<std::string>(*iter);
+		}
+	}
+	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
 	}
 exit:

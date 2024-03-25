@@ -202,15 +202,12 @@ bool pof::Account::SignInFromSession()
 
 		mLocalDatabase->finalise(*stmt);
 		if (rsd->empty()){
-			wxMessageBox("There is no active session, try signing in.", "Session", wxICON_INFORMATION | wxOK);
 			return false;
 		}
 		auto& tup = *rsd->begin();
 		//check if session has expired, TODO: FIX EXPIRE
 		if (std::get<1>(tup) + sessionDuration < (std::chrono::system_clock::now())){
-			wxMessageBox("Session has expired, please sign in again.", "Session", wxICON_INFORMATION | wxOK);
 			RemoveSession();
-
 			return false;
 		}
 

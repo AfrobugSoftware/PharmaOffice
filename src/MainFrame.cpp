@@ -33,6 +33,7 @@ END_EVENT_TABLE()
 
 pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size)
 : wxFrame(parent, id, "PharmaOffice - Personal", position, size), mAuiManager(this, AUIMGRSTYLE) {
+	//SetDoubleBuffered(true);
 	SetBackgroundColour(*wxWHITE); //wrap in theme
 	SetupAuiTheme();
 	CreateMenuBar();
@@ -529,6 +530,7 @@ void pof::MainFrame::OnShowModules(wxCommandEvent& evt)
 
 void pof::MainFrame::OnSignOut(wxCommandEvent& evt)
 {
+	mAccount->RemoveSession(); //remove the current session
 	mAccount->DoSignOut();
 	wxGetApp().SignOut();
 }
