@@ -2506,6 +2506,29 @@ std::optional<pof::base::data::datetime_t> pof::ProductManager::GetCurrentExpire
 	return std::nullopt;
 }
 
+std::optional<pof::base::currency> pof::ProductManager::GetTotalStockCost()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT SumCost(CostMulti(p.unit_price, p.stock_count)) FROM products p;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+
+		auto rel = mLocalDatabase->retrive<pof::base::currency>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		if (rel->empty()) return std::nullopt;
+		return std::get<0>(*(rel->begin()));
+	}
+	return std::nullopt;
+}
+
 bool pof::ProductManager::CaptureStock(const pof::base::data::duuid_t& pid)
 {
 	if (mLocalDatabase)

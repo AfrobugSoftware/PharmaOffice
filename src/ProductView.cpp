@@ -1834,7 +1834,7 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 		return;
 	}
 		
-	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, wxSize(591, 413), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, FromDIP(wxSize(791, 413)), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1850,14 +1850,16 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
 	auto font = wxGetApp().mFontSettings.GetChosenFont();
+	const int fontSize = std::max(std::min(12, font.GetPointSize()), 9);;
+	const int valueFontSize = std::max(std::min(13, font.GetPointSize()), 10);
+	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle()).Bold());
+	wxFont descripFont = wxFont(wxFontInfo(fontSize).Family(font.GetFamily()).AntiAliased().FaceName(font.GetFaceName()).Style(font.GetStyle()));
 
-	wxPanel* cp = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+	wxPanel* cp = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bS2;
 	bS2 = new wxBoxSizer(wxHORIZONTAL);
 
 	auto TitleText = new wxStaticText(cp, wxID_ANY, wxT("Store summary"), wxDefaultPosition, wxDefaultSize, 0);
-	const int valueFontSize = std::max(std::min(12, font.GetPointSize()), 10);
-	wxFont valueFont(wxFontInfo(valueFontSize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Bold().Style(font.GetStyle()));
 	TitleText->Wrap(-1);
 	TitleText->SetFont(valueFont);
 	bS2->AddStretchSpacer(1);
@@ -1868,34 +1870,147 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	bS2->SetSizeHints(cp);
 
 	bSizer2->Add(cp, 0, wxEXPAND | wxALL, 5);
+
+	//first panel
+	wxPanel* cp2 = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* bS3;
+	bS3 = new wxBoxSizer(wxHORIZONTAL);
+
 	//total product
-	auto totalProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Products: {:d}",
+	wxPanel* tpp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+	wxBoxSizer* tpps;
+	tpps = new wxBoxSizer(wxVERTICAL);
+
+	auto totalProductslabel = new wxStaticText(tpp, wxID_ANY, wxT("Total Products"), wxDefaultPosition, wxDefaultSize, 0);
+	totalProductslabel->Wrap(-1);
+	totalProductslabel->SetFont(descripFont);
+
+	auto totalProducts = new wxStaticText(tpp, wxID_ANY, fmt::format("{:d}",
 			wxGetApp().mProductManager.GetProductData()->GetDatastore().size()), wxDefaultPosition, wxDefaultSize, 0);
 	totalProducts->Wrap(-1);
-	totalProducts->SetFont(font);
-	bSizer2->Add(totalProducts, 0, wxALL | wxEXPAND, 5);
+	totalProducts->SetFont(valueFont);
 
+	tpps->AddSpacer(FromDIP(5));
+	tpps->Add(totalProducts, 1, wxALL | wxEXPAND, FromDIP(5));
+	tpps->Add(totalProductslabel, 0, wxALL | wxEXPAND, FromDIP(5));
+	tpps->AddSpacer(FromDIP(2));
+
+	tpp->SetSizer(tpps);
+	tpps->SetSizeHints(tpp);
+
+	bS3->Add(tpp, 0, wxALL, FromDIP(5));
+
+
+	//expired products
 	auto exp = wxGetApp().mProductManager.DoExpiredProducts();
+
+
+	wxPanel* expp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+	wxBoxSizer* expps;
+	expps = new wxBoxSizer(wxVERTICAL);
+
+	auto expProductslabel = new wxStaticText(expp, wxID_ANY, wxT("Total Expired Products"), wxDefaultPosition, wxDefaultSize, 0);
+	expProductslabel->Wrap(-1);
+	expProductslabel->SetFont(descripFont);
+
+	auto expProducts = new wxStaticText(expp, wxID_ANY, fmt::format("{:d}", exp.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
+	expProducts->Wrap(-1);
+	expProducts->SetFont(valueFont);
+
+	expps->AddSpacer(FromDIP(5));
+	expps->Add(expProducts, 1, wxALL | wxEXPAND, FromDIP(5));
+	expps->Add(expProductslabel, 0, wxALL | wxEXPAND, FromDIP(5));
+	expps->AddSpacer(FromDIP(2));
+
+	expp->SetSizer(expps);
+	expps->SetSizeHints(expp);
+
+	bS3->Add(expp, 0, wxALL, FromDIP(5));
+
+
+	//out of stock
 	auto os = wxGetApp().mProductManager.DoOutOfStock();
 
-	auto totalExpProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total expired products: {:d}", exp.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
-	totalExpProducts->Wrap(-1);
-	totalExpProducts->SetFont(font);
-	bSizer2->Add(totalExpProducts, 0, wxALL | wxEXPAND, 5);
+	wxPanel* osp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+	wxBoxSizer* osps;
+	osps = new wxBoxSizer(wxVERTICAL);
 
-	auto totalOsProducts = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total Out of stock products: {:d}", os.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
-	totalOsProducts->Wrap(-1);
-	totalOsProducts->SetFont(font);
-	bSizer2->Add(totalOsProducts, 0, wxALL | wxEXPAND, 5);
+	auto osProductslabel = new wxStaticText(osp, wxID_ANY, wxT("Total Out of stock Products"), wxDefaultPosition, wxDefaultSize, 0);
+	osProductslabel->Wrap(-1);
+	osProductslabel->SetFont(descripFont);
 
+	auto osProducts = new wxStaticText(osp, wxID_ANY, fmt::format("{:d}", os.value_or(std::vector<wxDataViewItem>{}).size()), wxDefaultPosition, wxDefaultSize, 0);
+	osProducts->Wrap(-1);
+	osProducts->SetFont(valueFont);
+
+	osps->AddSpacer(FromDIP(5));
+	osps->Add(osProducts, 1, wxALL | wxEXPAND, FromDIP(5));
+	osps->Add(osProductslabel, 0, wxALL | wxEXPAND, FromDIP(5));
+	osps->AddSpacer(FromDIP(2));
+
+	osp->SetSizer(osps);
+	osps->SetSizeHints(osp);
+
+	bS3->Add(osp, 0, wxALL, FromDIP(5));
+
+	//total rev
 	auto dt = pof::base::data::clock_t::now();
 	auto rev = wxGetApp().mSaleManager.GetYearTotalRevenue(dt);
 	if (rev){
-		auto totalrev = new wxStaticText(m_panel1, wxID_ANY, fmt::format("Total revenue for {:%Y}: {:cu}", dt, rev.value()), wxDefaultPosition, wxDefaultSize, 0);
-		totalrev->Wrap(-1);
-		totalrev->SetFont(font);
-		bSizer2->Add(totalrev, 0, wxALL | wxEXPAND, 5);
+
+		wxPanel* revp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+		wxBoxSizer* revps;
+		revps = new wxBoxSizer(wxVERTICAL);
+
+		auto revProductslabel = new wxStaticText(revp, wxID_ANY, fmt::format("Total revenue for {:%Y}", dt), wxDefaultPosition, wxDefaultSize, 0);
+		revProductslabel->Wrap(-1);
+		revProductslabel->SetFont(descripFont);
+
+		auto revProducts = new wxStaticText(revp, wxID_ANY, fmt::format("{:cu}", rev.value()), wxDefaultPosition, wxDefaultSize, 0);
+		revProducts->Wrap(-1);
+		revProducts->SetFont(valueFont);
+
+		revps->AddSpacer(FromDIP(5));
+		revps->Add(revProducts, 1, wxALL | wxEXPAND, FromDIP(5));
+		revps->Add(revProductslabel, 0, wxALL | wxEXPAND, FromDIP(5));
+		revps->AddSpacer(FromDIP(2));
+
+		revp->SetSizer(revps);
+		revps->SetSizeHints(revp);
+
+		bS3->Add(revp, 0, wxALL, FromDIP(5));
 	}
+
+	auto tsc = wxGetApp().mProductManager.GetTotalStockCost();
+	if (tsc) {
+		wxPanel* tscp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
+		wxBoxSizer* tscps;
+		tscps = new wxBoxSizer(wxVERTICAL);
+
+		auto tscProductslabel = new wxStaticText(tscp, wxID_ANY, wxT("Total Stock cost   "), wxDefaultPosition, wxDefaultSize, 0);
+		tscProductslabel->Wrap(-1);
+		tscProductslabel->SetFont(descripFont);
+
+		auto tscProducts = new wxStaticText(tscp, wxID_ANY, fmt::format("{:cu}", tsc.value_or(pof::base::currency{})), wxDefaultPosition, wxDefaultSize, 0);
+		tscProducts->Wrap(-1);
+		tscProducts->SetFont(valueFont);
+
+		tscps->AddSpacer(FromDIP(5));
+		tscps->Add(tscProducts, 1, wxALL | wxEXPAND, FromDIP(5));
+		tscps->Add(tscProductslabel, 0, wxALL | wxEXPAND, FromDIP(5));
+		tscps->AddSpacer(FromDIP(2));
+
+		tscp->SetSizer(tscps);
+		tscps->SetSizeHints(tscp);
+
+		bS3->Add(tscp, 0, wxALL, FromDIP(5));
+	}
+
+	cp2->SetSizer(bS3);
+	bS3->SetSizeHints(cp2);
+
+	bSizer2->Add(cp2, 0, wxEXPAND | wxALL, 5);
+
 
 	m_panel1->SetSizer(bSizer2);
 	m_panel1->Layout();

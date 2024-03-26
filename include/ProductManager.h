@@ -324,7 +324,7 @@ namespace pof {
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
 		std::optional<std::vector<wxDataViewItem>> DoOutOfStock();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
-
+		std::optional<pof::base::currency> GetTotalStockCost();
 		//stock check
 		bool CaptureStock(const pof::base::data::duuid_t& pid);
 		bool CreateStockCheckTable();

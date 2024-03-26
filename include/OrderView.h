@@ -64,6 +64,7 @@ namespace pof
 		void OnRemoveOrder(wxCommandEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnClearOrderList(wxCommandEvent& evt);
+		void OnPrintComplete(bool status, size_t printstate);
 
 		void UpdateTexts();
 		DECLARE_EVENT_TABLE()
