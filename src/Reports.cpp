@@ -45,44 +45,44 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	mTotalQuantity = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalQuantity->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalQuantity->Wrap(-1);
-	bSizer4->Add(mTotalQuantity, 0, wxALL, 5);
+	bSizer4->Add(mTotalQuantity, 0, wxALL, FromDIP(5));
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	l1 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
 	bSizer4->Add( l1 , wxSizerFlags().Expand());
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmount = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmount->Wrap(-1);
-	bSizer4->Add(mTotalAmount, 0, wxALL, 5);
+	bSizer4->Add(mTotalAmount, 0, wxALL, FromDIP(5));
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	l2 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
 	bSizer4->Add( l2 , wxSizerFlags().Expand());
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountCash = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountCash->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmountCash->Wrap(-1);
-	bSizer4->Add(mTotalAmountCash, 0, wxALL, 5);
+	bSizer4->Add(mTotalAmountCash, 0, wxALL, FromDIP(5));
 
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	l3 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
 	bSizer4->Add( l3 , wxSizerFlags().Expand());
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountTransfer = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountTransfer->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmountTransfer->Wrap(-1);
-	bSizer4->Add(mTotalAmountTransfer, 0, wxALL, 5);
+	bSizer4->Add(mTotalAmountTransfer, 0, wxALL, FromDIP(5));
 
 
 	bSizer4->AddSpacer(5);
@@ -90,12 +90,12 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	l4 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
 	bSizer4->Add( l4, wxSizerFlags().Expand());
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountPos = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountPos->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmountPos->Wrap(-1);
-	bSizer4->Add(mTotalAmountPos, 0, wxALL, 5);
+	bSizer4->Add(mTotalAmountPos, 0, wxALL, FromDIP(5));
 
 	mSPanel->SetSizer(bSizer4);
 	mSPanel->Layout();
@@ -107,63 +107,63 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	mTotalClosingStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalClosingStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalClosingStock->Wrap(-1);
-	bSizer8->Add(mTotalClosingStock, 0, wxALL, 5);
+	bSizer8->Add(mTotalClosingStock, 0, wxALL, FromDIP(5));
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	mTotalExpiredStock = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalExpiredStock->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalExpiredStock->Wrap(-1);
-	bSizer8->Add(mTotalExpiredStock, 0, wxALL, 5);
+	bSizer8->Add(mTotalExpiredStock, 0, wxALL, FromDIP(5));
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	mTotalInventoryIn = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalInventoryIn->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalInventoryIn->Wrap(-1);
 	bSizer8->Add(mTotalInventoryIn, 0, wxALL, 5);
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	mTotalAmountIn = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountIn->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmountIn->Wrap(-1);
-	bSizer8->Add(mTotalAmountIn, 0, wxALL, 5);
+	bSizer8->Add(mTotalAmountIn, 0, wxALL, FromDIP(5));
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	mTotalInventoryOut = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalInventoryOut->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalInventoryOut->Wrap(-1);
-	bSizer8->Add(mTotalInventoryOut, 0, wxALL, 5);
+	bSizer8->Add(mTotalInventoryOut, 0, wxALL, FromDIP(5));
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 	bSizer8->Add(new wxStaticLine(mCSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
 
-	bSizer8->AddSpacer(5);
+	bSizer8->AddSpacer(FromDIP(5));
 
 
 	mTotalAmountOut = new wxStaticText(mCSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
 	mTotalAmountOut->SetFont(wxFont(wxFontInfo().AntiAliased()));
 	mTotalAmountOut->Wrap(-1);
-	bSizer8->Add(mTotalAmountOut, 0, wxALL, 5);
+	bSizer8->Add(mTotalAmountOut, 0, wxALL, FromDIP(5));
 
 	mCSPanel->SetSizer(bSizer8);
 	mCSPanel->Layout();
@@ -181,8 +181,8 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	CreateEmptyEodPage();
 
 	sz->Add(mListReport, 1, wxEXPAND | wxALL, 0);
-	sz->Add(mSPanel, 0, wxEXPAND | wxALL, 2);
-	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, 2);
+	sz->Add(mSPanel, 0, wxEXPAND | wxALL, FromDIP(2));
+	sz->Add(mCSPanel, 0, wxEXPAND | wxALL, FromDIP(2));
 
 	mSPanel->Hide();
 	mCSPanel->Hide();
@@ -312,13 +312,13 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 	mTools->Realize();
 	mTools->Refresh();
 
-	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 230);
-	report.AppendColumn("Closing stock", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("Expired stock", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("Inventory in", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("Amount in", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("Inventory out", wxLIST_FORMAT_LEFT, 150);
-	report.AppendColumn("Amount out", wxLIST_FORMAT_LEFT, 150);
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(230));
+	report.AppendColumn("Closing stock", wxLIST_FORMAT_LEFT, FromDIP(150));
+	report.AppendColumn("Expired stock", wxLIST_FORMAT_LEFT, FromDIP(150));
+	report.AppendColumn("Inventory in", wxLIST_FORMAT_LEFT, FromDIP(150));
+	report.AppendColumn("Amount in", wxLIST_FORMAT_LEFT, FromDIP(150));
+	report.AppendColumn("Inventory out", wxLIST_FORMAT_LEFT, FromDIP(150));
+	report.AppendColumn("Amount out", wxLIST_FORMAT_LEFT, FromDIP(150));
 
 	wxItemAttr attr;
 	attr.SetBackgroundColour(*wxBLACK);
@@ -447,18 +447,18 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 		//make the columns
 		if (mCurReportType == ReportType::EOM){
-			report.AppendColumn("Day", wxLIST_FORMAT_LEFT, 200);
+			report.AppendColumn("Day", wxLIST_FORMAT_LEFT, FromDIP(200));
 		}
 		else {
-			report.AppendColumn("Time", wxLIST_FORMAT_LEFT, 200);
+			report.AppendColumn("Time", wxLIST_FORMAT_LEFT, FromDIP(200));
 		}
-		report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
-		report.AppendColumn("Payment opiton", wxLIST_FORMAT_LEFT, 100);
+		report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
+		report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, FromDIP(200));
+		report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, FromDIP(200));
+		report.AppendColumn("Payment opiton", wxLIST_FORMAT_LEFT, FromDIP(100));
 
 		if (bShowSaleID) {
-			report.AppendColumn("Reciept id", wxLIST_FORMAT_CENTER, 205);
+			report.AppendColumn("Reciept id", wxLIST_FORMAT_CENTER, FromDIP(205));
 		}
 
 		size_t i = 0;
@@ -545,9 +545,9 @@ bool pof::ReportsDialog::LoadInventoryMonth()
 	}
 
 	auto& report = *mListReport;
-	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, FromDIP(200));
 
 	size_t i = 0;
 	for (auto iter = data->begin(); iter != data->end(); iter++) {
@@ -597,12 +597,12 @@ bool pof::ReportsDialog::LoadProfitLoss()
 		return true;
 	}
 	auto& report = *mListReport;
-	report.AppendColumn("Date", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Amount (Sell)", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Profit/Loss", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Date", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Amount (Sell)", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Amount (Cost)", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Profit/Loss", wxLIST_FORMAT_LEFT, FromDIP(200));
 
 	size_t i = 0;
 	for (auto iter = data->begin(); iter != data->end(); iter++) {
@@ -675,9 +675,9 @@ bool pof::ReportsDialog::LoadProductSoldForMonth()
 	}
 
 	auto& report = *mListReport;
-	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, 200);
-	report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, 200);
+	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Quantity", wxLIST_FORMAT_LEFT, FromDIP(200));
+	report.AppendColumn("Amount", wxLIST_FORMAT_LEFT, FromDIP(200));
 
 	size_t i = 0;
 	for (auto iter = data->begin(); iter != data->end(); iter++) {

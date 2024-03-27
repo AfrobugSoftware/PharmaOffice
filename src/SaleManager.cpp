@@ -1353,3 +1353,42 @@ std::optional<std::pair<pof::base::currency, pof::base::currency>> pof::SaleMana
 	return std::nullopt;
 }
 
+std::optional<pof::base::data> pof::SaleManager::GetMonthlySales(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT s.sale_date, SumCost(s.product_ext_price) 
+		FROM sales s
+		WHERE Years(s.sale_date) = ?
+		GROUP BY Months(s.sale_date)
+		ORDER BY s.sale_date DESC;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		std::uint64_t t = wxGetApp().bUseSavedCost ? 2 : 1;
+		auto year = date::floor<date::years>(dt);
+		auto yr = static_cast<std::uint64_t>(year.time_since_epoch().count());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(yr));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			pof::base::data::datetime_t,
+			pof::base::data::currency_t
+		>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.reserve(rel->size());
+		for (const auto& tup : rel.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+		}
+		return ret;
+	}
+	return std::nullopt;
+}
+

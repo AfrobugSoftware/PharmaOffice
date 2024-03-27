@@ -304,7 +304,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 		CategorySimpleDataset* dataset = new CategorySimpleDataset(dates.data(), dates.size());
 		dataset->AddSerie(wxT("Amount"), amounts.data(), amounts.size());
 
-		BarType* barType = new NormalBarType(30);
+		BarType* barType = new NormalBarType(FromDIP(30));
 		dataset->SetRenderer(new BarRenderer(barType));
 
 		LineMarker* lineMarker = new LineMarker(wxPen(wxColour(*wxRED), 1, wxPENSTYLE_SHORT_DASH));

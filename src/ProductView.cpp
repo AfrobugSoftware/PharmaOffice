@@ -1829,12 +1829,13 @@ void pof::ProductView::OnEndOfMonth(wxCommandEvent& evt)
 
 void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 {
+	wxBusyCursor cursor;
 	if (wxGetApp().mProductManager.GetProductData()->GetDatastore().empty()) {
 		wxMessageBox("Store is empty, please add products to see summary", "Products", wxICON_INFORMATION | wxOK);
 		return;
 	}
 
-	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, FromDIP(wxSize(791, 513)), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, FromDIP(wxSize(991, 513)), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1875,7 +1876,8 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	wxPanel* cp2 = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bS3;
 	bS3 = new wxBoxSizer(wxHORIZONTAL);
-
+	
+	bS3->AddStretchSpacer();
 	//total product
 	wxPanel* tpp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
 	wxBoxSizer* tpps;
@@ -2006,6 +2008,8 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 		bS3->Add(tscp, 0, wxALL, FromDIP(5));
 	}
 
+	bS3->AddStretchSpacer();
+
 	cp2->SetSizer(bS3);
 	bS3->SetSizeHints(cp2);
 
@@ -2047,10 +2051,68 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	mode->SetAllowHorizontalZoom(true);
 	mode->SetAllowVertialZoom(true);
 	mChartPanel->SetMode(mode);
-
-
+	
+	bS4->AddStretchSpacer();
 	bS4->Add(mChartPanel, 0, wxALL | wxEXPAND, FromDIP(5));
 
+
+	cats = { "JAN", "FEB", "MAR", "APL", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+	amounts.clear();
+	amounts.resize(cats.size());
+	std::ranges::fill(amounts, 0.0);
+
+	CategorySimpleDataset* mthdataset = new CategorySimpleDataset(cats.data(), cats.size());
+	auto monthsales = wxGetApp().mSaleManager.GetMonthlySales(dt);
+	
+	for (const auto& i : monthsales.value_or(pof::base::data{})) {
+		spdlog::info("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(i.first[0]) + date::days(1));
+		auto month = date::floor<date::months>(boost::variant2::get<pof::base::data::datetime_t>(i.first[0]) + date::days(1));
+		int monthCount = month.time_since_epoch().count() % 12;
+		amounts[monthCount] = static_cast<double>(boost::variant2::get<pof::base::currency>(i.first[1]));
+	}
+	mthdataset->AddSerie(wxT("Amount"), amounts.data(), amounts.size());
+	BarType* barType = new NormalBarType(FromDIP(20));
+	mthdataset->SetRenderer(new BarRenderer(barType));
+	BarPlot* mthplot = new BarPlot();
+
+	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
+	leftAxis->SetMargins(5, 0);
+	leftAxis->SetLabelTextColour(*wxBLACK);
+	leftAxis->SetLabelPen(wxPen(*wxBLACK));
+	leftAxis->SetMajorGridlinePen(wxPen(*wxBLACK));
+	mthplot->AddAxis(leftAxis);
+
+	CategoryAxis* bottomAxis = new CategoryAxis(AXIS_BOTTOM);
+	bottomAxis->SetMargins(5, 5);
+	bottomAxis->SetLabelTextColour(*wxBLACK);
+	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
+	mthplot->AddAxis(bottomAxis);
+
+	mthplot->AddDataset(mthdataset);
+
+	mthplot->SetBackground(new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+
+	mthplot->LinkDataHorizontalAxis(0, 0);
+
+	mthplot->LinkDataVerticalAxis(0, 0);
+	Legend* mthlegend = new Legend(wxCENTER, wxRIGHT, new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+	mthplot->SetLegend(mthlegend);
+
+	Chart* mthCurrentChart = new Chart(mthplot, new Header(fmt::format("Monthly sales for {:%Y}", dt)));
+
+	wxChartPanel* mChartPanel2 = new wxChartPanel(cp3, wxID_ANY, NULL, wxDefaultPosition, FromDIP(wxSize(400, 400))); // pie chart for reveneue break down
+	mChartPanel2->SetChart(mthCurrentChart);
+#ifdef wxUSE_GRAPHICS_CONTEXT
+	mChartPanel2->SetAntialias(true);
+	mChartPanel2->SetWindowStyle(wxNO_BORDER);
+#endif
+	ZoomMode* mode2 = new ChartZoom();
+	mode2->SetAllowHorizontalZoom(true);
+	mode2->SetAllowVertialZoom(true);
+	mChartPanel2->SetMode(mode2);
+
+	bS4->Add(mChartPanel2, 0, wxALL | wxEXPAND, FromDIP(5));
+	bS4->AddStretchSpacer();
 
 	cp3->SetSizer(bS4);
 	bS4->SetSizeHints(cp3);
