@@ -12,6 +12,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/wxWidgets-3.2.2.1)
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/OpenXLSX)
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/wxFreeChart)
 
+add_definitions(-DWXUSINGDLL=1) 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 add_definitions(${CONAN_DEFINES})

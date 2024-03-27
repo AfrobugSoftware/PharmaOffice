@@ -1833,8 +1833,8 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 		wxMessageBox("Store is empty, please add products to see summary", "Products", wxICON_INFORMATION | wxOK);
 		return;
 	}
-		
-	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, FromDIP(wxSize(791, 413)), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+
+	wxDialog dialog(this, wxID_ANY, "Store summary", wxDefaultPosition, FromDIP(wxSize(791, 513)), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
 	//dialog.SetSizeHints(wxDefaultSize, wxDefaultSize);
 	dialog.SetBackgroundColour(*wxWHITE);
@@ -1886,7 +1886,7 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	totalProductslabel->SetFont(descripFont);
 
 	auto totalProducts = new wxStaticText(tpp, wxID_ANY, fmt::format("{:d}",
-			wxGetApp().mProductManager.GetProductData()->GetDatastore().size()), wxDefaultPosition, wxDefaultSize, 0);
+		wxGetApp().mProductManager.GetProductData()->GetDatastore().size()), wxDefaultPosition, wxDefaultSize, 0);
 	totalProducts->Wrap(-1);
 	totalProducts->SetFont(valueFont);
 
@@ -1956,7 +1956,7 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	//total rev
 	auto dt = pof::base::data::clock_t::now();
 	auto rev = wxGetApp().mSaleManager.GetYearTotalRevenue(dt);
-	if (rev){
+	if (rev) {
 
 		wxPanel* revp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
 		wxBoxSizer* revps;
@@ -2010,6 +2010,51 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	bS3->SetSizeHints(cp2);
 
 	bSizer2->Add(cp2, 0, wxEXPAND | wxALL, 5);
+
+	wxPanel* cp3 = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* bS4 = new wxBoxSizer(wxHORIZONTAL);
+
+	std::vector<wxString> cats = { "Profit", "Cost" };
+	CategorySimpleDataset* dataset = new CategorySimpleDataset(cats.data(), cats.size());
+	auto totalPL = wxGetApp().mSaleManager.GetTotalPL(dt);
+	auto pair = totalPL.value_or(std::make_pair(pof::base::currency{}, pof::base::currency{}));
+	std::vector<double> amounts = { static_cast<double>(pair.first), static_cast<double>(pair.second) };
+	dataset->AddSerie(wxT("Amount"), amounts.data(), amounts.size());
+	wxColour carr[2] = { *wxGREEN, *wxRED };
+	ColorScheme scheme(carr, 2);
+	dataset->SetRenderer(new CategoryRenderer(scheme));
+
+	PiePlot* plot = new PiePlot();
+	plot->SetDataset(dataset);
+	plot->SetUsedSerie(0);
+	plot->SetColorScheme(&scheme);
+	//plot->Set3DView(true);
+	plot->SetBackground(new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+
+	Legend* legend = new Legend(wxCENTER, wxRIGHT, new FillAreaDraw(*wxTRANSPARENT_PEN, *wxTRANSPARENT_BRUSH));
+	plot->SetLegend(legend);
+
+	const auto header = new Header(fmt::format("P/L for {:%Y}", dt));
+	Chart* mCurrentChart = new Chart(plot, header);
+
+	wxChartPanel* mChartPanel = new wxChartPanel(cp3, wxID_ANY, NULL, wxDefaultPosition, FromDIP(wxSize(400, 400))); // pie chart for reveneue break down
+	mChartPanel->SetChart(mCurrentChart);
+#ifdef wxUSE_GRAPHICS_CONTEXT
+	mChartPanel->SetAntialias(true);
+	mChartPanel->SetWindowStyle(wxNO_BORDER);
+#endif
+	ZoomMode* mode = new ChartZoom();
+	mode->SetAllowHorizontalZoom(true);
+	mode->SetAllowVertialZoom(true);
+	mChartPanel->SetMode(mode);
+
+
+	bS4->Add(mChartPanel, 0, wxALL | wxEXPAND, FromDIP(5));
+
+
+	cp3->SetSizer(bS4);
+	bS4->SetSizeHints(cp3);
+	bSizer2->Add(cp3, 0, wxEXPAND | wxALL, 5);
 
 
 	m_panel1->SetSizer(bSizer2);

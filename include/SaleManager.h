@@ -117,6 +117,7 @@ namespace pof {
 		std::optional<pof::base::data> GetWeeklySales(const pof::base::data::datetime_t& dt);
 		std::optional<pof::base::data> GetSalesFor(const std::vector<pof::base::data::duuid_t>& prods,
 			const std::pair<pof::base::data::datetime_t, pof::base::data::datetime_t>& dts);
+		std::optional<std::pair<pof::base::currency, pof::base::currency>> GetTotalPL(const pof::base::data::datetime_t& dt);
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;
@@ -130,6 +131,8 @@ namespace pof {
 		static void DBFuncYear(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
+		static void DBFuncSubCost(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
 
 		pof::base::database::stmt_t mLoadProductHistory = nullptr;
 		pof::base::database::stmt_t mStoreSale = nullptr;

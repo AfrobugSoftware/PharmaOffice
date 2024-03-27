@@ -442,7 +442,13 @@ void pof::SaleManager::CreateDatabaseFunctions()
 	yearfunc.arg_count = 1;
 	yearfunc.func = &pof::SaleManager::DBFuncYear;
 
+	pof::base::func_aggregate subcostfunc;
+	subcostfunc.name = "SubCost"s;
+	subcostfunc.arg_count = 2;
+	subcostfunc.func = &pof::SaleManager::DBFuncSubCost;
+
 	mLocalDatabase->register_func(std::move(yearfunc));
+	mLocalDatabase->register_func(std::move(subcostfunc));
 }
 
 //add the current sale items to cost
@@ -1209,6 +1215,15 @@ void pof::SaleManager::DBFuncYear(pof::base::database::conn_t conn, int arg, pof
 	pof::base::database::result(conn, static_cast<std::uint64_t>(year.time_since_epoch().count()));
 }
 
+void pof::SaleManager::DBFuncSubCost(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	pof::base::currency cur1 = pof::base::database::arg<pof::base::currency>(conn, values);
+	pof::base::currency cur2 = pof::base::database::arg<pof::base::currency, 1>(conn, values);
+	pof::base::currency ret = cur1 - cur2;
+
+	pof::base::database::result(conn, ret);
+}
+
 std::optional<pof::base::data> pof::SaleManager::GetWeeklySales(const pof::base::data::datetime_t& dt)
 {
 	if(mLocalDatabase){
@@ -1288,6 +1303,52 @@ std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<p
 			ret.emplace(pof::base::make_row_from_tuple(std::move(tup)));
 		}
 		return ret;
+	}
+	return std::nullopt;
+}
+
+std::optional<std::pair<pof::base::currency, pof::base::currency>> pof::SaleManager::GetTotalPL(const pof::base::data::datetime_t& dt)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT  s.product_ext_price,
+		CASE 
+		WHEN :t = 1 THEN p.cost_price
+		WHEN :t = 2 THEN ac.cost
+		END AS cost, s.product_quantity
+		FROM sales s, products p, sale_cost ac
+		WHERE Years(s.sale_date) = :dt AND s.sale_payment_type IS NOT 'Returned' AND
+		CASE
+		WHEN :t = 1 THEN  p.uuid = s.product_uuid 
+		WHEN :t = 2 THEN  ac.puid = s.product_uuid
+		END;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		std::uint64_t t = wxGetApp().bUseSavedCost ? 2 : 1;
+		auto year = date::floor<date::years>(dt);
+		auto yr = static_cast<std::uint64_t>(year.time_since_epoch().count());
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(yr, t), {"dt", "t"});
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<pof::base::currency, pof::base::currency, std::uint64_t>(*stmt);
+		if (!rel) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		
+		pof::base::currency totalP;
+		pof::base::currency totalC;
+		for (const auto& tup : rel.value()) {
+			auto temp = std::get<1>(tup) * static_cast<double>(std::get<2>(tup));
+			auto p = std::get<0>(tup) - temp;
+			totalP += p;
+			totalC += std::get<1>(tup);
+		}
+		return std::make_pair(totalP, totalC);
 	}
 	return std::nullopt;
 }

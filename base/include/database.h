@@ -476,13 +476,16 @@ namespace pof {
 				{
 					sqlite3_result_double(conn, ret);
 				}
-				else if constexpr (std::is_same_v<T, pof::base::data::text_t> || std::is_same_v<T, pof::base::data::blob_t>) {
+				else if constexpr (std::is_same_v<T, pof::base::data::text_t>) {
 					if (ret.empty()) {
 						sqlite3_result_null(conn);
 					}
 					else {
 						sqlite3_result_text(conn, ret.data(), ret.size(), SQLITE_TRANSIENT);
 					}
+				}
+				else if constexpr (std::is_same_v<T, pof::base::data::blob_t>) {
+					sqlite3_result_blob(conn, ret.data(), ret.size(), SQLITE_TRANSIENT);
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::datetime_t>)
 				{
@@ -493,7 +496,7 @@ namespace pof {
 					sqlite3_result_blob(conn, reinterpret_cast<void*>(ret.data), ret.size(), SQLITE_TRANSIENT);
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::currency_t>) {
-					sqlite3_result_blob(conn, ret.data().data(), ret.size(), SQLITE_TRANSIENT);
+					sqlite3_result_blob(conn, ret.data().data(), ret.data().size(), SQLITE_TRANSIENT);
 				
 				}
 				else if constexpr (std::is_enum_v<T>) {
@@ -545,7 +548,7 @@ namespace pof {
 						sqlite3_result_error(conn, "INVALID BLOB TYPE", 503);
 					}
 					else {
-						auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+						const auto ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
 						if (ptr) {
 							const size_t count = sqlite3_value_bytes(vals[P]);
 							return pof::base::data::blob_t(ptr, ptr + count);
@@ -563,7 +566,7 @@ namespace pof {
 					return pof::base::data::datetime_t(pof::base::data::clock_t::duration(rep));
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::duuid_t>) {
-					auto ptr = reinterpret_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+					auto ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
 					pof::base::data::duuid_t duid = {};
 					if (ptr) {
 						std::copy(ptr, ptr + duid.size(), duid.begin());
@@ -571,10 +574,10 @@ namespace pof {
 					return duid;
 				}
 				else if constexpr (std::is_same_v<T, pof::base::data::currency_t>) {
-					auto ptr = reinterpret_cast<pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
+					auto ptr = static_cast<const pof::base::data::blob_t::value_type*>(sqlite3_value_blob(vals[P]));
 					pof::base::data::currency_t cur{};
 					if (ptr) {
-						std::copy(ptr, pof::base::currency::max, cur.data().begin());
+						std::copy(ptr, ptr + pof::base::currency::max, cur.data().begin());
 					}
 					return cur;
 				}

@@ -26,6 +26,7 @@
 #include <wx/srchctrl.h>
 #include <wx/infoBar.h>
 
+//#define WXUSINGDLL 
 #include "Data.h"
 #include <wx/bars/barplot.h>
 #include <wx/axis/numberaxis.h>
@@ -39,7 +40,7 @@
 #include <wx/axis/juliandateaxis.h>
 #include <wx/xy/xylinerenderer.h>
 #include <wx/axis/dateaxis.h>
-
+#include <wx/pie/pieplot.h>
 #include <boost/container/flat_map.hpp>
 
 
