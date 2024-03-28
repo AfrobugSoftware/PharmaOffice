@@ -123,6 +123,8 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	wxIcon appIcon;
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	SetIcon(appIcon);
+
+	wxGetApp().mPrintManager->printSig.connect(std::bind_front(&pof::OrderListView::OnPrintComplete, this));
 }
 
 pof::OrderListView::~OrderListView()
@@ -242,7 +244,21 @@ void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
 		wxMessageBox("Order list is empty", "Order list", wxICON_WARNING | wxOK);
 		return;
 	}
+	wxIcon cop;
+	cop.CopyFromBitmap(wxArtProvider::GetBitmap("checkout"));
+	wxBusyInfo info
+	(
+		wxBusyInfoFlags()
+		.Parent(this)
+		.Icon(cop)
+		.Title("Printing order")
+		.Text("Please wait...")
+		.Foreground(*wxBLACK)
+		.Background(*wxWHITE)
+		.Transparency(4 * wxALPHA_OPAQUE / 5)
+	);
 
+	wxGetApp().mPrintManager->PrintOrderList(this);
 }
 
 void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
@@ -336,8 +352,17 @@ void pof::OrderListView::OnPrintComplete(bool status, size_t printstate)
 	case pof::PrintManager::ORDERlIST:
 	{
 		//mark list as ordered
+		auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+		//mark everything as ordered
+		wxBusyCursor cursor;
+		for (auto& o : datastore) {
+			if (boost::variant2::get<std::uint64_t>(o.first[pof::ProductManager::ORDER_STATE]) ==
+				pof::ProductManager::ORDERED) continue;
 
-
+			o.first[pof::ProductManager::ORDER_STATE] = static_cast<std::uint64_t>(pof::ProductManager::ORDERED);
+			wxGetApp().mProductManager.UpdateOrderState(boost::variant2::get<pof::base::data::duuid_t>(o.first[pof::ProductManager::ORDER_PRODUCT_UUID]),
+				static_cast<std::uint64_t>(pof::ProductManager::ORDERED));
+		}
 	}
 		break;
 	default:

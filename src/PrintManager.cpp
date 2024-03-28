@@ -19,8 +19,8 @@ pof::PrintManager::PrintManager()
 
 pof::PrintManager::~PrintManager()
 {
-	if(po != nullptr) delete po;
-	if(po2 != nullptr) delete po2;
+	//(po != nullptr) delete po;
+	//if(po2 != nullptr) delete po2;
 }
 
 void pof::PrintManager::PrinterSetup()
