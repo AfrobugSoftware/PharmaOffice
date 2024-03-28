@@ -194,6 +194,7 @@ void pof::ProductView::ReloadProductView()
 	mActiveCategory.clear();
 	m_searchCtrl1->SetDescriptiveText("Search for products");
 	wxGetApp().mProductManager.GetProductData()->Reload();
+	UpdateCategoryTool(""s);
 }
 
 void pof::ProductView::CreateAccTable()
@@ -2647,6 +2648,7 @@ void pof::ProductView::OnCategoryActivated(const std::string& name)
 
 		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products in {}", name));
+		UpdateCategoryTool(name);
 	}
 	else {
 		if (!mActiveCategory.empty() && name.empty()) {
@@ -2665,6 +2667,7 @@ void pof::ProductView::OnCategoryRemoved(const std::string& name)
 	if (mActiveCategory == name) {
 		wxGetApp().mProductManager.GetProductData()->Reload();
 		mActiveCategory.clear();
+		UpdateCategoryTool(""s);
 	}
 
 	wxGetApp().mProductManager.RemoveCategory(name);
@@ -2685,7 +2688,18 @@ void pof::ProductView::OnCategoryEdited(const std::string& oldName, const std::s
 	v[pof::ProductManager::CATEGORY_NAME] = newName;
 	iter->second.second.set(pof::ProductManager::CATEGORY_NAME); //set update to update database
 	wxGetApp().mProductManager.UpdateCategory(iter);
+	if (mActiveCategory == oldName)
+	{
+		mActiveCategory = newName;
+		UpdateCategoryTool(newName);
+	}
+}
 
+void pof::ProductView::UpdateCategoryTool(const std::string& name)
+{
+	mCatTextCtrl->SetLabelText(name);
+	mCatNameItem->SetMinSize(FromDIP(mCatTextCtrl->GetSize()));
+	m_auiToolBar2->Realize();
 }
 
 void pof::ProductView::CreateDataView()
@@ -2781,7 +2795,12 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("pen"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
-
+	
+	m_auiToolBar2->AddStretchSpacer();
+	mCatTextCtrl = new wxStaticText(m_auiToolBar2, wxID_ANY, wxEmptyString);
+	mCatTextCtrl->SetBackgroundColour(*wxWHITE);
+	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
+	
 	m_auiToolBar2->Realize();
 	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(- 1), FromDIP(30)).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }

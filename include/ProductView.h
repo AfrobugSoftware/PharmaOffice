@@ -120,6 +120,7 @@ namespace pof
 		wxAuiToolBarItem* mReportItem = nullptr;
 		wxAuiToolBarItem* mFuncDropItem = nullptr;
 		wxAuiToolBarItem* mChartsDropItem = nullptr;
+		wxAuiToolBarItem* mCatNameItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;
@@ -137,7 +138,7 @@ namespace pof
 		wxInfoBar* mInfoBar = nullptr;
 		std::string mActiveCategory;
 		pof::SupplierView* mSupplierView = nullptr;
-
+		wxStaticText* mCatTextCtrl = nullptr;
 		//attibutes
 		std::shared_ptr<wxDataViewItemAttr> mUpdatedAttr;
 		std::set<wxDataViewItem> mSelections;
@@ -238,6 +239,7 @@ namespace pof
 		void OnCategoryActivated(const std::string& name);
 		void OnCategoryRemoved(const std::string& name);
 		void OnCategoryEdited(const std::string& oldName, const std::string& newName);
+		void UpdateCategoryTool(const std::string& name);
 	protected:
 		void CreateDataView();
 		void CreateToolBar();

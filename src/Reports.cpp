@@ -407,6 +407,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		}
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
+		mTools->Realize();
 
 		return true;
 	}
@@ -539,6 +540,7 @@ bool pof::ReportsDialog::LoadInventoryMonth()
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
+		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;
@@ -592,6 +594,7 @@ bool pof::ReportsDialog::LoadProfitLoss()
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
+		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;
@@ -669,6 +672,7 @@ bool pof::ReportsDialog::LoadProductSoldForMonth()
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
+		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;

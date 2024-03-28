@@ -15,7 +15,7 @@ END_EVENT_TABLE()
 
 pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSize(FromDIP(size));
+	this->SetSize(FromDIP(wxSize(991, 513)));
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;
@@ -27,9 +27,10 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( FromDIP(wxSize( -1,40 )) );
-	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
 	
 	mTopTools->AddStretchSpacer();
+	mTopTools->AddSeparator();
+	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
 	mTopTools->AddTool(ID_CLEAR_ORDERLIST, wxT("Clear all"), wxArtProvider::GetBitmap(wxART_NEW, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Clear order list");
 	m_tool11 = mTopTools->AddTool( ID_PRINT_ORDER, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
@@ -41,7 +42,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 	
-	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER|wxTAB_TRAVERSAL );
+	m_panel4 = new wxPanel( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER|wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxHORIZONTAL );
 	
@@ -246,7 +247,10 @@ void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
 
 void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
 {
-	wxMenu* menu = new wxMenu;
+	auto item = mOrderView->GetSelection();
+	if (!item.IsOk()) return;
+
+ 	wxMenu* menu = new wxMenu;
 	auto remv = menu->Append(ID_REMOVE_ORDER, "Remove Order");
 	remv->SetBackgroundColour(*wxWHITE);
 	//remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
