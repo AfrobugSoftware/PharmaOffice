@@ -460,7 +460,7 @@ size_t pof::Printout::WriteOrderListSmall()
 	auto dc = GetDC();
 
 	int border = 0;
-	int xPos = leftMargin, yPos = topMargin;
+	int xPos = leftMargin, yPos = topMargin, xExtent = 0, yExtent = 18;;
 	int lineLength = m_coord_system_width;
 
 	int lineHeight = 18;
@@ -469,12 +469,48 @@ size_t pof::Printout::WriteOrderListSmall()
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
 
 	dc->SetFont(font);
-
-	wxCoord xExtent = 0, yExtent = 0;
-	dc->GetTextExtent("X", &xExtent, &yExtent);
-	lineHeight = yExtent;
-
 	
+	//tite
+	wxRect rect(xPos, yPos, lineLength, lineHeight - border);
+
+
+
+	dc->DrawLabel("Qty Product", rect, wxALIGN_LEFT);
+	dc->DrawLabel("Sub-amount", rect, wxALIGN_RIGHT);
+
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(xPos + border, yPos + border));
+	auto& order = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+
+	pof::base::currency totalAmount;
+	for (auto& o : order) {
+		if (boost::variant2::get<std::uint64_t>(o.first[pof::ProductManager::ORDER_STATE]) ==
+			pof::ProductManager::ORDERED) continue;
+
+		auto& name = boost::variant2::get<pof::base::data::text_t>(o.first[pof::ProductManager::ORDER_PRODUCT_NAME]);
+		auto& quan = boost::variant2::get<std::uint64_t>(o.first[pof::ProductManager::ORDER_QUANTITY]);
+		auto cost = (boost::variant2::get<pof::base::currency>(o.first[pof::ProductManager::ORDER_COST]) * static_cast<double>(quan));
+		
+		auto quantext = fmt::to_string(quan);
+
+		auto productText = fmt::format("{:d} {}", quan, name);
+		auto amountText = fmt::format("{:cu}", cost);
+
+		dc->GetTextExtent(amountText, &xExtent, &yExtent);
+		int xSize = m_coord_system_width - xExtent - 10;
+		dc->SetClippingRegion(wxRect{ xPos, yPos, xSize, lineHeight });
+
+		dc->DrawText(productText, { xPos, yPos });
+
+		dc->DestroyClippingRegion();
+
+		dc->DrawText(amountText, xPos + xSize + 10, yPos);
+
+		totalAmount += cost;
+		yPos += lineHeight + 2;
+		rect.SetPosition(wxPoint(xPos + border, yPos + border));
+
+	}
 
 
 	return yPos;
