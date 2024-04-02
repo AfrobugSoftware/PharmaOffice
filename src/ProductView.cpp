@@ -2077,14 +2077,14 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	BarPlot* mthplot = new BarPlot();
 
 	NumberAxis* leftAxis = new NumberAxis(AXIS_LEFT);
-	leftAxis->SetMargins(5, 0);
+	leftAxis->SetMargins(FromDIP(5), FromDIP(0));
 	leftAxis->SetLabelTextColour(*wxBLACK);
 	leftAxis->SetLabelPen(wxPen(*wxBLACK));
 	leftAxis->SetMajorGridlinePen(wxPen(*wxBLACK));
 	mthplot->AddAxis(leftAxis);
 
 	CategoryAxis* bottomAxis = new CategoryAxis(AXIS_BOTTOM);
-	bottomAxis->SetMargins(5, 5);
+	bottomAxis->SetMargins(FromDIP(5), FromDIP(5));
 	bottomAxis->SetLabelTextColour(*wxBLACK);
 	bottomAxis->SetLabelPen(wxPen(*wxBLACK));
 	mthplot->AddAxis(bottomAxis);
@@ -2117,14 +2117,14 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 
 	cp3->SetSizer(bS4);
 	bS4->SetSizeHints(cp3);
-	bSizer2->Add(cp3, 0, wxEXPAND | wxALL, 5);
+	bSizer2->Add(cp3, 0, wxEXPAND | wxALL, FromDIP(5));
 
 
 	m_panel1->SetSizer(bSizer2);
 	m_panel1->Layout();
 	bSizer2->Fit(m_panel1);
 
-	bSizer1->Add(m_panel1, 1, wxEXPAND | wxALL, 5);
+	bSizer1->Add(m_panel1, 1, wxEXPAND | wxALL, FromDIP(5));
 
 	d->SetSizer(bSizer1);
 	d->Layout();
