@@ -11,6 +11,8 @@
 #include <wx/infobar.h>
 #include <wx/creddlg.h>
 #include <wx/fontdlg.h>
+#include <wx/dir.h>
+
 
 #include "AuiTheme.h"
 #include "LogSink.h"
@@ -23,6 +25,7 @@
 #include "PrescriptionView.h"
 #include "PatientView.h"
 #include "PoisonBookView.h"
+#include "autocapture.h"
 
 #include <Data.h>
 #include <data_tuple.h>
@@ -97,6 +100,8 @@ namespace pof {
 			ID_IMPORT_FORMULARY,
 			ID_EXPORT_FORMULARY,
 			ID_CHANGE_FONT,
+			ID_SCREENSHOT,
+			ID_CAPTURE_CONTROLS,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -150,6 +155,8 @@ namespace pof {
 		void OnRollbackData(wxCommandEvent& evt);
 		void OnImportFormulary(wxCommandEvent& evt);
 		void OnExportFormulary(wxCommandEvent& evt);
+		void OnScreenShot(wxCommandEvent& evt);
+		void OnCaptureAllControls(wxCommandEvent& evt);
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);

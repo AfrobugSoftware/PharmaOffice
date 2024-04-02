@@ -27,6 +27,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_IMPORT_FORMULARY, pof::MainFrame::OnImportFormulary)
 	EVT_MENU(pof::MainFrame::ID_EXPORT_FORMULARY, pof::MainFrame::OnExportFormulary)
 	EVT_MENU(pof::MainFrame::ID_CHANGE_FONT, pof::MainFrame::OnChangeFont)
+	EVT_MENU(pof::MainFrame::ID_SCREENSHOT, pof::MainFrame::OnScreenShot)
+	EVT_MENU(pof::MainFrame::ID_CAPTURE_CONTROLS, pof::MainFrame::OnCaptureAllControls)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -52,6 +54,7 @@ pof::MainFrame::MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& positi
 	CreateViews();
 	CreateModules();
 	CreateImageList();
+	CreateTheAcceleratorTable();
 	//CreateStatusBar();
 	//SetIcon(wxArtProvider::GetIcon("PHARMAOFFICE"));
 	mAuiManager.Update();
@@ -189,6 +192,9 @@ void pof::MainFrame::CreateMenuBar()
 	//about
 	Menus[7]->Append(ID_MENU_HELP_SETTINGS, "Settings", nullptr);
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
+#ifdef _DEBUG
+	Menus[7]->Append(ID_SCREENSHOT, "Screenshot", nullptr);
+#endif
 
 	wxMenuBar* bar = new wxMenuBar(MenuCount, Menus.data(), MenuTitle.data());
 	SetMenuBar(bar);
@@ -204,6 +210,16 @@ void pof::MainFrame::CreateStatusBar()
 
 void pof::MainFrame::CreateTheAcceleratorTable()
 {
+#ifdef _DEBUG
+//wxAcceleratorEntry entries[1];
+	std::array<wxAcceleratorEntry, 2> entries;
+	entries[0].Set(wxACCEL_CTRL, (int)'X', ID_SCREENSHOT);
+	entries[1].Set(wxACCEL_CTRL, (int)'P', ID_CAPTURE_CONTROLS);
+
+
+	wxAcceleratorTable accel(entries.size(), entries.data());
+	this->SetAcceleratorTable(accel);
+#endif // _DEBUG
 
 }
 
@@ -932,6 +948,7 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 	}
 	else {
 		wxMessageBox(fmt::format("Successfully roll back database to {}", fullPath.string()), "Roll back data", wxICON_INFORMATION | wxOK);
+		wxMessageBox("Restart application to effect rollback", "Rollback", wxICON_WARNING | wxOK);
 	}
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Rolled back database");
 }
@@ -1286,6 +1303,57 @@ void pof::MainFrame::OnExportFormulary(wxCommandEvent& evt)
 	catch (const std::exception& exp) {
 		spdlog::error(exp.what());
 	}
+}
+
+void pof::MainFrame::OnScreenShot(wxCommandEvent& evt)
+{
+	wxScreenDC dcScreen;
+
+	// Get the size of the screenDC
+	wxCoord screenWidth, screenHeight;
+	dcScreen.GetSize(&screenWidth, &screenHeight);
+
+	wxBitmap fullscreen(1, 1);
+	AutoCaptureMechanism::Capture(&fullscreen, 0, 0, screenWidth, screenHeight);
+
+	AutoCaptureMechanism::Save(&fullscreen, wxT("fullscreen"));
+
+	wxMessageBox(_("A screenshot of the entire screen was saved as:\n\n  ")
+		+ AutoCaptureMechanism::GetDefaultDirectoryAbsPath() + wxT("fullscreen.png"),
+		_("Full screen capture"), wxICON_INFORMATION | wxOK, this);
+}
+
+void pof::MainFrame::OnCaptureAllControls(wxCommandEvent& evt)
+{
+	wxString dir = AutoCaptureMechanism::GetDefaultDirectoryAbsPath();
+
+	// check if there are other screenshots taken before
+	if (wxFileName::DirExists(dir))
+	{
+		int choice = wxMessageBox(
+			_("It seems that you have already generated some screenshots.\n\nClick YES to delete them all (recommended) or NO to preserve them.\nClick CANCEL to cancel this auto-capture operation."),
+			_("Delete existing screenshots?"),
+			wxYES_NO | wxCANCEL | wxICON_QUESTION, this);
+
+		switch (choice)
+		{
+		case wxYES:
+		{
+			wxArrayString files;
+			wxDir::GetAllFiles(dir, &files, wxT("*.png"), wxDIR_FILES);
+
+			// remove all PNG files from the screenshots folder
+			int n = files.GetCount();
+			for (int i = 0; i < n; ++i)
+				wxRemoveFile(files[i]);
+		}
+		break;
+
+		case wxNO: break;
+		case wxCANCEL: return;
+		}
+	}
+
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

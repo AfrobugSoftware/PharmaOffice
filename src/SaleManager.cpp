@@ -513,9 +513,10 @@ std::optional<pof::base::data> pof::SaleManager::GetProfitloss(const pof::base::
 			}
 		}
 
-		auto month = date::floor<date::months>(dt);
-		auto dur = month.time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(dt) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<
@@ -974,9 +975,10 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 			return std::nullopt;
 		}
 		
-		auto month = date::floor<date::months>(dt);
-		auto dur = month.time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(dt) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
 		assert(status);
 		auto rel = mLocalDatabase->retrive<
 			pof::base::data::duuid_t,
@@ -1310,26 +1312,31 @@ std::optional<pof::base::data> pof::SaleManager::GetSalesFor(const std::vector<p
 std::optional<std::pair<pof::base::currency, pof::base::currency>> pof::SaleManager::GetTotalPL(const pof::base::data::datetime_t& dt)
 {
 	if (mLocalDatabase){
-		constexpr const std::string_view sql = R"(SELECT  s.product_ext_price,
-		CASE 
-		WHEN :t = 1 THEN p.cost_price
-		WHEN :t = 2 THEN ac.cost
-		END AS cost, s.product_quantity
-		FROM sales s, products p, sale_cost ac
-		WHERE Years(s.sale_date) = :dt AND s.sale_payment_type IS NOT 'Returned' AND
-		CASE
-		WHEN :t = 1 THEN  p.uuid = s.product_uuid 
-		WHEN :t = 2 THEN  ac.puid = s.product_uuid
-		END;)";
-		auto stmt = mLocalDatabase->prepare(sql);
-		if (!stmt) {
-			spdlog::error(mLocalDatabase->err_msg());
-			return std::nullopt;
+		std::optional<pof::base::database::stmt_t> stmt = std::nullopt;
+		if (wxGetApp().bUseSavedCost) {
+			constexpr const std::string_view sql = R"(SELECT s.product_ext_price, sc.cost, s.product_quantity 
+			FROM products p, sales s, sale_cost sc
+			WHERE p.uuid = s.product_uuid AND s.uuid = sc.suid AND s.product_uuid = sc.puid AND s.sale_payment_type IS NOT 'Returned' AND  Years(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(sql);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
 		}
-		std::uint64_t t = wxGetApp().bUseSavedCost ? 2 : 1;
+		else {
+			constexpr const std::string_view ss = R"(SELECT s.product_ext_price, p.cost_price, s.product_quantity 
+			FROM products p, sales s
+			WHERE p.uuid = s.product_uuid AND s.sale_payment_type IS NOT 'Returned' AND Years(s.sale_date) = ? ORDER BY s.sale_date;)";
+			stmt = mLocalDatabase->prepare(ss);
+			if (!stmt.has_value()) {
+				spdlog::error(mLocalDatabase->err_msg());
+				return std::nullopt;
+			}
+		}
+
 		auto year = date::floor<date::years>(dt);
 		auto yr = static_cast<std::uint64_t>(year.time_since_epoch().count());
-		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(yr, t), {"dt", "t"});
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(yr));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<pof::base::currency, pof::base::currency, std::uint64_t>(*stmt);

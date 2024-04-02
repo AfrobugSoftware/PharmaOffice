@@ -407,7 +407,8 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		}
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
-		mTools->Realize();
+		mTools->Refresh();
+		//mTools->Realize();
 
 		return true;
 	}
@@ -535,15 +536,19 @@ bool pof::ReportsDialog::LoadInventoryMonth()
 {
 	data = wxGetApp().mProductManager.GetInventoryForMonth(mSelectDay);
 	if(!data.has_value()) return false;
+	std::string tt;
 	if (data->empty()) {
-		std::string tt;
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
-		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;
+	}
+	else {
+		tt = fmt::format("Inventory purchase for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
 	}
 
 	auto& report = *mListReport;
@@ -589,16 +594,22 @@ bool pof::ReportsDialog::LoadProfitLoss()
 {
 	data = wxGetApp().mSaleManager.GetProfitloss(mSelectDay);
 	if (!data.has_value()) return false;
+	
+	std::string tt;
 	if (data->empty()) {
-		std::string tt;
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
-		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;
 	}
+	else {
+		tt = fmt::format("Profit/Loss for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+	}
+
 	auto& report = *mListReport;
 	report.AppendColumn("Date", wxLIST_FORMAT_LEFT, FromDIP(200));
 	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
@@ -667,16 +678,21 @@ bool pof::ReportsDialog::LoadProductSoldForMonth()
 {
 	data = wxGetApp().mSaleManager.GetProductSoldForMonth(mSelectDay);
 	if (!data.has_value()) return false; //this makes no sense
+	std::string tt;
 	if (data->empty()) {
-		std::string tt;
 		tt = fmt::format("No transaction for {:%m/%Y}", mSelectDay);
 		text->SetLabelText(tt);
 		textItem->SetMinSize(text->GetSize());
-		mTools->Realize();
 
 		mBook->SetSelection(REPORT_EMPTY_EOD);
 		return true;
 	}
+	else {
+		tt = fmt::format("Product sold for {:%m/%Y}", mSelectDay);
+		text->SetLabelText(tt);
+		textItem->SetMinSize(text->GetSize());
+	}
+
 
 	auto& report = *mListReport;
 	report.AppendColumn("Product", wxLIST_FORMAT_LEFT, FromDIP(200));
@@ -751,16 +767,12 @@ void pof::ReportsDialog::OnReportSelectSelected(wxListEvent& evt)
 
 void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 {
-	if (mCurReportType == ReportType::EOD) {
-		mSelectDay = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-	}
-	else {
-		auto set = pof::base::data::clock_t::from_time_t(evt.GetDate().GetTicks());
-		set += date::days(2); //correct for time zone,  does not feel like a fix, leap year, looks like it does not account for leap year
-		
-		if (date::floor<date::months>(mSelectDay) == date::floor<date::months>(set)) return;
-		mSelectDay = set;
-	}
+	auto dd = evt.GetDate();
+	std::chrono::month month = static_cast<std::chrono::month>(dd.GetMonth() + 1);
+	std::chrono::year year = static_cast<std::chrono::year>(dd.GetYear());
+	std::chrono::day day = static_cast<std::chrono::day>(dd.GetDay());
+	const std::chrono::year_month_day ymd{ month / day / year};
+	mSelectDay = static_cast<std::chrono::sys_days>(ymd);
 
 	m_panel5->Freeze();
 	mListReport->Freeze();
@@ -1145,13 +1157,18 @@ void pof::ReportsDialog::CreateEODToolBar()
 
 	mTools->AddControl(mSaleIdSearch);
 	mTools->AddControl(new wxButton(mTools, ID_SEARCH_SALEID, "Search"), "Text");
-	mTools->AddStretchSpacer();
 	mTools->AddTool(ID_REMOVE_RETURNS, "Filter returns", wxNullBitmap, "Remove returns from report", wxITEM_CHECK);
 	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxNullBitmap, "Show/Hide the receipt ID", wxITEM_CHECK);
 	mTools->AddSpacer(5);
 	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
-	mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
+
+	auto dd = mEodDate->GetValue();
+	std::chrono::month month = static_cast<std::chrono::month>(dd.GetMonth() + 1);
+	std::chrono::year year = static_cast<std::chrono::year>(dd.GetYear());
+	std::chrono::day day = static_cast<std::chrono::day>(dd.GetDay());
+	const std::chrono::year_month_day ymd{ month / day / year };
+	mSelectDay = static_cast<std::chrono::sys_days>(ymd);
 	mTools->AddControl(mEodDate);
 
 
@@ -1176,7 +1193,14 @@ void pof::ReportsDialog::CreateIMToolBar()
 {
 	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
-	mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
+	//mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
+
+	auto dd = mEodDate->GetValue();
+	std::chrono::month month = static_cast<std::chrono::month>(dd.GetMonth() + 1);
+	std::chrono::year year = static_cast<std::chrono::year>(dd.GetYear());
+	std::chrono::day day = static_cast<std::chrono::day>(dd.GetDay());
+	const std::chrono::year_month_day ymd{ month / day / year };
+	mSelectDay = static_cast<std::chrono::sys_days>(ymd);
 	mTools->AddControl(mEodDate);
 
 	std::string t;
@@ -1194,8 +1218,8 @@ void pof::ReportsDialog::CreateIMToolBar()
 		default:
 			break;
 	}
-	text->SetLabelText(t);
-	textItem->SetMinSize(text->GetSize());
+	//text->SetLabelText(t);
+	//textItem->SetMinSize(text->GetSize());
 }
 
 void pof::ReportsDialog::CreateEmptyEodPage()

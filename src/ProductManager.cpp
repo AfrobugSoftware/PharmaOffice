@@ -2098,9 +2098,8 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data:
 			return std::nullopt;
 		}
 
-		auto dayAhead = date::floor<date::days>(dt);
-		auto day = (dayAhead + date::days(1)).time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(day)));
+		auto days = std::chrono::floor<std::chrono::days>(dt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::int64_t>(days.time_since_epoch().count())));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
@@ -2292,9 +2291,10 @@ std::optional<pof::base::data> pof::ProductManager::GetEndOfMonth(pof::base::dat
 		auto stmt = mLocalDatabase->prepare(sql);
 		assert(stmt);
 
-		auto month = date::floor<date::months>(m);
-		auto dur = month.time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(m) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
 		assert(status);
 
 
@@ -3730,9 +3730,10 @@ std::optional<pof::base::data> pof::ProductManager::GetInventoryForMonth(const p
 			return std::nullopt;
 		}
 
-		auto month = date::floor<date::months>(dt);
-		auto dur = month.time_since_epoch().count();
-		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(month.time_since_epoch().count())));
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(dt) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
 		assert(status);
 
 		auto rel = mLocalDatabase->retrive<

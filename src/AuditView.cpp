@@ -32,11 +32,11 @@ pof::AuditView::~AuditView()
 void pof::AuditView::CreateToolBar()
 {
 	mToolBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mToolBar->SetToolBitmapSize(wxSize(16, 16));
+	mToolBar->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
 
-	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back"), "Backward");
-	mToolBar->AddSpacer(5);
-	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_next"), "Forward");
+	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back", wxART_OTHER, FromDIP(wxSize(16,16))), "Backward");
+	mToolBar->AddSpacer(FromDIP(5));
+	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_next", wxART_OTHER, FromDIP(wxSize(16,16))), "Forward");
 
 	wxArrayString choices;
 	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));
@@ -50,7 +50,7 @@ void pof::AuditView::CreateToolBar()
 
 	mToolBar->AddSeparator();
 	mToolBar->AddStretchSpacer();
-	mFilterType = new wxChoice(mToolBar, ID_FILTER_TYPE, wxDefaultPosition, wxSize(200, -1), choices);
+	mFilterType = new wxChoice(mToolBar, ID_FILTER_TYPE, wxDefaultPosition, FromDIP(wxSize(200, -1)), choices);
 	mFilterType->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
 		wxPaintDC dc(mFilterType);
 	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
@@ -58,7 +58,7 @@ void pof::AuditView::CreateToolBar()
 	dc.SetBrush(*wxWHITE);
 	dc.SetPen(*wxGREY_PEN);
 	dc.DrawRoundedRectangle(rect, 2.0f);
-	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - FromDIP(15), (rect.GetHeight() / 2) - FromDIP(5)));
 	auto sel = mFilterType->GetStringSelection();
 	if (!sel.IsEmpty()) {
 		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
@@ -67,17 +67,17 @@ void pof::AuditView::CreateToolBar()
 	auto text = new wxStaticText(mToolBar, wxID_ANY, "Filter: ");
 	text->SetBackgroundColour(*wxWHITE);
 	mToolBar->AddControl(text);
-	mToolBar->AddSpacer(5);
+	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddControl(mFilterType, "Filter");
-	mToolBar->AddSpacer(5);
+	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddTool(ID_COLOUR_TYPE, "Type Highlight", wxArtProvider::GetBitmap("pen"), "Highlight different audit types", wxITEM_CHECK);
-	mToolBar->AddSpacer(5);
+	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("action_check"), "Apply selected filter");
-	mToolBar->AddSpacer(5);
+	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download"), "Download Audit as EXCEL worksheet");
 
 	mToolBar->Realize();
-	mAuiManager.AddPane(mToolBar, wxAuiPaneInfo().Name("ToolBar").ToolbarPane().Top().MinSize(-1, 30).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	mAuiManager.AddPane(mToolBar, wxAuiPaneInfo().Name("ToolBar").ToolbarPane().Top().MinSize(FromDIP(wxSize(- 1, 30))).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::AuditView::CreateDataView()
@@ -91,13 +91,13 @@ void pof::AuditView::CreateDataView()
 	mDataView->AssociateModel(ad.get());
 	mDataView->SetDoubleBuffered(true);
 	//columns
-	mDataView->AppendTextColumn("Type", pof::AuditManager::AUDIT_TYPE, wxDATAVIEW_CELL_INERT, 100);
-	mDataView->AppendTextColumn("Date", pof::AuditManager::AUDIT_DATE, wxDATAVIEW_CELL_INERT, 100);
-	mDataView->AppendTextColumn("Username", pof::AuditManager::AUDIT_USER_NAME, wxDATAVIEW_CELL_INERT, 100);
+	mDataView->AppendTextColumn("Type", pof::AuditManager::AUDIT_TYPE, wxDATAVIEW_CELL_INERT, FromDIP(100));
+	mDataView->AppendTextColumn("Date", pof::AuditManager::AUDIT_DATE, wxDATAVIEW_CELL_INERT, FromDIP(100));
+	mDataView->AppendTextColumn("Username", pof::AuditManager::AUDIT_USER_NAME, wxDATAVIEW_CELL_INERT, FromDIP(100));
 	mDataView->AppendTextColumn("Audit Log", pof::AuditManager::AUDIT_MESSAGE, wxDATAVIEW_CELL_INERT);
 
-	size->Add(mInfoBar, wxSizerFlags().Expand().Proportion(0).Border(wxALL, 2));
-	size->Add(mDataView, wxSizerFlags().Expand().Proportion(1).Border(wxALL, 2));
+	size->Add(mInfoBar, wxSizerFlags().Expand().Proportion(0).Border(wxALL, FromDIP(2)));
+	size->Add(mDataView, wxSizerFlags().Expand().Proportion(1).Border(wxALL, FromDIP(2)));
 
 	panel->SetSizer(size);
 	size->Fit(panel);

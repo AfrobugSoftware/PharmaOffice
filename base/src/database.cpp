@@ -8,9 +8,10 @@ void pof::base::month_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
 	}
 	std::uint64_t duration = sqlite3_value_int64(vals[0]);
 	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
-	auto month = date::floor<date::months>(tt + date::days(1));
-	sqlite3_result_int64(conn, static_cast<std::int64_t>(month.time_since_epoch().count()));
-	//sqlite3_result_int64(conn, duration);
+	
+	const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(tt) };
+	int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+	sqlite3_result_int64(conn, static_cast<std::uint64_t>(out));
 }
 
 void pof::base::day_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
@@ -21,9 +22,9 @@ void pof::base::day_func(sqlite3_context* conn, int arg, sqlite3_value** vals)
 	}
 	std::uint64_t duration = sqlite3_value_int64(vals[0]);
 	auto tt = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(duration));
-	auto day = std::chrono::duration_cast<date::days>(tt.time_since_epoch());
-	//using the duration would be a better Idea but i have already done the timepoint way way from month
-	sqlite3_result_int64(conn, day.count());
+	auto days = std::chrono::floor<std::chrono::days>(tt);
+
+	sqlite3_result_int64(conn, static_cast<std::int64_t>(days.time_since_epoch().count()));
 }
 
 void pof::base::cost_step_func(sqlite3_context* con, int row, sqlite3_value** vals) {
