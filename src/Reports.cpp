@@ -1152,15 +1152,15 @@ void pof::ReportsDialog::CreateComsumptionPatternToolBar()
 
 void pof::ReportsDialog::CreateEODToolBar()
 {
-	mSaleIdSearch = new wxTextCtrl(mTools, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(300, -1));
+	mSaleIdSearch = new wxTextCtrl(mTools, wxID_ANY, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(300, -1)));
 	mSaleIdSearch->SetHint("Search eod by receipt id");
 
 	mTools->AddControl(mSaleIdSearch);
 	mTools->AddControl(new wxButton(mTools, ID_SEARCH_SALEID, "Search"), "Text");
 	mTools->AddTool(ID_REMOVE_RETURNS, "Filter returns", wxNullBitmap, "Remove returns from report", wxITEM_CHECK);
 	mTools->AddTool(ID_SHOW_SALE_ID, "Receipt ID", wxNullBitmap, "Show/Hide the receipt ID", wxITEM_CHECK);
-	mTools->AddSpacer(5);
-	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mTools->AddSpacer(FromDIP(5));
+	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
 
 	auto dd = mEodDate->GetValue();
@@ -1191,7 +1191,7 @@ void pof::ReportsDialog::CreateEODToolBar()
 
 void pof::ReportsDialog::CreateIMToolBar()
 {
-	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mEodDate = new wxDatePickerCtrl(mTools, ID_EOD_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	mEodDate->SetRange(wxDateTime{}, wxDateTime::Now());
 	//mSelectDay = pof::base::data::clock_t::from_time_t(mEodDate->GetValue().GetTicks());
 
@@ -1233,39 +1233,39 @@ void pof::ReportsDialog::CreateEmptyEodPage()
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer(wxVERTICAL);
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
-	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No transaction available"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m7->SetSizer(bSizer9);
 	m7->Layout();
 	bSizer9->Fit(m7);
-	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, FromDIP(5));
 
 
 	mEmptyEod->SetSizer(bSizer6);
