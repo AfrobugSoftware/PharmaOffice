@@ -1044,10 +1044,10 @@ void pof::PatientView::OnPatientActivated(wxDataViewEvent& evt)
 	mCurrentMedicationView->SetFocus();
 
 	mSPanel->Freeze();
-	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+	mPatientNameText->SetLabelText(fmt::format("Patient Name: {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
-	mDobText->SetLabelText(fmt::format("Date of birth:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_AGE])));
-	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
+	mDobText->SetLabelText(fmt::format("Date of birth: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mGenderText->SetLabelText(fmt::format("Gender: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
 	mPhoneText->SetLabelText(fmt::format("Phone no: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER])));
 	mSPanel->Thaw();
 	mSPanel->Layout();
@@ -1966,10 +1966,10 @@ void pof::PatientView::OnOpenPatient(wxCommandEvent& evt)
 	mCurrentMedicationView->SetFocus();
 
 	mSPanel->Freeze();
-	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+	mPatientNameText->SetLabelText(fmt::format("Patient Name: {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
-	mDobText->SetLabelText(fmt::format("Date of birth:  {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
-	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
+	mDobText->SetLabelText(fmt::format("Date of birth: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mGenderText->SetLabelText(fmt::format("Gender: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
 	mPhoneText->SetLabelText(fmt::format("Phone no: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER])));
 	mSPanel->Thaw();
 	mSPanel->Layout();
@@ -2130,10 +2130,10 @@ void pof::PatientView::OnPatientPinSelected(const pof::base::data::duuid_t& puid
 	mCurrentMedicationView->SetFocus();
 
 	mSPanel->Freeze();
-	mPatientNameText->SetLabelText(fmt::format("Patient Name:  {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
+	mPatientNameText->SetLabelText(fmt::format("Patient Name: {} {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_LAST_NAME]),
 		boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_NAME])));
-	mDobText->SetLabelText(fmt::format("Date of birth:  {:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[pof::PatientManager::PATIENT_AGE])));
-	mGenderText->SetLabelText(fmt::format("Gender:  {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
+	mDobText->SetLabelText(fmt::format("Date of birth: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_AGE])));
+	mGenderText->SetLabelText(fmt::format("Gender: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_GENDER])));
 	mPhoneText->SetLabelText(fmt::format("Phone no: {}", boost::variant2::get<pof::base::data::text_t>(v[pof::PatientManager::PATIENT_PHONE_NUMBER])));
 	mSPanel->Thaw();
 	mSPanel->Layout();

@@ -754,6 +754,76 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 	return true;
 }
 
+void pof::ProductManager::CreateHideTable()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS hidden (uuid blob UNIQUE);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+bool pof::ProductManager::HideProduct(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT OR IGNORE INTO hidden (uuid) VALUES (?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+}
+
+bool pof::ProductManager::ShowProduct(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM hidden WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+}
+
+std::optional<size_t> pof::ProductManager::GetHiddenCount()
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT COUNT(*) FROM hidden;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel->empty() ? std::nullopt : std::make_optional(std::get<0>(*(rel->begin())));
+	}	
+	return std::nullopt;
+}
+
 bool pof::ProductManager::CreateSupplierInvoiceTable()
 {
 	if (mLocalDatabase){

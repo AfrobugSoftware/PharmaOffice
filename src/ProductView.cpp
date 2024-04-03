@@ -62,6 +62,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_INCR_PRODUCT_PRICE, pof::ProductView::OnIncrPrice)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_ACTUAL_STOCK, pof::ProductView::OnDownloadActualStock)
+	EVT_MENU(pof::ProductView::ID_HIDE_PRODUCT, pof::ProductView::OnHideProduct)
 
 	EVT_MENU(pof::ProductView::ID_CHARTS_WEEKLY_SALES, pof::ProductView::OnWeeklySales)
 	EVT_MENU(pof::ProductView::ID_CHARTS_COMPARE_SALES, pof::ProductView::OnCompareSales)
@@ -518,12 +519,14 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, "Increase price", nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
+		auto hi = menu->Append(ID_HIDE_PRODUCT, "Hide product", nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
 	}
 	else {
 		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, fmt::format("Add {:d} products to order list", mSelections.size()), nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, fmt::format("Increase {:d} product prices", mSelections.size()), nullptr);
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
+		auto hide = menu->Append(ID_HIDE_PRODUCT, fmt::format("Hide {:d} products", mSelections.size()), nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
 	}
 	/*orderlist->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY));
@@ -2460,6 +2463,10 @@ void pof::ProductView::OnCompareSales(wxCommandEvent& evt)
 	chart.mCompareSalesArg = std::move(duuids);
 	chart.LoadChart(pof::ChartDialog::COMPARE_SALES);
 	chart.ShowModal();
+}
+
+void pof::ProductView::OnHideProduct(wxCommandEvent& evt)
+{
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)

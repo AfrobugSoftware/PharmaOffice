@@ -653,6 +653,7 @@ void pof::Application::CreateTables()
 	mProductManager.CreateExpiredStockTable();
 	mProductManager.CreateActionTable();
 	mProductManager.CreateSupplierInvoiceTable();
+	mProductManager.CreateHideTable();
 	
 	mSaleManager.CreateSaleTable();
 	mSaleManager.CreateSaveSaleTable();
