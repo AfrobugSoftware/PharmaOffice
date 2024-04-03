@@ -2,14 +2,15 @@
 #include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
-	EVT_TOOL(pof::OrderListView::ID_CLEAR_ORDERLIST, pof::OrderListView::OnClearOrderList)
-	EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
-	EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
-	
-	EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+EVT_TOOL(pof::OrderListView::ID_CLEAR_ORDERLIST, pof::OrderListView::OnClearOrderList)
+EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
+EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
 
-	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
-	EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
+EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+
+EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
+EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
+EVT_MENU(pof::OrderListView::ID_REORDER, pof::OrderListView::OnReorder)
 END_EVENT_TABLE()
 
 
@@ -267,6 +268,13 @@ void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
 	if (!item.IsOk()) return;
 
  	wxMenu* menu = new wxMenu;
+	
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
+	auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+	if (state == static_cast<std::uint64_t>(pof::ProductManager::ORDERED)) {
+		menu->Append(ID_REORDER, "Reorder product", nullptr);
+	}
 	auto remv = menu->Append(ID_REMOVE_ORDER, "Remove Order");
 	remv->SetBackgroundColour(*wxWHITE);
 	//remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
@@ -355,6 +363,7 @@ void pof::OrderListView::OnPrintComplete(bool status, size_t printstate)
 		auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
 		//mark everything as ordered
 		wxBusyCursor cursor;
+		mOrderView->Freeze();
 		for (auto& o : datastore) {
 			if (boost::variant2::get<std::uint64_t>(o.first[pof::ProductManager::ORDER_STATE]) ==
 				pof::ProductManager::ORDERED) continue;
@@ -363,11 +372,28 @@ void pof::OrderListView::OnPrintComplete(bool status, size_t printstate)
 			wxGetApp().mProductManager.UpdateOrderState(boost::variant2::get<pof::base::data::duuid_t>(o.first[pof::ProductManager::ORDER_PRODUCT_UUID]),
 				static_cast<std::uint64_t>(pof::ProductManager::ORDERED));
 		}
+		mOrderView->Thaw();
 	}
 		break;
 	default:
 		break;
 	}
+}
+
+void pof::OrderListView::OnReorder(wxCommandEvent& evt)
+{
+	auto item = mOrderView->GetSelection();
+	if (!item.IsOk()) return;
+
+	mOrderView->Freeze();
+	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
+	auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+	auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+	state = pof::ProductManager::PENDING;
+
+	wxGetApp().mProductManager.UpdateOrderState(uuid, pof::ProductManager::PENDING);
+	mOrderView->Thaw();
 }
 
 void pof::OrderListView::UpdateTexts()

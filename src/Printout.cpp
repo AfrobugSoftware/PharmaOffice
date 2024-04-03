@@ -598,13 +598,13 @@ bool pof::Printout::DrawSalePrint()
 	auto& app = wxGetApp();
 
 	
-	FitThisSizeToPageMargins(wxSize(m_coord_system_width, m_coord_system_height), m_page_setup);
+	FitThisSizeToPageMargins(dc->FromDIP(wxSize(m_coord_system_width, m_coord_system_height)), m_page_setup);
 
 	wxRect fitRect = GetLogicalPageMarginsRect(m_page_setup);
 
 	wxCoord xoff = (fitRect.width - m_coord_system_width) / 2;
 	wxCoord yoff = (fitRect.height - m_coord_system_height) / 2;
-	OffsetLogicalOrigin(xoff, yoff);
+	OffsetLogicalOrigin(dc->FromDIP(xoff), dc->FromDIP(yoff));
 
 	dc->SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 	dc->SetBrush(*wxTRANSPARENT_BRUSH);

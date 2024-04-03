@@ -52,6 +52,7 @@ namespace pof
 			ID_PLACE,
 			ID_ADD_PRODUCT,
 			ID_CLEAR_ORDERLIST,
+			ID_REORDER,
 		};
 
 		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
@@ -65,6 +66,7 @@ namespace pof
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnClearOrderList(wxCommandEvent& evt);
 		void OnPrintComplete(bool status, size_t printstate);
+		void OnReorder(wxCommandEvent& evt);
 
 		void UpdateTexts();
 		DECLARE_EVENT_TABLE()
