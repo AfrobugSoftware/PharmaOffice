@@ -469,11 +469,56 @@ size_t pof::Printout::WriteOrderListSmall()
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
 
 	dc->SetFont(font);
-	
-	//tite
-	wxRect rect(xPos, yPos, lineLength, lineHeight - border);
+	std::string text = wxGetApp().MainPharmacy->name;
+
+	dc->GetTextExtent(text, &xExtent, &yExtent);
+	lineHeight = yExtent;
+
+	dc->DrawText(text, lineLength / 2 - xExtent / 2, yPos + border);
+
+	std::string addy = app.MainPharmacy->GetAddressAsString();
+	yPos += lineHeight + border;
+	dc->GetTextExtent(addy, &xExtent, &yExtent);
+	dc->DrawText(addy, lineLength / 2 - xExtent / 2, yPos + border);
+
+	//print contact
+	std::string phone = fmt::format("No:{}", app.MainPharmacy->contact.phoneNumber);
+	std::string mail = app.MainPharmacy->contact.email;
+	if (!phone.empty()) {
+		yPos += yExtent + border;
+		dc->GetTextExtent(phone, &xExtent, &yExtent);
+		dc->DrawText(phone, lineLength / 2 - xExtent / 2, yPos + border);
+	}
+
+	if (!mail.empty()) {
+		yPos += yExtent + border;
+		dc->GetTextExtent(mail, &xExtent, &yExtent);
+		dc->DrawText(mail, lineLength / 2 - xExtent / 2, yPos + border);
+	}
+	//date/time
+	yPos += yExtent + border + 5;
+	wxRect rect(xPos, yPos, lineLength, lineHeight);
+	pof::base::data::datetime_t date = pof::base::data::clock_t::now();
+
+	dc->DrawLabel(fmt::format("{:%Y-%m-%d %H:%M:%S}", date), rect, wxALIGN_LEFT);
+
+	//account name and status
+	yPos += yExtent + border;
+	rect.SetPosition(wxPoint(xPos, yPos));
+	auto& acc = wxGetApp().MainAccount;
+	std::string accName = fmt::format("{} {}", acc->lastname, acc->name);
+	dc->DrawLabel(accName, rect, wxALIGN_LEFT);
+
+	//draw titile
+	const std::string title = "ORDER LIST";
+	dc->GetTextExtent(title, &xExtent, &yExtent);
+	yPos += border + 5;
+	dc->DrawText(title, lineLength / 2 - xExtent / 2, yPos);
+
+	yPos += yExtent + border + 2;
 
 
+	rect = wxRect(xPos, yPos, lineLength, lineHeight - border);
 
 	dc->DrawLabel("Qty Product", rect, wxALIGN_LEFT);
 	dc->DrawLabel("Sub-amount", rect, wxALIGN_RIGHT);
@@ -511,8 +556,6 @@ size_t pof::Printout::WriteOrderListSmall()
 		rect.SetPosition(wxPoint(xPos + border, yPos + border));
 
 	}
-
-
 	return yPos;
 }
 
@@ -674,51 +717,55 @@ bool pof::Printout::DrawLabelPrint(int page)
 	int lineLength = rightMarginLogical - leftMarginLogical;
 	int lineHeight = 18;
 
-	auto date = fmt::format("{:%d-%m-%y}", pof::base::data::clock_t::now());
+	auto date = fmt::format("{:%d/%m/%Y}", pof::base::data::clock_t::now());
 
 	wxRect rect(leftMarginLogical, yPos, lineLength, lineHeight);
-	dc->DrawRectangle(wxRect(rect.x, rect.y, rect.width, rect.height));
-	dc->DrawLabel(wxGetApp().MainPharmacy->name, rect, wxALIGN_LEFT);
+	dc->DrawRectangle(wxRect(rect.x - border, rect.y - border, rect.width + border, rect.height + border));
+	dc->DrawLabel(wxGetApp().MainPharmacy->name, wxRect(rect.x + border, rect.y, rect.width, rect.height), wxALIGN_LEFT);
 	
 	dc->GetTextExtent(date, &xExtent, &yExtent);
-	dc->DrawLine(wxPoint((rect.x + rect.width) - xExtent - border , rect.y), wxPoint((rect.x + rect.width) - xExtent - border, rect.y + rect.height));
-	dc->DrawLabel(date, rect, wxALIGN_RIGHT);
+	dc->DrawLine(wxPoint((rect.x + rect.width) - xExtent - border - 10 , rect.y - border), wxPoint((rect.x + rect.width) - xExtent - border - 10, rect.y + rect.height));
+	dc->DrawLabel(date, wxRect(rect.x, rect.y, rect.width, rect.height), wxALIGN_RIGHT);
 
 	wxRect infoBox; 
-	infoBox.x = rect.x;
+	infoBox.x = rect.x - border;
 	infoBox.y = rect.y + lineHeight + border;
-	infoBox.width = rect.width;
+	infoBox.width = rect.width + border;
 	yPos += lineHeight + 2;
-	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	rect.SetPosition(wxPoint(leftMarginLogical + border, yPos + border));
 
 	std::transform(info.mFormulation.begin(), info.mFormulation.end(), info.mFormulation.begin(), [&](char c) {
 		return std::tolower(c);
 	});
 	auto st = fmt::format("{}{}", info.mStrength, info.mStrengthType);
 	
-	dc->DrawLabel(fmt::format("{}, {} {}", info.mProductName, st, info.mFormulation), rect, wxALIGN_LEFT);
+	dc->DrawLabel(fmt::format("{}, {} {}", info.mProductName, st, info.mFormulation), rect, wxALIGN_CENTER);
 
 	yPos += lineHeight + 2;
-	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	rect.SetPosition(wxPoint(leftMarginLogical + border, yPos + border));
 
-	dc->DrawLabel(fmt::format("Quantity: {:d}", info.mQuantity), rect, wxALIGN_LEFT);
+	dc->DrawLabel(fmt::format("Quantity: {:d}", info.mQuantity), rect, wxALIGN_CENTER);
 
 	yPos += lineHeight + 2;
-	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	rect.SetPosition(wxPoint(leftMarginLogical + border, yPos + border));
 
-	dc->DrawLabel(fmt::format("Dosage"), rect, wxALIGN_LEFT);
+	dc->DrawLabel(fmt::format("Dosage"), rect, wxALIGN_CENTER);
 	yPos += lineHeight + 2;
 	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
-	dc->DrawLabel(fmt::format("{}", info.mDirForUse), rect, wxALIGN_LEFT);
+	dc->DrawLabel(fmt::format("{}", info.mDirForUse), rect, wxALIGN_CENTER);
 
 
-	yPos += lineHeight + 10;
-	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	yPos += lineHeight + 5;
+	rect.SetPosition(wxPoint(leftMarginLogical + border, yPos + border));
 
 	dc->DrawLabel(fmt::format("Warning"), rect, wxALIGN_CENTER);
 	
-	yPos += lineHeight + 10;
-	rect.SetPosition(wxPoint(leftMarginLogical, yPos + border));
+	yPos += lineHeight + 2;
+	rect.SetPosition(wxPoint(leftMarginLogical + border, yPos + border));
+	
+	std::transform(info.mWarning.begin(), info.mWarning.end(), info.mWarning.begin(), [&](char c) {
+		return std::toupper(c);
+	});
 	dc->DrawLabel(fmt::format("{}", info.mWarning), rect, wxALIGN_CENTER);
 
 

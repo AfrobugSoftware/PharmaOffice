@@ -1707,17 +1707,31 @@ void pof::SaleView::OnProductPropertyChanged(wxPropertyGridEvent& evt)
 			break;
 		case 4:
 		{
-			auto& arr = props->GetChoices();
-			labelInfo.mDirForUse = std::move(arr.GetLabel(v.GetInteger()).ToStdString());
+			std::string val;
+			if (v.GetType() == "string"s) {
+				val = v.GetString().ToStdString();
+			}
+			else {
+				auto& arr = props->GetChoices();
+				 val = arr.GetLabel(v.GetInteger()).ToStdString();
+			}
+			labelInfo.mDirForUse = std::move(val);
 		}
 			break;
 		case 5:
-		{
-			auto& arr = props->GetChoices();
-			labelInfo.mWarning = std::move(arr.GetLabel(v.GetInteger()).ToStdString());
-		}
 			break;
 		case 6:
+		{
+			std::string val;
+			if (v.GetType() == "string"s) {
+				val = v.GetString().ToStdString();
+			}
+			else {
+				auto& arr = props->GetChoices();
+				val = arr.GetLabel(v.GetInteger()).ToStdString();
+			}
+			labelInfo.mWarning = std::move(val);
+		}
 			break;
 		default:
 			break;

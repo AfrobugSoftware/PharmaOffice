@@ -3721,7 +3721,7 @@ std::optional<pof::base::data> pof::ProductManager::GetInventoryForMonth(const p
 		constexpr const std::string_view sql = R"(SELECT 
 		p.uuid, p.name, SUM(i.stock_count),  SumCost(CostMulti(i.cost, i.stock_count))
 		FROM products p, inventory i
-		WHERE p.uuid = i.uuid AND Months(i.input_date) = ? 
+		WHERE p.uuid = i.uuid AND Months(i.input_date) = ? AND i.manufacturer_name IS NOT 'RETURN'
 		GROUP BY p.uuid;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		//assert(stmt);
