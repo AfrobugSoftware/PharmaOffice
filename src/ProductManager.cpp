@@ -192,7 +192,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 5000;";
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid IS NOT IN (SELECT * FROM hidden) LIMIT 5000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());
@@ -234,6 +234,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 			return false;
 		}
 
+		mProductData->Clear();
 		for (auto& tup : *relation) {
 			pof::base::data::row_t row;
 			row.first = std::move(pof::base::make_row_from_tuple(tup));
