@@ -192,7 +192,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid IS NOT IN (SELECT * FROM hidden) LIMIT 5000;";
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid NOT IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 5000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());
@@ -242,6 +242,56 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 		}
 	}
 	return true;
+}
+
+std::optional<pof::base::data> pof::ProductManager::GetHiddenProducts()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 5000;";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto relation = mLocalDatabase->retrive<
+			pof::base::data::duuid_t, //UUID
+			std::uint64_t, //SERIAL NUM
+			pof::base::data::text_t, // NAME
+			pof::base::data::text_t, // GENERIC NAME
+			pof::base::data::text_t, //CLASS
+			pof::base::data::text_t, //FORMULATION
+			pof::base::data::text_t, // STRENGTH
+			pof::base::data::text_t, // STRENGTH TYPE
+			pof::base::data::text_t, // USAGE INFO
+			pof::base::data::text_t, // PRODUCT DESCRIPTION
+			pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
+			pof::base::data::currency_t, // UNIT PRICE
+			pof::base::data::currency_t, // COST PRICE
+			std::uint64_t, //PACAKGE SIZE
+			std::uint64_t, //STOCK COUNT
+			pof::base::data::text_t, //SIDE EFFECTS
+			pof::base::data::text_t, //BARCODE
+			std::uint64_t, //CATEGORY ID
+			//PRODUCT SETTINGS
+			std::uint32_t, //MIN_STOCJ_COUNT
+			pof::base::data::text_t, //EXPIRE PERIOD
+			std::uint64_t //EXPIRE DATE
+		> (stmt.value());
+		if (!relation.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.get_metadata() = mProductData->GetDatastore().get_metadata();
+		ret.reserve(relation->size());
+		for (auto& tup : relation.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+		}
+		return ret;
+	}
+	return std::nullopt;
 }
 
 bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt)

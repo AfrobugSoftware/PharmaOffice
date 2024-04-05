@@ -178,6 +178,7 @@ namespace pof {
 		bool LoadInventoryData(const pof::base::data::duuid_t& ud);
 		bool LoadCategories();
 		bool LoadProductsFromDatabase();
+		std::optional<pof::base::data> GetHiddenProducts();
 		bool LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt);
 		
 		//orderlist

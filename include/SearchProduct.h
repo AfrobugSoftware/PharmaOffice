@@ -46,6 +46,7 @@ namespace pof {
 
 
 		//id, name, price
+		std::shared_ptr<pof::base::data> mdata;
 		pof::DataModel* mModel;
 		int mSelectedProduct = -1;
 
@@ -70,7 +71,7 @@ namespace pof {
 			VIEW
 		};
 
-		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1013, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		SearchProduct(wxWindow* parent, wxWindowID id = wxID_ANY, std::shared_ptr<pof::base::data> data = nullptr,const wxString& title = wxT("Search Product"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(1013, 523), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		wxAuiManager m_mgr;
 
 		virtual ~SearchProduct();

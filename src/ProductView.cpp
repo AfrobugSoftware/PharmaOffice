@@ -21,6 +21,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 	EVT_TOOL(pof::ProductView::ID_ORDER_LIST, pof::ProductView::OnShowOrderList)
 	EVT_TOOL(pof::ProductView::ID_SHOW_SUPPLIER, pof::ProductView::OnShowSupplier)
+	EVT_TOOL(pof::ProductView::ID_SHOW_PRODUCT, pof::ProductView::OnShowHiddenProduct)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_CHARTS, pof::ProductView::OnChartDropDown)
@@ -518,6 +519,8 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	if (mSelections.empty()) {
 		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, "Increase price", nullptr);
+
+		menu->AppendSeparator();
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, "Clear stock as expired", nullptr);
 		auto hi = menu->Append(ID_HIDE_PRODUCT, "Hide product", nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, "Remove product from store", nullptr);
@@ -525,6 +528,8 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	else {
 		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, fmt::format("Add {:d} products to order list", mSelections.size()), nullptr);
 		auto inc = menu->Append(ID_INCR_PRODUCT_PRICE, fmt::format("Increase {:d} product prices", mSelections.size()), nullptr);
+
+		menu->AppendSeparator();
 		auto moveEx = menu->Append(ID_MOVE_PRODUCT_STOCK, fmt::format("Clear {:d} products stocks as expired", mSelections.size()), nullptr);
 		auto hide = menu->Append(ID_HIDE_PRODUCT, fmt::format("Hide {:d} products", mSelections.size()), nullptr);
 		auto remv = menu->Append(ID_REMOVE_PRODUCT, fmt::format("Remove {:d} products from store", mSelections.size()), nullptr);
@@ -2467,6 +2472,72 @@ void pof::ProductView::OnCompareSales(wxCommandEvent& evt)
 
 void pof::ProductView::OnHideProduct(wxCommandEvent& evt)
 {
+	wxBusyCursor cur;
+	m_dataViewCtrl1->Freeze();
+	if (mSelections.empty()) {
+		auto item = m_dataViewCtrl1->GetSelection();
+		if (!item.IsOk()) return;
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+
+		wxGetApp().mProductManager.HideProduct(uuid);
+	}
+	else {
+		for (auto& item : mSelections) {
+			if (!item.IsOk()) return;
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+			auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+
+			wxGetApp().mProductManager.HideProduct(uuid);
+		}
+		mSelections.clear();
+	}
+	wxGetApp().mProductManager.LoadProductsFromDatabase(); // reload ??
+	m_dataViewCtrl1->Thaw();
+}
+
+void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
+{
+	auto count = wxGetApp().mProductManager.GetHiddenCount();
+	if (!count.has_value()) {
+		wxMessageBox("Error in reading hidden product, call D-GLOPA ADMIN", "Hidden products", wxICON_ERROR | wxOK);
+		return;
+	}
+	if (count.value() == 0) {
+		wxMessageBox("No hidden products", "Hidden products", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	auto hidden = wxGetApp().mProductManager.GetHiddenProducts();
+	if (!hidden.has_value()) {
+		wxMessageBox("Error in reading hidden product data, call D-GLOPA ADMIN", "Hidden products", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	pof::SearchProduct productselect(this, wxID_ANY, std::make_shared<pof::base::data>(hidden.value()), "Hidden products- Please select products to show in store");
+	if (productselect.ShowModal() == wxID_CANCEL) return;
+
+	m_dataViewCtrl1->Freeze();
+	wxBusyCursor cur;
+	if (productselect.HasMultipleSelections()) {
+		auto products = productselect.GetSelectedProducts();
+		for (auto& wrap : products) {
+			auto& row = wrap.get();
+			auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]);
+
+			wxGetApp().mProductManager.ShowProduct(uuid);
+		}
+	}
+	else {
+		auto& prod = productselect.GetSelectedProduct();
+		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(prod.first[pof::ProductManager::PRODUCT_UUID]);
+
+		wxGetApp().mProductManager.ShowProduct(uuid);
+	}
+
+	wxGetApp().mProductManager.LoadProductsFromDatabase();
+	m_dataViewCtrl1->Thaw();
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
@@ -2557,7 +2628,7 @@ void pof::ProductView::HideCostPriceColumn()
 
 void pof::ProductView::ShowSelectionColumn(){
 	mSelectionCol = m_dataViewCtrl1->PrependToggleColumn(wxT("Select"), SELECTION_MODEL_COL,
-		 wxDATAVIEW_CELL_ACTIVATABLE, 50);
+		 wxDATAVIEW_CELL_ACTIVATABLE, FromDIP(50));
 }
 
 void pof::ProductView::HideSelectionColumn()
@@ -2807,6 +2878,9 @@ void pof::ProductView::CreateToolBar()
 	mCatTextCtrl = new wxStaticText(m_auiToolBar2, wxID_ANY, wxEmptyString);
 	mCatTextCtrl->SetBackgroundColour(*wxWHITE);
 	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
+	
+	m_auiToolBar2->AddSpacer(FromDIP(2));
+	m_auiToolBar2->AddTool(ID_SHOW_PRODUCT, wxT("Hidden products"), wxArtProvider::GetBitmap("file", wxART_OTHER, FromDIP(wxSize(16, 16))), wxT("Show hidden products"));
 	
 	m_auiToolBar2->Realize();
 	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(- 1), FromDIP(30)).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));

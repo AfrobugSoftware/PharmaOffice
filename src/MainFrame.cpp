@@ -1107,7 +1107,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 			dlg.Update(pg);
 		}
 
-		pof::SearchProduct productselect(this, wxID_ANY, "Formulary product select - Please select products from formulary to add to store");
+		pof::SearchProduct productselect(this, wxID_ANY, nullptr, "Formulary product select - Please select products from formulary to add to store");
 		productselect.GetDataModel()->RebaseDatastore(selector);
 
 		auto choicefilter = productselect.GetCategoryFilter();
