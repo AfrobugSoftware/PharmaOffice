@@ -340,6 +340,7 @@ bool pof::ChartDialog::LoadWeeklySalesChart()
 	}
 	mChartPanel->SetChart(mCurrentChart);
 	mBook->SetSelection(WEEKLY_SALES);
+	return true;
 }
 
 bool pof::ChartDialog::LoadCompareSales() {

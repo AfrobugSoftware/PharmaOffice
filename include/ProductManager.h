@@ -178,6 +178,7 @@ namespace pof {
 		bool LoadInventoryData(const pof::base::data::duuid_t& ud);
 		bool LoadCategories();
 		bool LoadProductsFromDatabase();
+		std::optional<pof::base::data> GetHiddenProducts();
 		bool LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt);
 		
 		//orderlist
@@ -195,6 +196,13 @@ namespace pof {
 		bool StrProductData(pof::base::data::const_iterator iter);
 		bool UpdateProductData(pof::base::data::const_iterator iter);
 		
+
+		//hide system
+		void CreateHideTable();
+		bool HideProduct(const pof::base::data::duuid_t& uid);
+		bool ShowProduct(const pof::base::data::duuid_t& uid);
+		std::optional<size_t> GetHiddenCount();
+
 		//supplier/invoice
 		bool CreateSupplierInvoiceTable();
 		inline std::unique_ptr<pof::DataModel>& GetSupplier() { return mSuppliers; }

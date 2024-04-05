@@ -105,6 +105,8 @@ namespace pof
 			ID_CHARTS_WEEKLY_SALES,
 			ID_TOOLBAR2,
 			ID_CHARTS_COMPARE_SALES,
+			ID_HIDE_PRODUCT,
+			ID_SHOW_PRODUCT,
 		};
 
 		size_t mRowHeights;
@@ -224,6 +226,8 @@ namespace pof
 		void OnWeeklySales(wxCommandEvent& evt);
 		void OnChartDropDown(wxAuiToolBarEvent& evt);
 		void OnCompareSales(wxCommandEvent& evt);
+		void OnHideProduct(wxCommandEvent& evt);
+		void OnShowHiddenProduct(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

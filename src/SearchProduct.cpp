@@ -18,7 +18,7 @@ EVT_CHOICE(pof::SearchProduct::ID_FORMULATION_FILTER, pof::SearchProduct::OnFile
 END_EVENT_TABLE()
 
 
-pof::SearchProduct::SearchProduct(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : 
+pof::SearchProduct::SearchProduct(wxWindow* parent, wxWindowID id, std::shared_ptr<pof::base::data> data, const wxString& title, const wxPoint& pos, const wxSize& size, long style) : 
 	wxDialog(parent, id, title, pos, size, style), mSelectedProduct(-1)
 {
 	this->SetSize(FromDIP(size));
@@ -28,7 +28,7 @@ pof::SearchProduct::SearchProduct(wxWindow* parent, wxWindowID id, const wxStrin
 	CreateViewManagerDefaultArt();
 	CreateToolBar();
 	mBook = new wxSimplebook(this, wxID_ANY);
-
+	mdata = data;
 	CreateEmptyPanel();
 	CreateSearchView();
 
@@ -61,7 +61,7 @@ void pof::SearchProduct::CreateToolBar()
 	SearchCtrl->ShowSearchButton(true);
 #endif
 	SearchCtrl->ShowCancelButton(true);
-	SearchCtrl->SetToolTip(wxT("Search for product to sell"));
+	SearchCtrl->SetToolTip(wxT("Search for product"));
 	SearchCtrl->SetDescriptiveText("Search products by name");
 
 	SearchProductBar->AddControl(SearchCtrl);
@@ -125,8 +125,12 @@ void pof::SearchProduct::CreateSearchView()
 	m_panel1->SetBackgroundColour(*wxWHITE);
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
-
-	mModel = new DataModel(wxGetApp().mProductManager.GetProductData()->ShareDatastore());
+	if (!mdata) {
+		mModel = new DataModel(wxGetApp().mProductManager.GetProductData()->ShareDatastore());
+	}
+	else {
+		mModel = new DataModel(mdata);
+	}
 
 	SearchData = new wxDataViewCtrl(m_panel1, ID_SEARCH_VIEW, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES | wxDV_ROW_LINES);
 	selectedCol = SearchData->AppendToggleColumn(wxT("Select"), 1000, wxDATAVIEW_CELL_ACTIVATABLE, FromDIP(50));
@@ -274,6 +278,8 @@ void pof::SearchProduct::OnSearch(wxCommandEvent& evt) {
 void pof::SearchProduct::OnSearchCancelled(wxCommandEvent& evt)
 {
 	mModel->Reload();
+	if (mBook->GetSelection() == EMPTY)
+		mBook->SetSelection(VIEW);
 }
 
 void pof::SearchProduct::OnClose(wxCloseEvent& evt)
@@ -431,6 +437,8 @@ void pof::SearchProduct::DoSearch(const std::string& search_for)
 {
 	if (search_for.empty()) {
 		mModel->Reload();
+		if(mBook->GetSelection() == EMPTY)
+			mBook->SetSelection(VIEW);
 	}
 	else {
 		bool empty = mModel->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search_for);
@@ -441,5 +449,4 @@ void pof::SearchProduct::DoSearch(const std::string& search_for)
 			mBook->SetSelection(VIEW);
 		}
 	}
-
 }

@@ -533,4 +533,5 @@ std::optional<bool> pof::Account::ValidateSecurityQuestion(const std::string& us
 
 		return bcrypt::validatePassword(ans, hash);
 	}
+	return std::nullopt;
 }

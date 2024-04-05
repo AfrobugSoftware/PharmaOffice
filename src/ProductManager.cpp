@@ -192,7 +192,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products LIMIT 5000;";
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid NOT IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 5000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());
@@ -234,6 +234,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 			return false;
 		}
 
+		mProductData->Clear();
 		for (auto& tup : *relation) {
 			pof::base::data::row_t row;
 			row.first = std::move(pof::base::make_row_from_tuple(tup));
@@ -241,6 +242,56 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 		}
 	}
 	return true;
+}
+
+std::optional<pof::base::data> pof::ProductManager::GetHiddenProducts()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 5000;";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		auto relation = mLocalDatabase->retrive<
+			pof::base::data::duuid_t, //UUID
+			std::uint64_t, //SERIAL NUM
+			pof::base::data::text_t, // NAME
+			pof::base::data::text_t, // GENERIC NAME
+			pof::base::data::text_t, //CLASS
+			pof::base::data::text_t, //FORMULATION
+			pof::base::data::text_t, // STRENGTH
+			pof::base::data::text_t, // STRENGTH TYPE
+			pof::base::data::text_t, // USAGE INFO
+			pof::base::data::text_t, // PRODUCT DESCRIPTION
+			pof::base::data::text_t, // PRODUCT HEALTH CONDITIONS COMMA SEPERATED
+			pof::base::data::currency_t, // UNIT PRICE
+			pof::base::data::currency_t, // COST PRICE
+			std::uint64_t, //PACAKGE SIZE
+			std::uint64_t, //STOCK COUNT
+			pof::base::data::text_t, //SIDE EFFECTS
+			pof::base::data::text_t, //BARCODE
+			std::uint64_t, //CATEGORY ID
+			//PRODUCT SETTINGS
+			std::uint32_t, //MIN_STOCJ_COUNT
+			pof::base::data::text_t, //EXPIRE PERIOD
+			std::uint64_t //EXPIRE DATE
+		> (stmt.value());
+		if (!relation.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return false;
+		}
+		mLocalDatabase->finalise(*stmt);
+		pof::base::data ret;
+		ret.get_metadata() = mProductData->GetDatastore().get_metadata();
+		ret.reserve(relation->size());
+		for (auto& tup : relation.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(tup));
+		}
+		return ret;
+	}
+	return std::nullopt;
 }
 
 bool pof::ProductManager::LoadInventoryByDate(const pof::base::data::duuid_t& ud, const pof::base::data::datetime_t& dt)
@@ -752,6 +803,76 @@ bool pof::ProductManager::UpdateProductData(pof::base::data::const_iterator iter
 	}
 
 	return true;
+}
+
+void pof::ProductManager::CreateHideTable()
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS hidden (uuid blob UNIQUE);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+bool pof::ProductManager::HideProduct(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(INSERT OR IGNORE INTO hidden (uuid) VALUES (?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status){
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+}
+
+bool pof::ProductManager::ShowProduct(const pof::base::data::duuid_t& uid)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(DELETE FROM hidden WHERE uuid = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(uid));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+}
+
+std::optional<size_t> pof::ProductManager::GetHiddenCount()
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT COUNT(*) FROM hidden;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel->empty() ? std::nullopt : std::make_optional(std::get<0>(*(rel->begin())));
+	}	
+	return std::nullopt;
 }
 
 bool pof::ProductManager::CreateSupplierInvoiceTable()
