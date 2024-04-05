@@ -1126,6 +1126,7 @@ void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 			items.push_back(item);
 		}
 		wxGetApp().mPatientManager.GetPatientData()->RemoveData(items);
+		mPatientSelections.clear();
 	}
 	mPatientSelect->Thaw();
 	mPatientSelect->Refresh();
@@ -1283,6 +1284,7 @@ void pof::PatientView::OnRemoveMedication(wxCommandEvent& evt)
 			items.push_back(item);
 		}
 		wxGetApp().mPatientManager.GetPatientMedData()->RemoveData(items);
+		mMedicationSelections.clear();
 		mPatientInfoBar->ShowMessage(fmt::format("Successfully removed {:d} products from medication", items.size()));
 	}
 	mCurrentMedicationView->Thaw();
@@ -2049,6 +2051,7 @@ void pof::PatientView::OnRepeatMedication(wxCommandEvent& evt)
 			stopTime = startTime + dur;
 
 			wxGetApp().mPatientManager.GetPatientMedData()->StoreData(std::move(row));
+			mMedicationHistSelections.clear();
 		}
 
 		if (mBookMeds->GetSelection() == MED_EMPTY) {

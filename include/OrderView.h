@@ -44,6 +44,9 @@ namespace pof
 		wxStaticText* m_staticText4;
 		wxSimplebook* mBook;
 		wxPanel* mEmpty;
+		wxDataViewColumn* mSelectCol = nullptr;
+		constexpr static size_t selcol = 1000;
+		std::set<wxDataViewItem> mSelections;
 	public:
 		enum {
 			ID_ORDER_VIEW = wxID_HIGHEST + 40,
@@ -53,6 +56,7 @@ namespace pof
 			ID_ADD_PRODUCT,
 			ID_CLEAR_ORDERLIST,
 			ID_REORDER,
+			ID_SELECT,
 		};
 
 		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
@@ -67,6 +71,11 @@ namespace pof
 		void OnClearOrderList(wxCommandEvent& evt);
 		void OnPrintComplete(bool status, size_t printstate);
 		void OnReorder(wxCommandEvent& evt);
+		void OnSelect(wxCommandEvent& evt);
+		void OnHeaderClick(wxDataViewEvent& evt);
+
+		void ShowSelect();
+		void HideSelect();
 
 		void UpdateTexts();
 		DECLARE_EVENT_TABLE()

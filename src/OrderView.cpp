@@ -9,8 +9,10 @@ EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
 EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
 
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
+EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnHeaderClick)
 EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
 EVT_MENU(pof::OrderListView::ID_REORDER, pof::OrderListView::OnReorder)
+EVT_MENU(pof::OrderListView::ID_SELECT, pof::OrderListView::OnSelect)
 END_EVENT_TABLE()
 
 
@@ -28,7 +30,8 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	
 	mTopTools = new wxAuiToolBar( m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER|wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW| wxNO_BORDER ); 
 	mTopTools->SetMinSize( FromDIP(wxSize( -1,40 )) );
-	
+	mTopTools->AddTool(ID_SELECT, "Select", wxArtProvider::GetBitmap("action_check"), "Show Selections", wxITEM_CHECK);
+
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddSeparator();
 	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
@@ -195,6 +198,8 @@ void pof::OrderListView::CreateSpeicalCol()
 	pof::DataModel::SpeicalColHandler_t stateCol;
 	pof::DataModel::SpeicalColHandler_t quanCol;
 	pof::DataModel::SpeicalColHandler_t costCol;
+	pof::DataModel::SpeicalColHandler_t SelectColHandler;
+
 
 	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
 	stateCol.first = [&](size_t row, size_t col) -> wxVariant
@@ -234,9 +239,25 @@ void pof::OrderListView::CreateSpeicalCol()
 
 	};
 
+	SelectColHandler.first = [&](size_t row, size_t col) -> wxVariant {
+		auto found = mSelections.find(pof::DataModel::GetItemFromIdx(row));
+		return wxVariant((found != mSelections.end()));
+	};
+	SelectColHandler.second = [&](size_t row, size_t col, const wxVariant& v) -> bool {
+		if (v.GetBool()) {
+			auto [iter, inserted] = mSelections.insert(pof::DataModel::GetItemFromIdx(row));
+			return inserted;
+		}
+		else {
+			mSelections.erase(pof::DataModel::GetItemFromIdx(row));
+			return true;
+		}
+	};
+
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_STATE, std::move(stateCol));
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_QUANTITY, std::move(quanCol));
 	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(pof::ProductManager::ORDER_COST, std::move(costCol));
+	wxGetApp().mProductManager.GetOrderList()->SetSpecialColumnHandler(selcol, std::move(SelectColHandler));
 }
 
 void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
@@ -283,18 +304,35 @@ void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
 
 void pof::OrderListView::OnRemoveOrder(wxCommandEvent& evt)
 {
-	if (wxMessageBox("Are you sure you want to remove product from order list ?", "ORDER LIST", wxICON_WARNING | wxYES_NO, this) == wxNO) return;
-	auto item = mOrderView->GetSelection();
-	if (!item.IsOk()) return;
-
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& orderList = wxGetApp().mProductManager.GetOrderList();
-	auto& row = orderList->GetDatastore()[idx];
-	auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
-	wxGetApp().mProductManager.RemvFromOrderList(uid);
-	orderList->RemoveData(item);
-	UpdateTexts();
+	if (mSelections.empty()) {
+		if (wxMessageBox("Are you sure you want to remove product from order list ?", "ORDER LIST", wxICON_WARNING | wxYES_NO, this) == wxNO) return;
+		auto item = mOrderView->GetSelection();
+		if (!item.IsOk()) return;
 
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = orderList->GetDatastore()[idx];
+		auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+		wxGetApp().mProductManager.RemvFromOrderList(uid);
+		orderList->RemoveData(item);
+	}
+	else {
+		if (wxMessageBox(fmt::format("Are you sure you want to remove {:d} products from order list ?", mSelections.size()), "ORDER LIST", wxICON_WARNING | wxYES_NO, this) == wxNO) return;
+		wxBusyCursor cursor;
+		wxDataViewItemArray items;
+		for (auto& item : mSelections) {
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = orderList->GetDatastore()[idx];
+
+			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+			wxGetApp().mProductManager.RemvFromOrderList(uid);
+			items.push_back(item);
+		}
+		orderList->RemoveData(items);
+		mSelections.clear();
+	}
+
+	UpdateTexts();
 	if (orderList->GetDatastore().empty()) {
 		mBook->SetSelection(1);
 	}
@@ -386,14 +424,83 @@ void pof::OrderListView::OnReorder(wxCommandEvent& evt)
 	if (!item.IsOk()) return;
 
 	mOrderView->Freeze();
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
-	auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
-	auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
-	state = pof::ProductManager::PENDING;
-
-	wxGetApp().mProductManager.UpdateOrderState(uuid, pof::ProductManager::PENDING);
+	if (mSelections.empty()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
+		auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+		auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+		state = pof::ProductManager::PENDING;
+		wxGetApp().mProductManager.UpdateOrderState(uuid, pof::ProductManager::PENDING);
+	}
+	else {
+		for (auto& item : mSelections) {
+			size_t idx = pof::DataModel::GetIdxFromItem(item);
+			auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
+			auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+			auto& uuid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+			state = pof::ProductManager::PENDING;
+			wxGetApp().mProductManager.UpdateOrderState(uuid, pof::ProductManager::PENDING);
+		}
+		mSelections.clear();
+	}
 	mOrderView->Thaw();
+}
+
+void pof::OrderListView::OnSelect(wxCommandEvent& evt)
+{
+	if (evt.IsChecked()) {
+		ShowSelect();
+	}
+	else {
+		HideSelect();
+	}
+}
+
+void pof::OrderListView::OnHeaderClick(wxDataViewEvent& evt)
+{
+	if (mSelectCol == evt.GetDataViewColumn()) {
+		static bool sel = true;
+		mOrderView->Freeze();
+		auto& items = wxGetApp().mProductManager.GetOrderList()->GetDataViewItems();
+		if (sel) {
+			if (!mSelections.empty()) {
+				mSelections.clear();
+				sel = false;
+			}
+			else {
+				std::ranges::copy(items, std::inserter(mSelections, mSelections.end()));
+			}
+		}
+		else {
+			for (auto& item : items) {
+				mSelections.erase(item);
+			}
+		}
+		sel = !sel;
+		mOrderView->Thaw();
+		evt.Veto();
+	}
+	else {
+		evt.Skip();
+	}
+}
+
+void pof::OrderListView::ShowSelect()
+{
+	mSelectCol = mOrderView->PrependToggleColumn(wxT("Select"), selcol,
+		wxDATAVIEW_CELL_ACTIVATABLE, FromDIP(50));
+}
+
+void pof::OrderListView::HideSelect()
+{
+	if (mSelectCol != nullptr) {
+		mSelections.clear();
+
+		mOrderView->Freeze();
+		mOrderView->DeleteColumn(mSelectCol);
+		mOrderView->Thaw();
+		mSelectCol = nullptr;
+	}
 }
 
 void pof::OrderListView::UpdateTexts()
