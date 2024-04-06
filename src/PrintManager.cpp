@@ -18,9 +18,7 @@ pof::PrintManager::PrintManager()
 }
 
 pof::PrintManager::~PrintManager()
-{
-	//(po != nullptr) delete po;
-	//if(po2 != nullptr) delete po2;
+{;
 }
 
 void pof::PrintManager::PrinterSetup()
@@ -44,10 +42,12 @@ void pof::PrintManager::PrintSaleReceipt(wxWindow* parent)
 		po2 = new pof::Printout(mPrintDialogData.get());
 		po2->mFooterMessage = "THANK YOU FOR YOUR PATRONAGE!";
 		Preview(parent, po, po2);
-	}else PrintJob(parent, po);
-
-	//delete po;
-	//delete po2;
+	}
+	else {
+		PrintJob(parent, po);
+		delete po;
+		if(po2 != nullptr) delete po2;
+	}
 }
 
 void pof::PrintManager::PrintOrderList(wxWindow* parent)
@@ -58,7 +58,11 @@ void pof::PrintManager::PrintOrderList(wxWindow* parent)
 		po2 = new pof::Printout(mPrintDialogData.get());
 		Preview(parent, po, po2);
 	}
-	else PrintJob(parent, po);
+	else {
+		PrintJob(parent, po);
+		delete po;
+		if (po2 != nullptr) delete po2;
+	}
 }
 
 void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrintout* preview)
@@ -71,9 +75,9 @@ void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrinto
 
 void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent)
 {
-	if(!po) po = new pof::Printout(mPrintDialogData.get());
+	if (!po) po = new pof::Printout(mPrintDialogData.get());
 	po->mLabels = labels;
-	
+
 	po->minPage = 1;
 	po->maxPage = labels.size();
 	po->selPageFrom = 1;
@@ -81,16 +85,20 @@ void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, w
 
 
 	if (wxGetApp().bShowPreviewOnSale) {
-		if(!po2) po2 = new pof::Printout(mPrintDialogData.get());
+		if (!po2) po2 = new pof::Printout(mPrintDialogData.get());
 		po2->mLabels = labels;
-		
+
 		po2->minPage = 1;
 		po2->maxPage = labels.size();
 		po2->selPageFrom = 1;
 		po2->selPageTo = labels.size();
 		Preview(parent, po, po2);
 	}
-	else PrintJob(parent, po);
+	else {
+		PrintJob(parent, po);
+		delete po;
+		if (po2 != nullptr) delete po2;
+	}
 }
 
 void pof::PrintManager::PrintJob(wxWindow* parent, wxPrintout* printout)

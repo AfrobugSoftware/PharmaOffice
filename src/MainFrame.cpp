@@ -391,7 +391,7 @@ void pof::MainFrame::CreateWelcomePage()
 	CreateSelectList();
 
 	bsz->AddStretchSpacer();
-	bsz->AddSpacer(FromDIP(50));
+	bsz->AddSpacer(FromDIP(35));
 	bsz->Add(mSelectList, 1, wxALL | wxEXPAND | wxCENTER, FromDIP(5));
 	bsz->AddStretchSpacer();
 

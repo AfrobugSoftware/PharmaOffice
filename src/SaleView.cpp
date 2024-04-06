@@ -917,6 +917,11 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		mCurSaleuuid = boost::uuids::nil_uuid();
 		SetActiveSaleIdText(mCurSaleuuid);
 	}
+
+	//remove label
+	auto labeliter = std::next(mProductLabels.begin(), idx);
+	mProductLabels.erase(labeliter);
+
 	CheckEmpty();
 }
 

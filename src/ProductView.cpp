@@ -2510,6 +2510,37 @@ void pof::ProductView::OnHideProduct(wxCommandEvent& evt)
 		mSelections.clear();
 	}
 	wxGetApp().mProductManager.LoadProductsFromDatabase(); // reload ??
+	//reload the view when we modify the contents
+	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
+
+	if (!m_searchCtrl1->IsEmpty()) {
+		//in search sat
+		bool empty = false;
+		std::string search = m_searchCtrl1->GetValue().ToStdString();
+
+		if (!mActiveCategory.empty()) {
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+		else {
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+
+		if (empty) {
+			ShowNoResult(search);
+		}
+		else {
+			auto& d = m_mgr.GetPane("DataView");
+			auto& p = m_mgr.GetPane("NoResult");
+			if (p.IsShown()) p.Hide();
+			if (!d.IsShown()) {
+				d.Show();
+			}
+			m_mgr.Update();
+		}
+	}
+	else if (!mActiveCategory.empty()) {
+		datam->ReloadSet(); //reloads the active category
+	}
 	m_dataViewCtrl1->Thaw();
 }
 
@@ -2552,7 +2583,41 @@ void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
 	}
 
 	wxGetApp().mProductManager.LoadProductsFromDatabase();
+
+	//reload the view when we modify the contents
+	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
+
+	if (!m_searchCtrl1->IsEmpty()) {
+		//in search sat
+		bool empty = false;
+		std::string search = m_searchCtrl1->GetValue().ToStdString();
+
+		if (!mActiveCategory.empty()) {
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+		else {
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+		}
+
+		if (empty) {
+			ShowNoResult(search);
+		}
+		else {
+			auto& d = m_mgr.GetPane("DataView");
+			auto& p = m_mgr.GetPane("NoResult");
+			if (p.IsShown()) p.Hide();
+			if (!d.IsShown()) {
+				d.Show();
+			}
+			m_mgr.Update();
+		}
+	}
+	else if (!mActiveCategory.empty()) {
+		datam->ReloadSet(); //reloads the active category
+	}
+
 	m_dataViewCtrl1->Thaw();
+	wxMessageBox("Successfully shown product", "Hidden products", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
