@@ -550,6 +550,21 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 		return;
 	}
 	if (wxMessageBox("Deleteing a product deletes all the data associated with the product, Do you wish to continue?", "REMOVE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
+	
+	wxCredentialEntryDialog dialog(this, "User credentials are required remove this item", "Products");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid username or password", "Reports", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+	
 	if (mSelections.empty()) {
 		auto item = m_dataViewCtrl1->GetSelection();
 		if (!item.IsOk()) return;

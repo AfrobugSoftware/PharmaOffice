@@ -556,6 +556,20 @@ size_t pof::Printout::WriteOrderListSmall()
 		rect.SetPosition(wxPoint(xPos + border, yPos + border));
 
 	}
+
+	//total
+	yPos += lineHeight + border;
+	dc->SetPen(wxPenInfo(*wxBLACK).Style(wxPENSTYLE_SHORT_DASH));
+	dc->DrawLine(xPos, yPos + border, lineLength, yPos + border);
+	dc->DrawLine(xPos, yPos + border + 5, lineLength, yPos + border + 5);
+	std::string totalA = fmt::format("TOTAL: {:cu}", totalAmount);
+	dc->GetTextExtent(totalA, &xExtent, &yExtent);
+	yPos += border + 5;
+	wxRect TotalRect(xPos, yPos + border, lineLength - border, yExtent);
+
+	dc->DrawLabel(totalA, TotalRect, wxALIGN_RIGHT);
+
+
 	return yPos;
 }
 
