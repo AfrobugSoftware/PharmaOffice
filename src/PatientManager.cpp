@@ -216,7 +216,7 @@ bool pof::PatientManager::LoadPatients()
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(SELECT 
 		p.uuid, p.name, p.lastname, GetDob(pi.info), p.gender, p.phonenumber, p.address, p.bmi, p.weight, p.hr, p.bpsys, p.bpdys, p.rr, p.tempreture, p.createdate, p.modifieddate, p.clinical 
-		FROM patients p, patient_addinfo pi WHERE p.uuid = pi.puid LIMIT 1000;)";
+		FROM patients p, patient_addinfo pi WHERE p.uuid = pi.puid ORDER BY p.lastname ASC LIMIT 1000;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());

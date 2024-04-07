@@ -63,7 +63,7 @@ namespace pof
 		wxTextCtrl* mCostPriceValue;
 		wxStaticText* mSalePriceLabel;
 		wxTextCtrl* mSalePriceValue;
-		wxCheckBox* mDoMarkup;
+		wxButton* mDoMarkup;
 		wxStaticText* mCategoryLabel;
 		wxChoice* mCategoryValue;
 		wxStaticText* mPackageSizeLabel;
@@ -124,6 +124,7 @@ namespace pof
 			ID_MORE_SIDEEFFECTS,
 			ID_MORE_HEALTHCON,
 			ID_INVENTORY_ADD,
+			ID_MARKUP_COST,
 		};
 		AddProdutDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ADD PRODUCT"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(948, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		~AddProdutDialog();
@@ -137,6 +138,7 @@ namespace pof
 		void OnMoreSideffects(wxCommandEvent& evt);
 		void OnMoreHealthConditions(wxCommandEvent& evt);
 		void OnInventoryCheck(wxCommandEvent& evt);
+		void OnMarkupCost(wxCommandEvent& evt);
 
 		wxArrayString SetupSupplierName();
 

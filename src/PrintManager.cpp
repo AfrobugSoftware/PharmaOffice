@@ -75,7 +75,7 @@ void pof::PrintManager::PrintSaleReceiptHtml(wxHtmlPrintout* print, wxHtmlPrinto
 
 void pof::PrintManager::PrintLabels(const std::vector<pof::LabelInfo>& labels, wxWindow* parent)
 {
-	if (!po) po = new pof::Printout(mPrintDialogData.get());
+	po = new pof::Printout(mPrintDialogData.get());
 	po->mLabels = labels;
 
 	po->minPage = 1;

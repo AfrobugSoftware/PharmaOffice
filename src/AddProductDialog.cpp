@@ -5,6 +5,7 @@
 BEGIN_EVENT_TABLE(pof::AddProdutDialog, wxDialog)
 	EVT_BUTTON(pof::AddProdutDialog::ID_SCAN_PRODUCT, pof::AddProdutDialog::OnScanProduct)
 	EVT_CHECKBOX(pof::AddProdutDialog::ID_INVENTORY_ADD, pof::AddProdutDialog::OnInventoryCheck)
+	EVT_BUTTON(pof::AddProdutDialog::ID_MARKUP_COST, pof::AddProdutDialog::OnMarkupCost)
 END_EVENT_TABLE()
 
 
@@ -173,7 +174,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mCostPriceValue = new wxTextCtrl( m_panel71, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mCostPriceValue->SetValidator(val);
-	bSizer7->Add( mCostPriceValue, 0, wxALL, 5 );
+	bSizer7->Add( mCostPriceValue, 0, wxALL | wxALIGN_CENTER, 5 );
 	
 	mSalePriceLabel = new wxStaticText( m_panel71, wxID_ANY, wxT("Sale Price"), wxDefaultPosition, wxDefaultSize, 0 );
 	mSalePriceLabel->Wrap( -1 );
@@ -181,10 +182,10 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mSalePriceValue = new wxTextCtrl( m_panel71, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mSalePriceValue->SetValidator(val);
-	bSizer7->Add( mSalePriceValue, 0, wxALL, 5 );
+	bSizer7->Add( mSalePriceValue, 0, wxALL | wxALIGN_CENTER, 5 );
 	
-	mDoMarkup = new wxCheckBox( m_panel71, wxID_ANY, wxT("Mark up cost price"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer7->Add( mDoMarkup, 0, wxBOTTOM|wxLEFT|wxTOP, 10 );
+	mDoMarkup = new wxButton( m_panel71, ID_MARKUP_COST, wxT("Mark up cost price"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer7->Add( mDoMarkup, 0, wxBOTTOM|wxLEFT|wxTOP | wxALIGN_CENTER, 10 );
 	
 	mCategoryLabel = new wxStaticText( m_panel71, wxID_ANY, wxT("Category"), wxDefaultPosition, wxDefaultSize, 0 );
 	mCategoryLabel->Wrap( -1 );
@@ -198,7 +199,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mCategoryValueChoices.push_back("No Category");
 	mCategoryValue = new wxChoice( m_panel71, wxID_ANY, wxDefaultPosition, wxDefaultSize, mCategoryValueChoices, 0 );
 	mCategoryValue->SetSelection( 0 );
-	bSizer7->Add( mCategoryValue, 1, wxALL, 5 );
+	bSizer7->Add( mCategoryValue, 1, wxALL |wxALIGN_CENTER, 5 );
 	
 	mPackageSizeLabel = new wxStaticText( m_panel71, wxID_ANY, wxT("Package Size"), wxDefaultPosition, wxDefaultSize, 0 );
 	mPackageSizeLabel->Wrap( -1 );
@@ -206,7 +207,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	
 	mPackageSizeValue = new wxTextCtrl( m_panel71, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	mPackageSizeValue->SetValidator(wxTextValidator{ wxFILTER_DIGITS });
-	bSizer7->Add( mPackageSizeValue, 0, wxALL, 5 );
+	bSizer7->Add( mPackageSizeValue, 0, wxALL | wxALIGN_CENTER, 5 );
 	
 	
 	m_panel71->SetSizer( bSizer7 );
@@ -570,6 +571,24 @@ void pof::AddProdutDialog::OnInventoryCheck(wxCommandEvent& evt)
 	else {
 		mBatchNumbeValue->SetValidator(wxTextValidator{ });
 	}
+}
+
+void pof::AddProdutDialog::OnMarkupCost(wxCommandEvent& evt)
+{
+	auto ct = mCostPriceValue->GetValue().ToStdString();
+	if (ct.empty()) {
+		wxMessageBox("No cost price to mark up", "Add product", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	pof::base::data::currency_t cost(ct);
+	pof::base::data::currency_t unit(mSalePriceValue->GetValue().ToStdString());
+
+	const float rnd = (100.0f + wxGetApp().mProductManager.gMarkup) / 100.0f;
+	unit = cost * static_cast<double>(rnd);
+
+	unit.nearest_hundred(); //round to nearest hundre
+	mSalePriceValue->SetValue(fmt::format("{:.2f}", static_cast<double>(unit)));
 }
 
 wxArrayString pof::AddProdutDialog::SetupSupplierName()

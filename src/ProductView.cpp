@@ -74,30 +74,19 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 END_EVENT_TABLE()
 
 
-
-// Using the construction of a static object to ensure that the help provider is set
-class wxFBContextSensitiveHelpSetter
-{
-public:
-wxFBContextSensitiveHelpSetter()
-{
-wxHelpProvider::Set( new wxSimpleHelpProvider );
-}
-};
-
-static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
-
 pof::ProductView::ProductView( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) 
 	: wxPanel( parent, id, pos, size, style ), mStockCheckTimer(this, ID_STOCK_CHECK_TIMER)
 {
-	SetDoubleBuffered(true);
+	//SetDoubleBuffered(true);
 	m_mgr.SetManagedWindow(this);
 	m_mgr.SetFlags(AUIMGRSTYLE);
+	SetSizeHints(wxDefaultSize, wxDefaultSize);
 	SetBackgroundColour(*wxWHITE); //move to theme
+
+	SetupAuiTheme();
 	CreateToolBar();
 	CreateDataView();
 	CreateProductInfo();
-	SetupAuiTheme();
 	CreateAttibutes();
 	CreateSpecialCols();
 	Style();
@@ -206,9 +195,9 @@ void pof::ProductView::CreateAccTable()
 	entries[1].Set(wxACCEL_CTRL, (int)'R', ID_REMOVE_PRODUCT);
 	entries[2].Set(wxACCEL_CTRL, (int)'O', ID_ORDER_LIST);
 	entries[3].Set(wxACCEL_CTRL, (int)'E', ID_REPORTS_ENDOFDAY);
-	entries[3].Set(wxACCEL_CTRL, (int)'M', ID_REPORTS_EOM);
-	entries[4].Set(wxACCEL_CTRL, (int)'C', ID_SHOW_COST_PRICE);
-	entries[4].Set(wxACCEL_CTRL, (int)'S', ID_ADD_INVENTORY);
+	entries[4].Set(wxACCEL_CTRL, (int)'M', ID_REPORTS_EOM);
+	entries[5].Set(wxACCEL_CTRL, (int)'C', ID_SHOW_COST_PRICE);
+	entries[6].Set(wxACCEL_CTRL, (int)'S', ID_ADD_INVENTORY);
 
 
 
@@ -2959,6 +2948,8 @@ void pof::ProductView::CreateToolBar()
 	mCatTextCtrl->SetBackgroundColour(*wxWHITE);
 	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
 	
+	//m_auiToolBar2->AddControl(new wxTextCtrl(m_auiToolBar2, wxID_ANY));
+
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	m_auiToolBar2->AddTool(ID_SHOW_PRODUCT, wxT("Hidden products"), wxArtProvider::GetBitmap("file", wxART_OTHER, FromDIP(wxSize(16, 16))), wxT("Show hidden products"));
 	

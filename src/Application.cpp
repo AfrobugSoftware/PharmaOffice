@@ -397,6 +397,7 @@ bool pof::Application::SaveSettings()
 	config->Write(wxT("UseSavedCost"), bUseSavedCost);
 	config->Write(wxT("PaperType"), mPaperType);
 	config->Write(wxT("HighlightOutOfStockInCategory"), bHighlightOutOfStockInCategory);
+	config->Write(wxT("Markup"), mProductManager.gMarkup);
 	//pharmacy
 	config->SetPath(wxT("/pharamcy"));
 	config->Write(wxT("Name"), wxString(MainPharmacy->name));
@@ -459,6 +460,7 @@ bool pof::Application::LoadSettings()
 	config->Read(wxT("UseSavedCost"), &bUseSavedCost);
 	config->Read(wxT("PaperType"), &mPaperType);
 	config->Read(wxT("HighlightOutOfStockInCategory"), &bHighlightOutOfStockInCategory);
+	config->Read(wxT("Markup"), &(mProductManager.gMarkup));
 
 	wxString version;
 	config->Read(wxT("Version"), &version);

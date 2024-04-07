@@ -300,8 +300,8 @@ void pof::MainFrame::CreateViews()
 {
 	auto workspaceBook = std::addressof(mWorkspace->GetWorkspacebook());
 
-	mProductView = new pof::ProductView(workspaceBook, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mSaleView = new pof::SaleView(workspaceBook, ID_SALE_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	mProductView = new pof::ProductView(workspaceBook, ID_PRODUCT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPrescriptionView = new pof::PrescriptionView(workspaceBook, ID_PRESCRIPTION_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mAuditView = new pof::AuditView(workspaceBook, ID_AUDIT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	mPatientView = new pof::PatientView(workspaceBook, ID_PATIENT_VIEW, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
@@ -951,6 +951,8 @@ void pof::MainFrame::OnRollbackData(wxCommandEvent& evt)
 		wxMessageBox("Restart application to effect rollback", "Rollback", wxICON_WARNING | wxOK);
 	}
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::INFORMATION, "Rolled back database");
+
+	//reload products
 }
 
 void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)

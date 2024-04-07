@@ -868,6 +868,8 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 	}
 	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
+	mProductLabels.erase(std::next(mProductLabels.begin(), idx));
+
 	if (idx == datastore.size() - 1){
 		if (mPropertyManager->IsShown()) {
 			mPropertyManager->Hide();
@@ -906,7 +908,6 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 
 	m_dataViewCtrl1->Freeze();
 	if (mInfoBar->IsShown()) mInfoBar->Dismiss();
-	mProductLabels.erase(std::next(mProductLabels.begin(), idx));
 	wxGetApp().mSaleManager.GetSaleData()->RemoveData(item);
 	m_dataViewCtrl1->Thaw();
 	m_dataViewCtrl1->Refresh();
@@ -917,10 +918,6 @@ void pof::SaleView::OnRemoveProduct(wxCommandEvent& evt)
 		mCurSaleuuid = boost::uuids::nil_uuid();
 		SetActiveSaleIdText(mCurSaleuuid);
 	}
-
-	//remove label
-	auto labeliter = std::next(mProductLabels.begin(), idx);
-	mProductLabels.erase(labeliter);
 
 	CheckEmpty();
 }

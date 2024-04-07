@@ -165,8 +165,8 @@ void pof::PatientView::CreateViews()
 	mPatientSelect->AssociateModel(wxGetApp().mPatientManager.GetPatientData().get());
 	wxGetApp().mPatientManager.LoadPatients();
 
-	mPatientSelect->AppendTextColumn("Name", pof::PatientManager::PATIENT_NAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 	mPatientSelect->AppendTextColumn("Last name", pof::PatientManager::PATIENT_LAST_NAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
+	mPatientSelect->AppendTextColumn("Name", pof::PatientManager::PATIENT_NAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 	mPatientSelect->AppendTextColumn("Date of birth", pof::PatientManager::PATIENT_AGE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 	mPatientSelect->AppendTextColumn("Status", 1000, wxDATAVIEW_CELL_INERT, FromDIP(50), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);;
 

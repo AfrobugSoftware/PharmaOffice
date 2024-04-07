@@ -99,19 +99,19 @@ pof::AddPatient::AddPatient( wxWindow* parent, wxWindowID id, const wxString& ti
 	fgSizer2->Add( mAddress, 0, wxALIGN_CENTER_VERTICAL|wxALL, FromDIP(5) );
 	
 	mAddressValue = new wxTextCtrl( m_scrolledWindow2, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer2->Add( mAddressValue, 1, wxALL|wxEXPAND, FromDIP(5) );
+	fgSizer2->Add( mAddressValue, 0, wxALL|wxEXPAND, FromDIP(5) );
 	
 	
 	m_scrolledWindow2->SetSizer( fgSizer2 );
 	m_scrolledWindow2->Layout();
 	fgSizer2->Fit( m_scrolledWindow2 );
-	sbSizer7->Add( m_scrolledWindow2, 0, wxEXPAND | wxALL, FromDIP(5) );
+	sbSizer7->Add( m_scrolledWindow2, 1, wxEXPAND | wxALL, FromDIP(5) );
 	
 	
 	m_panel4->SetSizer( sbSizer7 );
 	m_panel4->Layout();
 	sbSizer7->Fit( m_panel4 );
-	bSizer3->Add( m_panel4, 1, wxEXPAND | wxALL, FromDIP(5) );
+	bSizer3->Add( m_panel4, 0, wxEXPAND | wxALL, FromDIP(5) );
 	
 	
 	m_panel2->SetSizer( bSizer3 );
