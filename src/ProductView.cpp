@@ -312,6 +312,7 @@ void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
 		if (sel) {
 			if (!mSelections.empty()) {
 				mSelections.clear();
+				m_dataViewCtrl1->SetSelections({});
 				sel = false;
 			}
 			else {
@@ -484,8 +485,9 @@ void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 }
 
 void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
-{
-	if (!m_dataViewCtrl1->GetSelection().IsOk()) return;
+{	
+
+	if (!m_dataViewCtrl1->GetSelection().IsOk() && mSelections.empty()) return;
 	wxMenu* menu = new wxMenu;
 	auto open = menu->Append(ID_OPEN_PRODUCT_INFO, "Open product", nullptr);
 	wxMenu* catSub = new wxMenu;
@@ -822,8 +824,12 @@ void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 
 		}
 		mInfoBar->ShowMessage(fmt::format("{:d} Items Added To Order List", mSelections.size()), wxICON_INFORMATION);
+		m_dataViewCtrl1->Freeze();
+		mSelections.clear();
+		m_dataViewCtrl1->Thaw();
 	}
 }
+
 
 void pof::ProductView::OnAddItemsToCategory(wxCommandEvent& evt)
 {
@@ -873,7 +879,11 @@ void pof::ProductView::OnAddItemsToCategory(wxCommandEvent& evt)
 			mProductinfo->SignalUpdate(updatePropery);
 		}
 		mInfoBar->ShowMessage(fmt::format("Added {:d} items to \'{}\'", mSelections.size(), name), wxICON_INFORMATION);
+		m_dataViewCtrl1->Freeze();
+		mSelections.clear();
+		m_dataViewCtrl1->Thaw();
 	}
+
 }
 
 void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
@@ -1377,7 +1387,18 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 
 void pof::ProductView::OnUpdateUI(wxUpdateUIEvent& evt)
 {
-	//check for expired 
+	//check for expired
+	static size_t count = 0;
+	if (!mSelections.empty() && count != mSelections.size()) {
+		wxDataViewItemArray arr;
+		arr.reserve(mSelections.size());
+		for (auto& sel : mSelections) {
+			arr.push_back(sel);
+		}
+		m_dataViewCtrl1->SetSelections(arr);
+	}
+	count = mSelections.size();
+
 	std::vector<std::string> f;
 	if (wxGetApp().bCheckExpiredOnUpdate){
 		auto now = std::chrono::system_clock::now();
@@ -2606,7 +2627,7 @@ void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
 	}
 
 	m_dataViewCtrl1->Thaw();
-	wxMessageBox("Successfully shown product", "Hidden products", wxICON_INFORMATION | wxOK);
+	mInfoBar->ShowMessage("Successfully shown product", wxICON_INFORMATION);
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)

@@ -5,11 +5,13 @@ BEGIN_EVENT_TABLE(pof::OrderListView, wxDialog)
 EVT_TOOL(pof::OrderListView::ID_CLEAR_ORDERLIST, pof::OrderListView::OnClearOrderList)
 EVT_TOOL(pof::OrderListView::ID_PRINT_ORDER, pof::OrderListView::OnPrintOrder)
 EVT_TOOL(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
+EVT_TOOL(pof::OrderListView::ID_CLEAR_ORDERED, pof::OrderListView::OnClearOrdered)
 
 EVT_BUTTON(pof::OrderListView::ID_ADD_PRODUCT, pof::OrderListView::OnAddProduct)
 
 EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnContexMenu)
 EVT_DATAVIEW_COLUMN_HEADER_CLICK(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnHeaderClick)
+EVT_UPDATE_UI(pof::OrderListView::ID_ORDER_VIEW, pof::OrderListView::OnUpdateUI)
 EVT_MENU(pof::OrderListView::ID_REMOVE_ORDER, pof::OrderListView::OnRemoveOrder)
 EVT_MENU(pof::OrderListView::ID_REORDER, pof::OrderListView::OnReorder)
 EVT_MENU(pof::OrderListView::ID_SELECT, pof::OrderListView::OnSelect)
@@ -35,6 +37,7 @@ pof::OrderListView::OrderListView( wxWindow* parent, wxWindowID id, const wxStri
 	mTopTools->AddStretchSpacer();
 	mTopTools->AddSeparator();
 	mTopTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"), "Add product to order list");
+	mTopTools->AddTool(ID_CLEAR_ORDERED, "Remove ordered", wxArtProvider::GetBitmap(wxART_REMOVABLE, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Remove ordered items", wxITEM_NORMAL);
 	mTopTools->AddTool(ID_CLEAR_ORDERLIST, wxT("Clear all"), wxArtProvider::GetBitmap(wxART_NEW, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Clear order list");
 	m_tool11 = mTopTools->AddTool( ID_PRINT_ORDER, wxT("Print Order"), wxArtProvider::GetBitmap("download"), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 	
@@ -156,7 +159,7 @@ void pof::OrderListView::CreateEmptyPanel()
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
 
-	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_WARNING, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("basket", wxART_OTHER, FromDIP(wxSize(64,64))), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No product in order list"), wxDefaultPosition, wxDefaultSize, 0);
@@ -164,7 +167,7 @@ void pof::OrderListView::CreateEmptyPanel()
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16,16))));
 	btn->SetLabel("Add product");
 	btn->SetBackgroundColour(*wxWHITE);
 	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
@@ -286,18 +289,23 @@ void pof::OrderListView::OnPrintOrder(wxCommandEvent& evt)
 void pof::OrderListView::OnContexMenu(wxDataViewEvent& evt)
 {
 	auto item = mOrderView->GetSelection();
-	if (!item.IsOk()) return;
+	if (!item.IsOk() && mSelections.empty()) return;
 
  	wxMenu* menu = new wxMenu;
-	
-	size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
-	auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
-	if (state == static_cast<std::uint64_t>(pof::ProductManager::ORDERED)) {
-		menu->Append(ID_REORDER, "Reorder product", nullptr);
+	if (mSelections.empty()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = wxGetApp().mProductManager.GetOrderList()->GetDatastore()[idx];
+		auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+		if (state == static_cast<std::uint64_t>(pof::ProductManager::ORDERED)) {
+			menu->Append(ID_REORDER, "Reorder product", nullptr);
+		}
+		auto remv = menu->Append(ID_REMOVE_ORDER, "Remove order");
+		remv->SetBackgroundColour(*wxWHITE);
 	}
-	auto remv = menu->Append(ID_REMOVE_ORDER, "Remove Order");
-	remv->SetBackgroundColour(*wxWHITE);
+	else {
+		menu->Append(ID_REORDER, fmt::format("Reorder {:d} products", mSelections.size()), nullptr);
+		auto remv = menu->Append(ID_REMOVE_ORDER, fmt::format("Remove {:d} orders", mSelections.size()));
+	}
 	//remv->SetBitmap(wxArtProvider::GetBitmap("action_delete"));
 	PopupMenu(menu);
 }
@@ -423,6 +431,7 @@ void pof::OrderListView::OnReorder(wxCommandEvent& evt)
 	auto item = mOrderView->GetSelection();
 	if (!item.IsOk()) return;
 
+	wxBusyCursor cur;
 	mOrderView->Freeze();
 	if (mSelections.empty()) {
 		size_t idx = pof::DataModel::GetIdxFromItem(item);
@@ -466,6 +475,7 @@ void pof::OrderListView::OnHeaderClick(wxDataViewEvent& evt)
 			if (!mSelections.empty()) {
 				mSelections.clear();
 				sel = false;
+				mOrderView->SetSelections({});
 			}
 			else {
 				std::ranges::copy(items, std::inserter(mSelections, mSelections.end()));
@@ -482,6 +492,58 @@ void pof::OrderListView::OnHeaderClick(wxDataViewEvent& evt)
 	}
 	else {
 		evt.Skip();
+	}
+}
+
+void pof::OrderListView::OnUpdateUI(wxUpdateUIEvent& evt)
+{
+	auto id = evt.GetId();
+	switch (id)
+	{
+	case ID_ORDER_VIEW:
+	{
+		static size_t count = 0;
+		if (!mSelections.empty() && count != mSelections.size()) {
+			wxDataViewItemArray arr;
+			arr.reserve(mSelections.size());
+			for (auto& sel : mSelections) {
+				arr.push_back(sel);
+			}
+			mOrderView->SetSelections(arr);
+		}
+	}
+	default:
+		break;
+	}
+}
+
+void pof::OrderListView::OnClearOrdered(wxCommandEvent& evt)
+{
+	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
+	if (datastore.empty()) {
+		wxMessageBox("Order list is empty", "Order list", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxBusyCursor cor;
+	wxDataViewItemArray items;
+	size_t idx = 0;
+	for (auto& row : datastore) {
+		auto item = pof::DataModel::GetItemFromIdx(idx);
+		auto& state = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::ORDER_STATE]);
+		if (state == pof::ProductManager::ORDERED) {
+			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::ORDER_PRODUCT_UUID]);
+			wxGetApp().mProductManager.RemvFromOrderList(uid);
+			items.push_back(item);
+		}
+		idx++;
+	}
+	if (!items.empty()) {
+		wxGetApp().mProductManager.GetOrderList()->RemoveData(items);
+	}
+
+	UpdateTexts();
+	if (datastore.empty()) {
+		mBook->SetSelection(1);
 	}
 }
 

@@ -88,6 +88,7 @@ namespace pof
 			wxPGProperty* mUnitPrice;
 			wxPGProperty* mCostPrice;
 			wxPGProperty* mBarcode;
+			wxPGProperty* mCurStock;
 			wxDatePickerCtrl* mInventoryDate;
 			double mStubPrice;
 			wxPGChoices ProductClassChoices;

@@ -196,6 +196,9 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
 
+	mCurStock = m_propertyGridPage1->Append(new wxIntProperty(wxT("CURRENT STOCK")));
+	mCurStock->Enable(false);
+	m_propertyGridPage1->SetPropertyHelpString(mCurStock, wxT("Product current stock level"));
 	
 	bSizer3->Add( m_propertyGridManager1, 1, wxALL|wxEXPAND, FromDIP(0));
 	m_panel2->SetSize(FromDIP(wxSize(400, -1)));
@@ -301,6 +304,7 @@ void pof::ProductInfo::LoadProductProperty(const pof::base::data::row_t& row)
 	mPackageSizeItem->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_PACKAGE_SIZE>(tup)));
 	mUnitPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_UNIT_PRICE>(tup)));
 	mCostPrice->SetValue(static_cast<double>(std::get<pof::ProductManager::PRODUCT_COST_PRICE>(tup)));
+	mCurStock->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_STOCK_COUNT>(tup)));
 	mMinStockCount->SetValue(static_cast<int>(std::get<pof::ProductManager::PRODUCT_MIN_STOCK_COUNT>(tup)));
 	mDirForUse->SetValue(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_USAGE_INFO>(tup)));
 	mHealthCond->SetValue(wxVariant(SplitIntoArrayString(std::get<pof::ProductManager::PRODUCT_HEALTH_CONDITIONS>(tup))));
@@ -464,10 +468,10 @@ void pof::ProductInfo::CreateEmptyPanel()
 
 	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
-	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap("product", wxART_OTHER, FromDIP(wxSize(40,40))), wxDefaultPosition, wxDefaultSize, 0);
 	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
-	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No transaction avaliable for product"), wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No stock avaliable for product"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
@@ -611,6 +615,9 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 				Inven.first[pof::ProductManager::INVENTORY_STOCK_COUNT];
 		}
 
+		//update the current stock level
+		auto val = mCurStock->GetValue().GetInteger();
+		mCurStock->SetValue( val + static_cast<int>(boost::variant2::get<std::uint64_t>(mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_STOCK_COUNT])));
 
 		//update a controlled medicaiton
 		if (iscontrolled) {
@@ -663,6 +670,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		mPropertyUpdate = {};
 		RemovePropertyModification();
 		
+
 		int sel = mBook->GetSelection();
 		if (sel == PAGE_EMPTY) {
 			mBook->SetSelection(PAGE_INVENTORY);
@@ -984,6 +992,12 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		return;
 	}
 
+
+	auto prod = std::ranges::find_if(datastore, [&](const pof::base::data::row_t& v) -> bool {
+		return boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
+		 == boost::variant2::get<pof::base::data::duuid_t>(v.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	});
+
 	//check if we have sold from this inventory
 	std::uint64_t invenstock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
 	std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
@@ -992,6 +1006,8 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		wxMessageBox("Removing inventory would result in an invalid stock count as products have been sold from inventory", "Inventory", wxICON_INFORMATION | wxOK);
 		return;
 	}
+	auto val = mCurStock->GetValue().GetInteger();
+	mCurStock->SetValue(val - static_cast<int>(fpt));
 
 	wxBusyCursor curor;
 	mStockRemvSig(uid, static_cast<std::uint64_t>(presentStock - invenstock));

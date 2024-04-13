@@ -57,6 +57,7 @@ namespace pof
 			ID_CLEAR_ORDERLIST,
 			ID_REORDER,
 			ID_SELECT,
+			ID_CLEAR_ORDERED,
 		};
 
 		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
@@ -73,6 +74,8 @@ namespace pof
 		void OnReorder(wxCommandEvent& evt);
 		void OnSelect(wxCommandEvent& evt);
 		void OnHeaderClick(wxDataViewEvent& evt);
+		void OnUpdateUI(wxUpdateUIEvent& evt);
+		void OnClearOrdered(wxCommandEvent& evt);
 
 		void ShowSelect();
 		void HideSelect();

@@ -10,8 +10,9 @@ EVT_BUTTON(InventoryDialog::ID_CALENDAR, InventoryDialog::OnCalendar)
 END_EVENT_TABLE()
 
 pof::InventoryDialog::InventoryDialog(wxWindow* parent, const pof::base::data::duuid_t& uid)
-: wxDialog(parent, wxID_ANY, "Add Stock", wxDefaultPosition, wxSize(591, 398), wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL),
+: wxDialog(parent, wxID_ANY, "Add Stock", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL),
 	mProductUuid(uid){
+	this->SetSize(FromDIP(wxSize(591, 398)));
 	CreateDialog();
 	SizeDialog();
 }
@@ -168,14 +169,14 @@ void pof::InventoryDialog::CreateDialog()
 	val.SetRange(0, 999999999999);
 
 
-	mQuantityInControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
+	mQuantityInControl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(200, -1)), wxSP_ARROW_KEYS| wxALIGN_LEFT, 0,
 		std::numeric_limits<int>::max());
-	mCostControl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
+	mCostControl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(200, -1)));
 	mCostControl->SetValidator(val);
 
-	mExpiryDate = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(200, -1), wxDP_DROPDOWN);
+	mExpiryDate = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	mExpiryDate->SetRange(wxDateTime::Now(), wxDateTime{});
-	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
+	mBatchNumber = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(200, -1)));
 	mBatchNumber->SetValidator(wxTextValidator{ wxFILTER_DIGITS  | wxFILTER_EMPTY});
 	//mManufactureName = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1));
 	//mManufactureName->SetValidator(wxTextValidator{  wxFILTER_EMPTY });
@@ -192,51 +193,51 @@ void pof::InventoryDialog::SizeDialog()
 	wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer* boxSizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer* okCancleSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxFlexGridSizer* flexSizer = new wxFlexGridSizer(7,3, 2,5);
+	wxFlexGridSizer* flexSizer = new wxFlexGridSizer(7,3, FromDIP(2),FromDIP(5));
 	flexSizer->AddGrowableCol(1);
 	flexSizer->SetFlexibleDirection(wxBOTH);
 	flexSizer->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
 
 	okCancleSizer->AddStretchSpacer();
-	okCancleSizer->Add(mOkCancel[0], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, 5));
-	okCancleSizer->Add(mOkCancel[1], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, 5));
+	okCancleSizer->Add(mOkCancel[0], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, FromDIP(5)));
+	okCancleSizer->Add(mOkCancel[1], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL).Border(wxALL, FromDIP(5)));
 
 	flexSizer->Add(texts[1], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mBatchNumber, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mBatchNumber, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[2], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mQuantityInControl, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mQuantityInControl, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[3], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mExpiryDate, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mExpiryDate, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[5], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mCostControl, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mCostControl, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
-	flexSizer->Add(mAddSupplier, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mAddSupplier, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[6], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mManufacturersName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mManufacturersName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
 	flexSizer->Add(texts[7], wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL));
-	flexSizer->Add(mInvoiceName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
+	flexSizer->Add(mInvoiceName, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
 	flexSizer->AddStretchSpacer();
 
 
-	boxSizer->Add(texts[0], wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
-	boxSizer->Add(texts[4], wxSizerFlags().Align(wxLEFT).Border(wxALL, 5));
-	boxSizer->Add(flexSizer, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, 5));
-	boxSizer->Add(okCancleSizer, wxSizerFlags().Expand().Border(wxALL, 5));
+	boxSizer->Add(texts[0], wxSizerFlags().Align(wxLEFT).Border(wxALL, FromDIP(5)));
+	boxSizer->Add(texts[4], wxSizerFlags().Align(wxLEFT).Border(wxALL, FromDIP(5)));
+	boxSizer->Add(flexSizer, wxSizerFlags().Expand().Align(wxLEFT).Border(wxALL, FromDIP(5)));
+	boxSizer->Add(okCancleSizer, wxSizerFlags().Expand().Border(wxALL, FromDIP(5)));
 
-	topSizer->Add(boxSizer, wxSizerFlags().Expand().Border(wxALL, 5));
+	topSizer->Add(boxSizer, wxSizerFlags().Expand().Border(wxALL, FromDIP(5)));
 	SetSizer(topSizer);
 	//topSizer->SetSizeHints(this);
 	Center();
