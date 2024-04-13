@@ -330,6 +330,7 @@ namespace pof {
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpireProductPeriod();
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
+		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts(std::chrono::months months);
 		std::optional<std::vector<wxDataViewItem>> DoOutOfStock();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 		std::optional<pof::base::currency> GetTotalStockCost();
@@ -399,6 +400,7 @@ namespace pof {
 		bool UpdateTimeCheck(pof::base::data::datetime_t time);
 
 		bool ReturnToInventory(const pof::base::data::duuid_t& pid, std::tuple<std::uint64_t, pof::base::data::currency_t> quan);
+
 
 		std::optional<pof::base::data> GetInventoryForMonth(const pof::base::data::datetime_t& dt);
 	private:

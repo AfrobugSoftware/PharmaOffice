@@ -2547,7 +2547,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[PRODUCT_UUID]);
 			if (set.find(uid) != set.end()) {
 				auto& name = boost::variant2::get<pof::base::data::text_t>(datastore[i].first[PRODUCT_NAME]);
-				spdlog::info("{} has expired", name);
+				//spdlog::info("{} has expired", name);
 				items.emplace_back(pof::DataModel::GetItemFromIdx(i));
 			}
 		}
@@ -2555,6 +2555,63 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 		return items;
 	}
 	return std::nullopt;
+}
+
+std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProducts(std::chrono::months months)
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(
+			SELECT p.uuid
+		    FROM products p, inventory i
+			WHERE (p.uuid, i.input_date) IN 
+					(
+						SELECT i.uuid, MAX(i.input_date)
+						FROM inventory i
+						WHERE i.uuid NOT NULL
+						GROUP BY i.uuid
+					)  
+			AND (:m = Months(i.expire_date)) AND p.stock_count > 0 AND p.uuid = i.uuid; )";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto m = std::chrono::system_clock::now() + months;
+		spdlog::info("expire month to check {:%m/%Y}", m);
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(m) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)), {"m"});
+		assert(status);
+		auto rel = mLocalDatabase->retrive<pof::base::data::duuid_t>(*stmt);
+
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		mLocalDatabase->finalise(*stmt);
+
+		if (rel->empty()) return std::vector<wxDataViewItem>{};
+
+		std::set<pof::base::data::duuid_t> set;
+		std::ranges::transform(*rel, std::inserter(set, set.end()), [&](auto& tup) -> pof::base::data::duuid_t {
+			return std::get<0>(tup);
+			});
+		auto& datastore = mProductData->GetDatastore();
+		std::vector<wxDataViewItem> items;
+		items.reserve(rel->size());
+		for (size_t i = 0; i < datastore.size(); i++) {
+			auto& uid = boost::variant2::get<pof::base::data::duuid_t>(datastore[i].first[PRODUCT_UUID]);
+			if (set.find(uid) != set.end()) {
+				auto& name = boost::variant2::get<pof::base::data::text_t>(datastore[i].first[PRODUCT_NAME]);
+				spdlog::info("{} has expired", name);
+				items.emplace_back(pof::DataModel::GetItemFromIdx(i));
+			}
+		}
+		items.shrink_to_fit();
+		return items;
+	}
 }
 
 std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoOutOfStock()

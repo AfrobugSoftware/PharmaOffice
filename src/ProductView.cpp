@@ -15,13 +15,13 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	//TOOLS
 	EVT_TOOL(pof::ProductView::ID_ADD_PRODUCT, pof::ProductView::OnAddProduct)
 	EVT_TOOL(pof::ProductView::ID_ADD_CATEGORY, pof::ProductView::OnAddCategory)
-	EVT_TOOL(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 	EVT_TOOL(pof::ProductView::ID_SELECT_MULTIPLE, pof::ProductView::OnSelection)
 	EVT_TOOL(pof::ProductView::ID_OUT_OF_STOCK, pof::ProductView::OnOutOfStock)
 	EVT_TOOL(pof::ProductView::ID_PACKS, pof::ProductView::OnPacks)
 	EVT_TOOL(pof::ProductView::ID_ORDER_LIST, pof::ProductView::OnShowOrderList)
 	EVT_TOOL(pof::ProductView::ID_SHOW_SUPPLIER, pof::ProductView::OnShowSupplier)
 	EVT_TOOL(pof::ProductView::ID_SHOW_PRODUCT, pof::ProductView::OnShowHiddenProduct)
+	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_PRODUCT_EXPIRE, pof::ProductView::OnExpiredProducts)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_REPORTS, pof::ProductView::OnReportDropdown)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_FUNCTIONS, pof::ProductView::OnFunctions)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::ProductView::ID_CHARTS, pof::ProductView::OnChartDropDown)
@@ -334,29 +334,47 @@ void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
 	}
 }
 
-void pof::ProductView::OnExpiredProducts(wxCommandEvent& evt)
+void pof::ProductView::OnExpiredProducts(wxAuiToolBarEvent& evt)
 {
-	if (evt.IsChecked()) {
-		
-		RemoveCheckedState(mOutOfStockItem);
-		mActiveCategory.clear();
-		m_searchCtrl1->SetDescriptiveText("Search for product");
+	if (!evt.IsDropDownClicked()) {
+		static bool checked = true;
+		if (checked) {
+
+			RemoveCheckedState(mOutOfStockItem);
+			mActiveCategory.clear();
+			m_searchCtrl1->SetDescriptiveText("Search for product");
 
 
-		auto items = wxGetApp().mProductManager.DoExpiredProducts();
-		if (!items.has_value()) {
-			RemoveCheckedState(mExpireProductItem);
-			return;
+			auto items = wxGetApp().mProductManager.DoExpiredProducts();
+			if (!items.has_value()) {
+				RemoveCheckedState(mExpireProductItem);
+				return;
+			}
+			if (items->empty()) {
+				mInfoBar->ShowMessage("There are no expired products in the store", wxICON_INFORMATION);
+				RemoveCheckedState(mExpireProductItem);
+				return;
+			}
+			wxGetApp().mProductManager.GetProductData()->Reload(*items);
 		}
-		if (items->empty()) {
-			wxMessageBox("There are no expired products in the store", "PRODUCTS", wxICON_INFORMATION | wxOK);
-			RemoveCheckedState(mExpireProductItem);
-			return;
+		else {
+			wxGetApp().mProductManager.GetProductData()->Reload();
 		}
-		wxGetApp().mProductManager.GetProductData()->Reload(*items);
+		checked = !checked;
 	}
 	else {
-		wxGetApp().mProductManager.GetProductData()->Reload();
+		wxMenu* menu = new wxMenu;
+		int range = 1;
+		for (; range < 4; range++) {
+			if(range == 1)menu->Append(range, fmt::format("{} Month", range), nullptr);
+			else menu->Append(range, fmt::format("{} Months", range), nullptr);
+			menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnExpiredMonth, this), range);
+		}
+
+		wxPoint pos = mExpireProductItem->GetSizerItem()->GetPosition();
+		wxSize sz = mExpireProductItem->GetSizerItem()->GetSize();
+
+		m_auiToolBar2->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
 	}
 }
 
@@ -801,6 +819,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnAddProductToOrderList(wxCommandEvent& evt)
 {
+	wxBusyCursor cur;
 	auto& datastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	if (mSelections.empty()) {
 		auto item = m_dataViewCtrl1->GetSelection();
@@ -2630,6 +2649,28 @@ void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
 	mInfoBar->ShowMessage("Successfully shown product", wxICON_INFORMATION);
 }
 
+void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
+{
+	auto id = evt.GetId();
+	mInfoBar->Dismiss();
+
+	wxBusyCursor cur;
+	auto items = wxGetApp().mProductManager.DoExpiredProducts(std::chrono::months(id));
+	if (!items.has_value()) {
+		wxMessageBox("Failed to read database, contact D-GLOPA staff", "Products", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	if (items->empty()) {
+		if(id == 1)mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} month in the store", id), wxICON_INFORMATION);
+		else mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} months in the store", id), wxICON_INFORMATION);
+		
+		RemoveCheckedState(mExpireProductItem);
+		return;
+	}
+	wxGetApp().mProductManager.GetProductData()->Reload(*items);
+}
+
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 {
 	m_dataViewCtrl1->Freeze();
@@ -2959,7 +3000,9 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar2->AddSeparator();
 	mOutOfStockItem = m_auiToolBar2->AddTool(ID_OUT_OF_STOCK, wxT("Out of stock"), wxArtProvider::GetBitmap("folder_open"), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
-	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
+	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("time"), wxT("List of Products that are expired, or expired alerted"));
+	mExpireProductItem->SetHasDropDown(true);
+
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("pen"), wxT("Products that are to be ordered"), wxITEM_NORMAL);
 	m_auiToolBar2->AddSpacer(FromDIP(2));

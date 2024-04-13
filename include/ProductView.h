@@ -184,7 +184,7 @@ namespace pof
 		void OnProductActivated(wxDataViewEvent& evt);
 		void OnBeginDrag(wxDataViewEvent& evt);
 		void OnHeaderClicked(wxDataViewEvent& evt);
-		void OnExpiredProducts(wxCommandEvent& evt);
+		void OnExpiredProducts(wxAuiToolBarEvent& evt);
 		void OnAddProduct(wxCommandEvent& evt);
 		void OnAddCategory(wxCommandEvent& evt);
 		void OnRemoveFromCategory(wxCommandEvent& evt);
@@ -228,6 +228,7 @@ namespace pof
 		void OnCompareSales(wxCommandEvent& evt);
 		void OnHideProduct(wxCommandEvent& evt);
 		void OnShowHiddenProduct(wxCommandEvent& evt);
+		void OnExpiredMonth(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
