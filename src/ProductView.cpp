@@ -2978,7 +2978,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
-	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Suppliers", wxArtProvider::GetBitmap(wxART_FLOPPY, wxART_TOOLBAR, wxSize(16, 16)), "Show suppliers", wxITEM_CHECK);
+	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Invoices", wxArtProvider::GetBitmap(wxT("file"), wxART_OTHER, wxSize(16, 16)), "Show suppliers/invoices", wxITEM_CHECK);
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add product"), wxArtProvider::GetBitmap("action_add"), "Add a new Product");

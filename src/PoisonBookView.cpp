@@ -102,7 +102,7 @@ void pof::PoisonBookView::CreateViews()
 	text->SetFont(wxFontInfo().AntiAliased());
 	text->SetBackgroundColour(*wxWHITE);
 
-	tsz->Add(text, 0, wxALL | wxEXPAND, 5);
+	tsz->Add(text, 0, wxALL | wxEXPAND, FromDIP(5));
 	tsz->AddStretchSpacer();
 
 	textPanel->SetSizer(tsz);
@@ -114,11 +114,11 @@ void pof::PoisonBookView::CreateViews()
 	imagelist->Add(wxArtProvider::GetBitmap("product"));
 	mBookList->AssignImageList(imagelist, wxIMAGE_LIST_NORMAL);
 
-	sz->AddSpacer(2);
-	sz->Add(textPanel, 0, wxALL | wxEXPAND, 2);
-	sz->Add(new wxStaticLine(panel, wxID_ANY), 0, wxALL | wxEXPAND, 2);
-	sz->AddSpacer(10);
-	sz->Add(mBookList, 1, wxALL | wxEXPAND, 2);
+	sz->AddSpacer(FromDIP(2));
+	sz->Add(textPanel, 0, wxALL | wxEXPAND, FromDIP(2));
+	sz->Add(new wxStaticLine(panel, wxID_ANY), 0, wxALL | wxEXPAND, FromDIP(2));
+	sz->AddSpacer(FromDIP(10));
+	sz->Add(mBookList, 1, wxALL | wxEXPAND, FromDIP(2));
 
 
 	panel->SetSizer(sz);
@@ -146,15 +146,15 @@ void pof::PoisonBookView::CreateDataView()
 	mBookData = new wxDataViewCtrl(panel, ID_BOOKDATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	mBookData->AssociateModel(wxGetApp().mPoisonBookManager.GetBook().get());
 
-	mBookData->AppendTextColumn(wxT("Date"), pof::PoisonBookManager::DATE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
-	mBookData->AppendBitmapColumn(wxT("Verified"), pof::PoisonBookManager::ISVERIFED, wxDATAVIEW_CELL_INERT, 60, wxALIGN_CENTER);
-	mBookData->AppendTextColumn(wxT("Patient name"), pof::PoisonBookManager::PNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTER);
-	mBookData->AppendTextColumn(wxT("Patient Address"), pof::PoisonBookManager::PADDY, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
-	mBookData->AppendTextColumn(wxT("Pharmacist"), pof::PoisonBookManager::PHARMNAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_CENTRE);
-	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
-	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Date"), pof::PoisonBookManager::DATE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
+	mBookData->AppendBitmapColumn(wxT("Verified"), pof::PoisonBookManager::ISVERIFED, wxDATAVIEW_CELL_INERT, FromDIP(60), wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Patient name"), pof::PoisonBookManager::PNAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Patient Address"), pof::PoisonBookManager::PADDY, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_CENTRE);
+	mBookData->AppendTextColumn(wxT("Pharmacist"), pof::PoisonBookManager::PHARMNAME, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_CENTRE);
+	mBookData->AppendTextColumn(wxT("Quantity"), pof::PoisonBookManager::QUAN, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
+	mBookData->AppendTextColumn(wxT("Balance"), pof::PoisonBookManager::RUNBALANCE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
 
-	tsz->Add(mProductName, 0, wxALL | wxEXPAND, 5);
+	tsz->Add(mProductName, 0, wxALL | wxEXPAND, FromDIP(5));
 	tsz->AddStretchSpacer();
 
 
@@ -162,10 +162,10 @@ void pof::PoisonBookView::CreateDataView()
 	tsz->SetSizeHints(mTextPanel);
 	mTextPanel->Layout();
 
-	sz->Add(mInfoBar, 0, wxALL | wxEXPAND, 2);
-	sz->Add(mTextPanel, 0, wxALL | wxEXPAND, 2);
-	sz->Add(new wxStaticLine(panel, wxID_ANY), 0, wxALL | wxEXPAND, 2);
-	sz->Add(mBookData, 1, wxALL | wxEXPAND, 2);
+	sz->Add(mInfoBar, 0, wxALL | wxEXPAND, FromDIP(2));
+	sz->Add(mTextPanel, 0, wxALL | wxEXPAND, FromDIP(2));
+	sz->Add(new wxStaticLine(panel, wxID_ANY), 0, wxALL | wxEXPAND, FromDIP(2));
+	sz->Add(mBookData, 1, wxALL | wxEXPAND, FromDIP(2));
 
 	panel->SetSizer(sz);
 	sz->SetSizeHints(panel);
@@ -267,7 +267,7 @@ void pof::PoisonBookView::LoadBooks()
 	mBookList->ClearAll();
 	for (auto& tup : books.value())
 	{
-		std::string string = fmt::format("{}{}\n{}", std::get<1>(tup),
+		std::string string = fmt::format("{}\n {} \n{}", std::get<1>(tup),
 			std::get<2>(tup), std::get<3>(tup));
 		wxListItem item;
 		item.SetId(i);
