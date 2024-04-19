@@ -99,7 +99,15 @@ void pof::SupplierView::CreateViews()
 	mInvoiceView = new wxDataViewCtrl(mBook, ID_INVOICE_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
 	mInvoiceView->AssociateModel(wxGetApp().mProductManager.GetInvoices().get());
 	mInvoiceView->AppendTextColumn("Invoices", pof::ProductManager::INVOICE_ID, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	mInvoiceView->AppendTextColumn("Date", 100, wxDATAVIEW_CELL_INERT, FromDIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
 
+	pof::DataModel::SpeicalColHandler_t cd;
+	cd.first = [&](size_t row, size_t col) -> wxVariant {
+		if (mInvoiceDates.empty()) return wxString();
+
+		return fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(mInvoiceDates[row].first[0]));
+	};
+	wxGetApp().mProductManager.GetInvoices()->SetSpecialColumnHandler(100, std::move(cd));
 
 	mBook->AddPage(mInvoiceView, "Invoice", false);
 
@@ -167,6 +175,17 @@ void pof::SupplierView::LoadSuppliers()
 void pof::SupplierView::LoadInvoices(std::uint64_t supid)
 {
 	wxGetApp().mProductManager.LoadInvoices(supid);
+	LoadInvoicesDates(supid);
+}
+
+void pof::SupplierView::LoadInvoicesDates(std::uint64_t supid)
+{
+	auto dates = wxGetApp().mProductManager.LoadInvoiceDates(supid);
+	if (!dates.has_value()) {
+		wxMessageBox("Failed to load invoice dates for the supplier, call D-GLOPA admin", "Invoices", wxICON_ERROR | wxOK);
+		return;
+	}
+	mInvoiceDates = std::move(dates.value());
 }
 
 void pof::SupplierView::LoadInvoiceProducts(std::uint64_t sid, const std::string& in)
@@ -181,6 +200,7 @@ void pof::SupplierView::LoadInvoiceProducts(std::uint64_t sid, const std::string
 	for (auto&& tup : rel.value())
 	{
 		auto v = pof::base::make_row_from_tuple(std::move(tup));
+		boost::variant2::get<pof::base::currency>(v[2]).nearest_hundred();
 		datastore.emplace(std::move(v));
 	}
 	mInvoiceProductModel->Reload();

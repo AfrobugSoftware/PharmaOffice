@@ -217,6 +217,7 @@ namespace pof {
 		std::optional<std::vector<std::string>> GetInvoices(std::uint64_t suppId);
 		inline std::unique_ptr<pof::DataModel>& GetInvoices() { return mInvoices; }
 		bool LoadInvoices(std::uint64_t sid);
+		std::optional<pof::base::data> LoadInvoiceDates(std::uint64_t sid);
 		bool AddInvoice(pof::base::data::const_iterator iter);
 		bool RemoveInvoice(pof::base::data::const_iterator iter);
 		bool UpdateInvoice(pof::base::data::const_iterator iter);

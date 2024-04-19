@@ -1399,3 +1399,30 @@ std::optional<pof::base::data> pof::SaleManager::GetMonthlySales(const pof::base
 	return std::nullopt;
 }
 
+std::optional<std::uint64_t> pof::SaleManager::SumOfSalesFrom(const pof::base::data::duuid_t& puid, pof::base::data::datetime_t dt)
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT SUM(s.product_quantity) FROM sales s, products p 
+		WHERE p.uuid = ? AND p.uuid = s.product_uuid AND (Days(s.sale_date) = ? OR Days(s.sale_date) > ?);)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		auto days = std::chrono::floor<std::chrono::days>(dt);
+		std::int64_t c = static_cast<std::int64_t>(days.time_since_epoch().count());
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid, c, c));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<std::uint64_t>(*stmt);
+		if(!rel.has_value()){
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		return rel->empty() ? 0ll : std::get<std::uint64_t>(*(rel->begin()));
+	}
+	return std::nullopt;
+}
+

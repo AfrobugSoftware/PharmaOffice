@@ -25,6 +25,7 @@ BEGIN_EVENT_TABLE(pof::ProductInfo, wxPanel)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_REMOVE, pof::ProductInfo::OnRemoveInventory)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_CREATE_INVOICE, pof::ProductInfo::OnCreateInvoice)
 	EVT_MENU(pof::ProductInfo::ID_INVEN_MENU_CHANGE_SUPPLIER_NAME, pof::ProductInfo::OnChangeSupplierName)
+	EVT_MENU(pof::ProductInfo::ID_UPDATE_INVEN_STOCK, pof::ProductInfo::OnUpdateInventoryStock)
 	EVT_BUTTON(pof::ProductInfo::ID_TOOL_ADD_INVENTORY, pof::ProductInfo::OnAddInventory)
 
 END_EVENT_TABLE()
@@ -433,6 +434,7 @@ void pof::ProductInfo::CreateInventoryView()
 
 		auto cur = boost::variant2::get<pof::base::currency>(unitCost) *
 			static_cast<double>(boost::variant2::get<std::uint64_t>(invenCount));
+		cur.nearest_hundred();
 		return fmt::format("{:cu}", cur);
 	};
 	wxGetApp().mProductManager.GetInventory()->SetSpecialColumnHandler(pof::ProductManager::INVENTORY_COST, std::move(costHandler));
@@ -1029,6 +1031,7 @@ void pof::ProductInfo::OnInvenContextMenu(wxDataViewEvent& evt)
 	wxMenu* menu = new wxMenu;
 	auto s = menu->Append(ID_INVEN_MENU_CREATE_INVOICE, "Create invoice for inventory", nullptr);
 	auto m = menu->Append(ID_INVEN_MENU_CHANGE_SUPPLIER_NAME, "Change supplier name for inventory", nullptr);
+	auto x = menu->Append(ID_UPDATE_INVEN_STOCK, "Modify stock entry", nullptr);
 	menu->AppendSeparator();
 	auto rv = menu->Append(ID_INVEN_MENU_REMOVE, "Remove Inventory", nullptr);
 
@@ -1215,6 +1218,92 @@ void pof::ProductInfo::OnChangeSupplierName(wxCommandEvent& evt)
 
 	wxGetApp().mProductManager.GetInventory()->UpdateItem(item);
 	irow.second.second.reset();
+}
+
+void pof::ProductInfo::OnUpdateInventoryStock(wxCommandEvent& evt)
+{
+	auto item = InventoryView->GetSelection();
+	if (!item.IsOk()) return;
+	auto& datastore = wxGetApp().mProductManager.GetInventory()->GetDatastore();
+	auto iter = std::next(datastore.begin(), pof::DataModel::GetIdxFromItem(item));
+	pof::base::data::duuid_t& uid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::INVENTORY_PRODUCT_UUID]);
+	std::uint64_t& id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
+	std::uint64_t& stock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+
+	if (id != wxGetApp().mProductManager.GetLastInventoryId(uid)) {
+		wxMessageBox("Can only modify the most recently entered inventory", "Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	wxCredentialEntryDialog dialog(this, "User credentials are required to modify inventory entry", "Inventory");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid user name or password", "Roll back", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+
+	auto str = wxGetTextFromUser("Enter new stock level for inventory", "Modify inventory", std::to_string(stock));
+	if (str.empty()) return;
+	std::uint64_t temps = 0;
+	try {
+		temps = boost::lexical_cast<std::uint64_t>(str);
+	}
+	catch (...) {
+		wxMessageBox("Invalid input, stock must be a number");
+		return;
+	}
+	//
+	wxBusyCursor cur;
+	auto piter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
+		[&](const pof::base::data::row_t& row) -> bool {
+		return uid == boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		});
+	if (piter == wxGetApp().mProductManager.GetProductData()->GetDatastore().end()) return;
+	std::uint64_t& curstock = boost::variant2::get<std::uint64_t>(piter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	if (curstock >= stock) {
+		curstock -= stock;
+	}
+	else {
+		curstock = 0;
+	}
+
+	auto quansold = wxGetApp().mSaleManager.SumOfSalesFrom(uid, boost::variant2::get<pof::base::data::datetime_t>(iter->first[pof::ProductManager::INVENTORY_INPUT_DATE]));
+	if (!quansold) {
+		spdlog::error("Error in getting sale");
+		wxMessageBox("Critical error in inventory modify, call D-GLOPA admin", "Inventory", wxICON_ERROR | wxOK);
+		return;
+	}
+	curstock += temps;
+	stock = temps;
+
+	//remove already sold
+	if (curstock >= quansold.value()) {
+		curstock -= quansold.value();
+	}
+	else {
+		curstock = 0;
+	}
+
+	piter->second.second.set(pof::ProductManager::PRODUCT_STOCK_COUNT);
+	std::uint64_t pdist = std::distance(wxGetApp().mProductManager.GetProductData()->GetDatastore().begin(),
+		piter);
+	wxGetApp().mProductManager.GetProductData()->Signal(pof::DataModel::Signals::UPDATE, pdist);
+	piter->second.second.reset();
+
+	//update the database for this inventory
+	iter->second.second.set(pof::ProductManager::INVENTORY_STOCK_COUNT);
+	pdist = pof::DataModel::GetIdxFromItem(item);
+	wxGetApp().mProductManager.GetInventory()->Signal(pof::DataModel::Signals::UPDATE, pdist);
+	iter->second.second.reset();
+
+	wxMessageBox("Inventory updated successfully", "Inventory", wxICON_INFORMATION | wxOK);
 }
 
 void pof::ProductInfo::RemovePropertyModification()

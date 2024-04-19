@@ -61,6 +61,7 @@ namespace pof
 
 		void LoadSuppliers();
 		void LoadInvoices(std::uint64_t supid);
+		void LoadInvoicesDates(std::uint64_t supid);
 		void LoadInvoiceProducts(std::uint64_t sid, const std::string& in);
 
 		wxPanel* CreateEmptyPanel(const std::string& text = {});
@@ -112,6 +113,7 @@ namespace pof
 		std::uint64_t mCurSupplier;
 		std::string mCurInvoice;
 		pof::DataModel* mInvoiceProductModel = nullptr; //the data for the products
+		pof::base::data mInvoiceDates; 
 
 		DECLARE_EVENT_TABLE();
 	};
