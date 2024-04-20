@@ -79,7 +79,7 @@ try{
 	//load the settings
 	LoadSettings();
 
-	gVersion = "1.1.1 - pre beta";
+	gVersion = "1.1.2 - pre beta";
 	wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED);
 	SetUpPaths();
 	wxInitAllImageHandlers();

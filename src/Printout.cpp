@@ -103,7 +103,7 @@ void pof::Printout::PerformPageSetup(bool showSetup)
 		}
 	}
 
-	spdlog::info("Paper type {:d}", m_paper_type);
+	spdlog::info("Paper type {:d}", static_cast<int>(m_paper_type));
 	wxGetApp().mPaperType = static_cast<int>(m_paper_type);
 }
 

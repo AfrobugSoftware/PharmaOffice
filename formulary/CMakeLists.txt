@@ -8,5 +8,5 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 add_library(formulary SHARED ${incs} ${srcs})
-target_include_directories(formulary PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${CONAN_INCLUDE_DIRS} PRIVATE ${CMAKE_SOURCE_DIR}/base/include) 
-target_link_libraries(formulary PRIVATE sqlite3 base)
+target_include_directories(formulary PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${SQLite_INCLUDE_DIRS} PRIVATE ${CMAKE_SOURCE_DIR}/base/include) 
+target_link_libraries(formulary PRIVATE SQLite::SQLite3 base)

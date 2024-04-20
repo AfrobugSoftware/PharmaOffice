@@ -955,7 +955,7 @@ void pof::PatientManager::DBFuncAddDuration(pof::base::database::conn_t conn, in
 	spdlog::info("timepoint: {:d}", timepoint.time_since_epoch().count());
 
 	auto day = std::chrono::duration_cast<date::days>(timepoint.time_since_epoch());
-	spdlog::info("Day: {:d}", day);
+	spdlog::info("Day: {:d}", day.count());
 	pof::base::database::result(conn,static_cast<std::uint64_t>(day.count()));
 }
 
