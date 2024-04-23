@@ -475,7 +475,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 				item.SetText(fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			}
 			else {
-				item.SetText(fmt::format("{:%H:%M:%S}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+				item.SetText(fmt::format("{:%H:%M}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			}
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);

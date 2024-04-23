@@ -1403,7 +1403,7 @@ std::optional<std::uint64_t> pof::SaleManager::SumOfSalesFrom(const pof::base::d
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view sql = R"(SELECT SUM(s.product_quantity) FROM sales s, products p 
-		WHERE p.uuid = ? AND p.uuid = s.product_uuid AND (Days(s.sale_date) = ? OR Days(s.sale_date) > ?);)";
+		WHERE p.uuid = ? AND p.uuid = s.product_uuid AND (Days(s.sale_date) = ? OR Days(s.sale_date) > ?) AND s.sale_payment_type IS NOT 'Returned';)";
 
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {

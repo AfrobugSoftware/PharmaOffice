@@ -1229,9 +1229,15 @@ void pof::ProductInfo::OnUpdateInventoryStock(wxCommandEvent& evt)
 	pof::base::data::duuid_t& uid = boost::variant2::get<pof::base::data::duuid_t>(iter->first[pof::ProductManager::INVENTORY_PRODUCT_UUID]);
 	std::uint64_t& id = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_ID]);
 	std::uint64_t& stock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
+	auto& mname = boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::INVENTORY_MANUFACTURER_NAME]);
 
 	if (id != wxGetApp().mProductManager.GetLastInventoryId(uid)) {
 		wxMessageBox("Can only modify the most recently entered inventory", "Inventory", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	if (mname == "RETURN"s) {
+		wxMessageBox("Cannot modify a returned entry", "Inventory", wxICON_WARNING | wxOK);
 		return;
 	}
 

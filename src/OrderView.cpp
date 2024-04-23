@@ -429,7 +429,7 @@ void pof::OrderListView::OnPrintComplete(bool status, size_t printstate)
 void pof::OrderListView::OnReorder(wxCommandEvent& evt)
 {
 	auto item = mOrderView->GetSelection();
-	if (!item.IsOk()) return;
+	if (!item.IsOk() && mSelections.empty()) return;
 
 	wxBusyCursor cur;
 	mOrderView->Freeze();
