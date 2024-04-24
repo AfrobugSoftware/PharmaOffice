@@ -658,7 +658,7 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 		mPropertyUpdate->mUpdatedElementsValues.first[pof::ProductManager::PRODUCT_COST_PRICE] =
 			Inven.first[pof::ProductManager::INVENTORY_COST];
 		mCostPrice->SetValue(wxVariant(static_cast<float>(boost::variant2::get<pof::base::currency>(Inven.first[pof::ProductManager::INVENTORY_COST]))));
-
+		mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = static_cast<std::uint64_t>(mCurStock->GetValue().GetLong()); //update the current product stock
 
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Added inventory with batch {} to {}",
 			boost::variant2::get<pof::base::data::text_t>(Inven.first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
@@ -994,15 +994,9 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 		return;
 	}
 
-
-	auto prod = std::ranges::find_if(datastore, [&](const pof::base::data::row_t& v) -> bool {
-		return boost::variant2::get<pof::base::data::duuid_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
-		 == boost::variant2::get<pof::base::data::duuid_t>(v.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-	});
-
 	//check if we have sold from this inventory
 	std::uint64_t invenstock = boost::variant2::get<std::uint64_t>(iter->first[pof::ProductManager::INVENTORY_STOCK_COUNT]);
-	std::uint64_t presentStock = boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+	std::uint64_t& presentStock = boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
 	float fpt = (static_cast<float>(presentStock) - static_cast<float>(invenstock));
 	if (std::signbit(fpt)){
 		wxMessageBox("Removing inventory would result in an invalid stock count as products have been sold from inventory", "Inventory", wxICON_INFORMATION | wxOK);
@@ -1012,7 +1006,10 @@ void pof::ProductInfo::OnRemoveInventory(wxCommandEvent& evt)
 	mCurStock->SetValue(val - static_cast<int>(fpt));
 
 	wxBusyCursor curor;
-	mStockRemvSig(uid, static_cast<std::uint64_t>(presentStock - invenstock));
+	presentStock -= invenstock;
+	mStockRemvSig(uid, static_cast<std::uint64_t>(presentStock));
+
+	mCurStock->SetValue(static_cast<int>(presentStock));
 
 	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed inventory with batch {} from {}", 
 			boost::variant2::get<pof::base::data::text_t>(iter->first[pof::ProductManager::INVENTORY_LOT_NUMBER]),
