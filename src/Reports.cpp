@@ -42,8 +42,14 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
 
+	bSizer4->AddStretchSpacer();
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(FromDIP(5));
+
 	mTotalQuantity = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalQuantity->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalQuantity->SetFont(wxFont(wxFontInfo().Bold().AntiAliased()));
 	mTotalQuantity->Wrap(-1);
 	bSizer4->Add(mTotalQuantity, 0, wxALL, FromDIP(5));
 
@@ -55,7 +61,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmount = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmount->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmount->SetFont(wxFont(wxFontInfo().Bold().AntiAliased()));
 	mTotalAmount->Wrap(-1);
 	bSizer4->Add(mTotalAmount, 0, wxALL, FromDIP(5));
 
@@ -67,7 +73,7 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountCash = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmountCash->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountCash->SetFont(wxFont(wxFontInfo().Bold().AntiAliased()));
 	mTotalAmountCash->Wrap(-1);
 	bSizer4->Add(mTotalAmountCash, 0, wxALL, FromDIP(5));
 
@@ -80,12 +86,12 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountTransfer = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmountTransfer->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountTransfer->SetFont(wxFont(wxFontInfo().Bold().AntiAliased()));
 	mTotalAmountTransfer->Wrap(-1);
 	bSizer4->Add(mTotalAmountTransfer, 0, wxALL, FromDIP(5));
 
 
-	bSizer4->AddSpacer(5);
+	bSizer4->AddSpacer(FromDIP(5));
 
 	l4 = new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL);
 	bSizer4->Add( l4, wxSizerFlags().Expand());
@@ -93,13 +99,20 @@ pof::ReportsDialog::ReportsDialog(wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer4->AddSpacer(FromDIP(5));
 
 	mTotalAmountPos = new wxStaticText(mSPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
-	mTotalAmountPos->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	mTotalAmountPos->SetFont(wxFont(wxFontInfo().Bold().AntiAliased()));
 	mTotalAmountPos->Wrap(-1);
 	bSizer4->Add(mTotalAmountPos, 0, wxALL, FromDIP(5));
+
+	//bSizer4->AddSpacer(FromDIP(5));
+
+	bSizer4->Add(new wxStaticLine(mSPanel, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddStretchSpacer();
 
 	mSPanel->SetSizer(bSizer4);
 	mSPanel->Layout();
 	bSizer4->Fit(mSPanel);
+
 
 	mCSPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer8 = new wxBoxSizer(wxHORIZONTAL);
@@ -243,7 +256,6 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	}
 	else {
 		auto set = pof::base::data::clock_t::now();
-		set += date::days(2); //correct for time zone,  does not feel like a fix, leap year, looks like it does not account for leap year
 		mSelectDay = set;
 	}
 
@@ -263,6 +275,7 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 	case ReportType::IM:
 		SetTitle("Stock inventory report");
 		ret = LoadInventoryMonth();
+		l2->Hide();
 		l3->Hide();
 		l4->Hide();
 		mSPanel->Show();
@@ -278,6 +291,7 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 		SetTitle("Profit/Loss report");
 		ret = LoadProfitLoss();
 		mSPanel->Show();
+		l4->Hide();
 		break;
 	default:
 		break;
@@ -472,10 +486,10 @@ bool pof::ReportsDialog::LoadEndOFDay()
 			item.SetId(i);
 			if (mCurReportType == ReportType::EOM)
 			{
-				item.SetText(fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+				item.SetText(std::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			}
 			else {
-				item.SetText(fmt::format("{:%H:%M}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
+				item.SetText(std::format("{:%H:%M}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			}
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.InsertItem(item);

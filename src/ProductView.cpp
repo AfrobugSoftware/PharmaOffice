@@ -342,6 +342,7 @@ void pof::ProductView::OnExpiredProducts(wxAuiToolBarEvent& evt)
 
 			RemoveCheckedState(mOutOfStockItem);
 			mActiveCategory.clear();
+			m_searchCtrl1->Clear();
 			m_searchCtrl1->SetDescriptiveText("Search for product");
 
 
@@ -1004,6 +1005,7 @@ void pof::ProductView::OnOutOfStock(wxCommandEvent& evt)
 		//clear all the states
 		RemoveCheckedState(mExpireProductItem);
 		mActiveCategory.clear();
+		m_searchCtrl1->Clear();
 		m_searchCtrl1->SetDescriptiveText("Search for product");
 
 		auto& datastore = pd->GetDatastore();
@@ -2541,6 +2543,16 @@ void pof::ProductView::OnHideProduct(wxCommandEvent& evt)
 	wxGetApp().mProductManager.LoadProductsFromDatabase(); // reload ??
 	//reload the view when we modify the contents
 	pof::DataModel* datam = wxGetApp().mProductManager.GetProductData().get();
+	//check if we are in different states
+	std::bitset<32> osstate(mOutOfStockItem->GetState());
+	std::bitset<32> expstate(mExpireProductItem->GetState());
+	if (osstate.test(5)) {
+
+	}
+	else if (expstate.test(5)) {
+		//expired state
+
+	}
 
 	if (!m_searchCtrl1->IsEmpty()) {
 		//in search sat
@@ -2653,6 +2665,11 @@ void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
 {
 	auto id = evt.GetId();
 	mInfoBar->Dismiss();
+	
+	//reset the state
+	mActiveCategory.clear();
+	m_searchCtrl1->Clear();
+	m_searchCtrl1->SetDescriptiveText("Search for product");
 
 	wxBusyCursor cur;
 	auto items = wxGetApp().mProductManager.DoExpiredProducts(std::chrono::months(id));
