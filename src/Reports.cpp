@@ -1671,6 +1671,8 @@ void pof::ReportsDialog::ProfitLossExcel()
 	writeexecel(fmt::format("{:cu}", totalAmountSell));
 	writeexecel(fmt::format("{:cu}", totalAmountCost));
 	writeexecel(fmt::format("{:cu}", totalAmountPL));
+	double profitMargin = static_cast<double>((totalAmountSell - totalAmountCost) / totalAmountSell) * 100;
+	writeexecel(fmt::format("Profit Margin {:.1f}", profitMargin));
 
 	doc.save();
 	doc.close();
@@ -1843,6 +1845,11 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 		mTotalAmount->SetLabelText(fmt::format("Total Sale Amount:   {:cu}", totalAmountSell));
 		mTotalAmountCash->SetLabelText(fmt::format("Total Cost Amount:   {:cu}", totalAmountCost));
 		mTotalAmountTransfer->SetLabelText(fmt::format("Total Profit/Loss:   {:cu}", totalAmountPL));
+
+		double profitMargin = static_cast<double>((totalAmountSell - totalAmountCost) / totalAmountSell) * 100;
+		double costMarkup = static_cast<double>((totalAmountSell - totalAmountCost) / totalAmountCost) * 100;
+		mTotalAmountPos->SetLabelText(fmt::format("Profit Margin: {:.1f}%   Markup: {:.1f}%", profitMargin, costMarkup));
+
 		mSPanel->Thaw();
 		mSPanel->Layout();
 		mSPanel->Refresh();
