@@ -2405,4 +2405,3 @@ void pof::ProductView::ShowNoResult(const std::string& search)
 	pane.Show();
 	m_mgr.Update();
 }
-
