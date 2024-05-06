@@ -105,7 +105,14 @@ void pof::SupplierView::CreateViews()
 	cd.first = [&](size_t row, size_t col) -> wxVariant {
 		if (mInvoiceDates.empty()) return wxString();
 
-		return fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(mInvoiceDates[row].first[0]));
+		auto& p = wxGetApp().mProductManager.GetInvoices()->GetDatastore();
+		auto& inv = p[row].first[pof::ProductManager::INVOICE_ID];
+
+		auto iter = std::find_if(mInvoiceDates.begin(), mInvoiceDates.end(), [&](const pof::base::data::row_t& row) -> bool {
+			return boost::variant2::get<pof::base::data::text_t>(row.first[0]) == boost::variant2::get<pof::base::data::text_t>(inv);
+		});
+		if (iter == mInvoiceDates.end()) return wxString("Empty");
+		return fmt::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(iter->first[1]));
 	};
 	wxGetApp().mProductManager.GetInvoices()->SetSpecialColumnHandler(100, std::move(cd));
 
@@ -378,7 +385,6 @@ void pof::SupplierView::OnSupplierActivated(wxDataViewEvent& evt)
 	
 	mCurSupplier = boost::variant2::get<std::uint64_t>(row.first[pof::ProductManager::SUPPLIER_ID]);
 	LoadInvoices(mCurSupplier);
-	SwitchTool(INVOICE_VIEW);
 	CheckEmpty(INVOICE_VIEW);
 
 	ShowTitle(fmt::format("Supplier - {}", boost::variant2::get<std::string>(row.first[pof::ProductManager::SUPPLIER_NAME])));

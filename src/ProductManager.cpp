@@ -1178,9 +1178,9 @@ bool pof::ProductManager::LoadInvoices(std::uint64_t sid)
 std::optional<pof::base::data> pof::ProductManager::LoadInvoiceDates(std::uint64_t sid)
 {
 	if (mLocalDatabase) {
-		constexpr const std::string_view sql = R"(SELECT MIN(i.input_date) 
+		constexpr const std::string_view sql = R"(SELECT ii.invoice_id, MIN(i.input_date) 
 		FROM inventory i, invoice ii
-		WHERE i.id = ii.inventory_id AND ii.supp_id = ? GROUP BY ii.invoice_id ORDER BY invoice_id ASC;)";
+		WHERE i.id = ii.inventory_id AND ii.supp_id = ? GROUP BY ii.invoice_id ORDER BY ii.invoice_id ASC;)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -1189,7 +1189,7 @@ std::optional<pof::base::data> pof::ProductManager::LoadInvoiceDates(std::uint64
 		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(sid));
 		assert(status);
 
-		auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+		auto rel = mLocalDatabase->retrive<std::string, pof::base::data::datetime_t>(*stmt);
 		if (!rel.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
 			mLocalDatabase->finalise(*stmt);
@@ -1197,7 +1197,7 @@ std::optional<pof::base::data> pof::ProductManager::LoadInvoiceDates(std::uint64
 		}
 		mLocalDatabase->finalise(*stmt);
 		pof::base::data ret;
-		ret.get_metadata() = { pof::base::data::kind::datetime };
+		ret.get_metadata() = { pof::base::data::kind::text, pof::base::data::kind::datetime };
 		ret.reserve(rel->size());
 		for (auto&& tup : rel.value()) {
 			auto v = pof::base::make_row_from_tuple(std::move(tup));
