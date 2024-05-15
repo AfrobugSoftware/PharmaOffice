@@ -283,10 +283,11 @@ void pof::SignInDialog::OnForgotPassword(wxHyperlinkEvent& evt)
 	appIcon.CopyFromBitmap(wxArtProvider::GetBitmap("pharmaofficeico"));
 	d->SetIcon(appIcon);
 
+	std::string pass;
 	while (1) {
 		if (d->ShowModal() == wxID_CANCEL) return;
 
-		auto pass = qv->GetValue().ToStdString();
+		pass = qv->GetValue().ToStdString();
 		auto cpass = qv2->GetValue().ToStdString();
 
 		if (pass != cpass) {
@@ -295,7 +296,12 @@ void pof::SignInDialog::OnForgotPassword(wxHyperlinkEvent& evt)
 		}
 		break;
 	}
-	
+	bool status = wxGetApp().MainAccount->UpdateUserPassword(username,
+		bcrypt::generateHash(pass));
+	if (status) {
+		wxMessageBox("Password updated successfully", "Forgot password", wxICON_INFORMATION | wxOK);
+	}else
+		wxMessageBox("Password updated failed", "Forgot password", wxICON_ERROR | wxOK);
 }
 
 void pof::SignInDialog::OnHelp(wxHyperlinkEvent& evt)

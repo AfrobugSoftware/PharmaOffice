@@ -29,6 +29,7 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_CHANGE_FONT, pof::MainFrame::OnChangeFont)
 	EVT_MENU(pof::MainFrame::ID_SCREENSHOT, pof::MainFrame::OnScreenShot)
 	EVT_MENU(pof::MainFrame::ID_CAPTURE_CONTROLS, pof::MainFrame::OnCaptureAllControls)
+	EVT_MENU(pof::MainFrame::ID_MENU_CREATE_ACCOUNT, pof::MainFrame::OnCreateAccount)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -131,6 +132,8 @@ void pof::MainFrame::CreateMenuBar()
 		"Help"
 	};
 	//account menu
+	Menus[0]->Append(ID_MENU_CREATE_ACCOUNT, "Create new account", nullptr);
+	Menus[0]->AppendSeparator();
 	Menus[0]->Append(ID_MENU_ACCOUNT_SIGN_OUT, "Sign Out", nullptr);
 
 	//pharmacy menu
@@ -1356,6 +1359,41 @@ void pof::MainFrame::OnCaptureAllControls(wxCommandEvent& evt)
 		}
 	}
 
+}
+
+void pof::MainFrame::OnCreateAccount(wxCommandEvent& evt)
+{
+	pof::RegistrationDialog regDialog(this);
+	regDialog.mAccount.mLocalDatabase = wxGetApp().mLocalDatabase;
+	int ret = regDialog.ShowModal();
+	bool status = false;
+	if (ret == wxID_OK) {
+		wxBusyInfo info("Registring account...");
+		auto& acc = regDialog.GetAccount();
+		if (wxGetApp().mLocalDatabase) {
+			constexpr const std::string_view sql = R"(INSERT INTO USERS (
+					priv, 
+					name, 
+					last_name, 
+					email, 
+					phonenumber, 
+					regnumber, 
+					username, password) VALUES (?,?,?,?,?,?,?,?);)";
+			auto stmt = wxGetApp().mLocalDatabase->prepare(sql);
+			assert(stmt.has_value());
+			bool status = wxGetApp().mLocalDatabase->bind(*stmt, std::make_tuple(acc.priv.to_ulong(), acc.name, acc.lastname,
+				acc.email, acc.phonenumber, acc.regnumber, acc.username, acc.passhash));
+			bool ret = wxGetApp().mLocalDatabase->execute(*stmt);
+			if (!ret) {
+				wxMessageBox("Could not create new account", "Account", wxICON_ERROR | wxOK);
+				wxGetApp().mLocalDatabase->finalise(*stmt);
+				return;
+			}
+			wxGetApp().mLocalDatabase->finalise(*stmt);
+			regDialog.mAccount.CreateAccountInfo();
+			wxMessageBox("Account created successfully", "Account", wxICON_INFORMATION | wxOK);
+		}
+	}
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

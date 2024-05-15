@@ -383,6 +383,43 @@ bool pof::Account::DeleteAccount()
 	return false;
 }
 
+bool pof::Account::DeleteAccount(const pof::base::data::row_t& acc)
+{
+	const bool isAccount = (boost::variant2::get<std::uint64_t>(acc.first[0]) ==
+		accountID);
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(
+				DELETE FROM users WHERE id = ?;
+		)";
+		constexpr const std::string_view sql2 = R"(
+				DELETE FROM users_info WHERE user_id = ?;
+		)";
+
+		auto stmt = mLocalDatabase->prepare(sql);
+		auto stmt2 = mLocalDatabase->prepare(sql2);
+		if (!stmt.has_value() || !stmt2.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return false;
+		}
+		bool status = mLocalDatabase->bind(*stmt,
+			std::make_tuple(boost::variant2::get<std::uint64_t>(acc.first[0])));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt);
+		assert(status);
+		mLocalDatabase->finalise(*stmt);
+
+		status = mLocalDatabase->bind(*stmt2, std::make_tuple(boost::variant2::get<std::uint64_t>(acc.first[0])));
+		assert(status);
+		status = mLocalDatabase->execute(*stmt2);
+		assert(status);
+		mLocalDatabase->finalise(*stmt2);
+	}
+	if (isAccount) {
+		DoSignOut();
+	}
+	return true;
+}
+
 bool pof::Account::UpdateAccount() {
 	if (mLocalDatabase)
 	{
@@ -403,6 +440,29 @@ bool pof::Account::UpdateAccount() {
 		}
 		updateSig(*this);
 	end:
+		mLocalDatabase->finalise(*stmt);
+		return status;
+	}
+	return false;
+}
+
+bool pof::Account::UpdateUserPassword(const std::string& username, const std::string& pass)
+{
+	if (mLocalDatabase)
+	{
+		constexpr const std::string_view sql = R"(
+			UPDATE users SET password = ? WHERE username = ?;
+		)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+		bool status = mLocalDatabase->bind(*stmt,
+			std::make_tuple(pass, username));
+		assert(status);
+
+		status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+		}
 		mLocalDatabase->finalise(*stmt);
 		return status;
 	}
@@ -534,4 +594,47 @@ std::optional<bool> pof::Account::ValidateSecurityQuestion(const std::string& us
 		return bcrypt::validatePassword(ans, hash);
 	}
 	return std::nullopt;
+}
+
+std::optional<pof::base::data> pof::Account::GetAllAccounts()
+{
+	if (mLocalDatabase){
+		constexpr const std::string_view sql = R"(SELECT * FROM users;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		auto rel = mLocalDatabase->retrive<
+			std::uint64_t, //ID
+			std::uint32_t, //PRV
+			pof::base::data::text_t, //NAME
+			pof::base::data::text_t, //LAST NAME
+			pof::base::data::text_t, //EMAIL
+			pof::base::data::text_t, // PHONEUMBER
+			pof::base::data::text_t, // REGNUMBER
+			pof::base::data::text_t, //USERNAME
+			pof::base::data::text_t
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+		}
+		pof::base::data ret;
+		ret.get_metadata() = {
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::uint32,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text,
+			pof::base::data::kind::text
+		};
+		ret.reserve(rel->size());
+		for (auto& tup : rel.value()) {
+			ret.emplace(pof::base::make_row_from_tuple(std::move(tup)));
+		}
+		return ret;
+	}
 }

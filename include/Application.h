@@ -183,6 +183,7 @@ namespace pof {
 		void ShowPharmacySettings(wxPropertySheetDialog& sd);
 		void ShowAccountSettings(wxPropertySheetDialog& sd);
 		void ShowSaleSettings(wxPropertySheetDialog& sd);
+		void ShowEmployeeSettings(wxPropertySheetDialog& sd);
 
 		//formulation choices
 		void LoadFormulationChoices();

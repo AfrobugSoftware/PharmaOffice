@@ -4,6 +4,7 @@ BEGIN_EVENT_TABLE(pof::SupplierView, wxPanel)
 	EVT_TOOL(pof::SupplierView::ID_BACK, pof::SupplierView::OnBack)
 	EVT_TOOL(pof::SupplierView::ID_ADD_SUPPLIER, pof::SupplierView::OnCreateSupplier)
 	EVT_TOOL(pof::SupplierView::ID_REMV_SUPPLIER, pof::SupplierView::OnRemoveSupplier)
+	EVT_TOOL(pof::SupplierView::ID_CREATE_INVOICE, pof::SupplierView::OnCreateInvoice)
 
 	EVT_MENU(pof::SupplierView::ID_REMOVE_INVOICE, pof::SupplierView::OnRemoveInvoice)
 	EVT_MENU(pof::SupplierView::ID_COPY_INVOICE_NAME, pof::SupplierView::OnCopyInvoice)
@@ -79,6 +80,9 @@ void pof::SupplierView::CreateToolbar()
 	mInvoiceTools->AddSeparator();
 	mInvoiceTools->AddSpacer(FromDIP(5));
 	mSupplierNameItem = mInvoiceTools->AddControl(mSupplierName);
+
+	mInvoiceTools->AddStretchSpacer();
+	mCreateInvoiceItem = mInvoiceTools->AddTool(ID_CREATE_INVOICE, "Add invoice", wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16, 16))), "Add a new invoice");
 	mInvoiceTools->Realize();
 
 	mManager.AddPane(mInvoiceTools, wxAuiPaneInfo().Name("InvoiceTools").Top().MinSize(FromDIP(wxSize(-1, 30))).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
@@ -211,6 +215,7 @@ void pof::SupplierView::LoadInvoiceProducts(std::uint64_t sid, const std::string
 		datastore.emplace(std::move(v));
 	}
 	mInvoiceProductModel->Reload();
+	mCreateInvoiceItem->SetLabel("Add product");
 	UpdateTotals();
 }
 
@@ -426,7 +431,7 @@ void pof::SupplierView::OnBack(wxCommandEvent& evt)
 	{
 		SwitchTool(INVOICE_VIEW);
 		CheckEmpty(INVOICE_VIEW);
-
+		mCreateInvoiceItem->SetLabel("Add invoice");
 		auto item = mView->GetSelection();
 		if (item.IsOk()) {
 			size_t idx = pof::DataModel::GetIdxFromItem(item);
@@ -627,4 +632,27 @@ void pof::SupplierView::OnCopySupplierName(wxCommandEvent& evt)
 	wxTextDataObject* tObj = new wxTextDataObject(std::move(str));
 	wxTheClipboard->Clear();
 	wxTheClipboard->AddData(tObj);
+}
+
+void pof::SupplierView::OnCreateInvoice(wxCommandEvent& evt)
+{
+	constexpr const std::string_view p = "Add product";
+	constexpr const std::string_view i = "Add invoice";
+
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Invoice", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	auto label = mCreateInvoiceItem->GetLabel().ToStdString();
+	if (label == p) {
+	
+	}
+	else if (label == i){
+		auto name = wxGetTextFromUser("Enter invoice number", "Create invoice", wxEmptyString, this).ToStdString();
+		if (name.empty()) return;
+
+
+	}
+
 }

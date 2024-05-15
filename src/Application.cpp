@@ -849,30 +849,33 @@ void pof::Application::ShowSettings()
 {
 	wxPropertySheetDialog sd;
 	sd.SetSheetStyle(wxPROPSHEET_LISTBOOK);
-	sd.Create(mMainFrame, wxID_ANY, "Settings", wxDefaultPosition, wxSize(980, 659));
+	sd.Create(mMainFrame, wxID_ANY, "Settings", wxDefaultPosition, sd.FromDIP(wxSize(980, 659)));
 	sd.Center(wxBOTH);
 	sd.CreateButtons(wxOK | wxCANCEL);
 	sd.SetBackgroundColour(wxColour(255, 255, 255));
-	sd.GetBookCtrl()->SetInternalBorder(10);
-	sd.SetSizeHints(wxSize(980, 659), wxSize(980, 659));
+	sd.GetBookCtrl()->SetInternalBorder(5);
+	sd.SetSizeHints(sd.FromDIP(wxSize(980, 659)), sd.FromDIP(wxSize(980, 659)));
 
 	//application 
 	wxPanel* gpanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
 	wxPanel* ppanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
 	wxPanel* apanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
 	wxPanel* spanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
+	wxPanel* epanel = new wxPanel(sd.GetBookCtrl(), wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
 
 	//General
 	sd.GetBookCtrl()->AddPage(gpanel, "General");
 	sd.GetBookCtrl()->AddPage(ppanel, "Pharmacy");
 	sd.GetBookCtrl()->AddPage(apanel, "Account");
 	sd.GetBookCtrl()->AddPage(spanel, "Sale");
+	sd.GetBookCtrl()->AddPage(epanel, "Employees");
 	
 	
 	ShowGeneralSettings(sd);
 	ShowPharmacySettings(sd);
 	ShowAccountSettings(sd);
 	ShowSaleSettings(sd);
+	ShowEmployeeSettings(sd);
 
 	//sd.LayoutDialog();
 	if (sd.ShowModal() == wxID_OK){
@@ -1453,9 +1456,76 @@ void pof::Application::ShowSaleSettings(wxPropertySheetDialog& sd)
 	panel->Layout();
 }
 
+void pof::Application::ShowEmployeeSettings(wxPropertySheetDialog& sd)
+{
+	auto panel = sd.GetBookCtrl()->GetPage(4);
+	if (!panel) return;
+	wxSizer* s = new wxBoxSizer(wxVERTICAL);
+
+	auto users = MainAccount->GetAllAccounts();
+	if (!users) return;
+
+	wxDataViewCtrl* view = new wxDataViewCtrl(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES);
+	auto data = std::make_shared<pof::base::data>(std::move(users.value()));
+	pof::DataModel* model = new pof::DataModel(data);
+	
+	//haram code
+	view->AppendTextColumn("Username", 7, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	view->AppendTextColumn("First Name", 2, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	view->AppendTextColumn("Last Name", 3, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	view->AppendTextColumn("Phonenumber", 4, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	view->AppendTextColumn("Email", 5, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+	view->AppendTextColumn("Type", 100, wxDATAVIEW_CELL_INERT, sd.FromDIP(150), wxALIGN_LEFT, wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_REORDERABLE);
+
+	view->AssociateModel(model);
+	model->Reload();
+	model->DecRef();
+
+
+	pof::DataModel::SpeicalColHandler_t handle;
+	handle.first = [data](size_t row, size_t col) -> wxVariant {
+		if (row >= data->size()) return wxString{};
+		auto& priv = boost::variant2::get<std::uint32_t>((*data)[row].first[1]);
+		std::bitset<32> p(priv);
+		for (int i = 0; i < pof::Account::max_account_type; i++) {
+			if (p.test(i)) {
+				return std::string(pof::Account::account_type_string[i]);
+			}
+		}
+
+		return wxString{};
+	};
+	model->SetSpecialColumnHandler(100, std::move(handle));
+
+	view->Bind(wxEVT_DATAVIEW_ITEM_CONTEXT_MENU, [v = view,data](wxDataViewEvent& evt) {
+		auto item = evt.GetItem();
+		if (!item.IsOk()) return;
+		auto& row = (*data)[pof::DataModel::GetIdxFromItem(item)];
+
+		wxMenu* menu = new wxMenu;
+		menu->Append(1, "Delete account");
+		menu->Bind(wxEVT_MENU, [&](wxCommandEvent& evt) {
+			if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+				wxMessageBox("User account cannot perform this function", "Settings", wxICON_INFORMATION | wxOK);
+				return;
+			}
+			if (wxMessageBox("Are you sure you want to delete this account?\nDeleting this account removes all data associated with this account.", "Delete account", wxICON_WARNING | wxYES_NO) == wxNO) return;
+			wxGetApp().MainAccount->DeleteAccount(row);
+			
+		}, 1);
+		v->PopupMenu(menu);
+	});
+
+
+	s->Add(view, wxSizerFlags().Proportion(1).Border(wxALL, 5).Expand());
+	panel->SetSizer(s);
+	s->Fit(panel);
+
+}
+
 void pof::Application::OnResetAccount(wxCommandEvent& evt)
 {
-
+	wxMessageBox("Current version cannot reset account", "Application", wxICON_WARNING | wxOK);
 
 }
 void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {

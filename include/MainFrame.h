@@ -102,6 +102,7 @@ namespace pof {
 			ID_CHANGE_FONT,
 			ID_SCREENSHOT,
 			ID_CAPTURE_CONTROLS,
+			ID_MENU_CREATE_ACCOUNT,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -157,6 +158,7 @@ namespace pof {
 		void OnExportFormulary(wxCommandEvent& evt);
 		void OnScreenShot(wxCommandEvent& evt);
 		void OnCaptureAllControls(wxCommandEvent& evt);
+		void OnCreateAccount(wxCommandEvent& evt);
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);

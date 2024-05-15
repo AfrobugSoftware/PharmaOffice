@@ -51,6 +51,7 @@ namespace pof
 			ID_COPY_INVOICE_NAME,
 			ID_REMOVE_PRODUCT_IN_INVOICE,
 			ID_COPY_SUPPLIER_NAME,
+			ID_CREATE_INVOICE,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		SupplierView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
@@ -88,6 +89,7 @@ namespace pof
 		void OnSearchCleared(wxCommandEvent& evt);
 		void OnCopyInvoice(wxCommandEvent& evt);
 		void OnCopySupplierName(wxCommandEvent& evt);
+		void OnCreateInvoice(wxCommandEvent& evt);
 	private:
 		wxAuiManager mManager;
 
@@ -98,6 +100,7 @@ namespace pof
 		wxAuiToolBar* mInvoiceProductTools = nullptr;
 		wxSearchCtrl* mSupplierSearch = nullptr;
 		wxAuiToolBarItem* mSupplierNameItem = nullptr;
+		wxAuiToolBarItem* mCreateInvoiceItem = nullptr;
 		wxDataViewCtrl* mView = nullptr;
 		wxDataViewCtrl* mInvoiceView = nullptr;
 		wxDataViewCtrl* mInvoiceProductView = nullptr;
