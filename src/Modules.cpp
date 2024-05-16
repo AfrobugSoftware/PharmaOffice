@@ -280,14 +280,14 @@ void pof::Modules::RemovePatientChild(const std::string& name)
 	}
 }
 
-pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style)
+pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style | wxNO_BORDER)
 {
 	SetDoubleBuffered(true);
 	SetupFont();
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer(wxVERTICAL);
 
-	m_panel1 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	m_panel1 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer(wxVERTICAL);
 
@@ -334,23 +334,46 @@ pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const
 	m_panel1->Layout();
 	bSizer2->Fit(m_panel1);
 	bSizer1->Add(m_panel1, 0, wxEXPAND | wxALL, FromDIP(0));
-	m_panel1->SetBackgroundColour(wxTheColourDatabase->Find("Aqua"));
+	m_panel1->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	wxPanel* m_panel3 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxSizer* bLineSizer = new wxBoxSizer(wxHORIZONTAL);
+	bLineSizer->AddSpacer(FromDIP(20));
+	auto line = new wxStaticLine(m_panel3, -1, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL);
+	line->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	bLineSizer->Add(line, wxSizerFlags().Proportion(1).Expand());
+	bLineSizer->AddSpacer(FromDIP(20));
+
+	m_panel3->SetSizer(bLineSizer);
+	m_panel3->Layout();
+	bLineSizer->Fit(m_panel3);
+	m_panel3->SetBackgroundColour(wxTheColourDatabase->Find("module"));
 
 	m_panel2 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer(wxVERTICAL);
 
-	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS
-		| wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT);
-	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, FromDIP(5) );
+	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT);
+	bSizer3->AddSpacer(FromDIP(10));
+	bSizer3->Add( mModuleTree, 1, wxALL|wxEXPAND, FromDIP(0) );
 	mModuleTree->SetDoubleBuffered(true);
+	mModuleTree->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
 	CreateTree();
 	
 	m_panel2->SetSizer( bSizer3 );
 	m_panel2->Layout();
 	bSizer3->Fit( m_panel2 );
+
+	//bSizer1->AddSpacer(FromDIP(10));
+	bSizer1->Add(m_panel3, 0, wxEXPAND, 0);
+	//bSizer1->AddSpacer(FromDIP(10));
+
 	bSizer1->Add( m_panel2, 1, wxEXPAND | wxALL, FromDIP(0) );
-	
+	m_panel2->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+
 	Style(); //should it be here ?
 	
 	wxGetApp().MainAccount->updateSig.connect(std::bind_front(&pof::Modules::OnAccountUpdated, this));
@@ -369,19 +392,19 @@ void pof::Modules::CreateTree()
 	wxTreeItemId root = mModuleTree->AddRoot("Root", -1);
 
 
-	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 0);
-	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 0);
+	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 9);
+	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 10);
 
 
-	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 1, 4);
-	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 1);
-	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 1);
-	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision Book", 1);
+	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 5);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 7);
+	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 11);
+	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision Book", 12);
 	
-	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 1);
-	mAuditTrails   = mModuleTree->AppendItem(mTransactions, "Audit Trails", 1);
-	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 1);
-	mOrders        = mModuleTree->AppendItem(mTransactions, "ADR Reports", 1);
+	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 6);
+	mAuditTrails   = mModuleTree->AppendItem(mTransactions, "Audit Trails", 13);
+	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 15);
+	mOrders        = mModuleTree->AppendItem(mTransactions, "ADR Reports", 14);
 
 	
 	mModuleTree->Expand(mPharmacy);

@@ -217,6 +217,8 @@ int pof::Application::OnExit()
 
 void pof::Application::SetUpColorTable()
 {
+	//wxTheColourDatabase->AddColour("module", wxColour(0xFF, 0xCA, 0x28, 50));
+	wxTheColourDatabase->AddColour("module", wxColour(0xFF, 0xFF, 0xFF, 50));
 	wxTheColourDatabase->AddColour("Aqua", wxColour(240, 255, 255));
 	wxTheColourDatabase->AddColour("Navajo_white", wxColour(255, 222, 173));
 	wxTheColourDatabase->AddColour("Tomato", wxColour(255, 99, 71));

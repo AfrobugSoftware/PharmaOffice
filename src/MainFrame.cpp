@@ -294,6 +294,19 @@ void pof::MainFrame::CreateImageList()
 	mImageList->Add(wxArtProvider::GetBitmap("folder_files", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	mImageList->Add(wxArtProvider::GetBitmap("user", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	mImageList->Add(wxArtProvider::GetBitmap(wxART_FOLDER, wxART_LIST, FromDIP(wxSize(16, 16))));
+
+	//new icons
+	mImageList->Add(wxArtProvider::GetBitmap("store_tree", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("payments", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("heart_plus", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("shopping_bag", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("home", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("bar_chart", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("inventory", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("menu_book", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("monitoring", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("sprint", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("cases", wxART_OTHER, FromDIP(wxSize(16, 16))));
 		
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());
@@ -1437,7 +1450,7 @@ void pof::MainFrame::OnAuiThemeChangeSlot()
 void pof::MainFrame::OnCategoryAdded(const std::string& name)
 {
 	if (name.empty()) return;
-	mModules->AppendChildTreeId(mModules->mProducts, name, 2);
+	mModules->AppendChildTreeId(mModules->mProducts, name, 8);
 	mModules->mModuleTree->Expand(mModules->mProducts);
 }
 
