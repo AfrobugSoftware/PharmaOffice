@@ -260,7 +260,7 @@ void pof::Modules::RemoveChildTreeId(const std::string& name)
 
 void pof::Modules::AppendPatientChild(const pof::base::data::duuid_t& data,const std::string& name, int img)
 {
-	auto id = mModuleTree->AppendItem(mPaitents, name, 3);
+	auto id = mModuleTree->AppendItem(mPaitents, name, 16);
 	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
 	mModuleTree->SetItemData(id, new mixin(data));
 	mPatientChildren.insert(id);

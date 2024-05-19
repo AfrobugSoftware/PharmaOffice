@@ -307,6 +307,7 @@ void pof::MainFrame::CreateImageList()
 	mImageList->Add(wxArtProvider::GetBitmap("monitoring", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	mImageList->Add(wxArtProvider::GetBitmap("sprint", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	mImageList->Add(wxArtProvider::GetBitmap("cases", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	mImageList->Add(wxArtProvider::GetBitmap("account_circle", wxART_OTHER, FromDIP(wxSize(16, 16))));
 		
 	mWorkspace->SetImageList(mImageList.get());
 	mModules->SetImageList(mImageList.get());

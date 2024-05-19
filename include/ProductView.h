@@ -107,12 +107,13 @@ namespace pof
 			ID_CHARTS_COMPARE_SALES,
 			ID_HIDE_PRODUCT,
 			ID_SHOW_PRODUCT,
+			ID_SEARCH_BY_GENERIC_NAME,
 		};
 
 		size_t mRowHeights;
 		wxItemAttr mHeaderAttr;
 		wxFont mDataViewFont;
-
+		std::bitset<3> mSearchFlag;
 
 		wxAuiToolBar* m_auiToolBar1 = nullptr;
 		wxAuiToolBar* m_auiToolBar2 = nullptr;
@@ -229,6 +230,7 @@ namespace pof
 		void OnHideProduct(wxCommandEvent& evt);
 		void OnShowHiddenProduct(wxCommandEvent& evt);
 		void OnExpiredMonth(wxCommandEvent& evt);
+		void OnSeachFlag(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

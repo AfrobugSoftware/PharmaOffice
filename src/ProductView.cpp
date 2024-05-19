@@ -67,6 +67,11 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 
 	EVT_MENU(pof::ProductView::ID_CHARTS_WEEKLY_SALES, pof::ProductView::OnWeeklySales)
 	EVT_MENU(pof::ProductView::ID_CHARTS_COMPARE_SALES, pof::ProductView::OnCompareSales)
+
+	EVT_MENU(pof::ProductView::ID_SEARCH_BY_NAME, pof::ProductView::OnSearchFlag)
+	EVT_MENU(pof::ProductView::ID_SEARCH_BY_GENERIC_NAME, pof::ProductView::OnSearchFlag)
+	EVT_MENU(pof::ProductView::ID_SEARCH_BY_CATEGORY, pof::ProductView::OnSearchFlag)
+
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -501,6 +506,28 @@ void pof::ProductView::OnRemoveFromCategory(wxCommandEvent& evt)
 
 void pof::ProductView::OnSearchFlag(wxCommandEvent& evt)
 {
+	auto id = evt.GetId();
+	mSearchFlag.reset();
+
+
+	switch (id)
+	{
+	case ID_SEARCH_BY_NAME:
+		mSearchFlag.set(0);
+		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products by name {}", mActiveCategory));
+		break;
+	case ID_SEARCH_BY_GENERIC_NAME:
+		mSearchFlag.set(1);
+		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products by  genric name {}", mActiveCategory));
+		break;
+	case ID_SEARCH_BY_CATEGORY:
+		mSearchFlag.set(2);
+		m_searchCtrl1->SetDescriptiveText(fmt::format("Search for products by category {}", mActiveCategory));
+		break;
+	default:
+		spdlog::error("invalid search");
+		break;
+	}
 }
 
 void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
@@ -931,11 +958,14 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 		}
 	}
 	else {
+		int col = pof::ProductManager::PRODUCT_NAME;
+		if (mSearchFlag.test(1)) col = pof::ProductManager::PRODUCT_GENERIC_NAME;
+
 		if (!mActiveCategory.empty()) {
-			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReloadSet(col, std::move(search));
 		}
 		else {
-			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReload(col, std::move(search));
 		}
 
 	}
@@ -2690,6 +2720,10 @@ void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
 	wxGetApp().mProductManager.GetProductData()->Reload(*items);
 }
 
+void pof::ProductView::OnSeachFlag(wxCommandEvent& evt)
+{
+}
+
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 {
 	m_dataViewCtrl1->Freeze();
@@ -2979,7 +3013,9 @@ void pof::ProductView::CreateToolBar()
 	mReportItem->SetHasDropDown(true);
 	mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("settings", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Run a function on all products in the store"));
 	mFuncDropItem->SetHasDropDown(true);
-	m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddSpacer(FromDIP(10));
+	//m_auiToolBar1->AddSeparator();
+	m_auiToolBar1->AddStretchSpacer();
 
 	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(350), FromDIP(- 1)), wxWANTS_CHARS);
 #ifndef __WXMAC__
@@ -2989,16 +3025,19 @@ void pof::ProductView::CreateToolBar()
 	m_searchCtrl1->SetDescriptiveText("Search for products");
 	wxMenu* menu = new wxMenu;
 	menu->AppendRadioItem(ID_SEARCH_BY_NAME, "Search by name");
+	menu->AppendRadioItem(ID_SEARCH_BY_GENERIC_NAME, "Search by generic name");
 	menu->AppendRadioItem(ID_SEARCH_BY_CATEGORY, "Search by category");
 	menu->Check(ID_SEARCH_BY_NAME, true);
+	mSearchFlag.set(0, true);
 
 	m_searchCtrl1->SetMenu(menu);
 	m_auiToolBar1->AddSpacer(FromDIP(5));
 	m_auiToolBar1->AddControl(m_searchCtrl1);
 
 	m_auiToolBar1->AddStretchSpacer();
+	//m_auiToolBar1->AddSpacer(FromDIP(10));
 	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Invoices", wxArtProvider::GetBitmap(wxT("inventory"), wxART_OTHER, wxSize(16, 16)), "Show suppliers/invoices", wxITEM_CHECK);
-	m_auiToolBar1->AddSeparator();
+	//m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add product"), wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add a new Product");
 	m_auiToolBar1->AddSpacer(FromDIP(2));
