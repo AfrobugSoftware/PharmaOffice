@@ -1145,7 +1145,7 @@ void pof::MainFrame::OnImportFormulary(wxCommandEvent& evt)
 
 
 			pof::base::data::row_t row;
-			row.first.push_back(c.second);
+			row.first.push_back(static_cast<std::uint64_t>(c.second));
 			row.first.push_back(c.first);
 			categories.insert(std::move(row));
 

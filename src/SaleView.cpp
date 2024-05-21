@@ -105,23 +105,23 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 
 	mTopTools->AddStretchSpacer();
 	
-	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Product packs");
-	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download", wxART_OTHER, FromDIP(wxSize(16,16))), "Print labels of product sold");
-	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("action_remove", wxART_OTHER, FromDIP(wxSize(16, 16))), "Remove product from sale list");
-	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("pen", wxART_OTHER, FromDIP(wxSize(16,16))), "View details about the product");
+	mTopTools->AddTool(ID_PACKS, wxT("Rx Packs"), wxArtProvider::GetBitmap("shopping_bag", wxART_OTHER, FromDIP(wxSize(16, 16))), "Product packs");
+	mTopTools->AddTool(ID_PRINT_LABELS, wxT("Print As Labels"), wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))), "Print labels of product sold");
+	mTopTools->AddTool(ID_REMOVE_PRODUCT, wxT("Remove Product"), wxArtProvider::GetBitmap("delete", wxART_OTHER, FromDIP(wxSize(16, 16))), "Remove product from sale list");
+	mTopTools->AddTool(ID_HIDE_PRODUCT_VIEW_PROPERTY, wxT("View Product"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16,16))), "View details about the product");
 	
 	mTopTools->Realize();
 
 	//mBottomTools->AddTool(ID_FORM_M, wxT("Generate FORM K"), wxArtProvider::GetBitmap("application"), "Generate form K");
 	//mBottomTools->AddSpacer(5);
-	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("sci", wxART_OTHER, FromDIP(wxSize(16,16))));
+	mBottomTools->AddTool(ID_OPEN_SAVE_SALE, wxT("Saved Sales"), wxArtProvider::GetBitmap("shopping_cart", wxART_OTHER, FromDIP(wxSize(16,16))));
 	mBottomTools->AddSpacer(FromDIP(5));
-	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap(wxART_PRINT, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Reprint a sale");
+	mReprintItem = mBottomTools->AddTool(ID_REPRINT, "Reprint", wxArtProvider::GetBitmap("print", wxART_OTHER, FromDIP(wxSize(16, 16))), "Reprint a sale");
 	mReprintItem->SetHasDropDown(true);
 	mBottomTools->AddSpacer(FromDIP(5));
-	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Return an item");
+	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap("redo", wxART_OTHER, FromDIP(wxSize(16, 16))), "Return an item");
 	mBottomTools->AddSpacer(FromDIP(5));
-	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add discount to an item");
+	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))), "Add discount to an item");
 	mReturnItem->SetHasDropDown(true);
 	mBottomTools->AddSpacer(FromDIP(5));
 	//look for how to make this more dynamic

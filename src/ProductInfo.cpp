@@ -44,29 +44,30 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
 	
 	m_auiToolBar1 = new wxAuiToolBar( this , wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT|wxAUI_TB_HORZ_TEXT|wxAUI_TB_OVERFLOW | wxNO_BORDER); 
-	m_auiToolBar1->SetMinSize( FromDIP(wxSize( -1,30 )));
+	m_auiToolBar1->SetMinSize( FromDIP(wxSize( -1,20 )));
 	
-	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxT("Back"), wxArtProvider::GetBitmap("arrow_back"), "Back to product list", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_GO_BACK, wxT("Back"), wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Back to product list", wxITEM_NORMAL);
 	m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddSpacer(FromDIP(2));
 	mProductNameText = m_auiToolBar1->AddTool( wxID_ANY, wxEmptyString, wxNullBitmap, wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL ); 
 	m_auiToolBar1->AddSeparator();
-	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("action_add"), "Add Inventory", wxITEM_NORMAL);
+	m_auiToolBar1->AddTool(ID_TOOL_ADD_INVENTORY, wxT("Add Stock"), wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add Inventory", wxITEM_NORMAL);
 	m_auiToolBar1->AddSpacer(FromDIP(2));
-	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("application"), "Show the products information", wxITEM_CHECK);
+	mShowAddInfo = m_auiToolBar1->AddTool(ID_TOOL_SHOW_PRODUCT_INFO, wxT("Product Information"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, wxSize(16,16)), "Show the products information", wxITEM_CHECK);
 	std::bitset<32> bitset(mShowAddInfo->GetState());
 	bitset.set(5);
 	mShowAddInfo->SetState(bitset.to_ulong());
 
 	m_auiToolBar1->AddSpacer(2);
-	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("sci"), "Show product history", wxITEM_CHECK);
-	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Warnings"), wxArtProvider::GetBitmap(wxART_WARNING, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Warnings associated with this product", wxITEM_NORMAL);
+	mProductHist = m_auiToolBar1->AddTool(ID_SHOW_PRODUCT_SALE_HISTORY, wxT("Sale History"), wxArtProvider::GetBitmap("bar_chart", wxART_OTHER, FromDIP(wxSize(16,16))), "Show product history", wxITEM_CHECK);
 	m_auiToolBar1->AddStretchSpacer();
 	mInventoryDate = new wxDatePickerCtrl(m_auiToolBar1, ID_DATE, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	
 	m_auiToolBar1->AddControl(mInventoryDate);
 	m_auiToolBar1->AddSpacer(FromDIP(5));
-	m_auiToolBar1->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap(wxART_REFRESH, wxART_TOOLBAR, FromDIP(wxSize(16,16))),"Reset date filter");
+	m_auiToolBar1->AddTool(ID_RESET, wxT("Reset"), wxArtProvider::GetBitmap("redo", wxART_OTHER, FromDIP(wxSize(16, 16))), "Reset date filter");
+	m_auiToolBar1->AddSpacer(FromDIP(5));
+	m_auiToolBar1->AddTool(ID_WARNINGS, wxT("Warnings"), wxArtProvider::GetBitmap(wxART_WARNING, wxART_TOOLBAR, FromDIP(wxSize(16,16))), "Warnings associated with this product", wxITEM_NORMAL);
 	m_auiToolBar1->Realize(); 
 	
 	mBook = new wxSimplebook(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL );
@@ -478,7 +479,7 @@ void pof::ProductInfo::CreateEmptyPanel()
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	wxButton* btn = new wxButton(m7, ID_TOOL_ADD_INVENTORY);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16, 16))));
+	btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16, 16))));
 	btn->SetLabel("Add stock");
 	btn->SetBackgroundColour(*wxWHITE);
 	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));

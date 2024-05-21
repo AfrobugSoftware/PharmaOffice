@@ -1825,10 +1825,12 @@ void pof::ProductManager::AddCategory(const std::string& name)
 			}
 			CategoryStoreStmt = *stmt;
 		}
-
-		auto& r = mCategories.back().first;
-		//std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
-		std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]); 
+		std::uint64_t id = 0;
+		if (!mCategories.empty()) {
+			auto& r = mCategories.back().first;
+			//std::uint64_t id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]) + 1; 
+			id = boost::variant2::get<std::uint64_t>(r[CATEGORY_ID]);
+		}
 		bool status = mLocalDatabase->bind(CategoryStoreStmt, std::tie(id, name));
 		if (!status){
 			spdlog::error(mLocalDatabase->err_msg());

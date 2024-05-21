@@ -238,7 +238,7 @@ void pof::ProductView::CreateEmptyPanel()
 	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
 	btn->SetLabel("Add product");
 	btn->SetBackgroundColour(*wxWHITE);
 	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
@@ -588,7 +588,7 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 	}
 	if (wxMessageBox("Deleteing a product deletes all the data associated with the product, Do you wish to continue?", "REMOVE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
 	
-	wxCredentialEntryDialog dialog(this, "User credentials are required remove this item", "Products");
+	wxCredentialEntryDialog dialog(this, "User credentials are required to remove this item", "Products");
 	dialog.Center(wxBOTH);
 	dialog.SetBackgroundColour(*wxWHITE);
 	while (1) {
@@ -3017,7 +3017,7 @@ void pof::ProductView::CreateToolBar()
 	//m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddStretchSpacer();
 
-	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(350), FromDIP(- 1)), wxWANTS_CHARS);
+	m_searchCtrl1 = new wxSearchCtrl(m_auiToolBar1, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(450), FromDIP(- 1)), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	m_searchCtrl1->ShowSearchButton(true);
 #endif

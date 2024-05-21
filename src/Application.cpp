@@ -330,7 +330,7 @@ bool pof::Application::LunchWizard()
 	delete wizard;
 	wizard = nullptr;
 
-	SaveSettings();
+	if(state) SaveSettings();
 	return state;
 }
 
@@ -421,15 +421,17 @@ bool pof::Application::SaveSettings()
 
 	//for the applicaion size
 	config->SetPath("/pharmacy");
-	if (!mMainFrame->IsMaximized()) {
-		wxPoint pos = mMainFrame->ToDIP(mMainFrame->GetPosition());
-		wxSize size = mMainFrame->ToDIP(mMainFrame->GetSize());
-		config->Write(wxT("PosX"), pos.x);
-		config->Write(wxT("PosY"), pos.y);
-		config->Write(wxT("SizeW"), size.x);
-		config->Write(wxT("SizeH"), size.y);
+	if (mMainFrame) {
+		if (!mMainFrame->IsMaximized()) {
+			wxPoint pos = mMainFrame->ToDIP(mMainFrame->GetPosition());
+			wxSize size = mMainFrame->ToDIP(mMainFrame->GetSize());
+			config->Write(wxT("PosX"), pos.x);
+			config->Write(wxT("PosY"), pos.y);
+			config->Write(wxT("SizeW"), size.x);
+			config->Write(wxT("SizeH"), size.y);
+		}
+		config->Write(wxT("Perspective"), wxString(mMainFrame->Perspective()));
 	}
-	config->Write(wxT("Perspective"), wxString(mMainFrame->Perspective()));
 	SaveFont(); //save the font
 	return true;
 }
