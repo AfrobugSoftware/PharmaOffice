@@ -103,6 +103,8 @@ namespace pof {
 			ID_SCREENSHOT,
 			ID_CAPTURE_CONTROLS,
 			ID_MENU_CREATE_ACCOUNT,
+			ID_MENU_RECEIPT_FONT,
+			ID_MENU_RECEIPT_PAGE_FORMAT,
 		};
 
 		MainFrame(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size);
@@ -159,6 +161,9 @@ namespace pof {
 		void OnScreenShot(wxCommandEvent& evt);
 		void OnCaptureAllControls(wxCommandEvent& evt);
 		void OnCreateAccount(wxCommandEvent& evt);
+		void OnReceiptFont(wxCommandEvent& evt);
+		void OnReceiptPageFormat(wxCommandEvent& evt);
+
 		//slots
 		void OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif);
 		void OnModuleSlotReload(pof::Modules::const_iterator win, Modules::Evt notif);

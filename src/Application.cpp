@@ -433,6 +433,7 @@ bool pof::Application::SaveSettings()
 		config->Write(wxT("Perspective"), wxString(mMainFrame->Perspective()));
 	}
 	SaveFont(); //save the font
+	SaveReceiptPageSettings();
 	return true;
 }
 
@@ -517,6 +518,7 @@ bool pof::Application::LoadSettings()
 	MainPharmacy->contact.website = readData;
 
 	LoadFont(); //loads the saved font
+	LoadReceiptPageSettings();
 	return true;
 }
 
@@ -1539,16 +1541,52 @@ void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
 
 }
 
+void pof::Application::SaveReceiptPageSettings() const
+{
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/ReceiptSettings"));
+	config->Write(wxT("leftMargin"), leftMargin);
+	config->Write(wxT("topMargin"), topMargin);
+	config->Write(wxT("bottomMargin"), bottomMargin);
+	config->Write(wxT("rightMargin"), leftMargin);
+	config->Write(wxT("copies"), copies);
+	config->Write(wxT("paperSize"), static_cast<int>(paperSize));
+	
+}
+
+void pof::Application::LoadReceiptPageSettings()
+{
+	wxConfigBase* config = wxConfigBase::Get();
+	config->SetPath(wxT("/ReceiptSettings"));
+	config->Read(wxT("leftMargin"), &leftMargin);
+	config->Read(wxT("topMargin"), &topMargin);
+	config->Read(wxT("bottomMargin"), &bottomMargin);
+	config->Read(wxT("rightMargin"), &rightMargin);
+	config->Read(wxT("copies"), &copies);
+	int ps = 0;
+	config->Read(wxT("paperSize"), &ps);
+	paperSize = static_cast<wxPaperSize>(ps);
+}
+
 void pof::Application::SaveFont()
 {
 	wxFont f = mFontSettings.GetChosenFont();
 	wxConfigBase* config = wxConfigBase::Get();
+	
 	config->SetPath(wxT("/Font"));
 	if (f.IsOk()) {
 		config->Write(wxT("PointSize"), f.GetPointSize());
 		config->Write(wxT("Family"), static_cast<int>(f.GetFamily()));
 		config->Write(wxT("Style"), static_cast<int>(f.GetStyle()));
 		config->Write(wxT("Face"), f.GetFaceName());
+	}
+
+	f = mReceiptFontSettings.GetChosenFont();
+	if (f.IsOk()) {
+		config->Write(wxT("ReceiptPointSize"), f.GetPointSize());
+		config->Write(wxT("ReceiptFamily"), static_cast<int>(f.GetFamily()));
+		config->Write(wxT("ReceiptStyle"), static_cast<int>(f.GetStyle()));
+		config->Write(wxT("ReceiptFace"), f.GetFaceName());
 	}
 }
 
@@ -1575,6 +1613,19 @@ void pof::Application::LoadFont()
 		f.SetStyle(style);
 		f.SetFaceName(readData);
 		mFontSettings.SetChosenFont(f);
+	}
+
+	//receipt font
+	config->Read(wxT("ReceiptPointSize"), &pointsize);
+	config->Read(wxT("ReceiptStyle"), &style);
+	config->Read(wxT("ReceiptFamily"), &ff);
+	config->Read(wxT("ReceiptFace"), &readData);
+	if (pointsize != 0) {
+		f.SetPointSize(pointsize);
+		f.SetFamily(ff);
+		f.SetStyle(style);
+		f.SetFaceName(readData);
+		mReceiptFontSettings.SetChosenFont(f);
 	}
 }
 

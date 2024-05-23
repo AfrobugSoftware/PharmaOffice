@@ -92,7 +92,8 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools = new wxAuiToolBar(this, ID_PATIENT_TOOLS, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mPatientTools->SetToolBitmapSize(wxSize(FromDIP(16), FromDIP(16)));
 
-	mTopTools->AddTool(ID_SELECT, "Select", wxArtProvider::GetBitmap("action_check"), "Show Selections", wxITEM_CHECK);
+	mTopTools->AddTool(ID_SELECT, "Select", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Show Selections", wxITEM_CHECK);
+	mTopTools->AddSeparator();
 	mTopTools->AddSpacer(FromDIP(10));
 	mSearchbar = new wxSearchCtrl(mTopTools, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(400), FromDIP(-1)), wxWANTS_CHARS);
 #ifndef __WXMAC__
@@ -122,17 +123,17 @@ void pof::PatientView::CreateToolBars()
 
 	mTopTools->AddControl(mSearchbar, "Search bar");
 	mTopTools->AddStretchSpacer();
-	mTopTools->AddTool(ID_ADD_PATIENTS, "Add Patients", wxArtProvider::GetBitmap("action_add"), "Add a patient to the pharmacy");
+	mTopTools->AddTool(ID_ADD_PATIENTS, "Add Patients", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add a patient to the pharmacy");
 	//mTopTools->AddSpacer(5);
 	//mTopTools->AddTool(ID_SHOW_PATIENT_DETAILS, "Show details", wxArtProvider::GetBitmap("application"), "Show patient details", wxITEM_CHECK);
 	mTopTools->Realize();
 
-	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
+	mPatientTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Back to patients");
 	mPatientTools->AddSeparator();
 	mPatientTools->AddSpacer(FromDIP(5));
-	mPatientTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("action_check"), "Select medications", wxITEM_CHECK);
+	mPatientTools->AddTool(ID_SELECT_MED, wxT("Select"), wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Select medications", wxITEM_CHECK);
 	mPatientTools->AddSpacer(FromDIP(5));
-	mPatientTools->AddTool(ID_SALE_PATIENT_MED,"Add Sale", wxArtProvider::GetBitmap("sci"), "Add current medication to sale");
+	mPatientTools->AddTool(ID_SALE_PATIENT_MED,"Add Sale", wxArtProvider::GetBitmap("shopping_cart", wxART_OTHER, FromDIP(wxSize(16,16))), "Add current medication to sale");
 	mPatientTools->AddSpacer(FromDIP(5));
 
 	mIsReminded = new wxCheckBox(mPatientTools, ID_REMIND_CHECK, "Alert on inactive", wxDefaultPosition, wxDefaultSize, 0);
@@ -140,18 +141,20 @@ void pof::PatientView::CreateToolBars()
 	mPatientTools->AddControl(mIsReminded);
 
 	mPatientTools->AddStretchSpacer();
-	mPatientTools->AddTool(ID_PATIENT_SALE_HIST, "Sale History", wxArtProvider::GetBitmap("application"), "Patient sale history");
+	mPatientTools->AddTool(ID_ADD_PRODUCT, "Add Medication", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add Medication to patient");
 	mPatientTools->AddSpacer(FromDIP(2));
-	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_TOOLBAR, wxSize(FromDIP(16), FromDIP(16))), "Patient medical details", wxITEM_CHECK);
+	mPatientTools->AddTool(ID_PATIENT_SALE_HIST, "Sale History", wxArtProvider::GetBitmap("bar_chart", wxART_OTHER, FromDIP(wxSize(16,16))), "Patient sale history");
+
+
+
+	mPatientTools->AddSpacer(FromDIP(5));
+	mPatientTools->AddTool(ID_ADD_PACK, "Rx Packs", wxArtProvider::GetBitmap("shopping_bag", wxART_OTHER, wxSize(FromDIP(16), FromDIP(16))), "Add Pharmacy packs to patient");
+	mPatientTools->AddSpacer(FromDIP(5));
+	pd = mPatientTools->AddTool(ID_PATIENT_MED_DETAILS, "Patient Details", wxArtProvider::GetBitmap("edit_note", wxART_OTHER, wxSize(FromDIP(16), FromDIP(16))), "Patient medical details", wxITEM_CHECK);
 	std::bitset<32> bitset(pd->GetState());
 	bitset.set(5);
 	pd->SetState(bitset.to_ulong());
 
-
-	mPatientTools->AddSpacer(FromDIP(5));
-	mPatientTools->AddTool(ID_ADD_PACK, "Rx Packs", wxArtProvider::GetBitmap(wxART_FOLDER, wxART_TOOLBAR, wxSize(FromDIP(16), FromDIP(16))), "Add Pharmacy packs to patient");
-	mPatientTools->AddSpacer(FromDIP(5));
-	mPatientTools->AddTool(ID_ADD_PRODUCT, "Add Medication", wxArtProvider::GetBitmap("action_add"), "Add Medication to patient");
 	mPatientTools->Realize();
 	
 	mManager.AddPane(mTopTools, wxAuiPaneInfo().Name("TopTools").Top().MinSize(FromDIP(-1), FromDIP(30)).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
@@ -615,7 +618,7 @@ void pof::PatientView::CreateEmptyPanel()
 	bSizer9->Add(mNoResultPatientText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PATIENTS);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
 	btn->SetLabel("Add patient");
 	btn->SetBackgroundColour(*wxWHITE);
 	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
@@ -673,7 +676,7 @@ void pof::PatientView::CreateEmptyMedsPanel()
 	bSizer9->Add(mNoResultMedsText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
 	btn->SetLabel("Add medication");
 	btn->SetBackgroundColour(*wxWHITE);
 	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
@@ -1139,7 +1142,7 @@ void pof::PatientView::OnRemovePatient(wxCommandEvent& evt)
 
 void pof::PatientView::OnAddMedication(wxCommandEvent& evt)
 {
-	pof::SearchProduct prodSearch(this, wxID_ANY);
+	pof::SearchProduct prodSearch(this, wxID_ANY, nullptr, "Add product to patient");
 	auto& datastore = wxGetApp().mPatientManager.GetPatientMedData()->GetDatastore();
 	if (prodSearch.ShowModal() != wxID_OK) return;
 	mPatientInfoBar->Dismiss();

@@ -203,6 +203,17 @@ namespace pof {
 		pof::MainFrame* mMainFrame;
 		wxFontData mFontSettings;
 
+		//receipt print configuration
+		wxFontData mReceiptFontSettings;
+		int leftMargin = 2;
+		int topMargin = 2;
+		int	bottomMargin = 2;
+		int rightMargin = 2;
+		int copies = 1;
+		wxPaperSize paperSize = wxPAPER_A4;
+		void SaveReceiptPageSettings() const;
+		void LoadReceiptPageSettings();
+
 		void SaveFont();
 		void LoadFont();
 

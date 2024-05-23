@@ -64,14 +64,14 @@ void pof::SupplierView::CreateToolbar()
 
 	mTools->AddStretchSpacer();
 	mTools->AddSeparator();
-	mTools->AddTool(ID_ADD_SUPPLIER, "Create supplier", wxArtProvider::GetBitmap("action_add"), "Create supplier");
+	mTools->AddTool(ID_ADD_SUPPLIER, "Create supplier", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Create supplier");
 	mTools->AddSpacer(FromDIP(5));
 	mTools->Realize();
 	mManager.AddPane(mTools, wxAuiPaneInfo().Name("Tools").Top().MinSize(FromDIP(wxSize(-1, 30))).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 	mInvoiceTools = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mInvoiceTools->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
-	mInvoiceTools->AddTool(ID_BACK, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to patients");
+	mInvoiceTools->AddTool(ID_BACK, "Back", wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Back");
 
 	mSupplierName =  new wxStaticText(mInvoiceTools, wxID_ANY, "TEST", wxDefaultPosition, wxDefaultSize, 0);
 	mSupplierName->SetFont(wxFontInfo().AntiAliased().Bold());
@@ -82,7 +82,7 @@ void pof::SupplierView::CreateToolbar()
 	mSupplierNameItem = mInvoiceTools->AddControl(mSupplierName);
 
 	mInvoiceTools->AddStretchSpacer();
-	mCreateInvoiceItem = mInvoiceTools->AddTool(ID_CREATE_INVOICE, "Add invoice", wxArtProvider::GetBitmap("action_add", wxART_OTHER, FromDIP(wxSize(16, 16))), "Add a new invoice");
+	mCreateInvoiceItem = mInvoiceTools->AddTool(ID_CREATE_INVOICE, "Add invoice", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16, 16))), "Add a new invoice");
 	mInvoiceTools->Realize();
 
 	mManager.AddPane(mInvoiceTools, wxAuiPaneInfo().Name("InvoiceTools").Top().MinSize(FromDIP(wxSize(-1, 30))).PaneBorder(false).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
@@ -577,7 +577,7 @@ void pof::SupplierView::OnSearch(wxCommandEvent& evt)
 	}
 	
 	if (empty) {
-		ShowEmpty(fmt::format("No supplier name {} in store", str));
+		ShowEmpty(fmt::format("No supplier name \"{}\" in store", str));
 	}
 	else {
 		mBook->SetSelection(SUPPLIER_VIEW);

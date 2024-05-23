@@ -303,7 +303,7 @@ void pof::PharmacySetupWizard::CreateAddAccountPage()
     bSizer1->Add(conDescription, 0, wxTOP | wxBOTTOM | wxLEFT, 5);
 
     btn = new wxButton(mAddAccountPage, ID_ADD_ACCOUNT);
-    btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+    btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
     btn->SetLabel("Add user account");
     btn->SetBackgroundColour(*wxWHITE);
     bSizer1->Add(btn, 0,  wxALL, 5);

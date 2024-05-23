@@ -3063,18 +3063,17 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Products that are to be ordered"), wxITEM_NORMAL);
-	m_auiToolBar2->AddSpacer(FromDIP(2));
-	
-	m_auiToolBar2->AddStretchSpacer();
-	mCatTextCtrl = new wxStaticText(m_auiToolBar2, wxID_ANY, wxEmptyString);
-	mCatTextCtrl->SetBackgroundColour(*wxWHITE);
-	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
-	
+	//m_auiToolBar2->AddSpacer(FromDIP(2));
 	//m_auiToolBar2->AddControl(new wxTextCtrl(m_auiToolBar2, wxID_ANY));
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	m_auiToolBar2->AddTool(ID_SHOW_PRODUCT, wxT("Hidden products"), wxArtProvider::GetBitmap("block", wxART_OTHER, FromDIP(wxSize(16, 16))), wxT("Show hidden products"));
 	
+	m_auiToolBar2->AddStretchSpacer();
+	mCatTextCtrl = new wxStaticText(m_auiToolBar2, wxID_ANY, wxEmptyString);
+	mCatTextCtrl->SetBackgroundColour(*wxWHITE);
+	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
+
 	m_auiToolBar2->Realize();
 	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(- 1), FromDIP(30)).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }

@@ -30,6 +30,8 @@ BEGIN_EVENT_TABLE(pof::MainFrame, wxFrame)
 	EVT_MENU(pof::MainFrame::ID_SCREENSHOT, pof::MainFrame::OnScreenShot)
 	EVT_MENU(pof::MainFrame::ID_CAPTURE_CONTROLS, pof::MainFrame::OnCaptureAllControls)
 	EVT_MENU(pof::MainFrame::ID_MENU_CREATE_ACCOUNT, pof::MainFrame::OnCreateAccount)
+	EVT_MENU(pof::MainFrame::ID_MENU_RECEIPT_FONT, pof::MainFrame::OnReceiptFont)
+	EVT_MENU(pof::MainFrame::ID_MENU_RECEIPT_PAGE_FORMAT, pof::MainFrame::OnReceiptPageFormat)
 	EVT_UPDATE_UI(pof::MainFrame::ID_MENU_VIEW_SHOW_MODULES,pof::MainFrame::OnMenuUpdateUI)
 	EVT_IDLE(pof::MainFrame::OnIdle)
 END_EVENT_TABLE()
@@ -193,6 +195,9 @@ void pof::MainFrame::CreateMenuBar()
 
 
 	//about
+	Menus[7]->Append(ID_MENU_RECEIPT_FONT, "Receipt font", nullptr);
+	Menus[7]->Append(ID_MENU_RECEIPT_PAGE_FORMAT, "Receipt page settings", nullptr);
+	Menus[7]->AppendSeparator();
 	Menus[7]->Append(ID_MENU_HELP_SETTINGS, "Settings", nullptr);
 	Menus[7]->Append(ID_MENU_HELP_ABOUT, "About", nullptr);
 #ifdef _DEBUG
@@ -1405,9 +1410,50 @@ void pof::MainFrame::OnCreateAccount(wxCommandEvent& evt)
 			}
 			wxGetApp().mLocalDatabase->finalise(*stmt);
 			regDialog.mAccount.CreateAccountInfo();
-			wxMessageBox("Account created successfully", "Account", wxICON_INFORMATION | wxOK);
 		}
 	}
+	wxMessageBox("Account created successfully", "Account", wxICON_INFORMATION | wxOK);
+}
+
+void pof::MainFrame::OnReceiptFont(wxCommandEvent& evt)
+{
+	wxFontDialog dialog(nullptr, wxGetApp().mReceiptFontSettings);
+	if (dialog.ShowModal() != wxID_OK) return;
+
+	wxGetApp().mReceiptFontSettings = dialog.GetFontData();
+	wxGetApp().SaveFont();
+	wxMessageBox("Receipt font updated", "Receipt font", wxICON_INFORMATION | wxOK);
+}
+
+void pof::MainFrame::OnReceiptPageFormat(wxCommandEvent& evt)
+{
+	wxPrintData printdata;
+	printdata.SetPrintMode(wxPRINT_MODE_PRINTER);
+	printdata.SetOrientation(wxPORTRAIT);
+	printdata.SetNoCopies(wxGetApp().copies);
+	printdata.SetPaperId(wxGetApp().paperSize);
+
+
+	wxPageSetupDialogData m_page_setup(printdata);
+	m_page_setup.SetMarginTopLeft(wxPoint(wxGetApp().leftMargin, wxGetApp().topMargin));
+	m_page_setup.SetMarginBottomRight(wxPoint(wxGetApp().rightMargin, wxGetApp().bottomMargin));
+	wxPageSetupDialog dialog(NULL, &m_page_setup);
+	if (dialog.ShowModal() == wxID_OK)
+	{
+
+		m_page_setup = dialog.GetPageSetupData();
+		wxGetApp().paperSize = m_page_setup.GetPrintData().GetPaperId();
+
+		wxPoint marginTopLeft = m_page_setup.GetMarginTopLeft();
+		wxPoint marginBottomRight = m_page_setup.GetMarginBottomRight();
+		wxGetApp().leftMargin = marginTopLeft.x;
+		wxGetApp().rightMargin = marginBottomRight.x;
+		wxGetApp().topMargin = marginTopLeft.y;
+		wxGetApp().bottomMargin = marginBottomRight.y;
+
+		wxGetApp().SaveReceiptPageSettings();
+	}
+	wxMessageBox("Receipt page updated", "Receipt font", wxICON_INFORMATION | wxOK);
 }
 
 void pof::MainFrame::OnModuleSlot(pof::Modules::const_iterator win, Modules::Evt notif)

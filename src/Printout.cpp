@@ -79,11 +79,11 @@ void pof::Printout::PerformPageSetup(bool showSetup)
 	printdata.SetPrintMode(wxPRINT_MODE_PRINTER);
 	printdata.SetOrientation(wxPORTRAIT);
 	printdata.SetNoCopies(1);
-	printdata.SetPaperId(m_paper_type);
+	printdata.SetPaperId(wxGetApp().paperSize);
 
 	m_page_setup = wxPageSetupDialogData(printdata);
-	m_page_setup.SetMarginTopLeft(wxPoint(leftMargin, topMargin));
-	m_page_setup.SetMarginBottomRight(wxPoint(rightMargin, bottomMargin));
+	m_page_setup.SetMarginTopLeft(wxPoint(wxGetApp().leftMargin, wxGetApp().topMargin));
+	m_page_setup.SetMarginBottomRight(wxPoint(wxGetApp().rightMargin, wxGetApp().bottomMargin));
 
 	if (showSetup)
 	{
@@ -92,19 +92,16 @@ void pof::Printout::PerformPageSetup(bool showSetup)
 		{
 
 			m_page_setup = dialog.GetPageSetupData();
-			m_paper_type = m_page_setup.GetPrintData().GetPaperId();
+			wxGetApp().paperSize = m_page_setup.GetPrintData().GetPaperId();
 			
 			wxPoint marginTopLeft = m_page_setup.GetMarginTopLeft();
 			wxPoint marginBottomRight = m_page_setup.GetMarginBottomRight();
-			leftMargin = marginTopLeft.x;
-			rightMargin = marginBottomRight.x;
-			topMargin = marginTopLeft.y;
-			bottomMargin = marginBottomRight.y;
+			wxGetApp().leftMargin = marginTopLeft.x;
+			wxGetApp().rightMargin = marginBottomRight.x;
+			wxGetApp().topMargin = marginTopLeft.y;
+			wxGetApp().bottomMargin = marginBottomRight.y;
 		}
 	}
-
-	spdlog::info("Paper type {:d}", static_cast<int>(m_paper_type));
-	wxGetApp().mPaperType = static_cast<int>(m_paper_type);
 }
 
 size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxString& text, double mmToLogical)
@@ -112,7 +109,7 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	auto& app = wxGetApp();
 	
 	int border = 5;
-	int xPos = leftMargin, yPos = topMargin;
+	int xPos = wxGetApp().leftMargin, yPos = wxGetApp().topMargin;
 	int lineLength = m_coord_system_width; //rightMarginLogical - leftMarginLogical;
 	int lineHeight = 18;
 
@@ -120,7 +117,7 @@ size_t pof::Printout::WritePageHeader(wxPrintout* printout, wxDC* dc, const wxSt
 	//wxString name(wxT("Bits"));
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString);
 
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 
 	wxCoord xExtent = 0, yExtent = 0;
@@ -214,7 +211,7 @@ size_t pof::Printout::WriteSaleData(double mmToLogical, size_t y)
 	//wxString name(wxT("Bits"));
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT,false, wxEmptyString);
 
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 	pof::base::currency totalAmount;
 	for (auto& r : saleData->GetDatastore())
@@ -284,7 +281,7 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	auto& app = wxGetApp();
 
 	int border = 0;
-	int xPos = leftMargin, yPos = topMargin;
+	int xPos = wxGetApp().leftMargin, yPos = wxGetApp().topMargin;
 	int lineLength = m_coord_system_width;
 	int lineHeight = 18;
 
@@ -293,8 +290,9 @@ size_t pof::Printout::WritePageHeaderSmall(wxPrintout* printout, wxDC* dc, const
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
 	//test this
 	wxFontInfo info = wxFontInfo(wxFONTSIZE_SMALL).AntiAliased().FaceName(name).Family(wxFONTFAMILY_DEFAULT).Style(wxFONTSTYLE_NORMAL).Weight(wxFONTWEIGHT_NORMAL);
-	dc->SetFont(info);
-
+	
+	
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 	wxCoord xExtent = 0, yExtent = 0;
 	dc->GetTextExtent(text, &xExtent, &yExtent);
@@ -389,7 +387,7 @@ size_t pof::Printout::WriteSaleDataSmall(double mToLogical, size_t y)
 	wxString name(wxT("Bits"));
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT, false, name);
 
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 	pof::base::currency totalAmount;
 	for (auto& r : saleData->GetDatastore())
@@ -468,7 +466,7 @@ size_t pof::Printout::WriteOrderListSmall()
 	wxString name(wxT("Bits"));
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, name);
 
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 	std::string text = wxGetApp().MainPharmacy->name;
 
 	dc->GetTextExtent(text, &xExtent, &yExtent);
@@ -577,7 +575,7 @@ size_t pof::Printout::WriteOrderList()
 {
 	wxDC* dc = GetDC();
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false);
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 	
 	int border = 5;
