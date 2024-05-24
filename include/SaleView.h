@@ -235,6 +235,8 @@ namespace pof
 		std::unordered_map<pof::base::data::duuid_t, pof::base::data::row_t> mPosionBookEntries;
 		//used to select label data
 		wxArrayString paymentTypes;
+		wxDataViewItem mPopupSelect;
+		int mPopupItemIdx = -1;
 
 		std::stringstream receiptcss;
 		DECLARE_EVENT_TABLE();

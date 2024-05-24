@@ -25,11 +25,19 @@ namespace pof {
 		SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData,
 			const std::vector<std::pair<std::string, size_t>>& colNames = {}, const std::vector<size_t>& colSizes = {});
 
-		void SearchString(size_t col, const std::string& searchString);
+		bool SearchString(size_t col, const std::string& searchString);
 		void CaptureFocus();
 		void PushSpecialCol(pof::DataModel::SpeicalColHandler_t&& spc,
 			size_t col);
 		void ChangeFont(const wxFont& font);
+
+		void SetSelected(const wxDataViewItem& item);
+		void SetActivated(const wxDataViewItem& item);
+		wxDataViewItem GetSelected() const { return mTable->GetSelection(); }
+		wxDataViewItem GetNext(int dir = 1);
+		wxDataViewItem GetTop() const;
+		wxDataViewItem GetLast() const;
+		size_t GetItemCount() const { return mTableModel->GetDataViewItems().size(); }
 	private:
 		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
 		void CreateNoResultPanel();

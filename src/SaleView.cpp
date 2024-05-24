@@ -827,6 +827,8 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 {
 	auto searchString = evt.GetString().ToStdString();
 	if (searchString.empty()) {
+		mPopupSelect = wxDataViewItem{};
+		mPopupItemIdx = -1;
 		mSearchPopup->Dismiss();
 		return;
 	}
@@ -840,8 +842,14 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 	//mSearchPopup->Show();
 	mSearchPopup->CaptureFocus();
 	mSearchPopup->Popup();
-	mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
+	bool empty = mSearchPopup->SearchString(pof::ProductManager::PRODUCT_NAME, searchString);
+	if (!empty) {
+		mPopupSelect = mSearchPopup->GetTop();
+		mPopupItemIdx = 0;
+		mSearchPopup->SetSelected(mPopupSelect);
+	}
 	mSearchPopup->SetFocus();
+
 }
 
 void pof::SaleView::CheckEmpty()
@@ -2254,8 +2262,25 @@ void pof::SaleView::ProductNameKeyEvent()
 	mProductNameValue->Bind(wxEVT_CHAR, [&](wxKeyEvent& evt) {
 		spdlog::info("{:d} Key code", evt.GetKeyCode());
 		if (evt.GetKeyCode() == WXK_DOWN) {
-			spdlog::info("Setting focus");
-			mSearchPopup->CaptureFocus();
+			if (mPopupSelect.IsOk()) {
+				mPopupItemIdx += 1;
+				mPopupSelect = mSearchPopup->GetNext(mPopupItemIdx);
+				if (mPopupSelect == mSearchPopup->GetTop()) {
+					mPopupItemIdx = 0;
+				}
+				mSearchPopup->SetSelected(mPopupSelect);
+			}
+		}else if(evt.GetKeyCode() == WXK_UP){
+			if (mPopupSelect.IsOk()) {
+				mPopupItemIdx -= 1;
+				mPopupSelect = mSearchPopup->GetNext(mPopupItemIdx);
+				if (mPopupSelect == mSearchPopup->GetLast()) {
+					mPopupItemIdx = mSearchPopup->GetItemCount();
+				}
+				mSearchPopup->SetSelected(mPopupSelect);
+			}
+		} else if (evt.GetKeyCode() == 13) {
+			mSearchPopup->SetActivated(mPopupSelect);
 		}
 		else {
 			evt.Skip();

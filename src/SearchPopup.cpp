@@ -17,9 +17,9 @@ pof::SearchPopup::SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data>
 	mPopManager.Update();
 }
 
-void pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
+bool pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
 {
-	mTableModel->StringSearchAndReload(col, searchString);
+	bool empty = mTableModel->StringSearchAndReload(col, searchString);
 	auto& modelItems = mTableModel->GetDataViewItems();
 	if (modelItems.empty()) {
 		ShowNoResult(searchString);
@@ -27,6 +27,7 @@ void pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
 	else {
 		mBook->SetSelection(DATA_VIEW);
 	}
+	return empty;
 }
 
 void pof::SearchPopup::CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes)
@@ -122,6 +123,47 @@ void pof::SearchPopup::ChangeFont(const wxFont& font)
 {
 	mTable->SetFont(font);
 	mNoResultText->SetFont(font);
+}
+
+void pof::SearchPopup::SetSelected(const wxDataViewItem& item)
+{
+	if (item.IsOk()) {
+		mTable->Select(item);
+		mTable->EnsureVisible(item);
+	}
+}
+
+void pof::SearchPopup::SetActivated(const wxDataViewItem& item)
+{
+	if (item.IsOk()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		sSelectedSignal(mTableModel->GetDatastore()[idx]);
+
+		Dismiss();
+	}
+}
+
+wxDataViewItem pof::SearchPopup::GetNext(int dir)
+{
+	auto& items = mTableModel->GetDataViewItems();
+	if (items.empty()) return wxDataViewItem{};
+	//wrap
+	if (dir >= items.size()) return items[0];
+	if (dir < 0) return items[items.size() - 1];
+
+	return items[dir];
+}
+
+wxDataViewItem pof::SearchPopup::GetTop() const
+{
+	auto& ds = mTableModel->GetDataViewItems();
+	return ds.empty() ? wxDataViewItem() : *ds.begin();
+}
+
+wxDataViewItem pof::SearchPopup::GetLast() const
+{
+	auto& ds = mTableModel->GetDataViewItems();
+	return ds.empty() ? wxDataViewItem() : *(ds.end()  - 1);
 }
 
 void pof::SearchPopup::OnDataItemSelected(wxDataViewEvent& evt)
