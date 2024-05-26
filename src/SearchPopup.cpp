@@ -148,8 +148,8 @@ wxDataViewItem pof::SearchPopup::GetNext(int dir)
 	auto& items = mTableModel->GetDataViewItems();
 	if (items.empty()) return wxDataViewItem{};
 	//wrap
-	if (dir >= items.size()) return items[0];
-	if (dir < 0) return items[items.size() - 1];
+	if (dir >= static_cast<int>(items.size())) return items.front();
+	if (dir < 0) return items.Last();
 
 	return items[dir];
 }
@@ -157,13 +157,13 @@ wxDataViewItem pof::SearchPopup::GetNext(int dir)
 wxDataViewItem pof::SearchPopup::GetTop() const
 {
 	auto& ds = mTableModel->GetDataViewItems();
-	return ds.empty() ? wxDataViewItem() : *ds.begin();
+	return ds.empty() ? wxDataViewItem() : ds.front();
 }
 
 wxDataViewItem pof::SearchPopup::GetLast() const
 {
 	auto& ds = mTableModel->GetDataViewItems();
-	return ds.empty() ? wxDataViewItem() : *(ds.end()  - 1);
+	return ds.empty() ? wxDataViewItem() : ds.Last();
 }
 
 void pof::SearchPopup::OnDataItemSelected(wxDataViewEvent& evt)

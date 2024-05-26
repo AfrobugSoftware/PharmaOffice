@@ -693,7 +693,7 @@ bool pof::Printout::DrawLabelPrint(int page)
 {
 	wxDC* dc = GetDC();
 	wxFont font(wxFONTSIZE_SMALL, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT, false);
-	dc->SetFont(font);
+	dc->SetFont(wxGetApp().mReceiptFontSettings.GetChosenFont());
 
 	int ppiScreenX = 0, ppiScreenY = 0;
 	int ppiPrinterX = 0, ppiPrinterY = 0;

@@ -2260,7 +2260,6 @@ std::optional<pof::base::data::iterator> pof::SaleView::CheckAlreadyAdded(const 
 void pof::SaleView::ProductNameKeyEvent()
 {
 	mProductNameValue->Bind(wxEVT_CHAR, [&](wxKeyEvent& evt) {
-		spdlog::info("{:d} Key code", evt.GetKeyCode());
 		if (evt.GetKeyCode() == WXK_DOWN) {
 			if (mPopupSelect.IsOk()) {
 				mPopupItemIdx += 1;
@@ -2275,7 +2274,7 @@ void pof::SaleView::ProductNameKeyEvent()
 				mPopupItemIdx -= 1;
 				mPopupSelect = mSearchPopup->GetNext(mPopupItemIdx);
 				if (mPopupSelect == mSearchPopup->GetLast()) {
-					mPopupItemIdx = mSearchPopup->GetItemCount();
+					mPopupItemIdx = mSearchPopup->GetItemCount() - 1;
 				}
 				mSearchPopup->SetSelected(mPopupSelect);
 			}
