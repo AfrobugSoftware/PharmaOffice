@@ -179,7 +179,7 @@ bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	reg.reserve(search_for.size() * 2);
 	for (auto& c : search_for)
 	{
-		if (!std::isalnum(c) && !std::isspace(c) && c != '-') {
+		if (!std::isalnum(c) && !std::isspace(c)  && c != '-') {
 			//what to do
 			return true;
 		}

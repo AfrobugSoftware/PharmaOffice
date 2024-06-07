@@ -8,6 +8,8 @@
 #include "DataModel.h"
 #include "database.h"
 
+#include <boost/signals2/signal.hpp>
+
 namespace pof {
 	class PoisonBookManager : private boost::noncopyable
 	{
@@ -24,6 +26,14 @@ namespace pof {
 			DATE,
 			MAX
 		};
+
+		enum {
+			ADDED = 0,
+			REMOVED,
+			UPDATED,
+		};
+
+		boost::signals2::signal<void(int)> gPoisonBookChanged;
 
 		PoisonBookManager();
 		~PoisonBookManager();
@@ -42,6 +52,7 @@ namespace pof {
 		bool IsBookCreated(const pof::base::data::duuid_t& puid);
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
+		void ReloadPoisonBook();
 
 		inline std::unique_ptr<pof::DataModel>& GetBook() { return mPoisonBook; }
 	private:

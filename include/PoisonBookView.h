@@ -53,6 +53,7 @@ namespace pof{
 			ID_BOOKDATA,
 			ID_VERIFY,
 			ID_RESET,
+			ID_REMOVE_BOOK,
 		};
 		constexpr static long AUIMGRSTYLE = wxAUI_MGR_DEFAULT | wxAUI_MGR_TRANSPARENT_DRAG | wxAUI_MGR_ALLOW_ACTIVE_PANE | wxAUI_MGR_LIVE_RESIZE;
 		PoisonBookView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(917, 668), long style = wxTAB_TRAVERSAL | wxNO_BORDER);
@@ -83,8 +84,13 @@ namespace pof{
 		void OnDateChanged(wxDateEvent& evt);
 		void OnVerify(wxCommandEvent& evt);
 		void OnReset(wxCommandEvent& evt);
+		void OnRemoveBook(wxCommandEvent& evt);
 
 		void OnContextMenu(wxDataViewEvent& evt);
+
+		//manager signals
+		void PoisionBookManagerSignal(int evt);
+
 		wxAuiManager mManager;
 		
 		wxPanel* mEmpty = nullptr;

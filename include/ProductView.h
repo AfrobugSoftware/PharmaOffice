@@ -124,6 +124,7 @@ namespace pof
 		wxAuiToolBarItem* mFuncDropItem = nullptr;
 		wxAuiToolBarItem* mChartsDropItem = nullptr;
 		wxAuiToolBarItem* mCatNameItem = nullptr;
+		wxAuiToolBarItem* mSelectItem = nullptr;
 		wxDataViewCtrl* m_dataViewCtrl1 = nullptr;
 		wxDataViewColumn* mSerialNumCol = nullptr;
 		wxDataViewColumn* mProductNameCol = nullptr;

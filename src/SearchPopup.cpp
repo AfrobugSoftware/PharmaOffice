@@ -21,7 +21,7 @@ bool pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
 {
 	bool empty = mTableModel->StringSearchAndReload(col, searchString);
 	auto& modelItems = mTableModel->GetDataViewItems();
-	if (modelItems.empty()) {
+	if (empty) {
 		ShowNoResult(searchString);
 	}
 	else {
@@ -135,8 +135,9 @@ void pof::SearchPopup::SetSelected(const wxDataViewItem& item)
 
 void pof::SearchPopup::SetActivated(const wxDataViewItem& item)
 {
-	if (item.IsOk()) {
-		size_t idx = pof::DataModel::GetIdxFromItem(item);
+	auto sel = mTable->GetSelection();
+	if (sel.IsOk()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(sel);
 		sSelectedSignal(mTableModel->GetDatastore()[idx]);
 
 		Dismiss();

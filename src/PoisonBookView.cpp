@@ -10,6 +10,7 @@ BEGIN_EVENT_TABLE(pof::PoisonBookView, wxPanel)
 	EVT_DATE_CHANGED(pof::PoisonBookView::ID_DATE_PICKER, pof::PoisonBookView::OnDateChanged)
 
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(pof::PoisonBookView::ID_BOOKDATA, pof::PoisonBookView::OnContextMenu)
+	EVT_TOOL(pof::PoisonBookView::ID_REMOVE_BOOK, pof::PoisonBookView::OnRemoveBook)
 
 	EVT_MENU(pof::PoisonBookView::ID_VERIFY, pof::PoisonBookView::OnVerify)
 
@@ -45,7 +46,7 @@ pof::PoisonBookView::PoisonBookView(wxWindow* parent, wxWindowID id, const wxPoi
 	if(!mBookList->IsEmpty())
 		mBook->SetSelection(THUMBNAIL_SELECT);
 
-
+	wxGetApp().mPoisonBookManager.gPoisonBookChanged.connect(std::bind_front(&pof::PoisonBookView::PoisionBookManagerSignal, this));
 	SetupAuiTheme();
 	mManager.Update();
 }
@@ -57,7 +58,7 @@ pof::PoisonBookView::~PoisonBookView()
 void pof::PoisonBookView::CreateToolBars()
 {
 	mToolbar = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mSearchbar = new wxSearchCtrl(mToolbar, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(400, -1), wxWANTS_CHARS);
+	mSearchbar = new wxSearchCtrl(mToolbar, ID_SEARCH, wxEmptyString, wxDefaultPosition, FromDIP(wxSize(400, -1)), wxWANTS_CHARS);
 #ifndef __WXMAC__
 	mSearchbar->ShowSearchButton(true);
 #endif
@@ -67,26 +68,27 @@ void pof::PoisonBookView::CreateToolBars()
 	mToolbar->AddControl(mSearchbar, "Search bar");
 
 	mToolbar->AddStretchSpacer();
-	mToolbar->AddTool(ID_ADD_PRODUCT, "Create New Book", wxArtProvider::GetBitmap("action_add"));
+	mToolbar->AddTool(ID_ADD_PRODUCT, "Create New Book", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))));
+	mToolbar->AddSpacer(FromDIP(5));
+	mToolbar->AddTool(ID_REMOVE_BOOK, "Remove book", wxArtProvider::GetBitmap("delete", wxART_OTHER, FromDIP(wxSize(16, 16))));
 
 	mToolbar->Realize();
-	mManager.AddPane(mToolbar, wxAuiPaneInfo().Name("Tools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	mManager.AddPane(mToolbar, wxAuiPaneInfo().Name("Tools").Top().MinSize(FromDIP(wxSize( - 1, 30))).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::PoisonBookView::CreateBookToolBar()
 {
 	mBookbar =  new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mBookbar->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"), "Back to poison books");
+	mBookbar->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Back to poison books");
 	mBookbar->AddSeparator();
 		
 	mBookbar->AddStretchSpacer();
-	mDateCtrl = new wxDatePickerCtrl(mBookbar, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, wxSize(100, -1), wxDP_DROPDOWN);
+	mDateCtrl = new wxDatePickerCtrl(mBookbar, ID_DATE_PICKER, wxDateTime::Now(), wxDefaultPosition, FromDIP(wxSize(200, -1)), wxDP_DROPDOWN);
 	mBookbar->AddControl(mDateCtrl, "Date");
-	mBookbar->AddSpacer(2);
-	mBookbar->AddTool(ID_RESET, "Reset", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16, 16)), "Reset date search");
+	mBookbar->AddSpacer(FromDIP(2));
+	mBookbar->AddTool(ID_RESET, "Reset", wxArtProvider::GetBitmap("redo", wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Reset date search");
 	mBookbar->Realize();
-	mManager.AddPane(mBookbar, wxAuiPaneInfo().Name("BookTools").Top().MinSize(-1, 30).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
-
+	mManager.AddPane(mBookbar, wxAuiPaneInfo().Name("BookTools").Top().MinSize(FromDIP(wxSize(-1, 30))).ToolbarPane().PaneBorder(false).DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 }
 
 void pof::PoisonBookView::CreateViews()
@@ -138,12 +140,12 @@ void pof::PoisonBookView::CreateDataView()
 	wxSizer* tsz = new wxBoxSizer(wxHORIZONTAL);
 
 	mProductName = new wxStaticText(mTextPanel, wxID_ANY, wxEmptyString);
-	mProductName->SetFont(wxFontInfo().AntiAliased());
+	mProductName->SetFont(wxFontInfo(10).AntiAliased().Bold());
 	mProductName->SetBackgroundColour(*wxWHITE);
 
 	mInfoBar = new wxInfoBar(panel);
 
-	mBookData = new wxDataViewCtrl(panel, ID_BOOKDATA, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
+	mBookData = new wxDataViewCtrl(panel, ID_BOOKDATA, wxDefaultPosition,wxDefaultSize, wxNO_BORDER | wxDV_HORIZ_RULES | wxDV_VERT_RULES | wxDV_ROW_LINES);
 	mBookData->AssociateModel(wxGetApp().mPoisonBookManager.GetBook().get());
 
 	mBookData->AppendTextColumn(wxT("Date"), pof::PoisonBookManager::DATE, wxDATAVIEW_CELL_INERT, FromDIP(100), wxALIGN_CENTER);
@@ -206,45 +208,45 @@ void pof::PoisonBookView::CreateEmptyBookPane()
 	bSizer8 = new wxBoxSizer(wxHORIZONTAL);
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxPanel* m7 = new wxPanel(m5, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer(wxVERTICAL);
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 	wxStaticBitmap* b1 = new wxStaticBitmap(m7, wxID_ANY, wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MESSAGE_BOX), wxDefaultPosition, wxDefaultSize, 0);
-	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer9->Add(b1, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 	wxStaticText* t1 = new wxStaticText(m7, wxID_ANY, wxT("No book created for controlled medications"), wxDefaultPosition, wxDefaultSize, 0);
 	t1->Wrap(-1);
-	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(t1, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 	wxButton* btn = new wxButton(m7, ID_ADD_PRODUCT);
-	btn->SetBitmap(wxArtProvider::GetBitmap("action_add"));
+	btn->SetBitmap(wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
 	btn->SetLabel("Create new book");
 	btn->SetBackgroundColour(*wxWHITE);
-	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
+	bSizer9->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_CENTER_HORIZONTAL | wxALL, FromDIP(5));
 
 
-	bSizer9->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer9->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m7->SetSizer(bSizer9);
 	m7->Layout();
 	bSizer9->Fit(m7);
-	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	bSizer8->Add(m7, 0, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
 
-	bSizer8->Add(0, 0, 1, wxEXPAND, 5);
+	bSizer8->Add(0, 0, 1, wxEXPAND, FromDIP(5));
 
 
 	m5->SetSizer(bSizer8);
 	m5->Layout();
 	bSizer8->Fit(m5);
-	bSizer6->Add(m5, 1, wxEXPAND | wxALL, 5);
+	bSizer6->Add(m5, 1, wxEXPAND | wxALL, FromDIP(5));
 
 
 	mEmpty->SetSizer(bSizer6);
@@ -432,6 +434,33 @@ void pof::PoisonBookView::OnReset(wxCommandEvent& evt)
 {
 }
 
+void pof::PoisonBookView::OnRemoveBook(wxCommandEvent& evt)
+{
+	//get selected book
+
+
+	//check privilage
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Remove product", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	if (wxMessageBox("Deleteing a posion book deletes all the data associated with the poison book, Do you wish to continue?", "Remove poision book", wxICON_WARNING | wxYES_NO) == wxNO) return;
+
+	wxCredentialEntryDialog dialog(this, "User credentials are required to remove this item", "Poison book");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid username or password", "Posion book", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+}
+
 void pof::PoisonBookView::OnContextMenu(wxDataViewEvent& evt)
 {
 	auto item = evt.GetItem();
@@ -441,6 +470,20 @@ void pof::PoisonBookView::OnContextMenu(wxDataViewEvent& evt)
 	auto r = menu->Append(ID_VERIFY, "Verify entry");
 
 	mBookData->PopupMenu(menu);
+}
+
+void pof::PoisonBookView::PoisionBookManagerSignal(int evt)
+{
+	switch (evt)
+	{
+	case pof::PoisonBookManager::ADDED:
+	{
+		LoadBooks();
+	}
+		break;
+	default:
+		break;
+	}
 }
 
 void pof::PoisonBookView::OnProductRemoved(pof::base::data::const_iterator iter)
@@ -545,7 +588,7 @@ void pof::PoisonBookView::LoadProductName(const std::string& name)
 {
 	auto panel = mBook->GetPage(BOOK_VIEW);
 	panel->Freeze();
-	mProductName->SetLabelText(name);
+	mProductName->SetLabelText(fmt::format("Poison book - {}", name));
 	panel->Layout();
 	panel->Thaw();
 }

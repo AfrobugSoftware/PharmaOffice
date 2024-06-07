@@ -187,6 +187,7 @@ bool pof::PoisonBookManager::OnAddRecord(pof::base::data::const_iterator iter)
 			spdlog::error(mLocalDatabase->err_msg());
 		}
 		mLocalDatabase->finalise(*stmt);
+		gPoisonBookChanged(ADDED); //signal added
 		return status;
 	}
 	return false;
@@ -317,4 +318,9 @@ bool pof::PoisonBookManager::IsBookCreated(const pof::base::data::duuid_t& puid)
 		return (!rel->empty());
 	}
 	return false;
+}
+
+void pof::PoisonBookManager::ReloadPoisonBook()
+{
+
 }

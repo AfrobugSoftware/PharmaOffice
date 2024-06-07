@@ -1154,7 +1154,7 @@ void pof::ReportsDialog::CreateToolBar()
 		break;
 	}
 	mTools->AddSpacer(10);
-	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download"));
+	mTools->AddTool(ID_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))));
 	mTools->AddSpacer(2);
 	mTools->Realize();
 }

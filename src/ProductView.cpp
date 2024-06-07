@@ -1006,6 +1006,11 @@ void pof::ProductView::OnSearchCleared(wxCommandEvent& evt)
 
 void pof::ProductView::OnSelection(wxCommandEvent& evt)
 {
+	if (wxGetApp().mProductManager.GetProductData()->GetDataViewItems().empty()) {
+		RemoveCheckedState(mSelectItem);
+		return;
+	}
+
 	if (evt.IsChecked()) {
 		ShowSelectionColumn();
 	}
@@ -3051,7 +3056,7 @@ void pof::ProductView::CreateToolBar()
 	//tool bar 2
 	m_auiToolBar2 = new wxAuiToolBar(this, ID_TOOLBAR2, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	m_auiToolBar2->SetToolBitmapSize(wxSize(FromDIP(16), FromDIP(16)));
-	m_auiToolBar2->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Select multiple products", wxITEM_CHECK);
+	mSelectItem = m_auiToolBar2->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	
 	//m_auiToolBar2->AddStretchSpacer();
