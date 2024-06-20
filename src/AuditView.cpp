@@ -34,9 +34,9 @@ void pof::AuditView::CreateToolBar()
 	mToolBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
 	mToolBar->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
 
-	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_back", wxART_OTHER, FromDIP(wxSize(16,16))), "Backward");
+	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Backward");
 	mToolBar->AddSpacer(FromDIP(5));
-	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("arrow_next", wxART_OTHER, FromDIP(wxSize(16,16))), "Forward");
+	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("forward", wxART_OTHER, FromDIP(wxSize(16,16))), "Forward");
 
 	wxArrayString choices;
 	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));
@@ -72,9 +72,9 @@ void pof::AuditView::CreateToolBar()
 	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddTool(ID_COLOUR_TYPE, "Type Highlight", wxArtProvider::GetBitmap("pen"), "Highlight different audit types", wxITEM_CHECK);
 	mToolBar->AddSpacer(FromDIP(5));
-	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("action_check"), "Apply selected filter");
+	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Apply selected filter");
 	mToolBar->AddSpacer(FromDIP(5));
-	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download"), "Download Audit as EXCEL worksheet");
+	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))), "Download Audit as EXCEL worksheet");
 
 	mToolBar->Realize();
 	mAuiManager.AddPane(mToolBar, wxAuiPaneInfo().Name("ToolBar").ToolbarPane().Top().MinSize(FromDIP(wxSize(- 1, 30))).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));

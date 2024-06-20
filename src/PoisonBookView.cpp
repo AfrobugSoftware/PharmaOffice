@@ -100,8 +100,8 @@ void pof::PoisonBookView::CreateViews()
 	wxPanel* textPanel = new wxPanel(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxSizer* tsz = new wxBoxSizer(wxHORIZONTAL);
 
-	auto text = new wxStaticText(textPanel, wxID_ANY, "Please select a controlled book to view");
-	text->SetFont(wxFontInfo().AntiAliased());
+	auto text = new wxStaticText(textPanel, wxID_ANY, "Please select a controlled medication book to view");
+	text->SetFont(wxFontInfo(9).AntiAliased());
 	text->SetBackgroundColour(*wxWHITE);
 
 	tsz->Add(text, 0, wxALL | wxEXPAND, FromDIP(5));

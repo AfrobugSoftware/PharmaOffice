@@ -1410,9 +1410,9 @@ void pof::MainFrame::OnCreateAccount(wxCommandEvent& evt)
 			}
 			wxGetApp().mLocalDatabase->finalise(*stmt);
 			regDialog.mAccount.CreateAccountInfo();
+			wxMessageBox("Account created successfully", "Account", wxICON_INFORMATION | wxOK);
 		}
 	}
-	wxMessageBox("Account created successfully", "Account", wxICON_INFORMATION | wxOK);
 }
 
 void pof::MainFrame::OnReceiptFont(wxCommandEvent& evt)

@@ -197,6 +197,21 @@ bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 			mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
 		}
 	}
+
+	//Cleared();
+	//mItems.clear();
+	//attributes.clear(); //dont know if i should clear the attributes here?
+	//boost::algorithm::boyer_moore searcher(search_for.begin(), search_for.end());
+	//size_t i = 0;
+	//for (auto& row : *datastore) {
+	//	auto& text = boost::variant2::get<pof::base::data::text_t>(row.first[col]);
+	//	auto s = searcher(text.begin(), text.end());
+	//	if (s.first != std::end(text)) {
+	//		mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
+	//	}
+	//	i++;
+	//}
+
 	ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
 	return mItems.IsEmpty();

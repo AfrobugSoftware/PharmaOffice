@@ -21,6 +21,9 @@
 #include <set>
 #include <array>
 
+//boost test search
+#include <boost/algorithm/searching/boyer_moore.hpp>
+
 namespace std {
 	template<>
 	struct hash<wxDataViewItem>
