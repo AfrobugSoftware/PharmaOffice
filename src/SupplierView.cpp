@@ -41,6 +41,7 @@ pof::SupplierView::SupplierView(wxWindow* parent, wxWindowID id, const wxPoint& 
 	CreateViews();
 	CreateEmptyPanel();
 
+
 	CheckEmpty(SUPPLIER_VIEW);
 	page = SUPPLIER_VIEW;
 	mManager.AddPane(mBook, wxAuiPaneInfo().Name("Book").CenterPane());

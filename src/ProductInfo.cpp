@@ -801,8 +801,12 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	switch (ProductElemIdx)
 	{
 	case pof::ProductManager::PRODUCT_NAME:
-		v[pof::ProductManager::PRODUCT_NAME] = std::move(PropertyValue.GetString().ToStdString());
+	{
+		std::string name = PropertyValue.GetString().ToStdString();
+		boost::trim(name);
+		v[pof::ProductManager::PRODUCT_NAME] = std::move(name);
 		break;
+	}
 	case pof::ProductManager::PRODUCT_GENERIC_NAME:
 		v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(JoinArrayList(PropertyValue));
 		break;

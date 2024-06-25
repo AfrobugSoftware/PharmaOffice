@@ -411,10 +411,12 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		wxMessageBox("Product with that name exists in pharmacy", "Add Product", wxICON_WARNING | wxOK);
 		return false;
 	}
+	std::string name = mProductNameValue->GetValue().ToStdString();
+	boost::trim(name);
 
 	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] =  pof::GenRandomId(); //change this 
-	v[pof::ProductManager::PRODUCT_NAME] = std::move(mProductNameValue->GetValue().ToStdString());
+	v[pof::ProductManager::PRODUCT_NAME] = std::move(name);
 	v[pof::ProductManager::PRODUCT_GENERIC_NAME] = std::move(mGenericNameValue->GetValue().ToStdString());
 	v[pof::ProductManager::PRODUCT_FORMULATION] = std::move(wxGetApp().FormulationChoices[mFormulationValue->GetSelection()].ToStdString());
 	v[pof::ProductManager::PRODUCT_CLASS] = std::move(ProductClassChoices[mClassValue->GetSelection()].ToStdString());

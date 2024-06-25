@@ -28,6 +28,7 @@
 #include <random>
 #include <date/date.h>
 
+#include <boost/algorithm/string.hpp>
 
 #include <boost/signals2/signal.hpp>
 #include "ProductManager.h"

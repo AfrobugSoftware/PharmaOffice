@@ -27,6 +27,7 @@
 #include <wx/textdlg.h>
 
 #include <optional>
+#include <boost/algorithm/string.hpp>
 
 #include "Data.h"
 #include "ProductManager.h"
