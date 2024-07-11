@@ -4,7 +4,37 @@ BEGIN_EVENT_TABLE(pof::RegistrationDialog, wxDialog)
 	EVT_CHOICE(pof::RegistrationDialog::ID_ACCOUNT_TYPE, pof::RegistrationDialog::OnAccountTypeSelect)
 END_EVENT_TABLE()
 
+namespace grape {
+	using opt_hash = grape::optional_field<std::string, 0>;
+	using opt_secque = grape::optional_field<std::string, 1>;
+	using opt_secans = grape::optional_field<std::string, 2>;
+	using opt_sessionid = grape::optional_field<boost::uuids::uuid, 3>;
+	using opt_session_start_time = grape::optional_field<std::chrono::system_clock::time_point, 4>;
 
+	using session = pof::base::session<boost::beast::http::vector_body<std::uint8_t>,
+		boost::beast::http::vector_body<std::uint8_t>>;
+};
+
+//accounts for grape juice
+BOOST_FUSION_DEFINE_STRUCT(
+	(grape), account,
+	(boost::uuids::uuid, id)
+	(boost::uuids::uuid, account_id)
+	(std::uint32_t, type)
+	(std::uint32_t, privilage)
+	(std::string, first_name)
+	(std::string, last_name)
+	(std::string, dob)
+	(std::string, phonenumber)
+	(std::string, email)
+	(std::string, username)
+	(grape::opt_fields, fields)
+	(grape::opt_hash, passhash)
+	(grape::opt_secque, sec_que)
+	(grape::opt_secans, sec_ans)
+	(grape::opt_sessionid, session_id)
+	(grape::opt_session_start_time, session_start_time)
+)
 
 pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
@@ -258,6 +288,32 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.regnumber = mRegNumValue->GetValue().ToStdString(); 
 	mAccount.secquestion = pof::Account::mSecurityQuestions[sel].ToStdString();
 	mAccount.secanswer =  mSecurityAnswer->GetValue().ToStdString();
+
+	grape::account acc;
+	acc.account_id = boost::uuids::nil_uuid();
+	acc.first_name = mAccount.name;
+	acc.last_name = mAccount.lastname;
+	acc.passhash = hash;
+	acc.username = mAccount.username;
+	acc.email = mAccount.email;
+	acc.phonenumber = mAccount.phonenumber;
+	acc.sec_que = mAccount.secquestion;
+	acc.sec_ans = mAccount.secanswer;
+
+
+	//send request to grape juice
+	auto sess = std::make_shared<grape::session>(wxGetApp().mNetManager.io());
+	grape::session::request_type::body_type::value_type value(grape::serial::get_size(acc), 0x00);
+	grape::serial::write(boost::asio::buffer(value), acc);
+	
+	auto fut = sess->req<http::verb::put>("localhost"s, "/account/signup"s, "8080"s, std::move(value));
+	try {
+		auto back = fut.get(); //block here
+	}
+	catch (const std::system_error& err) {
+		wxMessageBox(err.what());
+		return false;
+	}
 	return true;
 }
 
@@ -273,6 +329,7 @@ bool pof::RegistrationDialog::ValidateEmail(const std::string email)
 	catch (const std::exception& exp) {
 		auto what = exp.what();
 		spdlog::error(what);
+		return false;
 	}
 	return true;
 }

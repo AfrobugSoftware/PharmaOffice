@@ -97,10 +97,11 @@ namespace pof {
 			static_assert(std::conjunction_v<http::is_body<response_body>, http::is_body<request_body>>,
 				"response body or request body is not supported by the session class");
 
-			typedef http::request<request_body> request_type;
+			typedef http::request<request_body>   request_type;
 			typedef http::response<response_body> response_type;
-			typedef std::promise<typename response_body::value_type> promise_t;
-			typedef std::future<typename response_body::value_type> future_t;
+			typedef std::promise<response_type>   promise_t;
+			typedef std::future<response_type>    future_t;
+			static boost::asio::ip::tcp::endpoint m_globalendpoint;
 
 			explicit session(net::io_context& ioc) : m_resolver(net::make_strand(ioc)),
 				m_stream(net::make_strand(ioc))
@@ -140,14 +141,12 @@ namespace pof {
 			future_t req(const std::string& host,
 				const std::string& target,
 				const std::string& port,
-				typename request_type::body_type const& body = http::empty_body{},
+				typename request_type::body_type::value_type&& body,
 				 std::chrono::steady_clock::duration = 60s) {
-				prepare_request(target, host, verb, body, 11);
-				m_resolver.async_resolve(host,
-					port,
-					beast::bind_front_handler(
-						&session::on_resolve,
-						this->shared_from_this()));
+				prepare_request(target, host, verb, std::forward<typename request_type::body_type::value_type>(body), 11);
+				m_stream.async_connect(m_globalendpoint, beast::bind_front_handler(
+					&session::on_connect,
+					this->shared_from_this()));
 				return (m_promise.get_future());
 			}
 
@@ -170,7 +169,7 @@ namespace pof {
 						&session::on_connect,
 						this->shared_from_this()));
 			}
-			void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type endpoint) {
+			void on_connect(const beast::error_code& ec) {
 				if (ec)
 					return on_fail(ec);
 
@@ -199,10 +198,6 @@ namespace pof {
 
 			void on_read(beast::error_code ec, size_t bytes) {
 				boost::ignore_unused(bytes);
-
-				if (ec)
-					return on_fail(ec);
-
 				// Gracefully close the socket
 				m_stream.socket().shutdown(tcp::socket::shutdown_both, ec);
 
@@ -211,7 +206,7 @@ namespace pof {
 					return on_fail(ec);
 
 				//push the result of the respone to the 
-				m_promise.set_value(m_res.body());
+				m_promise.set_value(std::move(m_res));
 
 			}
 
@@ -235,11 +230,12 @@ namespace pof {
 			void prepare_request(const std::string& target,
 				const std::string& host,
 				http::verb verb,
-				typename request_type::body_type const& body,
+				typename request_type::body_type::value_type&& body,
 				int version = 11
 			)
 			{
-				if constexpr (std::is_same_v<request_body, http::string_body>) {
+				if constexpr (std::disjunction_v<std::is_same<request_body, http::string_body>, 
+					 std::is_same<request_body, http::vector_body<std::uint8_t>>>) {
 					//if not empty body
 					//string bodies
 					m_req.version(version);
@@ -247,13 +243,12 @@ namespace pof {
 					m_req.target(target.c_str());
 					m_req.set(http::field::host, host.c_str());
 					m_req.set(http::field::user_agent, PHARMAOFFICE_USER_AGENT_STRING);
-					m_req.set(http::field::content_length, std::to_string(body.size()));
-					m_req.body() = body;
+					m_req.body() = std::forward<typename request_type::body_type::value_type>(body);
 				}
 				else if constexpr (std::is_same_v<request_body, http::file_body>) {
 					//if request is a file body 
 					http::request<http::file_body> req_{ std::piecewise_construct,
-						std::make_tuple(std::move(body)) };
+						std::make_tuple(std::forward<typename request_type::body_type::value_type>(body)) };
 					req_.method(verb);
 					req_.version(version);
 					req_.target(target.c_str());
@@ -294,6 +289,9 @@ namespace pof {
 		template<typename res_body, typename req_body = http::empty_body>
 		using session_shared_ptr = std::shared_ptr<session<res_body, req_body>>;
 
+		template<typename res_body, typename req_body>
+		boost::asio::ip::tcp::endpoint session<res_body, req_body>::m_globalendpoint =
+			 boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 8080);
 
 		namespace ssl {
 			template<typename resp_body = beast::http::string_body, typename req_body = boost::beast::http::empty_body>

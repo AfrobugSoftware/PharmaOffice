@@ -1,5 +1,6 @@
 #include <netmanager.h>
 
+
 pof::base::net_manager::net_manager()
 	: m_ssl{boost::asio::ssl::context_base::sslv23_client}{
 	auto ec = setupssl();

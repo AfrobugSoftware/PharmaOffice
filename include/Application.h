@@ -26,7 +26,7 @@
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/lexical_cast.hpp>
-
+#include <boost/fusion/include/define_struct.hpp>
 
 #include <nlohmann/json.hpp>
 #include "SignInDialog.h"
@@ -40,6 +40,7 @@
 #include "PatientManager.h"
 #include "PoisonBookManager.h"
 #include "PharmacySetupWizard.h"
+#include "serialiser.h"
 
 namespace js = nlohmann;
 namespace fs = std::filesystem;

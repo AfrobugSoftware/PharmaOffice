@@ -2,13 +2,25 @@
 //#include "Application.h"
 #include "PofPch.h"
 BEGIN_EVENT_TABLE(pof::SignInDialog, wxDialog)
-	EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
-	EVT_BUTTON(pof::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
-	EVT_HYPERLINK(pof::SignInDialog::ID_FORGOT_PASS, pof::SignInDialog::OnForgotPassword)
-	EVT_HYPERLINK(pof::SignInDialog::ID_HELP, pof::SignInDialog::OnHelp)
+EVT_BUTTON(pof::SignInDialog::ID_LOGON, pof::SignInDialog::onLogon)
+EVT_BUTTON(pof::SignInDialog::ID_SIGNUP, pof::SignInDialog::onSignup)
+EVT_HYPERLINK(pof::SignInDialog::ID_FORGOT_PASS, pof::SignInDialog::OnForgotPassword)
+EVT_HYPERLINK(pof::SignInDialog::ID_HELP, pof::SignInDialog::OnHelp)
 END_EVENT_TABLE()
 
 
+namespace grape {
+	using session = pof::base::session<boost::beast::http::vector_body<std::uint8_t>,
+		boost::beast::http::vector_body<std::uint8_t>>;
+};
+//account cred
+BOOST_FUSION_DEFINE_STRUCT(
+	(grape), account_cred,
+	(boost::uuids::uuid, pharmacy_id)
+	(std::string, username)
+	(std::string, password)
+	(std::chrono::system_clock::time_point, last_session_time)
+)
 
 pof::SignInDialog::SignInDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, wxT("PharmaOffice - Personal"), pos, size, style)
 {
@@ -316,6 +328,28 @@ bool pof::SignInDialog::ValidateLocal()
 	if(!dbPtr) return false;
 	std::string Username = mUserName->GetValue().ToStdString();
 	std::string UserPassword = mPassword->GetValue().ToStdString();
+
+	//test the grape juice
+	grape::account_cred acred;
+	acred.pharmacy_id = boost::uuids::random_generator_mt19937{}();
+	acred.username = Username;
+	acred.password = UserPassword;
+
+	auto sess = std::make_shared<grape::session>(wxGetApp().mNetManager.io());
+	grape::session::request_type::body_type::value_type value(grape::serial::get_size(acred), 0x00);
+	grape::serial::write(boost::asio::buffer(value), acred);
+
+	auto fut = sess->req<http::verb::post>("localhost"s, "/account/signin"s, "8080"s, std::move(value));
+	try {
+		auto back = fut.get(); //block here
+		auto& str = back.body();
+		wxMessageBox(std::string(str.begin(), str.end()));
+	}
+	catch (const std::system_error& err) {
+		wxMessageBox(err.what(), "grape juice", wxOK | wxICON_INFORMATION);
+		return false;
+	}
+
 	wxGetApp().bKeepMeSignedIn = mKeepMeSigned->IsChecked();
 	auto& account = wxGetApp().MainAccount;
 	const std::string sql = fmt::format("SELECT * FROM USERS WHERE username = \'{}\';", Username);
