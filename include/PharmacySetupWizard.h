@@ -26,7 +26,7 @@ namespace pof
 		wxScrolledWindow* m_scrolledWindow1;
 		wxPanel* m_panel3;
 		wxStaticText* mPharmacyType;
-		wxChoice* mPharamcyTypeValue;
+		wxChoice* mPharmacyTypeValue;
 		wxStaticText* mPharamcyName;
 		wxTextCtrl* mPharmacyNameValue;
 		wxStaticText* mPhoneNo;

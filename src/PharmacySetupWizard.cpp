@@ -55,7 +55,7 @@ bool pof::PharmacySetupWizard::TransferDataFromWindow()
         wxMessageBox("Critical Error, failed to create pharmacy, please call admin", "ERROR", wxICON_ERROR | wxOK);
         return false; //critial error;
     }
-    int sel = mPharamcyTypeValue->GetSelection();
+    int sel = mPharmacyTypeValue->GetSelection();
     if (sel != wxNOT_FOUND) {
         mp->pharmacyType.set(sel);
     }
@@ -126,15 +126,30 @@ Please note that a registered pharamcy cannot be removed until uninstall)"), wxD
 
     wxString mPharamcyTypeValueChoices[] = { wxT("COMMUNITY"), wxT("HOSPITAL"), wxT("INDUSTRY"), wxT("DRF"), wxT("EDUCATIONAL") };
     int mPharamcyTypeValueNChoices = sizeof(mPharamcyTypeValueChoices) / sizeof(wxString);
-    mPharamcyTypeValue = new wxChoice(m_panel1, wxID_ANY, wxDefaultPosition, wxSize(450, -1), mPharamcyTypeValueNChoices, mPharamcyTypeValueChoices, 0);
-    mPharamcyTypeValue->SetSelection(0);
-    mPharamcyTypeValue->Bind(wxEVT_CHOICE, [&](wxCommandEvent& evt) {
+    mPharmacyTypeValue = new wxChoice(m_panel1, wxID_ANY, wxDefaultPosition, wxSize(450, -1), mPharamcyTypeValueNChoices, mPharamcyTypeValueChoices, 0);
+    mPharmacyTypeValue->SetSelection(0);
+    mPharmacyTypeValue->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+        wxPaintDC dc(mPharmacyTypeValue);
+        wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+
+        dc.SetBrush(*wxWHITE);
+        dc.SetPen(*wxGREY_PEN);
+        dc.DrawRoundedRectangle(rect, 2.0f);
+        dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - FromDIP(15), (rect.GetHeight() / 2) - FromDIP(5)));
+        auto sel = mPharmacyTypeValue->GetStringSelection();
+        if (!sel.IsEmpty()) {
+            dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+        }
+      });
+
+    mPharmacyTypeValue->Bind(wxEVT_CHOICE, [&](wxCommandEvent& evt) {
         int sel = evt.GetSelection();
-    if (sel == wxNOT_FOUND) return;
+        if (sel == wxNOT_FOUND) return;
 
     });
 
-    bSizer2->Add(mPharamcyTypeValue, 0, wxALL, 5);
+    bSizer2->Add(mPharmacyTypeValue, 0, wxALL, 5);
 
     mPharamcyName = new wxStaticText(m_panel1, wxID_ANY, wxT("Pharmacy name"), wxDefaultPosition, wxDefaultSize, 0);
     mPharamcyName->Wrap(-1);

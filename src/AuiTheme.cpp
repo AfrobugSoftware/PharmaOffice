@@ -52,6 +52,10 @@ void pof::AuiTheme::DefaultTheme()
 {
 }
 
+void pof::AuiTheme::SaveTheme(const std::string& name)
+{
+}
+
 boost::signals2::connection pof::AuiTheme::Register(pof::AuiTheme::Signal_t::slot_function_type&& func)
 {
 	return sSignal.connect(std::forward<pof::AuiTheme::Signal_t::slot_function_type>(func));

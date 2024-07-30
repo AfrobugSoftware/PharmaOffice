@@ -18,6 +18,7 @@ namespace pof {
 		static Signal_t sSignal;
 		static wxFont sFont;
 		static wxFont sCaptionFont;
+		static wxColour sFontColour;
 
 		static size_t sCaptionSize;
 		static size_t sGripperSize;
@@ -36,12 +37,16 @@ namespace pof {
 		static wxColour sInactiveGradientColour;
 
 
+
 		//theme upates
 		static boost::signals2::connection Register(Signal_t::slot_function_type&& sig);
 		static void Update(wxAuiDockArt* art);
 		static void DarkTheme();
 		static void LightTheme();
 		static void DefaultTheme();
+
+		static void SaveTheme(const std::string& name);
+		static void LoadTheme(const std::string& name);
 
 		AuiTheme() {};
 

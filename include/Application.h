@@ -1,3 +1,4 @@
+#pragma once
 #include <wx/app.h>
 #include <wx/busyinfo.h>
 #include <wx/msgdlg.h>
