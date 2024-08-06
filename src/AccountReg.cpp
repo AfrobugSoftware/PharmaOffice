@@ -289,31 +289,31 @@ bool pof::RegistrationDialog::TransferDataFromWindow()
 	mAccount.secquestion = pof::Account::mSecurityQuestions[sel].ToStdString();
 	mAccount.secanswer =  mSecurityAnswer->GetValue().ToStdString();
 
-	grape::account acc;
-	acc.account_id = boost::uuids::nil_uuid();
-	acc.first_name = mAccount.name;
-	acc.last_name = mAccount.lastname;
-	acc.passhash = hash;
-	acc.username = mAccount.username;
-	acc.email = mAccount.email;
-	acc.phonenumber = mAccount.phonenumber;
-	acc.sec_que = mAccount.secquestion;
-	acc.sec_ans = mAccount.secanswer;
+	//grape::account acc;
+	//acc.account_id = boost::uuids::nil_uuid();
+	//acc.first_name = mAccount.name;
+	//acc.last_name = mAccount.lastname;
+	//acc.passhash = hash;
+	//acc.username = mAccount.username;
+	//acc.email = mAccount.email;
+	//acc.phonenumber = mAccount.phonenumber;
+	//acc.sec_que = mAccount.secquestion;
+	//acc.sec_ans = mAccount.secanswer;
 
 
-	//send request to grape juice
-	auto sess = std::make_shared<grape::session>(wxGetApp().mNetManager.io());
-	grape::session::request_type::body_type::value_type value(grape::serial::get_size(acc), 0x00);
-	grape::serial::write(boost::asio::buffer(value), acc);
-	
-	auto fut = sess->req<http::verb::put>("localhost"s, "/account/signup"s, "8080"s, std::move(value));
-	try {
-		auto back = fut.get(); //block here
-	}
-	catch (const std::system_error& err) {
-		wxMessageBox(err.what());
-		return false;
-	}
+	////send request to grape juice
+	//auto sess = std::make_shared<grape::session>(wxGetApp().mNetManager.io());
+	//grape::session::request_type::body_type::value_type value(grape::serial::get_size(acc), 0x00);
+	//grape::serial::write(boost::asio::buffer(value), acc);
+	//
+	//auto fut = sess->req<http::verb::put>("localhost"s, "/account/signup"s, "8080"s, std::move(value));
+	//try {
+	//	auto back = fut.get(); //block here
+	//}
+	//catch (const std::system_error& err) {
+	//	wxMessageBox(err.what());
+	//	return false;
+	//}
 	return true;
 }
 

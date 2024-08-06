@@ -4,6 +4,6 @@
         "conan": {}
     },
     "include": [
-        "C:\\Users\\zino.ferife\\sources\\pharmaoffice\\build-debug\\CMakePresets.json"
+        "build\\CMakePresets.json"
     ]
 }
