@@ -78,24 +78,6 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	mFormulation->Wrap( -1 );
 	fgSizer2->Add( mFormulation, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5 );
 	
-
-	//FormulationChoices.Add("TABLET");
-	//FormulationChoices.Add("CAPSULE");
-	//FormulationChoices.Add("SOLUTION");
-	//FormulationChoices.Add("SUSPENSION");
-	//FormulationChoices.Add("SYRUP");
-	//FormulationChoices.Add("IV");
-	//FormulationChoices.Add("IM");
-	//FormulationChoices.Add("EMULSION");
-	//FormulationChoices.Add("CREAM");
-	//FormulationChoices.Add("COMSUMABLE"); //needles, cannula and the rest
-	//FormulationChoices.Add("POWDER"); //needles, cannula and the rest
-	//FormulationChoices.Add("OINTMNET"); //needles, cannula and the rest
-	//FormulationChoices.Add("EYE DROP"); //needles, cannula and the rest
-	//FormulationChoices.Add("SUPPOSITORY"); //needles, cannula and the rest
-	//FormulationChoices.Add("LOZENGES"); //needles, cannula and the rest
-
-	//FormulationChoices.Add("NOT SPECIFIED"); //NOT SPECIFIED
 	mFormulationValue = new wxChoice( mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxGetApp().FormulationChoices, 0 );
 	mFormulationValue->SetSelection( 0 );
 	mFormulationValue->SetBackgroundColour( wxColour( 255, 255, 255 ) );

@@ -90,6 +90,7 @@ Thumbs.db
 .cproject
 *.xml
 sqlite3.exe
+build/
 build-debug/
 build-release/
 release/

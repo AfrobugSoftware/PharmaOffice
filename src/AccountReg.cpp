@@ -6,7 +6,8 @@ END_EVENT_TABLE()
 
 
 
-pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+pof::RegistrationDialog::RegistrationDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : 
+	wxDialog( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetExtraStyle( wxDIALOG_EX_CONTEXTHELP );

@@ -3014,7 +3014,7 @@ void pof::ProductView::CreateToolBar()
 	mChartsDropItem->SetHasDropDown(true);
 	m_auiToolBar1->AddSpacer(FromDIP(2));
 
-	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("monitoring", wxART_OTHER, wxSize(16,16)), wxT("Store reports"));
+	mReportItem = m_auiToolBar1->AddTool(ID_REPORTS, wxT("Reports"), wxArtProvider::GetBitmap("monitoring", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Store reports"));
 	mReportItem->SetHasDropDown(true);
 	mFuncDropItem = m_auiToolBar1->AddTool(ID_FUNCTIONS, wxT("Functions"), wxArtProvider::GetBitmap("settings", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Run a function on all products in the store"));
 	mFuncDropItem->SetHasDropDown(true);
@@ -3041,7 +3041,7 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar1->AddStretchSpacer();
 	//m_auiToolBar1->AddSpacer(FromDIP(10));
-	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Invoices", wxArtProvider::GetBitmap(wxT("inventory"), wxART_OTHER, wxSize(16, 16)), "Show suppliers/invoices", wxITEM_CHECK);
+	auto ss = m_auiToolBar1->AddTool(ID_SHOW_SUPPLIER, "Invoices", wxArtProvider::GetBitmap(wxT("inventory"), wxART_OTHER, FromDIP(wxSize(16, 16))), "Show suppliers/invoices", wxITEM_CHECK);
 	//m_auiToolBar1->AddSeparator();
 	m_auiToolBar1->AddSpacer(FromDIP(2));
 	m_auiToolBar1->AddTool(ID_ADD_PRODUCT, wxT("Add product"), wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add a new Product");
