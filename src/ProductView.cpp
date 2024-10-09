@@ -46,6 +46,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_REPORTS_INVENTORY, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_PRODUCT_SOLD, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFWEEK, pof::ProductView::OnEndOfDayReport)
 
 	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
@@ -1168,6 +1169,7 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 {
 	wxMenu* menu = new wxMenu;
 	menu->Append(ID_REPORTS_ENDOFDAY, "End of day", nullptr);
+	menu->Append(ID_REPORTS_ENDOFWEEK, "End of week", nullptr);
 	menu->Append(ID_REPORTS_EOM, "End of month", nullptr);
 	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
 	menu->Append(ID_REPORTS_INVENTORY, "Stock purchase report for month", nullptr);
@@ -1207,6 +1209,9 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 		break;
 	case ID_REPORTS_PROFITLOSS:
 		rep = pof::ReportsDialog::ReportType::PL;
+		break;
+	case ID_REPORTS_ENDOFWEEK:
+		rep = pof::ReportsDialog::ReportType::EOW;
 		break;
 	default:
 		return;

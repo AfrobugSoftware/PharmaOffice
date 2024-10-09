@@ -268,6 +268,7 @@ bool pof::ReportsDialog::LoadReport(ReportType repType, pof::base::data::datetim
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
 	case pof::ReportsDialog::ReportType::EOM:
+	case pof::ReportsDialog::ReportType::EOW:
 		SetTitle("Reports");
 		ret = LoadEndOFDay();
 		mSPanel->Show();
@@ -410,12 +411,17 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		data = wxGetApp().mProductManager.GetEndOfMonth(mSelectDay);
 		tt = fmt::format("End of month for {:%m/%Y}", mSelectDay);
 	}
+	else if (mCurReportType == ReportType::EOW) {
+		data = wxGetApp().mProductManager.GetEndOfWeek(mSelectDay);
+		tt = fmt::format("End of week for {:%d/%m/%Y}", mSelectDay);
+	}
 
 	if (!data.has_value()) return false;
 
 	if (data->empty()) {
 		mBook->SetSelection(REPORT_EMPTY_EOD);
-		if (mCurReportType == ReportType::EOD) {
+		if (mCurReportType == ReportType::EOD || 
+			mCurReportType == ReportType::EOW) {
 			tt = fmt::format("No transaction for {:%d/%m/%Y}", mSelectDay);
 		}
 		else if (mCurReportType == ReportType::EOM) {
@@ -431,7 +437,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 	if (bFilterReturns){
 		auto& tab = data->tab();
-		auto i = std::ranges::remove_if(tab, [&](const pof::base::data::row_t& row) -> bool {
+		auto i = std::ranges::remove_if(tab, [&](pof::base::data::row_t& row) -> bool {
 			auto& pt = boost::variant2::get<std::string>(row.first[6]);
 			return pt == "Returned";
 		});
@@ -464,7 +470,8 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 
 		//make the columns
-		if (mCurReportType == ReportType::EOM){
+		if (mCurReportType == ReportType::EOM || 
+			mCurReportType == ReportType::EOW){
 			report.AppendColumn("Day", wxLIST_FORMAT_LEFT, FromDIP(200));
 		}
 		else {
@@ -486,7 +493,8 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(0);
 			item.SetId(i);
-			if (mCurReportType == ReportType::EOM)
+			if (mCurReportType == ReportType::EOM  ||
+				 mCurReportType == ReportType::EOW)
 			{
 				item.SetText(std::format("{:%d/%m/%Y}", boost::variant2::get<pof::base::data::datetime_t>(v[1])));
 			}
@@ -782,6 +790,18 @@ void pof::ReportsDialog::OnPrint(wxCommandEvent& evt)
 
 void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 {
+	auto selectDownload = [&]() {
+		wxArrayString str;
+		str.push_back("Full");
+		str.push_back("Summarized");
+		wxSingleChoiceDialog dlg(this, "Please select a download type", "Download Excel",str);
+		if (dlg.ShowModal() == wxID_OK) {
+			auto sel = dlg.GetSelection();
+			if (sel == 0) EODExcel();
+			else if (sel == 1) EODSummarizeExcel();
+		}
+	};
+
 	switch (mCurReportType)
 	{
 	case ReportType::COMSUMPTION_PATTARN:
@@ -789,7 +809,9 @@ void pof::ReportsDialog::OnDownloadExcel(wxCommandEvent& evt)
 		break;
 	case ReportType::EOM:
 	case ReportType::EOD:
-		EODExcel();
+	case ReportType::EOW:
+		selectDownload();
+		break;
 	case ReportType::IM:
 		InventoryMonthReportExcel();
 		break;
@@ -826,6 +848,7 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 		break;
 	case pof::ReportsDialog::ReportType::EOD:
 	case pof::ReportsDialog::ReportType::EOM:
+	case pof::ReportsDialog::ReportType::EOW:
 		LoadEndOFDay();
 		break;
 	case pof::ReportsDialog::ReportType::IM:
@@ -1226,6 +1249,7 @@ void pof::ReportsDialog::CreateToolBar()
 		break;
 	case ReportType::EOM:
 	case ReportType::EOD:
+	case ReportType::EOW:
 		CreateEODToolBar();
 		break;
 	case ReportType::IM:
@@ -1505,9 +1529,9 @@ void pof::ReportsDialog::EODExcel()
 	}
 
 	auto wks = doc.workbook().worksheet("Sheet1");
-	if(mCurReportType == ReportType::EOD)
-		 wks.setName(fmt::format("EOD for {:%d/%m/%Y}", mSelectDay));
-	else wks.setName(fmt::format("EOM for {:%m/%Y}", mSelectDay));
+	if(mCurReportType == ReportType::EOD || mCurReportType == ReportType::EOW)
+		 wks.setName(fmt::format("{:%d/%m/%Y}", mSelectDay));
+	else wks.setName(fmt::format("{:%m/%Y}", mSelectDay));
 
 	const size_t colSize = mListReport->GetColumnCount();
 	const size_t rowSize = datastore.value().size() + 3; //plus title and total row
@@ -1572,6 +1596,103 @@ void pof::ReportsDialog::EODExcel()
 	doc.close();
 	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
 
+}
+
+void pof::ReportsDialog::EODSummarizeExcel()
+{
+	try {
+		std::unordered_map<boost::uuids::uuid, std::tuple<std::string,pof::base::currency, std::uint64_t>> mSummary;
+		{
+			wxBusyInfo wait("Creating summary\nPlease wait...");
+			for (auto& [d, s] : *data) {
+				auto it = mSummary.find(boost::variant2::get<boost::uuids::uuid>(d[0]));
+				if (it != mSummary.end()) {
+					auto& [u, p] = *it;
+					auto& [n, c, q] = p;
+					c += boost::variant2::get<pof::base::currency>(d[4]);
+					q += boost::variant2::get<std::uint64_t>(d[3]);
+				}
+				else {
+					mSummary.insert(std::make_pair(
+						boost::variant2::get<boost::uuids::uuid>(d[0]),
+						std::make_tuple(
+							boost::variant2::get<std::string>(d[2]),
+							boost::variant2::get<pof::base::currency>(d[4]),
+							boost::variant2::get<std::uint64_t>(d[3])
+						)
+					));
+				}
+			}
+		}
+		wxFileDialog dialog(this, "Save summary excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+			wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto filename = dialog.GetPath().ToStdString();
+		auto fullPath = fs::path(filename);
+
+		if (fullPath.extension() != ".xlsx") {
+			wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+				wxICON_INFORMATION | wxOK);
+			return;
+		}
+
+		wxBusyCursor cursor;
+		excel::XLDocument doc;
+		doc.create(fullPath.string());
+		if (!doc.isOpen()) {
+			spdlog::error("Canont open xlsx file");
+			return;
+		}
+
+		auto wks = doc.workbook().worksheet("Sheet1");
+		if (mCurReportType == ReportType::EOD || mCurReportType == ReportType::EOW)
+			wks.setName(fmt::format("{:%d/%m/%Y}", mSelectDay));
+
+		constexpr const size_t colSize = 3;
+		const size_t rowSize = mSummary.size() + 3; //plus title and total row
+		constexpr const size_t firstRow = 1;
+		constexpr const size_t firstCol = 1;
+
+		auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+		auto iter = range.begin();
+		//write header
+		auto writeHeader = [&](const std::string& name) {
+			iter->value().set(name);
+			iter++;
+			};
+
+		writeHeader("Product");
+		writeHeader("Quantity");
+		writeHeader("Amount");
+
+		for (auto it = mSummary.begin(); it != mSummary.end() && iter != range.end(); it++) {
+			auto& row = it->first;
+		
+			iter->value().set(std::get<0>(it->second));
+			iter++;
+
+			iter->value().set(std::get<2>(it->second));
+			iter++;
+	
+			iter->value().set(fmt::format("{:cu}", std::get<1>(it->second)));
+			iter++;
+		}
+
+
+		iter->value().set(mTotalQuantity->GetLabel().ToStdString());
+		iter++;
+
+		iter->value().set(mTotalAmount->GetLabel().ToStdString());
+		iter++;
+
+		doc.save();
+		doc.close();
+		wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Reports", wxICON_INFORMATION | wxOK);
+
+	}
+	catch (const std::exception& exp) {
+		wxMessageBox(exp.what(), "Error in summarise", wxICON_ERROR | wxOK);
+	}
 }
 
 void pof::ReportsDialog::InventoryMonthReportExcel()
@@ -1852,7 +1973,7 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 	if (data.empty()) return;
 	
 	if (mCurReportType == ReportType::EOD ||
-		mCurReportType == ReportType::EOM) {
+		mCurReportType == ReportType::EOM || mCurReportType == ReportType::EOW) {
 		pof::base::currency totalAmount;
 		pof::base::currency totalAmountCash;
 		pof::base::currency totalAmountTransfer;

@@ -447,8 +447,14 @@ void pof::SaleManager::CreateDatabaseFunctions()
 	subcostfunc.arg_count = 2;
 	subcostfunc.func = &pof::SaleManager::DBFuncSubCost;
 
+	pof::base::func_aggregate weekfunc;
+	subcostfunc.name = "Weeks"s;
+	subcostfunc.arg_count = 1;
+	subcostfunc.func = &pof::SaleManager::DBFuncWeek;
+
 	mLocalDatabase->register_func(std::move(yearfunc));
 	mLocalDatabase->register_func(std::move(subcostfunc));
+	mLocalDatabase->register_func(std::move(weekfunc));
 }
 
 //add the current sale items to cost
@@ -1215,6 +1221,22 @@ void pof::SaleManager::DBFuncYear(pof::base::database::conn_t conn, int arg, pof
 	auto year = date::floor<date::years>(tt);
 
 	pof::base::database::result(conn, static_cast<std::uint64_t>(year.time_since_epoch().count()));
+}
+
+void pof::SaleManager::DBFuncWeek(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)
+{
+	std::uint64_t dur = pof::base::database::arg<std::uint64_t>(conn, values);
+	auto tp = pof::base::data::datetime_t(pof::base::data::datetime_t::duration(dur));
+	std::time_t tt = std::chrono::system_clock::to_time_t(tp);
+	std::tm* time_info = std::gmtime(&tt);  // Get UTC time (or use localtime for local time)
+
+	// Calculate how many days to subtract to get to the previous Monday
+	int days_since_monday = (time_info->tm_wday + 6) % 7;  // Adjust so that Monday is 0, Sunday is 6
+	auto last_monday = tp - std::chrono::hours(24 * days_since_monday);
+
+
+	auto week = date::floor<date::weeks>(last_monday);
+	pof::base::database::result(conn, static_cast<std::uint64_t>(week.time_since_epoch().count()));
 }
 
 void pof::SaleManager::DBFuncSubCost(pof::base::database::conn_t conn, int arg, pof::base::database::value_arr_t values)

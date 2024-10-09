@@ -104,6 +104,7 @@ namespace pof
 			IM,
 			PL, //PROFIT/LOSS
 			PSM, //PRODUCT SOLD FOR MONTH
+			EOW,
 		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
@@ -147,6 +148,7 @@ namespace pof
 		//download for the report type
 		void ConsumptionPatternExcel(pof::base::data::datetime_t month);
 		void EODExcel();
+		void EODSummarizeExcel();
 		void InventoryMonthReportExcel();
 		void ProfitLossExcel();
 		void ProductSoldExcel();

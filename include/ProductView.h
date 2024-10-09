@@ -108,6 +108,7 @@ namespace pof
 			ID_HIDE_PRODUCT,
 			ID_SHOW_PRODUCT,
 			ID_SEARCH_BY_GENERIC_NAME,
+			ID_REPORTS_ENDOFWEEK,
 		};
 
 		size_t mRowHeights;

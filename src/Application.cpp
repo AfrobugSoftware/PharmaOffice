@@ -67,6 +67,7 @@ try{
 	if (mChecker->IsAnotherRunning()) {
 		//..find out how to pop up the current running application
 		mChecker.reset(nullptr);
+		OnExit();
 		return false;
 	}
 
@@ -254,17 +255,17 @@ void pof::Application::SetupDatabaseExt()
 		CostMulti.arg_count = 2;
 		CostMulti.func = pof::base::cost_multi;
 
-		pof::base::func_aggregate WeekFunc;
-		WeekFunc.name = "Weeks"s;
-		WeekFunc.arg_count = 1;
-		WeekFunc.func = pof::Application::DBFuncWeek;
+		//pof::base::func_aggregate WeekFunc;
+		//WeekFunc.name = "Weeks"s;
+		//WeekFunc.arg_count = 1;
+		//WeekFunc.func = pof::Application::DBFuncWeek;
 
 		mLocalDatabase->register_func(costAgg);
 		mLocalDatabase->register_func(monthFunc);
 		mLocalDatabase->register_func(daysFunc);
 		mLocalDatabase->register_func(scaleCost);
 		mLocalDatabase->register_func(CostMulti);
-		mLocalDatabase->register_func(WeekFunc);
+		//mLocalDatabase->register_func(WeekFunc);
 	}
 }
 

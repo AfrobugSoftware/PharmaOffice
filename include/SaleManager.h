@@ -133,6 +133,9 @@ namespace pof {
 		static void DBFuncYear(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
+		static void DBFuncWeek(pof::base::database::conn_t conn,
+			int arg, pof::base::database::value_arr_t values);
+
 		static void DBFuncSubCost(pof::base::database::conn_t conn,
 			int arg, pof::base::database::value_arr_t values);
 
