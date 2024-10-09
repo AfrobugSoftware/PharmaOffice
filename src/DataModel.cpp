@@ -174,7 +174,7 @@ void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
 {
 	if (datastore->empty() || col > datastore->get_metadata().size() 
-			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return false;
+			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return true;
 	std::string reg;
 	reg.reserve(search_for.size() * 2);
 	for (auto& c : search_for)

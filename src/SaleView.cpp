@@ -19,6 +19,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_MENU(pof::SaleView::ID_RETURN_LAST_SALE, pof::SaleView::OnReturnLastSale)
 	EVT_MENU(pof::SaleView::ID_REMOVE_DISCOUNT, pof::SaleView::OnRemoveDiscount)
 
+
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_REPRINT, pof::SaleView::OnReprintSale)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::SaleView::ID_RETURN_SALE, pof::SaleView::OnReturnSale)
 
@@ -541,6 +542,7 @@ void pof::SaleView::UpdateSaleDisplay()
 	mDiscountValue->SetLabel(fmt::format("{:cu}", mTotalDiscount));
 	mTotalQuantityValue->SetLabel(fmt::format("{:d}", extQuantity));
 	mTotalAmount->SetLabel(fmt::format("{:cu}", totalAmount));
+	mCurTotal = totalAmount;
 	Thaw();
 	Update();
 	mTextOutPut->Layout();
@@ -667,12 +669,19 @@ void pof::SaleView::OnCheckout(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("Sale is empty");
 		return;
 	}
-
+	
 	if (mPaymentTypes->GetSelection() == (paymentTypes.size() - 1)){
-		wxMessageBox("Please select a payment option for this sale", "Sale", wxICON_INFORMATION | wxOK);
-		return;
+		//wxMessageBox("Please select a payment option for this sale", "Sale", wxICON_INFORMATION | wxOK);
+		pof::CheckoutDialog dialog(wxGetApp().mMainFrame, mCurTotal, wxID_ANY);
+		dialog.CenterOnParent();
+		if (dialog.ShowModal() != wxID_OK)
+			return;
+		mPayments = std::move(dialog.mPayments);
+
 	}
-	wxGetApp().mSaleManager.mCurPaymentType = paymentTypes[mPaymentTypes->GetSelection()].ToStdString();
+	else {
+		wxGetApp().mSaleManager.mCurPaymentType = paymentTypes[mPaymentTypes->GetSelection()].ToStdString();
+	}
 	//update the stocks of the sold items, set date
 	auto now = pof::base::data::clock_t::now();
 	wxIcon cop;
@@ -712,7 +721,7 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 			return;
 		}
 		BookSale(); //save the sale to database
-
+		SalePaymentOptions(mCurSaleuuid);
 		//signal the module that created the sale
 		mSaleCompleted(mCurSaleuuid, mSaleType);
 		mSaleType = NONE;
@@ -726,7 +735,8 @@ void pof::SaleView::OnSaleComplete(bool status, size_t printState)
 		mProductLabels.clear(); //remove all the label data
 		ResetSaleDisplay();
 		wxGetApp().mSaleManager.RemoveSaveSale(mCurSaleuuid);
-		
+		wxGetApp().mSaleManager.mCurPaymentType.clear();
+
 		SaveDiscounts(mCurSaleuuid);
 		mTotalDiscount = {};
 		mDiscounts.clear();
@@ -1989,18 +1999,6 @@ bool pof::SaleView::CheckProductWarning(const pof::base::data::duuid_t& pid)
 	return true;
 }
 
-void pof::SaleView::OnContextMenu(wxDataViewEvent& evt)
-{
-	auto item = evt.GetItem();
-	if (!item.IsOk()) return;
-
-	wxMenu* menu = new wxMenu;
-	menu->Append(ID_REMOVE_DISCOUNT, "Remove discount", nullptr);
-
-	m_dataViewCtrl1->PopupMenu(menu);
-
-}
-
 bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
 {
 	auto& v = product.first;
@@ -2014,6 +2012,18 @@ bool pof::SaleView::CheckProductClass(const pof::base::data::row_t& product)
 		return false;
 	}
 	return true;
+}
+
+void pof::SaleView::OnContextMenu(wxDataViewEvent& evt)
+{
+	auto item = evt.GetItem();
+	if (!item.IsOk()) return;
+
+	wxMenu* menu = new wxMenu;
+	menu->Append(ID_REMOVE_DISCOUNT, "Remove discount", nullptr);
+
+	m_dataViewCtrl1->PopupMenu(menu);
+
 }
 
 bool pof::SaleView::CheckExpired(const pof::base::data::row_t& product)
@@ -2542,6 +2552,47 @@ wxHtmlPrintout* pof::SaleView::CreateHtmlReciept()
 	return htmlprintout;
 }
 
+void pof::SaleView::SalePaymentOptions(const pof::base::data::duuid_t& suid)
+{
+	auto info = wxGetApp().mSaleManager.GetInfo(suid);
+	if (!info.has_value()) {
+		mInfoBar->ShowMessage("Failed to save payment options", wxICON_WARNING);
+		return;
+	}
+	if (info->empty()) {
+		nl::json i = nl::json::object();
+		nl::json pay  =  nl::json::object();
+		pay["pay_type1"]   = std::get<0>(mPayments);
+		pay["pay_amount1"] = static_cast<double>(std::get<1>(mPayments));
+		pay["pay_type2"] = std::get<2>(mPayments);
+		pay["pay_amount2"] = static_cast<double>(std::get<3>(mPayments));
+		i["payment_options"] = std::move(pay);
+
+		wxGetApp().mSaleManager.SaveInfo(suid, i.dump());
+	}
+	else {
+		nl::json i = nl::json::parse(*info);
+		auto iter = i.find("payment_options");
+		if (iter == i.end()) {
+			nl::json pay = nl::json::object();
+			pay["pay_type1"] = std::get<0>(mPayments);
+			pay["pay_amount1"] = static_cast<double>(std::get<1>(mPayments));
+			pay["pay_type2"] = std::get<2>(mPayments);
+			pay["pay_amount2"] = static_cast<double>(std::get<3>(mPayments));
+			i["payment_options"] = std::move(pay);
+		}
+		else {
+			//override
+			nl::json& pay = *iter;
+			pay["pay_type1"] = std::get<0>(mPayments);
+			pay["pay_amount1"] = static_cast<double>(std::get<1>(mPayments));
+			pay["pay_type2"] = std::get<2>(mPayments);
+			pay["pay_amount2"] = static_cast<double>(std::get<3>(mPayments));
+		}		
+		wxGetApp().mSaleManager.UpdateInfo(suid, i.dump());
+	}
+}
+
 void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)
 {
 	auto info = wxGetApp().mSaleManager.GetInfo(saleID);
@@ -2561,7 +2612,7 @@ void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)
 				nl::json discount = nl::json::object();
 				discount["pid"] = boost::lexical_cast<std::string>(dis.first);
 				discount["amount"] = boost::lexical_cast<float>(dis.second);
-
+				
 				disarray.push_back(discount);
 			}
 			object["discounts"] = disarray;
@@ -2570,7 +2621,7 @@ void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)
 		else {
 			nl::json object = nl::json::parse(*info);
 			auto i = object.find("discounts");
-			if (i != object.end()) {
+			if (i == object.end()) {
 				nl::json disarray = nl::json::array();
 				for (auto& dis : mDiscounts)
 				{
@@ -2598,7 +2649,7 @@ void pof::SaleView::SaveDiscounts(const boost::uuids::uuid& saleID)
 				object["discounts"] = disarray;
 
 			}
-			wxGetApp().mSaleManager.SaveInfo(saleID, object.dump());
+			wxGetApp().mSaleManager.UpdateInfo(saleID, object.dump());
 		}
 	}
 	catch (nl::json::exception& exp) {

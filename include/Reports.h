@@ -25,6 +25,9 @@
 #include <wx/clipbrd.h>
 #include <wx/srchctrl.h>
 #include <wx/statline.h>
+#include <wx/choicdlg.h>
+
+#include <unordered_map>
 
 namespace excel = OpenXLSX;
 namespace pof
@@ -157,6 +160,8 @@ namespace pof
 		wxStaticLine* l2 = nullptr;
 		wxStaticLine* l3 = nullptr;
 		wxStaticLine* l4 = nullptr;
+
+		std::unordered_map<size_t, nl::json> mPaymentMap;
 
 		ReportType mCurReportType;
 		wxListItem mSelItem;

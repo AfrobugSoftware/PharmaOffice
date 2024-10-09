@@ -153,7 +153,7 @@ pof::base::currency::operator std::string() const
 pof::base::currency::operator double() const
 {
 	double total = 0.0;
-	int d = 0;
+	std::int64_t d = 0;
 	for (int i = 0; m_data[i] != '\0' && i < m_data.size(); i++) {
 		d = (d * 10) + m_data[i] - '0';
 	}

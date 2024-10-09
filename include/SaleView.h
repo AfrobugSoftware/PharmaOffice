@@ -27,6 +27,7 @@
 #include "SaveSaleDialog.h"
 #include "database.h"
 #include "LabelInfo.h"
+#include "CheckoutDialog.h"
 
 #include <ranges>
 #include <unordered_map>
@@ -167,7 +168,8 @@ namespace pof
 
 		bool OnAddMedicationsToSale(const pof::base::data& data);
 		void OnDataViewFontChange(const wxFont& font);
-
+		std::tuple<std::string, pof::base::currency, std::string,
+			pof::base::currency> mPayments;
 	protected:
 		//sale operations
 		void UpdateSaleDisplay();
@@ -228,6 +230,7 @@ namespace pof
 		void BookSale(); 
 		void StorePoisonBookEnteries();
 		wxHtmlPrintout* CreateHtmlReciept();
+		void SalePaymentOptions(const pof::base::data::duuid_t& suid);
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;

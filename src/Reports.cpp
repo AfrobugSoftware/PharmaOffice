@@ -400,6 +400,8 @@ bool pof::ReportsDialog::LoadConsumptionPattern(pof::base::data::datetime_t mont
 bool pof::ReportsDialog::LoadEndOFDay()
 {
 	std::string tt; 
+	wxBusyInfo wait("Loading\nPlease wait...");
+
 
 	if (mCurReportType == ReportType::EOD){
 		data = wxGetApp().mProductManager.GetEndOfDay(mSelectDay);
@@ -519,7 +521,35 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			item.SetColumn(4);
 			item.SetId(i);
-			item.SetText(boost::variant2::get<pof::base::data::text_t>(v[6]));
+			auto info = wxGetApp().mSaleManager.GetInfo(boost::variant2::get<boost::uuids::uuid>(v[5]));
+		
+			auto& po = boost::variant2::get<pof::base::data::text_t>(v[6]);
+			if (po.empty() && info.has_value()) {
+				auto iv = nl::json::parse(info.value());
+				auto p = iv.find("payment_options");
+				if (p != iv.end()) {
+					mPaymentMap.insert({ static_cast<size_t>(i), nl::json::parse(info.value()) });
+					std::vector<std::string> pt;
+					auto pi = p->find("pay_type1");
+					std::string temp;
+					if (pi != p->end()) {
+						temp = static_cast<std::string>(*pi);
+						if(!temp.empty())
+							pt.emplace_back(temp);
+					}
+
+					pi = p->find("pay_type2");
+					if (pi != p->end()) {
+						temp = static_cast<std::string>(*pi);
+						if (!temp.empty())
+							pt.emplace_back(temp);
+					}
+
+					po = fmt::format("{}",fmt::join(pt, " | "));
+				}
+			}
+			item.SetText(po);
+
 			item.SetMask(wxLIST_MASK_TEXT);
 			report.SetItem(item);
 
@@ -530,7 +560,6 @@ bool pof::ReportsDialog::LoadEndOFDay()
 				item.SetMask(wxLIST_MASK_TEXT);
 				report.SetItem(item);
 			}
-
 			i++;
 		}
 	}
@@ -962,12 +991,65 @@ void pof::ReportsDialog::OnDoReturn(wxCommandEvent& evt)
 	if (wxMessageBox("Are you sure you want to return this product?", "Return", wxICON_WARNING | wxYES_NO) == wxNO) return;
 	
 	size_t id = mSelItem.GetId();
+	
 	if (!data.has_value() || data->empty()) return; //not possible but still
 
 	wxBusyCursor cur;
 	auto& row = data.value()[id];
 	auto& pid = boost::variant2::get<pof::base::data::duuid_t>(row.first[0]);
 	auto& sid = boost::variant2::get<pof::base::data::duuid_t>(row.first[5]);
+	auto& cost = boost::variant2::get<pof::base::currency>(row.first[4]);
+	auto iter = mPaymentMap.find(id);
+	if (iter != mPaymentMap.end()) {
+		auto& [k, v] = *iter;
+		if (v.find("payment_options") != v.end()) {
+			auto& pt = v["payment_options"];
+
+			pof::base::currency total;
+			auto am1 = pof::base::currency(static_cast<double>(pt["pay_amount1"]));
+			auto am2 = pof::base::currency(static_cast<double>(pt["pay_amount2"]));
+
+			wxArrayString choices;
+			auto str = static_cast<std::string>(pt["pay_type1"]);
+			auto str2 = static_cast<std::string>(pt["pay_type2"]);
+			if (!str.empty()) choices.push_back(str);
+			if (!str2.empty()) choices.push_back(str2);
+
+			wxSingleChoiceDialog cdg(this, "Where do you want to return from ?", "Return", choices);
+			cdg.CenterOnParent();
+			if (cdg.ShowModal() != wxID_OK) return;
+
+			auto sel = cdg.GetStringSelection().ToStdString();
+			if (sel == str) {
+				//selected the first one
+				if (cost > am1) {
+					total += (am1 + am2); //cost is too much
+					total -= cost;
+					pt["pay_amount2"] = static_cast<double>(total);
+					pt["pay_amount1"] = static_cast<double>(pof::base::currency{});
+				}
+				else {
+					am1 -= cost;
+					pt["pay_amount1"] = static_cast<double>(am1);
+				}
+			}
+			else {
+				//selected the second
+				if (cost > am2) {
+					total += (am1 + am2); //cost is too much
+					total -= cost;
+					pt["pay_amount1"] = static_cast<double>(total);
+					pt["pay_amount2"] = static_cast<double>(pof::base::currency{});
+				}
+				else {
+					am2 -= cost;
+					pt["pay_amount2"] = static_cast<double>(am2);
+				}
+			}
+			wxGetApp().mSaleManager.UpdateInfo(sid, v.dump()); //save the upated info
+		}
+	}
+
 	if (wxGetApp().mSaleManager.CheckReturned(sid, pid)) {
 		wxMessageBox("Product has already been returned", "Return", wxICON_WARNING | wxOK);
 		return;
@@ -1776,26 +1858,63 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 		pof::base::currency totalAmountTransfer;
 		pof::base::currency totalAmountPos;
 		std::uint64_t totalQuantity = 0;
-
+		std::string po;
 
 		for (const auto& d : data) {
 			//skip end of day that are returned
-			if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Returned") continue;
+			po = boost::variant2::get<pof::base::data::text_t>(d.first[6]);
+			if (po.empty() || po == "Returned") continue;
 
 			totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
 			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
-			if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Cash") {
+			
+			
+			
+			if (po == "Cash") {
 				totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
 
 			}
-			else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "Transfer") {
+			else if (po == "Transfer") {
 				totalAmountTransfer += boost::variant2::get<pof::base::currency>(d.first[4]);
 
 			}
-			else if (boost::variant2::get<pof::base::data::text_t>(d.first[6]) == "POS") {
+			else if (po == "POS") {
 				totalAmountPos += boost::variant2::get<pof::base::currency>(d.first[4]);
 			}
 		}
+
+		//loop through the mPayments for any payments
+		for (auto& [k, v] : mPaymentMap) {
+			if (v.find("payment_options") == v.end()) continue;
+
+			auto& pt = v["payment_options"];
+			po = static_cast<std::string>(pt["pay_type1"]);
+			if (po == "Cash") {
+				totalAmountCash += pof::base::currency(static_cast<double>(pt["pay_amount1"]));
+
+			}
+			else if (po == "Transfer") {
+				totalAmountTransfer += pof::base::currency(static_cast<double>(pt["pay_amount1"]));
+
+			}
+			else if (po == "POS") {
+				totalAmountPos += pof::base::currency(static_cast<double>(pt["pay_amount1"]));
+			}
+
+			po = static_cast<std::string>(pt["pay_type2"]);
+			if (po == "Cash") {
+				totalAmountCash += pof::base::currency(static_cast<double>(pt["pay_amount2"]));
+
+			}
+			else if (po == "Transfer") {
+				totalAmountTransfer += pof::base::currency(static_cast<double>(pt["pay_amount2"]));
+
+			}
+			else if (po == "POS") {
+				totalAmountPos += pof::base::currency(static_cast<double>(pt["pay_amount2"]));
+			}
+		}
+
 		mSPanel->Freeze();
 		mTotalQuantity->SetLabelText(fmt::format("Total Quantity:   {:d}", totalQuantity));
 		mTotalAmount->SetLabelText(fmt::format("Total Amount:   {:cu}", totalAmount));
