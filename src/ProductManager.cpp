@@ -2821,7 +2821,7 @@ bool pof::ProductManager::CreateStockCheckTable()
 {
 	if (mLocalDatabase)
 	{
-		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS stock_check (prod_uuid blob, check_stock integer, stock_count, status integer, date integer);)";
+		constexpr const std::string_view sql = R"(CREATE TABLE IF NOT EXISTS stock_check (prod_uuid blob, check_stock integer, stock_count integer, status integer, date integer);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()){
 			spdlog::error(mLocalDatabase->err_msg());

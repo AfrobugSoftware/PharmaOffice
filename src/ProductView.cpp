@@ -3013,7 +3013,7 @@ void pof::ProductView::CreateDataView()
 void pof::ProductView::CreateToolBar()
 {
 	m_auiToolBar1 = new wxAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	m_auiToolBar1->SetToolBitmapSize(wxSize(FromDIP(16),FromDIP(16)));
+	//m_auiToolBar1->SetToolBitmapSize(wxSize(FromDIP(16),FromDIP(16)));
 
 	mChartsDropItem = m_auiToolBar1->AddTool(ID_CHARTS, "Charts", wxArtProvider::GetBitmap("insert_chart", wxART_OTHER, FromDIP(wxSize(16,16))), "Charts for different data");
 	mChartsDropItem->SetHasDropDown(true);
@@ -3056,11 +3056,11 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar1->AddTool(ID_PACKS, wxT("Add pack"), wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16, 16))), wxT("Pharamcy Packs"));
 	m_auiToolBar1->Realize();
 
-	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(FromDIP(-1), FromDIP(30)).ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar1, wxAuiPaneInfo().Name("ProductToolBar").ToolbarPane().Top().MinSize(FromDIP(wxSize(-1,30))).Resizable().ToolbarPane().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 
 	//tool bar 2
 	m_auiToolBar2 = new wxAuiToolBar(this, ID_TOOLBAR2, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	m_auiToolBar2->SetToolBitmapSize(wxSize(FromDIP(16), FromDIP(16)));
+	//m_auiToolBar2->SetToolBitmapSize(wxSize(FromDIP(16), FromDIP(16)));
 	mSelectItem = m_auiToolBar2->AddTool(ID_SELECT_MULTIPLE, wxT("Select"), wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Select multiple products", wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	
@@ -3085,7 +3085,7 @@ void pof::ProductView::CreateToolBar()
 	mCatNameItem = m_auiToolBar2->AddControl(mCatTextCtrl, wxEmptyString);
 
 	m_auiToolBar2->Realize();
-	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(- 1), FromDIP(30)).DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+	m_mgr.AddPane(m_auiToolBar2, wxAuiPaneInfo().Name("ProductToolBar2").ToolbarPane().Top().MinSize(FromDIP(wxSize(-1, 30))).Resizable().DockFixed().Row(2).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
 }
 
 void pof::ProductView::CreateProductInfo()

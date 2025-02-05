@@ -341,11 +341,11 @@ void pof::PackView::CreateSpeicalCols()
 	quan.second = [&](size_t row, size_t col, const wxVariant& val) -> bool {
 		wxBusyCursor cursoir;
 		auto& datastore = mPackModel->GetDatastore();
-		auto& r = datastore[row];
-		auto& prodId = boost::variant2::get<pof::base::data::duuid_t>(r.first[0]);
-		auto& quantity = boost::variant2::get<std::uint64_t>(r.first[2]);
-		auto& price = boost::variant2::get<pof::base::data::currency_t>(r.first[4]);
-		auto& extprice = boost::variant2::get<pof::base::data::currency_t>(r.first[5]);
+		auto& r         = datastore[row];
+		auto& prodId    = boost::variant2::get<pof::base::data::duuid_t>(r.first[0]);
+		auto& quantity  = boost::variant2::get<std::uint64_t>(r.first[2]);
+		auto& price     = boost::variant2::get<pof::base::data::currency_t>(r.first[4]);
+		auto& extprice  = boost::variant2::get<pof::base::data::currency_t>(r.first[5]);
 
 		quantity = val.GetInteger();
 		extprice = price * static_cast<double>(quantity);

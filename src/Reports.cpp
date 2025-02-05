@@ -521,41 +521,43 @@ bool pof::ReportsDialog::LoadEndOFDay()
 
 			auto& amount = boost::variant2::get<pof::base::data::currency_t>(v[4]);
 			totalAmount += amount;
-			item.SetColumn(3);
-			item.SetId(i);
-			item.SetText(fmt::format("{:cu}", amount));
-			item.SetMask(wxLIST_MASK_TEXT);
-			report.SetItem(item);
-
-			item.SetColumn(4);
-			item.SetId(i);
+			
 			auto info = wxGetApp().mSaleManager.GetInfo(boost::variant2::get<boost::uuids::uuid>(v[5]));
 		
 			auto& po = boost::variant2::get<pof::base::data::text_t>(v[6]);
+			auto amt_string = fmt::format("{:cu}", amount);
 			if (po.empty() && info.has_value()) {
 				auto iv = nl::json::parse(info.value());
 				auto p = iv.find("payment_options");
 				if (p != iv.end()) {
 					mPaymentMap.insert({ static_cast<size_t>(i), nl::json::parse(info.value()) });
 					std::vector<std::string> pt;
+					std::vector<std::string> at;
 					auto pi = p->find("pay_type1");
-					std::string temp;
-					if (pi != p->end()) {
-						temp = static_cast<std::string>(*pi);
-						if(!temp.empty())
-							pt.emplace_back(temp);
+					auto ai = p->find("pay_amount1");
+					if (pi != p->end() && ai != p->end()) {
+						pt.emplace_back(pi->template get<std::string>());
+						at.emplace_back(fmt::format("{:cu}", pof::base::currency(ai->template get<double>())));
 					}
 
 					pi = p->find("pay_type2");
-					if (pi != p->end()) {
-						temp = static_cast<std::string>(*pi);
-						if (!temp.empty())
-							pt.emplace_back(temp);
+					ai = p->find("pay_amount2");
+					if (pi != p->end() && ai != p->end()) {
+						pt.emplace_back(pi->template get<std::string>());
+						at.emplace_back(fmt::format("{:cu}", pof::base::currency(ai->template get<double>())));
 					}
-
 					po = fmt::format("{}",fmt::join(pt, " | "));
+					amt_string = fmt::format("{}",fmt::join(at, " | "));
 				}
 			}
+			item.SetColumn(3);
+			item.SetId(i);
+			item.SetText(amt_string);
+			item.SetMask(wxLIST_MASK_TEXT);
+			report.SetItem(item);
+
+			item.SetColumn(4);
+			item.SetId(i);
 			item.SetText(po);
 
 			item.SetMask(wxLIST_MASK_TEXT);
@@ -1624,6 +1626,24 @@ void pof::ReportsDialog::EODSummarizeExcel()
 				}
 			}
 		}
+		std::vector<std::tuple<std::string, pof::base::currency, std::uint64_t>> sortList;
+		sortList.reserve(mSummary.size());
+		{
+			wxBusyInfo wait("Sorting\nPlease wait...");
+			for (auto& item : mSummary) {
+				auto iter = std::upper_bound(sortList.begin(),
+					sortList.end(), item.second, [&](const auto& i, const auto& t) -> bool {
+						auto& [a, b, c] = t;
+						auto& [a1, b1, c1] = i;
+						return boost::to_lower_copy(a1) < boost::to_lower_copy(a);	
+				});
+
+				if (iter == sortList.end()) sortList.emplace_back(item.second);
+				else sortList.insert(iter, item.second);
+			}
+		}
+		mSummary.clear();
+
 		wxFileDialog dialog(this, "Save summary excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
 			wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 		if (dialog.ShowModal() == wxID_CANCEL) return;
@@ -1649,7 +1669,7 @@ void pof::ReportsDialog::EODSummarizeExcel()
 			wks.setName(fmt::format("{:%d/%m/%Y}", mSelectDay));
 
 		constexpr const size_t colSize = 3;
-		const size_t rowSize = mSummary.size() + 3; //plus title and total row
+		const size_t rowSize = sortList.size() + 3; //plus title and total row
 		constexpr const size_t firstRow = 1;
 		constexpr const size_t firstCol = 1;
 
@@ -1665,16 +1685,15 @@ void pof::ReportsDialog::EODSummarizeExcel()
 		writeHeader("Quantity");
 		writeHeader("Amount");
 
-		for (auto it = mSummary.begin(); it != mSummary.end() && iter != range.end(); it++) {
-			auto& row = it->first;
-		
-			iter->value().set(std::get<0>(it->second));
+		for (auto it = sortList.begin(); it != sortList.end() && iter != range.end(); it++) {
+			auto& [s, c, q] = *it;
+			iter->value().set(s);
 			iter++;
 
-			iter->value().set(std::get<2>(it->second));
+			iter->value().set(q);
 			iter++;
 	
-			iter->value().set(fmt::format("{:cu}", std::get<1>(it->second)));
+			iter->value().set(fmt::format("{:cu}", c));
 			iter++;
 		}
 
@@ -1984,13 +2003,12 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 		for (const auto& d : data) {
 			//skip end of day that are returned
 			po = boost::variant2::get<pof::base::data::text_t>(d.first[6]);
-			if (po.empty() || po == "Returned") continue;
+			if (po == "Returned") continue;
 
 			totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
 			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
 			
-			
-			
+			if (po.empty()) continue;			
 			if (po == "Cash") {
 				totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
 

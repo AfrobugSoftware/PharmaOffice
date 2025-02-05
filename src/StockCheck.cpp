@@ -143,41 +143,19 @@ pof::StockCheck::StockCheck( wxWindow* parent, wxWindowID id, const wxString& ti
 void pof::StockCheck::CreateToolBar()
 {
 	mTools = new wxAuiToolBar(this, ID_TOOL, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
-	mBackButton = mTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("arrow_back"));
+	mBackButton = mTools->AddTool(wxID_BACKWARD, "Back", wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))));
 	mTools->AddSeparator();
-	mTools->AddSpacer(2);
-	mTools->AddTool(ID_SELECT, "Select", wxNullBitmap, "Show select", wxITEM_CHECK);
-	mTools->AddSpacer(5);
+	mTools->AddSpacer(FromDIP(2));
+	mTools->AddTool(ID_SELECT, "Select", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16, 16))), "Show select", wxITEM_CHECK);
+	mTools->AddSpacer(FromDIP(5));
 
-	auto& category = wxGetApp().mProductManager.GetCategories();
-	wxArrayString choices;
-
-	for (auto& value : category){
-		choices.push_back(boost::variant2::get<pof::base::data::text_t>(value.first[pof::ProductManager::CATEGORY_NAME]));
-	}
-	mCategorySelect = new wxChoice(mTools, ID_CATEGORY_SELECT, wxDefaultPosition, wxSize(200, -1), choices);
-	mCategorySelect->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
-		wxPaintDC dc(mCategorySelect);
-	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
-
-	dc.SetBrush(*wxWHITE);
-	dc.SetPen(*wxGREY_PEN);
-	dc.DrawRoundedRectangle(rect, 2.0f);
-	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(10, 10)), wxPoint(rect.GetWidth() - 15, (rect.GetHeight() / 2) - 5));
-	auto sel = mCategorySelect->GetStringSelection();
-	if (!sel.IsEmpty()) {
-		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
-	}
-	});
-	mTools->AddControl(mCategorySelect, "Select Category");
-	mTools->AddSpacer(5);
-	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap(wxART_REDO, wxART_TOOLBAR, wxSize(16,16)));
-	mTools->AddTool(ID_SHOW_SUMMARY, "Show Summary", wxNullBitmap, "Show the summary of the stock check");
+	auto item = mTools->AddTool(wxID_RESET, "Reset", wxArtProvider::GetBitmap("redo", wxART_TOOLBAR, FromDIP(wxSize(16, 16))));
+	mTools->AddTool(ID_SHOW_SUMMARY, "Show Summary", wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16, 16))), "Show the summary of the stock check");
 	mTools->AddStretchSpacer();
-	mAddButton = mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("action_add"));
-	mTools->AddSpacer(2);
-	mTools->AddTool(ID_STOCK_MARK_AS_COMPLETE, "Mark as Complete", wxArtProvider::GetBitmap("action_check"));
-	m_mgr.AddPane(mTools, wxAuiPaneInfo().Name("Tools").ToolbarPane().Top().MinSize(-1, 30).Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
+	mAddButton = mTools->AddTool(ID_ADD_PRODUCT, "Add Product", wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))));
+	mTools->AddSpacer(FromDIP(2));
+	mTools->AddTool(ID_STOCK_MARK_AS_COMPLETE, "Mark as Complete", wxArtProvider::GetBitmap("edit", wxART_OTHER, FromDIP(wxSize(16,16))));
+	m_mgr.AddPane(mTools, wxAuiPaneInfo().Name("Tools").ToolbarPane().Top().MinSize(FromDIP(wxSize(- 1, 30))).Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false).Hide());
 }
 
 void pof::StockCheck::CreateEmptyStockCheck()
@@ -458,7 +436,7 @@ void pof::StockCheck::OnAddProduct(wxCommandEvent& evt)
 	auto tMonth = date::floor<date::months>(*mSelectedMonth);
 	if (curMonth != tMonth){
 		//cannot add product to a different month
-		wxMessageBox("Cannont stock check a product from another month, other than the current one, change to the current month and try again", "STOCK CHECK", wxICON_INFORMATION | wxOK);
+		wxMessageBox("Cannont stock check a product from another month, other than the current one.\nChange to the current month and try again", "STOCK CHECK", wxICON_INFORMATION | wxOK);
 		return;
 	}
 
@@ -617,11 +595,6 @@ void pof::StockCheck::OnAuiThemeChange()
 void pof::StockCheck::OnStockActivated(wxListEvent& evt)
 {
 	const wxListItem& item = evt.GetItem();
-	mCategorySelect->Freeze();
-	mCategorySelect->SetSelection(wxNOT_FOUND);
-	mCategorySelect->Thaw();
-	mCategorySelect->Refresh();
-
 	if (item.GetId() == mStockSelect->GetItemCount() - 1)
 	{
 		//adding stock check
