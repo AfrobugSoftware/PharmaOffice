@@ -109,6 +109,7 @@ namespace pof
 			ID_SHOW_PRODUCT,
 			ID_SEARCH_BY_GENERIC_NAME,
 			ID_REPORTS_ENDOFWEEK,
+			ID_UPDATE_QUANTITY,
 		};
 
 		size_t mRowHeights;
@@ -233,6 +234,7 @@ namespace pof
 		void OnShowHiddenProduct(wxCommandEvent& evt);
 		void OnExpiredMonth(wxCommandEvent& evt);
 		void OnSeachFlag(wxCommandEvent& evt);
+		void OnUpdateQuantity(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 

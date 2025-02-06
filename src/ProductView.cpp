@@ -72,7 +72,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_SEARCH_BY_NAME, pof::ProductView::OnSearchFlag)
 	EVT_MENU(pof::ProductView::ID_SEARCH_BY_GENERIC_NAME, pof::ProductView::OnSearchFlag)
 	EVT_MENU(pof::ProductView::ID_SEARCH_BY_CATEGORY, pof::ProductView::OnSearchFlag)
-
+	EVT_MENU(pof::ProductView::ID_UPDATE_QUANTITY, pof::ProductView::OnUpdateQuantity)
 	//TIMER
 	EVT_TIMER(pof::ProductView::ID_STOCK_CHECK_TIMER, pof::ProductView::OnStockCheckTimer)
 	//UI update
@@ -552,7 +552,7 @@ void pof::ProductView::OnContextMenu(wxDataViewEvent& evt)
 	auto markup = menu->Append(ID_PRODUCT_MARKUP, "Mark-up product", nullptr);
 	auto var = menu->Append(ID_ADD_VARIANT, "Create variant", nullptr);
 	auto crb = menu->Append(ID_CREATE_CONTROLLED_BOOK, "Create Controlled Register", nullptr);
-
+	auto upp = menu->Append(ID_UPDATE_QUANTITY, "Change quantity", nullptr);
 	menu->AppendSeparator();
 	if (mSelections.empty()) {
 		auto orderlist = menu->Append(ID_ADD_ORDER_LIST, "Add order list", nullptr);
@@ -2732,6 +2732,53 @@ void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
 
 void pof::ProductView::OnSeachFlag(wxCommandEvent& evt)
 {
+}
+
+void pof::ProductView::OnUpdateQuantity(wxCommandEvent& evt)
+{
+	auto item = m_dataViewCtrl1->GetSelection();
+	if (!item.IsOk()) return;
+
+	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST)) {
+		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxCredentialEntryDialog dialog(this, "User credentials are to update product quantity", "Roll back database");
+	dialog.Center(wxBOTH);
+	dialog.SetBackgroundColour(*wxWHITE);
+	while (1) {
+		if (dialog.ShowModal() == wxID_CANCEL) return;
+		auto cred = dialog.GetCredentials();
+		if (!wxGetApp().MainAccount->ValidateCredentials(cred.GetUser().ToStdString(),
+			cred.GetPassword().GetAsString().ToStdString())) {
+			wxMessageBox("Invalid user name or password", "Update quantity", wxICON_WARNING | wxOK);
+			continue;
+		}
+		break;
+	}
+	auto quan = wxGetTextFromUser("Please enter a new quantity");
+	if (quan.empty()) return;
+	try {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
+		auto& row = wxGetApp().mProductManager.GetProductData()->GetDatastore()[idx];
+		const std::uint64_t q = boost::lexical_cast<std::uint64_t>(quan);
+		const auto& pd = *wxGetApp().mProductManager.GetProductData();
+		const auto& uid = boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID]);
+		const auto& name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
+
+		wxGetApp().mProductManager.UpdatePD(std::make_tuple(uid, q), { "stock_count" });
+
+		//refresh item
+		m_dataViewCtrl1->Freeze();
+		row.first[pof::ProductManager::PRODUCT_STOCK_COUNT] = q;
+		m_dataViewCtrl1->Thaw();
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated {} product quantity to {:d}", name, q));
+
+
+	}
+	catch (const std::exception& exp) {
+		wxMessageBox("Invalid quantity", "Quantity", wxICON_ERROR | wxOK);
+	}
 }
 
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)

@@ -163,7 +163,7 @@ namespace pof
 		wxStaticLine* l3 = nullptr;
 		wxStaticLine* l4 = nullptr;
 
-		std::unordered_map<size_t, nl::json> mPaymentMap;
+		std::unordered_map<boost::uuids::uuid, nl::json> mPaymentMap;
 
 		ReportType mCurReportType;
 		wxListItem mSelItem;

@@ -438,7 +438,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 	if (bFilterReturns){
 		auto& tab = data->tab();
 		auto i = std::ranges::remove_if(tab, [&](pof::base::data::row_t& row) -> bool {
-			auto& pt = boost::variant2::get<std::string>(row.first[6]);
+			const auto& pt = boost::variant2::get<std::string>(row.first[6]);
 			return pt == "Returned";
 		});
 		tab.erase(i.begin(), i.end());
@@ -487,6 +487,7 @@ bool pof::ReportsDialog::LoadEndOFDay()
 		}
 
 		size_t i = 0;
+		mPaymentMap.clear();
 		for (auto iter = data->begin(); iter != data->end(); iter++) {
 			auto& v = iter->first;
 			wxListItem item;
@@ -523,31 +524,23 @@ bool pof::ReportsDialog::LoadEndOFDay()
 			totalAmount += amount;
 			
 			auto info = wxGetApp().mSaleManager.GetInfo(boost::variant2::get<boost::uuids::uuid>(v[5]));
-		
 			auto& po = boost::variant2::get<pof::base::data::text_t>(v[6]);
 			auto amt_string = fmt::format("{:cu}", amount);
 			if (po.empty() && info.has_value()) {
-				auto iv = nl::json::parse(info.value());
-				auto p = iv.find("payment_options");
-				if (p != iv.end()) {
-					mPaymentMap.insert({ static_cast<size_t>(i), nl::json::parse(info.value()) });
+				const auto& pj =
+					mPaymentMap.emplace(boost::variant2::get<boost::uuids::uuid>(v[5]), nl::json::parse(info.value()));
+				auto p = pj.first->second.find("payment_options");
+				if (p != pj.first->second.end()) {
 					std::vector<std::string> pt;
-					std::vector<std::string> at;
 					auto pi = p->find("pay_type1");
-					auto ai = p->find("pay_amount1");
-					if (pi != p->end() && ai != p->end()) {
+					if (pi != p->end()) {
 						pt.emplace_back(pi->template get<std::string>());
-						at.emplace_back(fmt::format("{:cu}", pof::base::currency(ai->template get<double>())));
 					}
-
 					pi = p->find("pay_type2");
-					ai = p->find("pay_amount2");
-					if (pi != p->end() && ai != p->end()) {
+					if (pi != p->end()) {
 						pt.emplace_back(pi->template get<std::string>());
-						at.emplace_back(fmt::format("{:cu}", pof::base::currency(ai->template get<double>())));
 					}
 					po = fmt::format("{}",fmt::join(pt, " | "));
-					amt_string = fmt::format("{}",fmt::join(at, " | "));
 				}
 			}
 			item.SetColumn(3);
@@ -1024,7 +1017,7 @@ void pof::ReportsDialog::OnDoReturn(wxCommandEvent& evt)
 	auto& pid = boost::variant2::get<pof::base::data::duuid_t>(row.first[0]);
 	auto& sid = boost::variant2::get<pof::base::data::duuid_t>(row.first[5]);
 	auto& cost = boost::variant2::get<pof::base::currency>(row.first[4]);
-	auto iter = mPaymentMap.find(id);
+	auto iter = mPaymentMap.find(boost::variant2::get<boost::uuids::uuid>(row.first[5]));
 	if (iter != mPaymentMap.end()) {
 		auto& [k, v] = *iter;
 		if (v.find("payment_options") != v.end()) {
@@ -2008,19 +2001,21 @@ void pof::ReportsDialog::UpdateTotals(const pof::base::data& data)
 			totalAmount += boost::variant2::get<pof::base::currency>(d.first[4]);
 			totalQuantity += boost::variant2::get<std::uint64_t>(d.first[3]);
 			
-			if (po.empty()) continue;			
+			if (po.empty()) continue;	
+			//if po is empty the transaction has split payment
 			if (po == "Cash") {
 				totalAmountCash += boost::variant2::get<pof::base::currency>(d.first[4]);
 
 			}
 			else if (po == "Transfer") {
 				totalAmountTransfer += boost::variant2::get<pof::base::currency>(d.first[4]);
-
 			}
 			else if (po == "POS") {
 				totalAmountPos += boost::variant2::get<pof::base::currency>(d.first[4]);
 			}
 		}
+		//payment should be per transaction instead of per item
+		
 
 		//loop through the mPayments for any payments
 		for (auto& [k, v] : mPaymentMap) {
