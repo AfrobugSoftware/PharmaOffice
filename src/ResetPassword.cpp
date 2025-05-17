@@ -1,7 +1,5 @@
-
-
 #include "ResetPassword.h"
-#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::ResetPassword, wxDialog)
 	EVT_BUTTON(wxID_OK, pof::ResetPassword::OnOk)
@@ -20,27 +18,27 @@ pof::ResetPassword::ResetPassword(wxWindow* parent, wxWindowID id, const wxPoint
 	bSizer1->Add(m_staticText1, 0, wxALL, 5);
 
 	wxGridSizer* gSizer1;
-	gSizer1 = new wxGridSizer(2, 2, 0, 0);
+	gSizer1 = new wxGridSizer(3, 2, 0, 0);
 
 	m_staticText2 = new wxStaticText(this, wxID_ANY, wxT("Current Password"), wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText2->Wrap(-1);
 	gSizer1->Add(m_staticText2, 0, wxALL, 5);
 
-	m_textCtrl1 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	m_textCtrl1 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 	gSizer1->Add(m_textCtrl1, 1, wxALL | wxEXPAND, 5);
 
 	m_staticText3 = new wxStaticText(this, wxID_ANY, wxT("Password"), wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText3->Wrap(-1);
 	gSizer1->Add(m_staticText3, 0, wxALL, 5);
 
-	m_textCtrl2 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	m_textCtrl2 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 	gSizer1->Add(m_textCtrl2, 0, wxALL | wxEXPAND, 5);
 
 	m_staticText4 = new wxStaticText(this, wxID_ANY, wxT("Re-enter password"), wxDefaultPosition, wxDefaultSize, 0);
 	m_staticText4->Wrap(-1);
 	gSizer1->Add(m_staticText4, 0, wxALL, 5);
 
-	m_textCtrl3 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	m_textCtrl3 = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 	gSizer1->Add(m_textCtrl3, 0, wxALL | wxEXPAND, 5);
 
 
@@ -82,12 +80,16 @@ void pof::ResetPassword::OnOk(wxCommandEvent& evt)
 		wxMessageBox("Incorrect current password", "Reset password", wxICON_ERROR | wxOK);
 		return;
 	}
+	if (pass == currentPassword) {
+		wxMessageBox("New password cannot be the current password");
+		return;
+	}
 	if ((pass != repass))
 	{
 		wxMessageBox("Password mismatch", "Reset password", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	if (!acc->UpdateUserPassword(acc->username, bcrypt::generateHash(currentPassword))) {
+	if (!acc->UpdateUserPassword(acc->username, bcrypt::generateHash(pass))) {
 		wxMessageBox("Cannot update user password", "Reset password", wxICON_INFORMATION | wxOK);
 		return;
 	}

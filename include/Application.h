@@ -40,7 +40,6 @@
 #include "PatientManager.h"
 #include "PoisonBookManager.h"
 #include "PharmacySetupWizard.h"
-#include "ResetPassword.h"
 
 namespace js = nlohmann;
 namespace fs = std::filesystem;

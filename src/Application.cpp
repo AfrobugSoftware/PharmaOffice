@@ -9,6 +9,8 @@
 #include <fstream>
 
 #include "RegisterPharmacy.h"
+#include "ResetPassword.h"
+
 
 IMPLEMENT_APP(pof::Application)
 
@@ -861,6 +863,7 @@ void pof::Application::ShowSettings()
 	sd.CreateButtons(wxOK | wxCANCEL);
 	sd.SetBackgroundColour(wxColour(255, 255, 255));
 	sd.GetBookCtrl()->SetInternalBorder(5);
+	sd.GetBookCtrl()->SetSizeHints(sd.FromDIP(wxSize(100, -1)));
 	sd.SetSizeHints(sd.FromDIP(wxSize(980, 659)), sd.FromDIP(wxSize(980, 659)));
 
 	//application 
@@ -1532,12 +1535,16 @@ void pof::Application::ShowEmployeeSettings(wxPropertySheetDialog& sd)
 
 void pof::Application::OnResetAccount(wxCommandEvent& evt)
 {
-	wxMessageBox("Current version cannot reset account", "Application", wxICON_WARNING | wxOK);
-
+	pof::ResetPassword rp(nullptr);
+	if (rp.ShowModal() == wxID_OK) {
+		wxMessageBox("Password updated", "Settings", wxICON_INFORMATION | wxOK);
+	}
 }
 void pof::Application::OnDeleteAccount(wxCommandEvent& evt) {
 	if (wxMessageBox("Are you sure you want to delete account", "Application", wxICON_WARNING | wxYES_NO)
 		== wxNO) return;
+
+	//MainAccount->DeactivateAccount(MainAccount->username);
 
 
 }

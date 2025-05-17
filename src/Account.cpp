@@ -464,6 +464,7 @@ bool pof::Account::UpdateUserPassword(const std::string& username, const std::st
 			spdlog::error(mLocalDatabase->err_msg());
 		}
 		mLocalDatabase->finalise(*stmt);
+		passhash = pass;
 		return status;
 	}
 	return false;

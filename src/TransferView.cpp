@@ -1,5 +1,5 @@
 #include "TranferView.h"
-#include "Application.h"
+#include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::TransferView, wxDialog)
 	EVT_AUITOOLBAR_TOOL_DROPDOWN(pof::TransferView::ID_SELECT, pof::TransferView::OnSelect)
@@ -256,5 +256,9 @@ void pof::TransferView::ShowSelect()
 }
 
 void pof::TransferView::HideSelect()
+{
+}
+
+void pof::TransferView::UpdateTexts()
 {
 }

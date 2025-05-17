@@ -32,7 +32,7 @@ namespace pof {
 
 	public:
 
-		ResetPassword(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(621, 270), long style = wxTAB_TRAVERSAL);
+		ResetPassword(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(621, 270), long style = wxDEFAULT_DIALOG_STYLE);
 		~ResetPassword();
 
 		void OnOk(wxCommandEvent& evt);
