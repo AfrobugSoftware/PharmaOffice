@@ -1973,7 +1973,7 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 	wxPanel* cp2 = new wxPanel(m_panel1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
 	wxBoxSizer* bS3;
 	bS3 = new wxBoxSizer(wxHORIZONTAL);
-	
+
 	bS3->AddStretchSpacer();
 	//total product
 	wxPanel* tpp = new wxPanel(cp2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxSIMPLE_BORDER);
@@ -2052,8 +2052,25 @@ void pof::ProductView::OnStoreSummary(wxCommandEvent& evt)
 
 	bS3->Add(osp, 0, wxALL, FromDIP(5));
 
+	const auto yearStrings = wxGetApp().mSaleManager.GetStoreYears();
+	if (yearStrings.empty()) {
+		wxMessageBox("No sales in store cannot do summary", "Store summary", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxArrayString arr;
+	for (const auto& ys : yearStrings) {
+		arr.push_back(fmt::format("{:%Y}", ys));
+	}
+	wxSingleChoiceDialog box(NULL, "Please select a year to summarize.", "Store summary",arr);
+	const auto ret = box.ShowModal();
+	if (ret != wxID_OK) {
+		return;
+	}
+	int found = box.GetSelection();
+	if (found == wxNOT_FOUND) return;
 	//total rev
-	auto dt = pof::base::data::clock_t::now();
+	//auto dt = pof::base::data::clock_t::now();
+	auto& dt = yearStrings[found];
 	auto rev = wxGetApp().mSaleManager.GetYearTotalRevenue(dt);
 	if (rev) {
 

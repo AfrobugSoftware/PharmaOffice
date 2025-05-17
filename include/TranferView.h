@@ -15,18 +15,21 @@
 #include <wx/sizer.h>
 #include <wx/panel.h>
 #include <wx/stattext.h>
+#include <wx/statline.h>
 #include <wx/dialog.h>
 #include <wx/simplebook.h>
+#include <wx/datectrl.h>
+#include <wx/dateevt.h>
+#include <wx/statbmp.h>
 
 #include "SearchProduct.h"
+#include <memory>
 
-namespace pof
-{
-	class OrderListView : public wxDialog
+
+namespace pof {
+	class TransferView : public wxDialog
 	{
 	private:
-
-	protected:
 		wxPanel* m_panel1;
 		wxAuiToolBar* mTopTools;
 		wxAuiToolBarItem* m_tool11;
@@ -47,35 +50,30 @@ namespace pof
 		wxDataViewColumn* mSelectCol = nullptr;
 		constexpr static size_t selcol = 1000;
 		std::set<wxDataViewItem> mSelections;
+		std::unique_ptr<pof::DataModel> model;
+		wxDatePickerCtrl* mDatePicker;
+
 	public:
 		enum {
-			ID_ORDER_VIEW = wxID_HIGHEST + 40,
-			ID_PRINT_ORDER,
-			ID_REMOVE_ORDER,
-			ID_PLACE,
-			ID_ADD_PRODUCT,
-			ID_CLEAR_ORDERLIST,
-			ID_REORDER,
+			ID_VIEW = wxID_HIGHEST + 50,
 			ID_SELECT,
-			ID_CLEAR_ORDERED,
+			ID_UPDATE_TRANSFER,
+			ID_REMOVE_TRANSFER,
+			ID_ADD_TRANSFER,
+			ID_DOWNLOAD_EXCEL,
+			ID_DATE_SELECT,
 		};
-
-		OrderListView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
-		virtual ~OrderListView();
+		TransferView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		virtual ~TransferView();
 		void CreateEmptyPanel();
 		void CreateSpeicalCol();
 
-		void OnPrintOrder(wxCommandEvent& evt);
-		void OnContexMenu(wxDataViewEvent& evt);
-		void OnRemoveOrder(wxCommandEvent& evt);
-		void OnAddProduct(wxCommandEvent& evt);
-		void OnClearOrderList(wxCommandEvent& evt);
-		void OnPrintComplete(bool status, size_t printstate);
-		void OnReorder(wxCommandEvent& evt);
-		void OnSelect(wxCommandEvent& evt);
-		void OnHeaderClick(wxDataViewEvent& evt);
-		void OnUpdateUI(wxUpdateUIEvent& evt);
-		void OnClearOrdered(wxCommandEvent& evt);
+		void OnAddTransfer(wxCommandEvent& evt);
+		void OnRemoveTransfer(wxCommandEvent& evt);
+		void OnUpdateTransfer(wxCommandEvent& evt);
+		void OnDownloadExcel(wxCommandEvent& evt);
+		void OnSelect(wxAuiToolBarEvent& evt);
+		void OnDateChanged(wxDateEvent& evt);
 
 		void ShowSelect();
 		void HideSelect();
@@ -83,4 +81,4 @@ namespace pof
 		void UpdateTexts();
 		DECLARE_EVENT_TABLE()
 	};
-}
+};

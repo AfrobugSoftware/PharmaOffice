@@ -102,6 +102,7 @@ namespace pof {
 		//sale analytics
 		//gets the rank of products sold for that month
 		std::optional<pof::base::data> GetProductSoldForMonth(const pof::base::data::datetime_t& dt);
+		std::vector<pof::base::data::datetime_t> GetStoreYears();
 		std::optional<pof::base::currency> GetYearTotalRevenue(const pof::base::data::datetime_t& dt);
 		//removes all sale history for a product
 		bool RemoveProductSaleHistory(pof::base::data::const_iterator iterator);
@@ -120,6 +121,25 @@ namespace pof {
 		std::optional<std::pair<pof::base::currency, pof::base::currency>> GetTotalPL(const pof::base::data::datetime_t& dt);
 		std::optional<pof::base::data> GetMonthlySales(const pof::base::data::datetime_t& dt);
 		std::optional<std::uint64_t> SumOfSalesFrom(const pof::base::data::duuid_t& puid, pof::base::data::datetime_t dt);
+
+
+		//transfers
+		struct transfer {
+			std::uint32_t transferID;
+			std::string productName;
+			pof::base::currency amount;
+			std::uint32_t quantity;
+			pof::base::data::datetime_t date;
+			pof::base::data::duuid_t puid;
+		};
+		void CreateTransferTable() const;
+		void AddTransfer(const std::vector<transfer>& products) const;
+		void RemoveTransfer(const std::vector<transfer>& products) const;
+		void UpdateTransferQuantity(std::uint32_t id, std::uint32_t quantity) const;
+		std::optional<std::vector<transfer>> GetTransferByDate(const pof::base::data::datetime_t& time) const;
+
+
+
 
 		boost::uuids::random_generator_mt19937 sUidGen;
 		double vat = 0.0;

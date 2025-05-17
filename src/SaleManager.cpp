@@ -1010,6 +1010,26 @@ std::optional<pof::base::data> pof::SaleManager::GetProductSoldForMonth(const po
 	return std::nullopt;
 }
 
+std::vector<pof::base::data::datetime_t> pof::SaleManager::GetStoreYears()
+{
+	const std::string_view sql = R"(SELECT MAX(sale_date) FROM sales GROUP BY Years(sale_date);)";
+	auto stmt = mLocalDatabase->prepare(sql);
+	assert(stmt);
+	auto rel = mLocalDatabase->retrive<pof::base::data::datetime_t>(*stmt);
+	if (!rel.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		mLocalDatabase->finalise(*stmt);
+		return {};
+	}
+	std::vector<pof::base::data::datetime_t> ret;
+	ret.reserve(rel->size());
+	for (const auto& r : *rel) {
+		ret.emplace_back(std::get<0>(r));
+	}
+	ret.shrink_to_fit();
+	return ret;
+}
+
 std::optional<pof::base::currency> pof::SaleManager::GetYearTotalRevenue(const pof::base::data::datetime_t& dt)
 {
 	if (mLocalDatabase){
@@ -1446,5 +1466,133 @@ std::optional<std::uint64_t> pof::SaleManager::SumOfSalesFrom(const pof::base::d
 		return rel->empty() ? 0ll : std::get<std::uint64_t>(*(rel->begin()));
 	}
 	return std::nullopt;
+}
+
+void pof::SaleManager::CreateTransferTable() const
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view table = R"(CREATE TABLE IF NOT EXISTS transfer (
+		id INTERGER AUTO INCREMENT,
+		product text,
+		quantity integer,
+		cost blob,
+		date integer,
+        puid blob); )";
+		auto stmt = mLocalDatabase->prepare(table);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		bool status = mLocalDatabase->execute(*stmt);
+		if (!status) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+
+		mLocalDatabase->finalise(*stmt);
+		return;
+	}
+}
+
+void pof::SaleManager::AddTransfer(const std::vector<transfer>& products) const
+{
+	if (!products.empty()) {
+		constexpr std::string_view sql = R"(INSERT INTO transfer (product, quantity, cost, date, puid) VALUES (?,?,?,?,?);)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		for (const auto& t : products) {
+			mLocalDatabase->bind(*stmt, std::make_tuple(t.productName, t.quantity, t.amount, t.amount, t.date, t.puid));
+			auto status = mLocalDatabase->execute(*stmt);
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+			}
+			mLocalDatabase->clear_bindings(*stmt);
+			mLocalDatabase->reset(*stmt);
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+void pof::SaleManager::RemoveTransfer(const std::vector<transfer>& products) const
+{
+	if (!products.empty()) {
+		constexpr std::string_view sql = R"(DELETE FROM transfer WHERE id = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			return;
+		}
+		for (const auto& t : products) {
+			mLocalDatabase->bind(*stmt, std::make_tuple(t.transferID));
+			auto status = mLocalDatabase->execute(*stmt);
+			if (!status) {
+				spdlog::error(mLocalDatabase->err_msg());
+			}
+			mLocalDatabase->clear_bindings(*stmt);
+			mLocalDatabase->reset(*stmt);
+		}
+		mLocalDatabase->finalise(*stmt);
+	}
+}
+
+void pof::SaleManager::UpdateTransferQuantity(std::uint32_t id, std::uint32_t quantity) const
+{
+	constexpr std::string_view sql = "UPDATE transfer SET quantity = ? WHERE id = ?;";
+	auto stmt = mLocalDatabase->prepare(sql);
+	if (!stmt.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		return;
+	}
+	mLocalDatabase->bind(*stmt, std::make_tuple(quantity, id));
+	auto status = mLocalDatabase->execute(*stmt);
+	if (!status) {
+		spdlog::error(mLocalDatabase->err_msg());
+	}
+	mLocalDatabase->finalise(*stmt);
+}
+
+std::optional<std::vector<pof::SaleManager::transfer>> 
+pof::SaleManager::GetTransferByDate(const pof::base::data::datetime_t& time) const
+{
+	constexpr std::string_view sql = R"(SELECT * FROM transfer WHERE Months(date) = ?;)";
+	auto stmt = mLocalDatabase->prepare(sql);
+	if (!stmt.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		return std::nullopt;
+	}
+
+	//bind
+	const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(time) };
+	int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+	bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
+	assert(status);
+	//retrive
+	auto rel = mLocalDatabase->retrive <
+		std::uint32_t,
+		pof::base::data::text_t,
+		std::uint32_t,
+		pof::base::currency,
+		pof::base::data::datetime_t
+	>(*stmt);
+	if (!rel.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		return std::nullopt;
+	}
+	std::vector<transfer> ret;
+	ret.reserve(rel->size());
+	for (const auto& r : *rel) {
+		transfer t;
+		t.transferID  = std::get<0>(r);
+		t.productName = std::get<1>(r);
+		t.quantity    = std::get<2>(r);
+		t.amount      = std::get<3>(r);
+		t.date        = std::get<4>(r);
+
+		ret.emplace_back(std::move(t));
+	}
+	return ret;
 }
 

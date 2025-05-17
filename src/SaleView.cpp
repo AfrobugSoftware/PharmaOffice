@@ -14,6 +14,7 @@ BEGIN_EVENT_TABLE(pof::SaleView, wxPanel)
 	EVT_TOOL(pof::SaleView::ID_FORM_M, pof::SaleView::OnFormM)
 	EVT_TOOL(pof::SaleView::ID_OPEN_SAVE_SALE, pof::SaleView::OnOpenSaveSale)
 	EVT_TOOL(pof::SaleView::ID_DISCOUNT, pof::SaleView::OnDiscount)
+	EVT_TOOL(pof::SaleView::ID_TRANSFER, pof::SaleView::OnTransfer)
 
 	EVT_MENU(pof::SaleView::ID_REPRINT_LAST_SALE, pof::SaleView::OnReprintLastSale)
 	EVT_MENU(pof::SaleView::ID_RETURN_LAST_SALE, pof::SaleView::OnReturnLastSale)
@@ -121,6 +122,8 @@ pof::SaleView::SaleView(wxWindow* parent, wxWindowID id, const wxPoint& pos, con
 	mReprintItem->SetHasDropDown(true);
 	mBottomTools->AddSpacer(FromDIP(5));
 	mReturnItem = mBottomTools->AddTool(ID_RETURN_SALE, "Return", wxArtProvider::GetBitmap("redo", wxART_OTHER, FromDIP(wxSize(16, 16))), "Return an item");
+	mBottomTools->AddSpacer(FromDIP(5));
+	mBottomTools->AddTool(ID_TRANSFER, "Transfer", wxArtProvider::GetBitmap(wxART_GOTO_FIRST, wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Transfer from pharmacy");
 	mBottomTools->AddSpacer(FromDIP(5));
 	mBottomTools->AddTool(ID_DISCOUNT, "Add discount", wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16,16))), "Add discount to an item");
 	mReturnItem->SetHasDropDown(true);
@@ -473,14 +476,14 @@ void pof::SaleView::CreateSearchPopup()
 void pof::SaleView::CreateProductDetails()
 {
 	//create the property grid
-	productName = new wxStringProperty("PRODUCT NAME", "0");
-	strength = new wxStringProperty("UNIT STRENGTH", "1");
+	productName   = new wxStringProperty("PRODUCT NAME", "0");
+	strength      = new wxStringProperty("UNIT STRENGTH", "1");
 	strength_type = new wxStringProperty("STRENGTH TYPE", "2");
-	genArray = new wxStringProperty("PRODUCT GENERIC NAME", "3");
-	dirArray = new wxEditEnumProperty("DIRECTION FOR USE", "4");
-	stock = new wxIntProperty("CURRENT STOCK", "5");
-	warning = new wxEditEnumProperty("WARNING", "6");
-	packageSize = new wxIntProperty("PACKAGE SIZE", "7");
+	genArray      = new wxStringProperty("PRODUCT GENERIC NAME", "3");
+	dirArray      = new wxEditEnumProperty("DIRECTION FOR USE", "4");
+	stock         = new wxIntProperty("CURRENT STOCK", "5");
+	warning       = new wxEditEnumProperty("WARNING", "6");
+	packageSize   = new wxIntProperty("PACKAGE SIZE", "7");
 
 	stock->Enable(false);
 	//warning->Enable(false);
@@ -2403,6 +2406,94 @@ void pof::SaleView::OnRemoveDiscount(wxCommandEvent& evt)
 	UpdateSaleDisplay(); 
 }
 
+void pof::SaleView::OnTransfer(wxCommandEvent& evt)
+{
+	if (mLocked) {
+		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
+		return;
+	}
+	if (wxMessageBox("Are you sure you want to transfer these items?", "Transfer", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
+	wxBusyCursor cursor;
+	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	pof::base::data& dataStore = model->GetDatastore();
+	if (dataStore.empty()) {
+		wxMessageBox("No products to transfer", "Transfer from pharmacy", wxICON_WARNING | wxOK);
+		return;
+	}
+
+	auto now = pof::base::data::clock_t::now();
+	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
+	std::vector<pof::SaleManager::transfer> trns;
+	std::vector<std::reference_wrapper<pof::base::data::row_t>> orderList;
+
+	
+	quans.reserve(dataStore.size());
+
+
+	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
+	for (pof::base::data::row_t& r : dataStore) {
+		auto& puid = boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::SaleManager::PRODUCT_UUID]);
+		auto pIter = std::ranges::find_if(prodDatastore, [&](const pof::base::data::row_t& row)->bool {
+			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
+			});
+		auto& v = pIter->first;
+		//stock count is guranteed from the sale checks not to be less than the amount sold
+		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
+			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
+			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
+		const auto& q = 
+			quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+
+		if (!mPosionBookEntries.empty()) {
+			auto poiter = mPosionBookEntries.find(puid);
+			if (poiter == mPosionBookEntries.end()) continue;
+			poiter->second.first[pof::PoisonBookManager::RUNBALANCE] = v[pof::ProductManager::PRODUCT_STOCK_COUNT];
+		}
+
+		//create trans object
+		pof::SaleManager::transfer t;
+		t.productName = boost::variant2::get<std::string>(v[pof::ProductManager::PRODUCT_NAME]);
+		t.quantity = boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
+		t.amount = boost::variant2::get<pof::base::currency>(r.first[pof::SaleManager::PRODUCT_PRICE]);
+		t.date = now;
+
+		trns.emplace_back(std::move(t));
+
+		//check if stock is low
+		//stock is low
+		if (std::get<1>(q) == 0) {
+			orderList.emplace_back(*pIter);
+		}
+	};
+
+	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
+	wxGetApp().mSaleManager.AddTransfer(trns);
+	wxGetApp().mProductManager.AddMulipleToOrderList(orderList);
+
+	//clear the current sale
+	wxGetApp().mSaleManager.GetSaleData()->Clear();
+	if (mPropertyManager->IsShown()) {
+		mPropertyManager->Hide();
+		mDataPane->Layout();
+		mDataPane->Refresh();
+	}
+	mProductLabels.clear();
+	ResetSaleDisplay();
+	mCurSaleuuid = boost::uuids::nil_uuid();
+	SetActiveSaleIdText(mCurSaleuuid);
+	mPaymentTypes->SetSelection(paymentTypes.size() - 1);
+	
+	std::get<2>(mPosionBookDetails) = false;
+	mSaleType = NONE;
+	mLocked = false;
+	mDiscounts.clear();
+	mTotalDiscount = {};
+
+	CheckEmpty();
+	wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Sale transfered"));
+	mInfoBar->ShowMessage("Transfer complete");
+}
+
 void pof::SaleView::ReloadLabelInfo(const pof::base::data::duuid_t& suid)
 {
 	mProductLabels.clear();
@@ -2448,7 +2539,9 @@ void pof::SaleView::BookSale()
 
 	auto now = pof::base::data::clock_t::now();
 	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
+	std::vector<std::reference_wrapper<pof::base::data::row_t>> orderList;
 	quans.reserve(dataStore.size());
+	orderList.reserve(dataStore.size());
 
 	auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
 	for (pof::base::data::row_t& r : dataStore) {
@@ -2461,16 +2554,24 @@ void pof::SaleView::BookSale()
 		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
 			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
 			- boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
-		quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
+		const auto& q = 
+			quans.emplace_back(std::make_tuple(puid, boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])));
 
 		if (!mPosionBookEntries.empty()) {
 			auto poiter = mPosionBookEntries.find(puid);
 			if (poiter == mPosionBookEntries.end()) continue;
 			poiter->second.first[pof::PoisonBookManager::RUNBALANCE] = v[pof::ProductManager::PRODUCT_STOCK_COUNT];
 		}
+
+		//check if stock is low
+		//stock is low
+		if (std::get<1>(q) == 0) {
+			orderList.emplace_back(*pIter);
+		}
 	};
 
 	wxGetApp().mProductManager.UpdateProductQuan(std::move(quans));
+	wxGetApp().mProductManager.AddMulipleToOrderList(orderList);
 	wxGetApp().mSaleManager.StoreSale();
 	wxGetApp().mSaleManager.AddSaleCost();
 

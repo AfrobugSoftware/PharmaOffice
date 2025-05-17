@@ -192,7 +192,7 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 {
 	std::shared_ptr<pof::base::database> pd = mLocalDatabase;
 	if (pd) {
-		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid NOT IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 5000;";
+		constexpr const std::string_view sql = "SELECT * FROM products WHERE uuid NOT IN (SELECT * FROM hidden) ORDER BY name ASC LIMIT 10000;";
 		auto stmt = pd->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(pd->err_msg());
@@ -238,6 +238,9 @@ bool pof::ProductManager::LoadProductsFromDatabase()
 		for (auto& tup : *relation) {
 			pof::base::data::row_t row;
 			row.first = std::move(pof::base::make_row_from_tuple(tup));
+			auto& name = boost::variant2::get<std::string>(row.first[PRODUCT_NAME]);
+			boost::trim(name);
+			boost::to_lower(name);
 			mProductData->EmplaceData(std::move(row));
 		}
 	}
@@ -487,6 +490,9 @@ bool pof::ProductManager::AddMulipleToOrderList(const std::vector<std::reference
 			assert(status);
 			status = mLocalDatabase->execute(*stmt);
 			assert(status);
+
+			mLocalDatabase->clear_bindings(*stmt);
+			mLocalDatabase->reset(*stmt);
 		}
 		mLocalDatabase->finalise(*stmt);
 		return status;
@@ -1544,7 +1550,6 @@ bool pof::ProductManager::RemoveProductInInvoice(pof::base::data::const_iterator
 	}
 	return false;
 }
-
 
 bool pof::ProductManager::OnStoreProductData(pof::base::data::const_iterator iter)
 {

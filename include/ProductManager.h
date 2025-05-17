@@ -276,6 +276,8 @@ namespace pof {
 			return false;
 		}
 
+		//summary
+
 		//load from a different source directly to the database
 		bool OnStoreProductData(pof::base::data::const_iterator iter);
 

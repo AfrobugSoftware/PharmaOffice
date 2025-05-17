@@ -140,6 +140,7 @@ namespace pof
 			ID_RETURN_LAST_SALE,
 			ID_DISCOUNT,
 			ID_REMOVE_DISCOUNT,
+			ID_TRANSFER,
 		};
 
 		//sale type
@@ -210,6 +211,7 @@ namespace pof
 		void OnProductPropertyChanged(wxPropertyGridEvent& evt);
 		void OnDiscount(wxCommandEvent& evt);
 		void OnRemoveDiscount(wxCommandEvent& evt);
+		void OnTransfer(wxCommandEvent& evt);
 
 		void SaveDiscounts(const boost::uuids::uuid& saleID);
 		void RestoreDiscounts(const boost::uuids::uuid& saleID);
@@ -231,6 +233,8 @@ namespace pof
 		void StorePoisonBookEnteries();
 		wxHtmlPrintout* CreateHtmlReciept();
 		void SalePaymentOptions(const pof::base::data::duuid_t& suid);
+		
+
 	private:
 		pof::base::data::row_t mDropRow; //dummy row required by pof::DataObject
 		std::unordered_map<std::add_pointer_t<wxPGProperty>, std::function<void(const wxVariant& value)>> mProperties;
