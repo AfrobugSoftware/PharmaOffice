@@ -567,7 +567,6 @@ void pof::OrderListView::HideSelect()
 
 void pof::OrderListView::UpdateTexts()
 {
-	size_t count = 0;
 	pof::base::currency cur;
 	auto& datastore = wxGetApp().mProductManager.GetOrderList()->GetDatastore();
 	cur = std::accumulate(datastore.begin(), datastore.end(), cur, [&](const pof::base::currency&, const pof::base::data::row_t& row) {

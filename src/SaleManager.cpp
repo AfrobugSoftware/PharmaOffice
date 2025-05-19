@@ -1472,7 +1472,7 @@ void pof::SaleManager::CreateTransferTable() const
 {
 	if (mLocalDatabase) {
 		constexpr const std::string_view table = R"(CREATE TABLE IF NOT EXISTS transfer (
-		id INTERGER AUTO INCREMENT,
+		id blob,
 		product text,
 		quantity integer,
 		cost blob,
@@ -1497,7 +1497,7 @@ void pof::SaleManager::CreateTransferTable() const
 void pof::SaleManager::AddTransfer(const std::vector<transfer>& products) const
 {
 	if (!products.empty()) {
-		constexpr std::string_view sql = R"(INSERT INTO transfer (product, quantity, cost, date, puid) VALUES (?,?,?,?,?);)";
+		constexpr std::string_view sql = R"(INSERT INTO transfer (id, product, quantity, cost, date, puid) VALUES (?,?,?,?,?,?);)";
 		auto stmt = mLocalDatabase->prepare(sql);
 		if (!stmt.has_value()) {
 			spdlog::error(mLocalDatabase->err_msg());
@@ -1516,7 +1516,7 @@ void pof::SaleManager::AddTransfer(const std::vector<transfer>& products) const
 	}
 }
 
-void pof::SaleManager::RemoveTransfer(const std::vector<transfer>& products) const
+void pof::SaleManager::RemoveTransfer(const std::vector<boost::uuids::uuid>& products) const
 {
 	if (!products.empty()) {
 		constexpr std::string_view sql = R"(DELETE FROM transfer WHERE id = ?;)";
@@ -1526,7 +1526,7 @@ void pof::SaleManager::RemoveTransfer(const std::vector<transfer>& products) con
 			return;
 		}
 		for (const auto& t : products) {
-			mLocalDatabase->bind(*stmt, std::make_tuple(t.transferID));
+			mLocalDatabase->bind(*stmt, std::make_tuple(t));
 			auto status = mLocalDatabase->execute(*stmt);
 			if (!status) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -1538,7 +1538,7 @@ void pof::SaleManager::RemoveTransfer(const std::vector<transfer>& products) con
 	}
 }
 
-void pof::SaleManager::UpdateTransferQuantity(std::uint32_t id, std::uint32_t quantity) const
+void pof::SaleManager::UpdateTransferQuantity(const boost::uuids::uuid& id, std::uint32_t quantity) const
 {
 	constexpr std::string_view sql = "UPDATE transfer SET quantity = ? WHERE id = ?;";
 	auto stmt = mLocalDatabase->prepare(sql);
@@ -1571,11 +1571,12 @@ pof::SaleManager::GetTransferByDate(const pof::base::data::datetime_t& time) con
 	assert(status);
 	//retrive
 	auto rel = mLocalDatabase->retrive <
-		std::uint32_t,
+		boost::uuids::uuid,
 		pof::base::data::text_t,
 		std::uint32_t,
 		pof::base::currency,
-		pof::base::data::datetime_t
+		pof::base::data::datetime_t,
+		pof::base::data::duuid_t
 	>(*stmt);
 	if (!rel.has_value()) {
 		spdlog::error(mLocalDatabase->err_msg());
@@ -1590,6 +1591,7 @@ pof::SaleManager::GetTransferByDate(const pof::base::data::datetime_t& time) con
 		t.quantity    = std::get<2>(r);
 		t.amount      = std::get<3>(r);
 		t.date        = std::get<4>(r);
+		t.puid	      = std::get<5>(r);
 
 		ret.emplace_back(std::move(t));
 	}

@@ -2452,10 +2452,13 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 
 		//create trans object
 		pof::SaleManager::transfer t;
+		t.transferID = boost::uuids::random_generator_mt19937{}();
 		t.productName = boost::variant2::get<std::string>(v[pof::ProductManager::PRODUCT_NAME]);
 		t.quantity = boost::variant2::get<std::uint64_t>(r.first[pof::SaleManager::PRODUCT_QUANTITY]);
 		t.amount = boost::variant2::get<pof::base::currency>(r.first[pof::SaleManager::PRODUCT_PRICE]);
 		t.date = now;
+		t.puid = boost::variant2::get<boost::uuids::uuid>(r.first[pof::ProductManager::PRODUCT_UUID]);
+
 
 		trns.emplace_back(std::move(t));
 

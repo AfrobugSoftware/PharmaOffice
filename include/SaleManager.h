@@ -125,7 +125,7 @@ namespace pof {
 
 		//transfers
 		struct transfer {
-			std::uint32_t transferID;
+			boost::uuids::uuid transferID;
 			std::string productName;
 			pof::base::currency amount;
 			std::uint32_t quantity;
@@ -134,11 +134,9 @@ namespace pof {
 		};
 		void CreateTransferTable() const;
 		void AddTransfer(const std::vector<transfer>& products) const;
-		void RemoveTransfer(const std::vector<transfer>& products) const;
-		void UpdateTransferQuantity(std::uint32_t id, std::uint32_t quantity) const;
+		void RemoveTransfer(const std::vector<boost::uuids::uuid>& products) const;
+		void UpdateTransferQuantity(const boost::uuids::uuid& id, std::uint32_t quantity) const;
 		std::optional<std::vector<transfer>> GetTransferByDate(const pof::base::data::datetime_t& time) const;
-
-
 
 
 		boost::uuids::random_generator_mt19937 sUidGen;

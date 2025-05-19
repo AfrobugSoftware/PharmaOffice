@@ -829,8 +829,9 @@ void pof::ReportsDialog::OnDateChange(wxDateEvent& evt)
 {
 	auto dd = evt.GetDate();
 	std::chrono::month month = static_cast<std::chrono::month>(dd.GetMonth() + 1);
-	std::chrono::year year = static_cast<std::chrono::year>(dd.GetYear());
-	std::chrono::day day = static_cast<std::chrono::day>(dd.GetDay());
+	std::chrono::year year   = static_cast<std::chrono::year>(dd.GetYear());
+	std::chrono::day day     = static_cast<std::chrono::day>(dd.GetDay());
+
 	const std::chrono::year_month_day ymd{ month / day / year};
 	mSelectDay = static_cast<std::chrono::sys_days>(ymd);
 

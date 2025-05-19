@@ -39,6 +39,7 @@ namespace pof {
 		wxDataViewColumn* mQuanCol;
 		wxDataViewColumn* m_dataViewColumn3;
 		wxDataViewColumn* m_dataViewColumn4;
+		wxDataViewColumn* m_dataViewColumn5;
 		wxPanel* m_panel3;
 		wxPanel* m_panel4;
 		wxStaticText* m_staticText1;
@@ -52,6 +53,8 @@ namespace pof {
 		std::set<wxDataViewItem> mSelections;
 		std::unique_ptr<pof::DataModel> model;
 		wxDatePickerCtrl* mDatePicker;
+		std::chrono::system_clock::time_point mSelectDay;
+		pof::base::currency mTotalAmount;
 
 	public:
 		enum {
@@ -67,6 +70,8 @@ namespace pof {
 		virtual ~TransferView();
 		void CreateEmptyPanel();
 		void CreateSpeicalCol();
+		void LoadTransfer();
+
 
 		void OnAddTransfer(wxCommandEvent& evt);
 		void OnRemoveTransfer(wxCommandEvent& evt);
@@ -74,6 +79,8 @@ namespace pof {
 		void OnDownloadExcel(wxCommandEvent& evt);
 		void OnSelect(wxAuiToolBarEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
+		void OnUpdateUi(wxUpdateUIEvent& evt);
+		void OnHeaderClick(wxDataViewEvent& evt);
 
 		void ShowSelect();
 		void HideSelect();
