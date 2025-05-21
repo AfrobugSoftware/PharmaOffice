@@ -65,6 +65,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_OPEN_PRODUCT_INFO, pof::ProductView::OnOpenProductInfo)
 	EVT_MENU(pof::ProductView::ID_DOWNLOAD_ACTUAL_STOCK, pof::ProductView::OnDownloadActualStock)
 	EVT_MENU(pof::ProductView::ID_HIDE_PRODUCT, pof::ProductView::OnHideProduct)
+	EVT_MENU(pof::ProductView::ID_TRANSFERS, pof::ProductView::OnShowTransfers)
 
 	EVT_MENU(pof::ProductView::ID_CHARTS_WEEKLY_SALES, pof::ProductView::OnWeeklySales)
 	EVT_MENU(pof::ProductView::ID_CHARTS_COMPARE_SALES, pof::ProductView::OnCompareSales)
@@ -2798,6 +2799,12 @@ void pof::ProductView::OnUpdateQuantity(wxCommandEvent& evt)
 	}
 }
 
+void pof::ProductView::OnShowTransfers(wxCommandEvent& evt)
+{
+	pof::TransferView tv(nullptr);
+	tv.ShowModal();
+}
+
 void pof::ProductView::OnDataViewFontChange(const wxFont& font)
 {
 	m_dataViewCtrl1->Freeze();
@@ -3137,6 +3144,8 @@ void pof::ProductView::CreateToolBar()
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Products that are to be ordered"), wxITEM_NORMAL);
+	m_auiToolBar2->AddSpacer(FromDIP(2));
+	m_auiToolBar2->AddTool(ID_TRANSFERS, wxT("Transfer list"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16, 16))), wxT("Products that are transfered from this pharmacy"), wxITEM_NORMAL);
 	//m_auiToolBar2->AddSpacer(FromDIP(2));
 	//m_auiToolBar2->AddControl(new wxTextCtrl(m_auiToolBar2, wxID_ANY));
 

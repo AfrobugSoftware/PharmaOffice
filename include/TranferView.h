@@ -55,7 +55,7 @@ namespace pof {
 		wxDatePickerCtrl* mDatePicker;
 		std::chrono::system_clock::time_point mSelectDay;
 		pof::base::currency mTotalAmount;
-
+		wxAuiToolBarItem* mSelItem;
 	public:
 		enum {
 			ID_VIEW = wxID_HIGHEST + 50,
@@ -66,7 +66,7 @@ namespace pof {
 			ID_DOWNLOAD_EXCEL,
 			ID_DATE_SELECT,
 		};
-		TransferView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Order List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
+		TransferView(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Transfer List"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize(878, 689), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 		virtual ~TransferView();
 		void CreateEmptyPanel();
 		void CreateSpeicalCol();
@@ -77,11 +77,11 @@ namespace pof {
 		void OnRemoveTransfer(wxCommandEvent& evt);
 		void OnUpdateTransfer(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
-		void OnSelect(wxAuiToolBarEvent& evt);
+		void OnSelect(wxCommandEvent& evt);
 		void OnDateChanged(wxDateEvent& evt);
 		void OnUpdateUi(wxUpdateUIEvent& evt);
 		void OnHeaderClick(wxDataViewEvent& evt);
-
+		bool UpdateStockCount(const boost::uuids::uuid& puid, std::uint32_t quan, bool isRemv = false);
 		void ShowSelect();
 		void HideSelect();
 

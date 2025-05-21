@@ -5,6 +5,7 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
+#include <optional>
 #include <date/date.h>
 
 #include "database.h"
@@ -137,6 +138,8 @@ namespace pof {
 		void RemoveTransfer(const std::vector<boost::uuids::uuid>& products) const;
 		void UpdateTransferQuantity(const boost::uuids::uuid& id, std::uint32_t quantity) const;
 		std::optional<std::vector<transfer>> GetTransferByDate(const pof::base::data::datetime_t& time) const;
+		std::optional<transfer> GetDuplicateTransfer(const boost::uuids::uuid& puid, const std::chrono::system_clock::time_point& tp) const;
+
 
 
 		boost::uuids::random_generator_mt19937 sUidGen;

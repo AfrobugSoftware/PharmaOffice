@@ -1504,7 +1504,13 @@ void pof::SaleManager::AddTransfer(const std::vector<transfer>& products) const
 			return;
 		}
 		for (const auto& t : products) {
-			mLocalDatabase->bind(*stmt, std::make_tuple(t.productName, t.quantity, t.amount, t.amount, t.date, t.puid));
+			mLocalDatabase->bind(*stmt, std::make_tuple(
+				t.transferID,
+				t.productName,
+				t.quantity,
+				t.amount,
+				t.date, 
+				t.puid));
 			auto status = mLocalDatabase->execute(*stmt);
 			if (!status) {
 				spdlog::error(mLocalDatabase->err_msg());
@@ -1596,5 +1602,51 @@ pof::SaleManager::GetTransferByDate(const pof::base::data::datetime_t& time) con
 		ret.emplace_back(std::move(t));
 	}
 	return ret;
+}
+
+std::optional<pof::SaleManager::transfer > pof::SaleManager::GetDuplicateTransfer(const boost::uuids::uuid& puid, const std::chrono::system_clock::time_point& tp) const
+{
+	constexpr std::string_view sql = R"(SELECT * FROM transfer WHERE puid = ? AND Months(date) = ?;)";
+	auto stmt = mLocalDatabase->prepare(sql);
+	if (!stmt.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		return std::nullopt;
+	}
+
+	//bind
+	const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(tp) };
+	int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+	bool status = mLocalDatabase->bind(*stmt, std::make_tuple(puid, static_cast<std::uint64_t>(out)));
+	assert(status);
+	//retrive
+	auto rel = mLocalDatabase->retrive <
+		boost::uuids::uuid,
+		pof::base::data::text_t,
+		std::uint32_t,
+		pof::base::currency,
+		pof::base::data::datetime_t,
+		pof::base::data::duuid_t
+	>(*stmt);
+	if (!rel.has_value()) {
+		spdlog::error(mLocalDatabase->err_msg());
+		return std::nullopt;
+	}
+	if (rel->empty())
+		return std::nullopt;
+
+	std::vector<transfer> ret;
+	ret.reserve(rel->size());
+	for (const auto& r : *rel) {
+		transfer t;
+		t.transferID = std::get<0>(r);
+		t.productName = std::get<1>(r);
+		t.quantity = std::get<2>(r);
+		t.amount = std::get<3>(r);
+		t.date = std::get<4>(r);
+		t.puid = std::get<5>(r);
+
+		ret.emplace_back(std::move(t));
+	}
+	return ret.front();
 }
 

@@ -28,6 +28,7 @@
 #include "StockCheck.h"
 #include "SupplierView.h"
 #include "ChartDialog.h"
+#include "TranferView.h"
 
 #include <boost/signals2/signal.hpp>
 #include <OpenXLSX.hpp>
@@ -110,6 +111,7 @@ namespace pof
 			ID_SEARCH_BY_GENERIC_NAME,
 			ID_REPORTS_ENDOFWEEK,
 			ID_UPDATE_QUANTITY,
+			ID_TRANSFERS,
 		};
 
 		size_t mRowHeights;
@@ -235,6 +237,7 @@ namespace pof
 		void OnExpiredMonth(wxCommandEvent& evt);
 		void OnSeachFlag(wxCommandEvent& evt);
 		void OnUpdateQuantity(wxCommandEvent& evt);
+		void OnShowTransfers(wxCommandEvent& evt);
 
 		inline bool IsActiveCategory() const { return !mActiveCategory.empty(); }
 
