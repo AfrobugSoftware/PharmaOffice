@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <set>
 #include <shared_mutex>
+#include <array>
 #include "DataModel.h"
 #include "database.h"
 /// <summary>
@@ -32,6 +33,12 @@ namespace std
 namespace pof {
 	class ProductManager : private boost::noncopyable {
 	public:
+		static constexpr std::array<std::string_view, 4> CLASS_TYPE = {
+			"POM",
+			"OTC",
+			"CONTROLLED",
+			"SERVICE"
+		};
 		enum : std::uint8_t {
 			PRODUCT_UUID,
 			PRODUCT_SERIAL_NUM,

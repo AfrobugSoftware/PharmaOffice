@@ -221,6 +221,7 @@ namespace pof
 		bool CheckProductClass(const pof::base::data::row_t& product);
 		bool CheckExpired(const pof::base::data::row_t& product);
 		bool CheckControlled(const pof::base::data::row_t& product);
+		bool CheckIsService(const pof::base::data::row_t& product);
 		std::optional<pof::base::data::iterator> CheckAlreadyAdded(const pof::base::data::text_t& productName);
 		void ProductNameKeyEvent(); //test
 		void LoadProductDetails(const pof::base::data::row_t& product);

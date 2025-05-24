@@ -199,6 +199,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
 	ProductClassChoices.Add("CONTROLLED");
+	ProductClassChoices.Add("SERVICE");
 	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("CLASS"), wxPG_LABEL, ProductClassChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription. Controlled medications are medications that are to be sold only be a pharmacist.") );
 	
@@ -608,9 +609,17 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 {
 	//check if product has expired inventory
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission){
-		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
+		wxMessageBox("User accoount cannot add inventory to stock", "Add stock", wxICON_INFORMATION | wxOK);
 		return;
 	}
+
+	//check if product is a service
+	if (boost::variant2::get<std::string>(mProductData.first[pof::ProductManager::PRODUCT_CLASS]) ==
+		pof::ProductManager::CLASS_TYPE[3]) {
+		wxMessageBox("Cannot add stock to a service product type", "Add stock", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	//check if product has stock
 	if (boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
 		!= static_cast<std::uint64_t>(0) &&

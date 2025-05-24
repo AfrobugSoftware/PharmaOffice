@@ -1084,6 +1084,12 @@ void pof::ProductView::OnAddInventory(wxCommandEvent& evt)
 	size_t idx = pof::DataModel::GetIdxFromItem(item);
 	auto& pd = wxGetApp().mProductManager.GetProductData();
 
+	//check if product is a servie 
+	if (boost::variant2::get<std::string>(pd->GetDatastore()[idx].first[pof::ProductManager::PRODUCT_CLASS]) 
+	  == pof::ProductManager::CLASS_TYPE[3]) {
+		wxMessageBox("Cannot add stock to a service", "Add stock", wxICON_INFORMATION | wxOK);
+		return;
+	}
 	//check if product has expired inventory
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission) {
 		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
