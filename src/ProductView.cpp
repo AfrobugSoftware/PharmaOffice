@@ -3164,8 +3164,8 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar2->AddSeparator();
 	mOutOfStockItem = m_auiToolBar2->AddTool(ID_OUT_OF_STOCK, wxT("Out of stock"), wxArtProvider::GetBitmap("shopping_cart_off", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
-	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
-	mExpireProductItem->SetHasDropDown(true);
+	//mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"));
+	//mExpireProductItem->SetHasDropDown(true);
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Products that are to be ordered"), wxITEM_NORMAL);

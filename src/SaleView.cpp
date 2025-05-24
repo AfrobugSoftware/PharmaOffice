@@ -457,7 +457,7 @@ void pof::SaleView::CreateSearchPopup()
 	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"Name", pof::ProductManager::PRODUCT_NAME}, 
 			{"Formulation", pof::ProductManager::PRODUCT_FORMULATION}, 
 			{"Strength", pof::ProductManager::PRODUCT_STRENGTH}, 
-			{"Package size", pof::ProductManager::PRODUCT_PACKAGE_SIZE}, 
+			{"Stock count", pof::ProductManager::PRODUCT_STOCK_COUNT}, 
 			{"Cost", pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
 			{275, 100, 100, 100, 100});
 	pof::DataModel::SpeicalColHandler_t spl;
