@@ -2461,6 +2461,8 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 
 
 		trns.emplace_back(std::move(t));
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated Transfer {} product quantity: {:d}", t.productName, t.quantity));
+
 
 		//check if stock is low
 		//stock is low

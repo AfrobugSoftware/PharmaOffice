@@ -98,6 +98,11 @@ namespace pof
 			wxPGChoices StrengthChoices;
 			wxPanel* mEmpty = nullptr;
 			wxSimplebook* mHistBook = nullptr;
+			wxPanel* m_panel4;
+			wxStaticText* m_staticText1;
+			wxStaticText* m_staticText2;
+			wxStaticText* m_staticText3;
+			wxStaticText* m_staticText4;
 			DECLARE_EVENT_TABLE();
 
 		public:
@@ -190,6 +195,7 @@ namespace pof
 		void OnUpdateInventoryStock(wxCommandEvent& evt);
 
 		void OnShowHist(wxCommandEvent& evt);
+		void UpdateTexts();
 
 		void RemovePropertyModification();
 		std::uint64_t PeriodTime(int periodCount) const;

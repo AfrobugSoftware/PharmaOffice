@@ -318,6 +318,7 @@ namespace pof {
 		bool MoveStockToExpire(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		std::optional<std::uint64_t> GetTotalExpired(const pof::base::data::duuid_t& pid, pof::base::data::datetime_t date);
 		std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> GetExpiredProductsStock(pof::base::data::datetime_t m);
+		std::optional<pof::base::data> GetExpiredStockReport(const std::chrono::system_clock::time_point& dt);
  		//product uuid generators
 		bool bUsingLocalDatabase = false;
 		float gMarkup = 0.3f;

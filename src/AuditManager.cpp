@@ -234,6 +234,32 @@ std::optional<pof::base::relation<std::uint64_t, pof::base::data::datetime_t, st
 	}
 	return std::nullopt;
 }
+std::optional<pof::base::relation<std::uint64_t, pof::base::data::datetime_t, std::uint64_t, pof::base::data::text_t, pof::base::data::text_t>> pof::AuditManager::SearchForParticularTextInAudit(const std::string& search) const
+{
+	if (mLocalDatabase) {
+		constexpr const std::string_view sql = R"(SELECT * FROM audit WHERE message LIKE (SELECT '%' || ? || '%');)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		if (!stmt.has_value()){
+			spdlog::error("{}", mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(search));
+		auto rel = mLocalDatabase->retrive<std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error(mLocalDatabase->err_msg());
+			mLocalDatabase->finalise(*stmt);
+			return std::nullopt;
+
+		}
+		mLocalDatabase->finalise(*stmt);
+		return rel;
+	}
+	return std::nullopt;
+}
 void pof::AuditManager::WriteAudit(auditType type, const std::string& message)
 {
 	std::uint64_t at = static_cast<std::uint64_t>(type);

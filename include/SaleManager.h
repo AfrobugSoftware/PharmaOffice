@@ -121,6 +121,7 @@ namespace pof {
 			const std::pair<pof::base::data::datetime_t, pof::base::data::datetime_t>& dts);
 		std::optional<std::pair<pof::base::currency, pof::base::currency>> GetTotalPL(const pof::base::data::datetime_t& dt);
 		std::optional<pof::base::data> GetMonthlySales(const pof::base::data::datetime_t& dt);
+		std::optional<pof::base::data> GetMonthlySalesForSearch(const std::string& data, const pof::base::data::datetime_t& dt);
 		std::optional<std::uint64_t> SumOfSalesFrom(const pof::base::data::duuid_t& puid, pof::base::data::datetime_t dt);
 
 

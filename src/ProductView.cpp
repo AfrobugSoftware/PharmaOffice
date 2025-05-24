@@ -47,6 +47,7 @@ BEGIN_EVENT_TABLE(pof::ProductView, wxPanel)
 	EVT_MENU(pof::ProductView::ID_REPORTS_PROFITLOSS, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_PRODUCT_SOLD, pof::ProductView::OnEndOfDayReport)
 	EVT_MENU(pof::ProductView::ID_REPORTS_ENDOFWEEK, pof::ProductView::OnEndOfDayReport)
+	EVT_MENU(pof::ProductView::ID_REPORTS_EXPIRED_PRODUCTS, pof::ProductView::OnEndOfDayReport)
 
 	EVT_MENU(pof::ProductView::ID_REPORTS_EOM, pof::ProductView::OnEndOfMonth)
 	EVT_MENU(pof::ProductView::ID_REMOVE_FROM_CATEGORY, pof::ProductView::OnRemoveFromCategory)
@@ -967,7 +968,7 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 			empty = datam->StringSearchAndReloadSet(col, std::move(search));
 		}
 		else {
-			empty = datam->StringSearchAndReload(col, std::move(search));
+			empty = datam->StringSearchAndReloadSet(col, std::move(search));
 		}
 
 	}
@@ -1175,6 +1176,7 @@ void pof::ProductView::OnReportDropdown(wxAuiToolBarEvent& evt)
 	menu->Append(ID_REPORTS_PROFITLOSS, "Profit/Loss", nullptr);
 	menu->Append(ID_REPORTS_INVENTORY, "Stock purchase report for month", nullptr);
 	menu->Append(ID_REPORTS_PRODUCT_SOLD, "Product sold report for month", nullptr);
+	menu->Append(ID_REPORTS_EXPIRED_PRODUCTS, "Expired products for month", nullptr);
 
 	wxPoint pos = mReportItem->GetSizerItem()->GetPosition();
 	wxSize sz = mReportItem->GetSizerItem()->GetSize();
@@ -1213,6 +1215,9 @@ void pof::ProductView::OnEndOfDayReport(wxCommandEvent& evt)
 		break;
 	case ID_REPORTS_ENDOFWEEK:
 		rep = pof::ReportsDialog::ReportType::EOW;
+		break;
+	case ID_REPORTS_EXPIRED_PRODUCTS:
+		rep = pof::ReportsDialog::ReportType::EXP;
 		break;
 	default:
 		return;
@@ -1394,17 +1399,30 @@ void pof::ProductView::OnMoveExpiredStock(wxCommandEvent& evt)
 			wxMessageBox(fmt::format("{} has no stock to move", name), "Product", wxICON_INFORMATION | wxOK);
 			return;
 		} 
+		auto reqS = wxGetTextFromUser("Please enter the amount of stock you want to move?", "Move stock").ToStdString();
+		std::uint64_t remvStock = 0;
+		std::uint64_t req = 0;
+		try {
+			req = boost::lexical_cast<std::uint64_t>(reqS);
+			if (req > stockCount) {
+				wxMessageBox("Cannot remove more than the stock count", "Move stock", wxICON_ERROR | wxOK);
+				return;
+			}
+			remvStock = stockCount - req;
+		}
+		catch (const std::exception& exp) {
+			wxMessageBox("Invalud stock amount", "Move stock", wxICON_ERROR | wxOK);
+			return;
+		}
 
-		wxGetApp().mProductManager.MoveStockToExpire(pid, stockCount);
+		wxGetApp().mProductManager.MoveStockToExpire(pid, req);
 		//zero out the stock that was moved
-		std::uint64_t temp = stockCount;
 		m_dataViewCtrl1->Freeze();
-		stockCount = 0;
-
+		wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, remvStock), { "uuid", "stock_count" });
+		datastore[idx].first[pof::ProductManager::PRODUCT_STOCK_COUNT] = remvStock;
 		m_dataViewCtrl1->Thaw();
 		m_dataViewCtrl1->Refresh();
-		wxGetApp().mProductManager.UpdatePD(std::make_tuple(pid, stockCount), { "uuid", "stock_count" });
-		mInfoBar->ShowMessage(fmt::format("{} was moved to expired successfully", name), wxICON_INFORMATION);
+		mInfoBar->ShowMessage(fmt::format("{} of quantity {:d} was moved to expired successfully", name, req), wxICON_INFORMATION);
 	}
 	else {
 		wxIcon cop;
@@ -2727,6 +2745,7 @@ void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
 	mInfoBar->Dismiss();
 	
 	//reset the state
+	m_auiToolBar2->ToggleTool(evt.GetId(), true);
 	mActiveCategory.clear();
 	m_searchCtrl1->Clear();
 	m_searchCtrl1->SetDescriptiveText("Search for product");
@@ -2761,7 +2780,7 @@ void pof::ProductView::OnUpdateQuantity(wxCommandEvent& evt)
 		wxMessageBox("User account cannot perform this function", "Backup", wxICON_INFORMATION | wxOK);
 		return;
 	}
-	wxCredentialEntryDialog dialog(this, "User credentials are to update product quantity", "Roll back database");
+	wxCredentialEntryDialog dialog(this, "User credentials are to update product quantity", "Change Quantity");
 	dialog.Center(wxBOTH);
 	dialog.SetBackgroundColour(*wxWHITE);
 	while (1) {
@@ -3139,7 +3158,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar2->AddSeparator();
 	mOutOfStockItem = m_auiToolBar2->AddTool(ID_OUT_OF_STOCK, wxT("Out of stock"), wxArtProvider::GetBitmap("shopping_cart_off", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
-	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"));
+	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"), wxITEM_CHECK);
 	mExpireProductItem->SetHasDropDown(true);
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));

@@ -61,6 +61,12 @@ namespace pof
 			std::uint64_t,
 			pof::base::data::text_t,
 			pof::base::data::text_t>> GetAuditDump() const;
+		std::optional<pof::base::relation<std::uint64_t,
+			pof::base::data::datetime_t,
+			std::uint64_t,
+			pof::base::data::text_t,
+			pof::base::data::text_t>> SearchForParticularTextInAudit(const std::string& search) const;
+
 
 		std::shared_ptr<pof::base::database> mLocalDatabase;
 		std::shared_ptr<pof::Account> mCurrentAccount;

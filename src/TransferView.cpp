@@ -329,11 +329,14 @@ void pof::TransferView::OnAddTransfer(wxCommandEvent& evt)
 				auto& i = *found;
 				const auto quan = boost::variant2::get<std::uint32_t>(i.first[2]) + 1;
 				const auto& id = boost::variant2::get<boost::uuids::uuid>(i.first[0]);
+				const auto& name = boost::variant2::get<std::string>(i.first[1]);
 				if (!UpdateStockCount(t.puid, 1)) {
 					wxMessageBox(fmt::format("Cannot add transfer of {}", t.productName), "Transfer", wxICON_INFORMATION | wxOK);
 					continue;
 				}
 				wxGetApp().mSaleManager.UpdateTransferQuantity(id, quan);
+				wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated Transfer {} product quantity: {:d}", name, quan));
+
 				i.first[2] = quan;
 				mOrderView->Refresh();
 				mOrderView->Update();
@@ -432,6 +435,8 @@ void pof::TransferView::OnRemoveTransfer(wxCommandEvent& evt)
 			return;
 		}
 		wxGetApp().mSaleManager.RemoveTransfer({ boost::variant2::get<boost::uuids::uuid>(row.first[0]) });
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed Transfer of {} product quantity: {:d}", name, quan));
+
 		mOrderView->Freeze();
 		model->RemoveData(item);
 		mOrderView->Thaw();
@@ -455,6 +460,8 @@ void pof::TransferView::OnRemoveTransfer(wxCommandEvent& evt)
 			}
 			revs.emplace_back(boost::variant2::get<boost::uuids::uuid>(row.first[0]));
 			items.push_back(item);
+			wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Removed Transfer of {} product quantity: {:d}", name, quan));
+
 		}
 		model->RemoveData(items);
 		UpdateTexts();

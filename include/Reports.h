@@ -89,6 +89,7 @@ namespace pof
 			ID_REMOVE_RETURNS,
 			ID_ADD_RETURNS,
 			ID_REMOVE_SALE,
+			ID_RESET,
 		};
 
 		enum {
@@ -105,6 +106,7 @@ namespace pof
 			PL, //PROFIT/LOSS
 			PSM, //PRODUCT SOLD FOR MONTH
 			EOW,
+			EXP,
 		};
 
 		ReportsDialog(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString & title = wxT("Report"), const wxPoint & pos = wxDefaultPosition, const wxSize & size = wxSize(1148, 584), long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL | wxRESIZE_BORDER);
@@ -121,7 +123,7 @@ namespace pof
 		bool LoadInventoryMonth();
 		bool LoadProfitLoss();
 		bool LoadProductSoldForMonth();
-
+		bool LoadProductsExpired();
 	protected:
 		//EVENTS
 		void OnPrint(wxCommandEvent& evt);
@@ -152,6 +154,7 @@ namespace pof
 		void InventoryMonthReportExcel();
 		void ProfitLossExcel();
 		void ProductSoldExcel();
+		void ProductExpiredExcel();
 
 		void UpdateTotals(const pof::base::data& data);
 		void UpdateConsumptionTotals(const pof::base::data& data);
@@ -167,6 +170,7 @@ namespace pof
 
 		ReportType mCurReportType;
 		wxListItem mSelItem;
+		bool searhing = false;
 		std::optional<pof::base::data> data = std::nullopt;
 		DECLARE_EVENT_TABLE()
 	};

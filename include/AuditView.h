@@ -29,6 +29,8 @@ namespace pof
 			ID_FILTER_TYPE,
 			ID_COLOUR_TYPE,
 			ID_DOWNLOAD_EXCEL,
+			ID_SEARCH,
+			ID_CLEAR,
 		};
 		using range_t = std::pair<size_t, size_t>;
 		AuditView(wxWindow* parent, wxWindowID id, const wxPoint& position = wxDefaultPosition,
@@ -39,6 +41,7 @@ namespace pof
 		void CreateDataView();
 		void CreatePopupMenu();
 		void CreatePopupAdditionalInformation();
+		void CreateEmptyPanel();
 
 		void OnCacheHint(wxDataViewEvent& evt);
 		void OnItemActivated(wxDataViewEvent& evt);
@@ -49,6 +52,9 @@ namespace pof
 		void OnApplyFilter(wxCommandEvent& evt);
 		void OnColourAuditType(wxCommandEvent& evt);
 		void OnDownloadExcel(wxCommandEvent& evt);
+		void OnSearchCleared(wxCommandEvent& evt);
+		void OnSearchMessage(wxCommandEvent& evt);
+		void OnCleared(wxCommandEvent& evt);
 		void OnAuiThemeChange();
 
 
@@ -79,6 +85,8 @@ namespace pof
 		wxAuiToolBar* mToolBar = nullptr;
 		wxAuiToolBarItem* mNext = nullptr;
 		wxAuiToolBarItem* mBack = nullptr;
+		wxSearchCtrl* m_searchCtrl1 = nullptr;
+
 		wxInfoBar* mInfoBar = nullptr;
 		wxPopupTransientWindow* mAdditionalInfoPopup = nullptr;
 		wxDataViewCtrl* mDataView = nullptr;
