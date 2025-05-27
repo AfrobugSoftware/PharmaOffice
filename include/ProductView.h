@@ -29,6 +29,7 @@
 #include "SupplierView.h"
 #include "ChartDialog.h"
 #include "TranferView.h"
+#include "ExpiredView.h"
 
 #include <boost/signals2/signal.hpp>
 #include <OpenXLSX.hpp>

@@ -1405,16 +1405,19 @@ void pof::ProductInfo::OnShowHist(wxCommandEvent& evt)
 void pof::ProductInfo::UpdateTexts()
 {
 	pof::base::currency cur;
+	std::uint64_t quan = 0llu;
 	auto& datastore = wxGetApp().mSaleManager.GetProductHistory()->GetDatastore();
 	cur = std::accumulate(datastore.begin(), datastore.end(), cur, [&](const pof::base::currency&, const pof::base::data::row_t& row) {
 		auto& orderAmount = boost::variant2::get<pof::base::currency>(row.first[3]);
 		auto& rowQuan = boost::variant2::get<std::uint64_t>(row.first[2]);
 
 		return(cur = cur + (orderAmount * static_cast<double>(rowQuan)));
-		});
-
+	});
+	quan = std::accumulate(datastore.begin(), datastore.end(), quan, [&](const auto& q, const pof::base::data::row_t& row) {
+		return q + boost::variant2::get<std::uint64_t>(row.first[2]);
+	});
 	m_panel4->Freeze();
-	m_staticText2->SetLabel(fmt::format("{:d}", datastore.size()));
+	m_staticText2->SetLabel(fmt::format("{:d}",  quan));
 	m_staticText4->SetLabel(fmt::format("{:cu}", cur));
 
 

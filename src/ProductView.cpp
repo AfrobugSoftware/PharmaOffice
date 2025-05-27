@@ -304,10 +304,10 @@ void pof::ProductView::OnBeginDrag(wxDataViewEvent& evt)
 	auto item = evt.GetItem();
 	if (!item.IsOk()) return;
 	const size_t idx = pof::DataModel::GetIdxFromItem(item);
-	auto Model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
-	auto& row = Model->GetDatastore()[idx];
-	auto& meta = Model->GetDatastore().get_metadata();
-	auto DataObject = new pof::DataObject("PRODUCTDATA"s, row, meta);
+	auto Model       = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
+	auto& row        = Model->GetDatastore()[idx];
+	auto& meta       = Model->GetDatastore().get_metadata();
+	auto DataObject  = new pof::DataObject("PRODUCTDATA"s, row, meta);
 	evt.SetDataObject(DataObject);
 }
 
@@ -344,47 +344,8 @@ void pof::ProductView::OnHeaderClicked(wxDataViewEvent& evt)
 
 void pof::ProductView::OnExpiredProducts(wxAuiToolBarEvent& evt)
 {
-	if (!evt.IsDropDownClicked()) {
-		static bool checked = true;
-		if (checked) {
-
-			RemoveCheckedState(mOutOfStockItem);
-			mActiveCategory.clear();
-			m_searchCtrl1->Clear();
-			m_searchCtrl1->SetDescriptiveText("Search for product");
-
-
-			auto items = wxGetApp().mProductManager.DoExpiredProducts();
-			if (!items.has_value()) {
-				RemoveCheckedState(mExpireProductItem);
-				return;
-			}
-			if (items->empty()) {
-				mInfoBar->ShowMessage("There are no expired products in the store", wxICON_INFORMATION);
-				RemoveCheckedState(mExpireProductItem);
-				return;
-			}
-			wxGetApp().mProductManager.GetProductData()->Reload(*items);
-		}
-		else {
-			wxGetApp().mProductManager.GetProductData()->Reload();
-		}
-		checked = !checked;
-	}
-	else {
-		wxMenu* menu = new wxMenu;
-		int range = 1;
-		for (; range < 4; range++) {
-			if(range == 1)menu->Append(range, fmt::format("{} Month", range), nullptr);
-			else menu->Append(range, fmt::format("{} Months", range), nullptr);
-			menu->Bind(wxEVT_MENU, std::bind_front(&pof::ProductView::OnExpiredMonth, this), range);
-		}
-
-		wxPoint pos = mExpireProductItem->GetSizerItem()->GetPosition();
-		wxSize sz = mExpireProductItem->GetSizerItem()->GetSize();
-
-		m_auiToolBar2->PopupMenu(menu, wxPoint{ pos.x, pos.y + sz.y + 2 });
-	}
+	pof::ExpiredView ev(nullptr, wxID_ANY);
+	ev.ShowModal();
 }
 
 void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
@@ -2747,30 +2708,30 @@ void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
 
 void pof::ProductView::OnExpiredMonth(wxCommandEvent& evt)
 {
-	auto id = evt.GetId();
-	mInfoBar->Dismiss();
-	
-	//reset the state
-	m_auiToolBar2->ToggleTool(evt.GetId(), true);
-	mActiveCategory.clear();
-	m_searchCtrl1->Clear();
-	m_searchCtrl1->SetDescriptiveText("Search for product");
+	//auto id = evt.GetId();
+	//mInfoBar->Dismiss();
+	//
+	////reset the state
+	//m_auiToolBar2->ToggleTool(evt.GetId(), true);
+	//mActiveCategory.clear();
+	//m_searchCtrl1->Clear();
+	//m_searchCtrl1->SetDescriptiveText("Search for product");
 
-	wxBusyCursor cur;
-	auto items = wxGetApp().mProductManager.DoExpiredProducts(std::chrono::months(id));
-	if (!items.has_value()) {
-		wxMessageBox("Failed to read database, contact D-GLOPA staff", "Products", wxICON_ERROR | wxOK);
-		return;
-	}
+	//wxBusyCursor cur;
+	//auto items = wxGetApp().mProductManager.DoExpiredProducts(std::chrono::months(id));
+	//if (!items.has_value()) {
+	//	wxMessageBox("Failed to read database, contact D-GLOPA staff", "Products", wxICON_ERROR | wxOK);
+	//	return;
+	//}
 
-	if (items->empty()) {
-		if(id == 1)mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} month in the store", id), wxICON_INFORMATION);
-		else mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} months in the store", id), wxICON_INFORMATION);
-		
-		RemoveCheckedState(mExpireProductItem);
-		return;
-	}
-	wxGetApp().mProductManager.GetProductData()->Reload(*items);
+	//if (items->empty()) {
+	//	if(id == 1)mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} month in the store", id), wxICON_INFORMATION);
+	//	else mInfoBar->ShowMessage(fmt::format("There are no products expiring in {:d} months in the store", id), wxICON_INFORMATION);
+	//	
+	//	RemoveCheckedState(mExpireProductItem);
+	//	return;
+	//}
+	//wxGetApp().mProductManager.GetProductData()->Reload(*items);
 }
 
 void pof::ProductView::OnSeachFlag(wxCommandEvent& evt)
@@ -3164,8 +3125,7 @@ void pof::ProductView::CreateToolBar()
 	m_auiToolBar2->AddSeparator();
 	mOutOfStockItem = m_auiToolBar2->AddTool(ID_OUT_OF_STOCK, wxT("Out of stock"), wxArtProvider::GetBitmap("shopping_cart_off", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Shows the list of products that are out of stock"), wxITEM_CHECK);
 	m_auiToolBar2->AddSpacer(FromDIP(2));
-	//mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"));
-	//mExpireProductItem->SetHasDropDown(true);
+	mExpireProductItem = m_auiToolBar2->AddTool(ID_PRODUCT_EXPIRE, wxT("Expired"), wxArtProvider::GetBitmap("acute", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("List of Products that are expired, or expired alerted"));
 
 	m_auiToolBar2->AddSpacer(FromDIP(2));
 	auto mOrderListItem = m_auiToolBar2->AddTool(ID_ORDER_LIST, wxT("Order list"), wxArtProvider::GetBitmap("edit_note", wxART_OTHER, FromDIP(wxSize(16,16))), wxT("Products that are to be ordered"), wxITEM_NORMAL);

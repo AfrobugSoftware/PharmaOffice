@@ -2691,7 +2691,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 	return std::nullopt;
 }
 
-std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProducts(std::chrono::months months)
+std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProducts(std::chrono::system_clock::time_point months)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(
@@ -2710,9 +2710,7 @@ std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProduct
 			spdlog::error(mLocalDatabase->err_msg());
 			return std::nullopt;
 		}
-		auto m = std::chrono::system_clock::now() + months;
-		spdlog::info("expire month to check {:%m/%Y}", m);
-		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(m) };
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(months) };
 		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
 
 		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)), {"m"});
@@ -2725,7 +2723,6 @@ std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProduct
 			return std::nullopt;
 		}
 		mLocalDatabase->finalise(*stmt);
-
 		if (rel->empty()) return std::vector<wxDataViewItem>{};
 
 		std::set<pof::base::data::duuid_t> set;

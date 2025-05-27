@@ -436,9 +436,9 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	discountCol.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datum = dataStore[row];
-		auto& v = datum.first;
-		auto& pid = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
-		auto iter = mDiscounts.find(pid);
+		auto& v     = datum.first;
+		auto& pid   = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
+		auto iter   = mDiscounts.find(pid);
 		pof::base::currency ret;
 		if (iter != mDiscounts.end()) {
 			ret = iter->second;
@@ -456,9 +456,9 @@ void pof::SaleView::CreateSearchPopup()
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
 	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"Name", pof::ProductManager::PRODUCT_NAME}, 
 			{"Formulation", pof::ProductManager::PRODUCT_FORMULATION}, 
-			{"Strength", pof::ProductManager::PRODUCT_STRENGTH}, 
+			{"Strength",    pof::ProductManager::PRODUCT_STRENGTH}, 
 			{"Stock count", pof::ProductManager::PRODUCT_STOCK_COUNT}, 
-			{"Cost", pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
+			{"Cost",	    pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
 			{275, 100, 100, 100, 100});
 	pof::DataModel::SpeicalColHandler_t spl;
 	spl.first = [sd = sharedData](size_t row, size_t col) -> wxVariant {
@@ -841,12 +841,14 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 {
 	auto searchString = evt.GetString().ToStdString();
 	if (searchString.empty()) {
-		mPopupSelect = wxDataViewItem{};
+		mPopupSelect = wxDataViewItem(nullptr);
 		mPopupItemIdx = -1;
 		mSearchPopup->Dismiss();
 		return;
 	}
-	
+	boost::trim(searchString);
+	boost::to_lower(searchString);
+
 	wxPoint pos = mProductNameValue->ClientToScreen(wxPoint(0, 0));
 	wxSize sz = mProductNameValue->GetClientSize();
 

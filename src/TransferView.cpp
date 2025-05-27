@@ -29,7 +29,7 @@ pof::TransferView::TransferView(wxWindow* parent, wxWindowID id, const wxString&
 	mSelItem = mTopTools->AddTool(ID_SELECT, "Select", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Show Selections", wxITEM_CHECK);
 
 	mTopTools->AddTool(ID_ADD_TRANSFER, "Add", wxArtProvider::GetBitmap("add", wxART_OTHER, FromDIP(wxSize(16,16))), "Add product to order list");
-	mTopTools->AddTool(ID_UPDATE_TRANSFER, wxT("Update"), wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16, 16))), "Clear order list");
+	mTopTools->AddTool(ID_UPDATE_TRANSFER, wxT("Update"), wxArtProvider::GetBitmap("add_task", wxART_OTHER, FromDIP(wxSize(16, 16))), "Update order list");
 	mTopTools->AddTool(ID_REMOVE_TRANSFER, wxT("Remove"), wxArtProvider::GetBitmap("delete", wxART_TOOLBAR, FromDIP(wxSize(16, 16))), "Clear order list");
 	m_tool11 = mTopTools->AddTool(ID_DOWNLOAD_EXCEL, wxT("Download Excel"), wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))), wxNullBitmap, wxITEM_NORMAL, wxEmptyString, wxEmptyString, NULL);
 

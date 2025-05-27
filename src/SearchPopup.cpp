@@ -135,9 +135,8 @@ void pof::SearchPopup::SetSelected(const wxDataViewItem& item)
 
 void pof::SearchPopup::SetActivated(const wxDataViewItem& item)
 {
-	auto sel = mTable->GetSelection();
-	if (sel.IsOk()) {
-		size_t idx = pof::DataModel::GetIdxFromItem(sel);
+	if (item.IsOk()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
 		sSelectedSignal(mTableModel->GetDatastore()[idx]);
 
 		Dismiss();
