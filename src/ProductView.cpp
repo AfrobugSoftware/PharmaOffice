@@ -2770,7 +2770,7 @@ void pof::ProductView::OnUpdateQuantity(wxCommandEvent& evt)
 		const auto& uid = boost::variant2::get<boost::uuids::uuid>(row.first[pof::ProductManager::PRODUCT_UUID]);
 		const auto& name = boost::variant2::get<std::string>(row.first[pof::ProductManager::PRODUCT_NAME]);
 
-		wxGetApp().mProductManager.UpdatePD(std::make_tuple(uid, q), { "stock_count" });
+		wxGetApp().mProductManager.UpdatePD(std::make_tuple(uid, q), { "uuid","stock_count" });
 
 		//refresh item
 		m_dataViewCtrl1->Freeze();
