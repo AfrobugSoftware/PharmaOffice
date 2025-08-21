@@ -243,7 +243,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mCostPrice = m_propertyGridPage1->Append(new wxFloatProperty(wxT("COST PRICE"), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString(mUnitPrice, wxT("Cost price per package size of the product\n"));
 	wxFloatingPointValidator<double> val(2, &mStubPrice, wxNUM_VAL_ZERO_AS_BLANK);
-	val.SetRange(0, 999999999999);
+	val.SetRange(0, 999999999);
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
 
@@ -840,6 +840,18 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
+
+	constexpr const int p = static_cast<int>(pof::Account::Privilage::PHARMACIST);
+	constexpr const int m = static_cast<int>(pof::Account::Privilage::MANAGER);
+
+	auto accountPriv = wxGetApp().MainAccount->priv;
+	auto& productManager = wxGetApp().mProductManager;
+	if (!accountPriv.test(p) && !accountPriv.test(m)) {
+		wxMessageBox("This account do not have the privilage to edit a product", "Product information", wxICON_WARNING | wxOK);
+		evt.Skip();
+		return;
+	}
+
 	spdlog::info("Editing prop: {}", evt.GetPropertyName().ToStdString());
 	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
 	if (PropIter == mNameToProductElem.end()) {

@@ -171,34 +171,13 @@ void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
-bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
+bool pof::DataModel::StringSearchAndReload(size_t col, std::string& search_for)
 {
 	if (datastore->empty() || col > datastore->get_metadata().size() 
 			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return true;
-	//std::string reg;
-	//reg.reserve(search_for.size() * 2);
-	//reg += R"((?:.*))";
-	//for (auto& c : search_for)
-	//{
-	//	if (!std::isalnum(c) && !std::isspace(c)  && c != '-') {
-	//		//what to do
-	//		return true;
-	//	}
-	//	reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
-	//}
-	//reg += "(?:.*)?";
-	//std::regex searchreg(std::move(reg));
-	//Cleared();
-	//mItems.clear();
-	//attributes.clear(); //dont know if i should clear the attributes here?
-	//for (size_t i = 0; i < datastore->size(); i++) {
-	//	auto& datum = (*datastore)[i].first[col];
-	//	auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
-	//	if (std::regex_match(text, searchreg)) {
-	//		mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
-	//	}
-	//}
 
+	boost::trim(search_for);
+	boost::to_lower(search_for);
 	Cleared();
 	mItems.clear();
 	attributes.clear(); //dont know if i should clear the attributes here?
@@ -219,24 +198,13 @@ bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search
 	return mItems.IsEmpty();
 }
 
-bool pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
+bool pof::DataModel::StringSearchAndReloadSet(size_t col, std::string& searchFor)
 {
 	if (mItems.empty() || col > datastore->get_metadata().size()
 		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return false;
 
-	//std::string reg;
-	//reg.reserve(searchFor.size() * 2);
-	//for (auto& c : searchFor)
-	//{
-	//	if (!std::isalnum(c) && !std::isspace(c) && c != '-') {
-	//		//what to do
-	//		return true;
-	//	}
-	//	reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
-	//}
-	//reg += "(?:.*)?";
-	//std::regex searchreg(std::move(reg));
-
+	boost::trim(searchFor);
+	boost::to_lower(searchFor);
 	Cleared();
 	attributes.clear();
 	wxDataViewItemArray ars;
@@ -248,9 +216,6 @@ bool pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& sea
 
 		auto& datum = (*datastore)[idx].first[col];
 		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
-		/*if (std::regex_match(text, searchreg)) {
-			ars.push_back(item);
-		}*/
 		auto s = searcher(text.begin(), text.end());
 		if (s.first != std::end(text)) {
 			ars.push_back(item);

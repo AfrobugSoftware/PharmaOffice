@@ -1400,7 +1400,7 @@ void pof::PatientView::OnSearchPatient(wxCommandEvent& evt)
 		datastore->Reload();
 	}
 	else {
-		empty = datastore->StringSearchAndReload(mSearchColumn, std::move(searchString));
+		empty = datastore->StringSearchAndReload(mSearchColumn, searchString);
 	}
 
 	if (empty) {

@@ -92,8 +92,8 @@ namespace pof {
 		void UpdateItem(const wxDataViewItem& item);
 
 		void Reload(const std::vector<wxDataViewItem>& items);
-		bool StringSearchAndReload(size_t col, const std::string& search_for); //searches the datastore 
-		bool StringSearchAndReloadSet(size_t col, const std::string& searchFor); //only searches the current items in mItems;
+		bool StringSearchAndReload(size_t col, std::string& search_for); //searches the datastore 
+		bool StringSearchAndReloadSet(size_t col, std::string& searchFor); //only searches the current items in mItems;
 
 		static size_t GetIdxFromItem(const wxDataViewItem& item);
 		static wxDataViewItem GetItemFromIdx(size_t idx);

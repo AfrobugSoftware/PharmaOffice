@@ -377,10 +377,10 @@ void pof::ProductView::OnAddProduct(wxCommandEvent& evt)
 			std::string search = m_searchCtrl1->GetValue().ToStdString();
 
 			if (!mActiveCategory.empty()) {
-				empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+				empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, search);
 			}
 			else {
-				empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+				empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search);
 			}
 
 		}
@@ -795,10 +795,10 @@ void pof::ProductView::OnRemoveProduct(wxCommandEvent& evt)
 		std::string search = m_searchCtrl1->GetValue().ToStdString();
 
 		if (!mActiveCategory.empty()) {
-			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, search);
 		}
 		else {
-			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search);
 		}
 
 	}
@@ -911,6 +911,8 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 	assert(datam != nullptr);
 	m_dataViewCtrl1->Freeze();
 	std::string search = evt.GetString().ToStdString();
+	
+
 	bool empty = false;
 	if (search.empty()) {
 		//go back to what was there before the search?
@@ -926,10 +928,10 @@ void pof::ProductView::OnSearchProduct(wxCommandEvent& evt)
 		if (mSearchFlag.test(1)) col = pof::ProductManager::PRODUCT_GENERIC_NAME;
 
 		if (!mActiveCategory.empty()) {
-			empty = datam->StringSearchAndReloadSet(col, std::move(search));
+			empty = datam->StringSearchAndReloadSet(col, search);
 		}
 		else {
-			empty = datam->StringSearchAndReloadSet(col, std::move(search));
+			empty = datam->StringSearchAndReloadSet(col, search);
 		}
 
 	}
@@ -2605,10 +2607,10 @@ void pof::ProductView::OnHideProduct(wxCommandEvent& evt)
 		std::string search = m_searchCtrl1->GetValue().ToStdString();
 
 		if (!mActiveCategory.empty()) {
-			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, search);
 		}
 		else {
-			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search);
 		}
 
 		if (empty) {
@@ -2679,10 +2681,10 @@ void pof::ProductView::OnShowHiddenProduct(wxCommandEvent& evt)
 		std::string search = m_searchCtrl1->GetValue().ToStdString();
 
 		if (!mActiveCategory.empty()) {
-			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReloadSet(pof::ProductManager::PRODUCT_NAME, search);
 		}
 		else {
-			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, std::move(search));
+			empty = datam->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search);
 		}
 
 		if (empty) {
