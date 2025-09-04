@@ -190,7 +190,7 @@ void pof::PharmacySetupWizard::CreateContactPage()
 
     mEmailValue = new wxTextCtrl(mContactPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(450, -1), 0);
     mEmailValue->SetMaxLength(250);
-    mEmailValue->SetValidator(pof::RegexValidator(std::regex(R"(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)"), "Invalid email address"));
+    mEmailValue->SetValidator(pof::RegexValidator(std::regex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"), "Invalid email address"));
     bSizer1->Add(mEmailValue, 0, wxALL , 5);
 
     mWebsiteText = new wxStaticText(mContactPage, wxID_ANY, wxT("Website"), wxDefaultPosition, wxSize(450, -1), 0);

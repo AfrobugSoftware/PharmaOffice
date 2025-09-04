@@ -49,6 +49,7 @@ pof::Application::Application()
 	MainPharmacy = std::make_shared<pof::Pharmacy>();
 	MainAccount = std::make_shared<pof::Account>();
 	mPrintManager = std::make_shared<pof::PrintManager>();
+	mMainFrame = nullptr;
 
 	wxHandleFatalExceptions(true);
 
