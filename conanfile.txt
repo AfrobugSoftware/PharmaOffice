@@ -1,16 +1,24 @@
 [options]
-boost:shared=True
-wxwidgets:shared=True
+pgk/boost:shared=True
+
 
 [requires]
-boost/1.81.0
-wxwidgets/3.1.5@bincrafters/stable
-fmt/9.1.0
+boost/1.85.0
+fmt/10.0.0
 spdlog/1.11.0
 zlib/1.2.13
 openssl/3.0.7
 nlohmann_json/3.11.2
 sqlite3/3.40.1
+lz4/1.9.4
+date/3.0.1
+crowcpp-crow/1.1.0
 
 [generators]
-cmake
+CMakeDeps
+CMakeToolchain
+
+[imports]
+bin, *.dll -> ./build/bin # Copies all dll files from packages bin folder to my "bin" folder
+lib, *.dylib* -> ./build/bin # Copies all dylib files from packages lib folder to my "bin" folder
+lib, *.so* -> ./build/bin # Copies all so files from packages lib folder to my "bin" folder

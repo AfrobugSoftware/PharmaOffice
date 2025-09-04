@@ -1,0 +1,515 @@
+#include "Modules.h"
+//#include "Application.h"
+#include "PofPch.h"
+
+BEGIN_EVENT_TABLE(pof::Modules, wxPanel)
+	EVT_TREE_ITEM_ACTIVATED(pof::Modules::ID_TREE, pof::Modules::OnActivated)
+	EVT_TREE_SEL_CHANGED(pof::Modules::ID_TREE, pof::Modules::OnSelected)
+	EVT_TREE_BEGIN_DRAG(pof::Modules::ID_TREE, pof::Modules::OnBeginDrag)
+	EVT_TREE_END_DRAG(pof::Modules::ID_TREE, pof::Modules::OnEndDrag)
+	EVT_TREE_ITEM_MENU(pof::Modules::ID_TREE, pof::Modules::OnContextMenu)
+	EVT_TREE_BEGIN_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnBeginEditLabel)
+	EVT_TREE_END_LABEL_EDIT(pof::Modules::ID_TREE, pof::Modules::OnEndEditLabel)
+
+	//context menus
+	EVT_MENU(pof::Modules::CONTEXT_MENU_EDIT, pof::Modules::OnContextEdit)
+	EVT_MENU(pof::Modules::CONTEXT_MENU_REMOVE, pof::Modules::OnContextRemove)
+	EVT_MENU(pof::Modules::UNPIN_PATIENT, pof::Modules::OnUnpinPatient)
+END_EVENT_TABLE()
+
+
+void pof::Modules::OnActivated(wxTreeEvent& evt)
+{
+	const auto item = evt.GetItem();
+	auto winIter = mModuleViews.find(item);
+	if (winIter == mModuleViews.end()) {
+		//what to do here, main not pressed check children of main
+		auto found = std::ranges::find(mChildId, item);
+		if (found != mChildId.end()) {
+			auto string = mModuleTree->GetItemText(item).ToStdString();
+			mChildSignal(std::move(string));
+			winIter = mModuleViews.find(mProducts);
+		}
+		else {
+			//check for patients
+			auto foundpat = mPatientChildren.find(item);
+			if (foundpat != mPatientChildren.end()){
+				auto puid = dynamic_cast<pof::base::data::duuid_t*>(mModuleTree->GetItemData(item));
+				if(puid) mPatientChildSignal(*puid);
+				winIter = mModuleViews.find(mPaitents);
+			}
+			else {
+				return; //not in any container
+			}
+		}
+		mSig(winIter, Evt::CHILD_ACTIVATED);
+		return;
+	}
+	mSig(winIter, Evt::ACTIVATED);
+}
+
+void pof::Modules::OnChangeFont(const wxFont& font)
+{
+	/*
+		mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased().Bold()));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased().Family(wxFONTFAMILY_SWISS)));	
+	*/
+	int pointsize = std::max(std::min(13, font.GetPointSize()), 10);
+
+	mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(pointsize).Family(font.GetFamily()).AntiAliased().Bold().FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(pointsize).AntiAliased().Family(font.GetFamily()).FaceName(font.GetFaceName()).Style(font.GetStyle())));
+
+	//Style();
+	
+}
+
+void pof::Modules::OnSelected(wxTreeEvent& evt)
+{
+	const auto item = evt.GetItem();
+	auto winIter = mModuleViews.find(item);
+	if (winIter == mModuleViews.end()) {
+		//what to do here 
+		return;
+	}
+	mSig(winIter, Evt::SEL_CHANGED);
+}
+
+void pof::Modules::OnBeginDrag(wxTreeEvent& evt)
+{
+	spdlog::info("Starting drag");
+	evt.Allow();
+	auto item = evt.GetItem();
+	auto iter = mModuleViews.find(item);
+	if (iter == mModuleViews.end()) return;
+	pof::TreeItemDataObject itemData(std::make_tuple(iter->first, iter->second,
+			GetText(iter), GetImage(iter)));
+	wxDropSource source(itemData);
+	wxDragResult result = source.DoDragDrop(wxDrag_CopyOnly);
+
+	switch (result)
+	{
+	case wxDragError:
+		break;
+	case wxDragNone:
+
+		break;
+	case wxDragCopy:
+		break;
+	case wxDragMove:
+		break;
+	case wxDragLink:
+		break;
+	case wxDragCancel:
+		//canceled 
+		break;
+	default:
+		break;
+	}
+	evt.Veto();
+}
+
+void pof::Modules::OnEndDrag(wxTreeEvent& evt)
+{
+	evt.Veto();
+	spdlog::info("Ending drag");
+}
+
+void pof::Modules::OnContextMenu(wxTreeEvent& evt)
+{
+	auto itemID = evt.GetItem();
+	auto iter = std::ranges::find(mChildId, itemID);
+	if (iter != std::end(mChildId))
+	{	//only for child ids
+		wxMenu* menu = new wxMenu;
+		auto edit = menu->Append(CONTEXT_MENU_EDIT, "Edit");
+		edit->SetBitmap(pof::ArtProvider::GetBitmap("pen"));
+		auto remove = menu->Append(CONTEXT_MENU_REMOVE, "Remove");
+		remove->SetBitmap(pof::ArtProvider::GetBitmap("action_remove"));
+		PopupMenu(menu);
+
+	}
+	else {
+		auto patient = mPatientChildren.find(itemID);
+		if (patient != mPatientChildren.end())
+		{
+			wxMenu* menu = new wxMenu;
+			auto up = menu->Append(UNPIN_PATIENT, "Unpin", nullptr);
+
+			PopupMenu(menu);
+		}
+	}
+}
+
+void pof::Modules::OnBeginEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Starting edit label");
+	auto item = evt.GetItem();
+	if (!item.IsOk()) {
+		spdlog::info("Cannot edit");
+		evt.Veto();
+		return;
+	}
+
+	auto iter = std::ranges::find(mChildId, item);
+	if (iter == std::end(mChildId)) {
+		spdlog::info("Edit label is not for parent items");
+		evt.Veto();
+		return;
+	}
+
+	evt.Skip();
+}
+
+void pof::Modules::OnEndEditLabel(wxTreeEvent& evt)
+{
+	spdlog::info("Ending edit label");
+	if (evt.IsEditCancelled()) {
+		spdlog::info("Edit is cancelled");
+		evt.Veto();
+		return;
+	}
+	auto item = evt.GetItem();
+	auto oldName = mModuleTree->GetItemText(item).ToStdString();
+	auto name = evt.GetLabel().ToStdString();
+	if (name.empty() || oldName == name) {
+		evt.Veto();
+		return;
+	}
+	spdlog::info("Changing {} to {}", oldName, name);
+	mChildEditedSignal(oldName, name); //signal a name change
+	evt.Skip();
+}
+
+void pof::Modules::OnAccountUpdated(const pof::Account& acc)
+{
+	ReloadAccountDetails();
+}
+
+void pof::Modules::OnPharmacyUpdated(const pof::Pharmacy& pharm)
+{
+	ReloadAccountDetails();
+}
+
+void pof::Modules::OnContextEdit(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+
+	mModuleTree->EditLabel(item);
+}
+
+void pof::Modules::OnContextRemove(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+	auto name = mModuleTree->GetItemText(item).ToStdString();
+	if (wxMessageBox(fmt::format("Are you sure you want to remove {}", name), "REMOVE CATEGORY", wxICON_WARNING | wxYES_NO) == wxYES) {
+		//send a remove signal so the rest of the application knows you have removed
+		mChildRemoveSignal(name);
+		auto iter = std::ranges::find(mChildId, item);
+		if (iter != std::end(mChildId)) mChildId.erase(iter);
+		mModuleTree->Delete(item);
+	}
+}
+
+void pof::Modules::OnUnpinPatient(wxCommandEvent& evt)
+{
+	auto item = mModuleTree->GetSelection();
+	if (!item.IsOk()) return;
+
+	auto foundpat = mPatientChildren.find(item);
+	if (foundpat != mPatientChildren.end()) {
+		
+		auto puid = dynamic_cast<pof::base::data::duuid_t*>(mModuleTree->GetItemData(item));
+		if (puid) mPatientChildRemvSignal(*puid);
+		
+		mPatientChildren.erase(foundpat);
+		mModuleTree->Delete(item);
+		mModuleTree->Refresh();
+	}
+}
+
+
+void pof::Modules::SetupFont()
+{
+	mFonts[FONT_MAIN] = std::move(wxFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS).AntiAliased().Bold()));
+	mFonts[FONT_CHILD] = std::move(wxFont(wxFontInfo(9).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+	mFonts[FONT_ACCOUNT] = std::move(wxFont(wxFontInfo(8).AntiAliased().Family(wxFONTFAMILY_SWISS)));
+}
+void pof::Modules::AppendChildTreeId(wxTreeItemId parent, const std::string& name, int img)
+{
+	if (name.empty()) return;
+	auto id = mModuleTree->AppendItem(parent, name, img);
+	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
+	mChildId.emplace_back(std::move(id));
+}
+void pof::Modules::RemoveChildTreeId(const std::string& name)
+{
+	if (name.empty()) return;
+	auto found = std::ranges::find_if(mChildId, [&](const wxTreeItemId& item) -> bool {
+		const auto str = mModuleTree->GetItemText(item).ToStdString();
+		return str == name;
+	});
+	if (found != mChildId.end()) {
+		mModuleTree->Delete(*found);
+		mChildId.erase(found);
+	}
+}
+
+void pof::Modules::AppendPatientChild(const pof::base::data::duuid_t& data,const std::string& name, int img)
+{
+	auto id = mModuleTree->AppendItem(mPaitents, name, 16);
+	mModuleTree->SetItemFont(id, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemData(id, new mixin(data));
+	mPatientChildren.insert(id);
+	mModuleTree->Expand(mPaitents);
+}
+
+void pof::Modules::RemovePatientChild(const std::string& name)
+{
+	if (name.empty()) return;
+	auto found = std::ranges::find_if(mPatientChildren, [&](const wxTreeItemId& item) -> bool {
+		const auto str = mModuleTree->GetItemText(item).ToStdString();
+	return str == name;
+	});
+	if (found != mPatientChildren.end()) {
+		mModuleTree->Delete(*found);
+		mPatientChildren.erase(found);
+	}
+}
+
+pof::Modules::Modules(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style) : wxPanel(parent, id, pos, size, style | wxNO_BORDER)
+{
+	SetDoubleBuffered(true);
+	SetupFont();
+	wxBoxSizer* bSizer1;
+	bSizer1 = new wxBoxSizer(wxVERTICAL);
+
+	m_panel1 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* bSizer2;
+	bSizer2 = new wxBoxSizer(wxVERTICAL);
+
+	bSizer2->Add(0, 20, 0, wxEXPAND, FromDIP(5));
+
+	m_bitmap1 = new wxStaticBitmap(m_panel1, wxID_ANY, wxArtProvider::GetBitmap("pharmacist"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer2->Add(m_bitmap1, 0, wxALIGN_CENTER | wxALL, FromDIP(5));
+
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
+	std::transform(AccountName.begin(), AccountName.end(),
+		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+	m_staticText1 = new wxStaticText(m_panel1, wxID_ANY, AccountName , wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText1->SetFont(mFonts[FONT_ACCOUNT]);
+	m_staticText1->Wrap(-1);
+	bSizer2->Add(m_staticText1, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
+
+	//add the account type
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	m_staticText3 = new wxStaticText(m_panel1, wxID_ANY, AccountType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->SetFont(mFonts[FONT_ACCOUNT]);
+	m_staticText3->Wrap(-1);
+	bSizer2->Add(m_staticText3, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
+
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
+	std::transform(PharmacyName.begin(), PharmacyName.end(),
+			PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+
+	m_staticText2 = new wxStaticText(m_panel1, wxID_ANY, PharmacyName, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText2->SetFont(mFonts[FONT_ACCOUNT]);
+	m_staticText2->Wrap(-1);
+	//m_staticText2->SetFont(wxFont(wxFontInfo(12)));
+	bSizer2->Add(m_staticText2, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
+
+	std::string pharmacyType = wxGetApp().MainPharmacy->GetPharmacyTypeAsString();
+	m_staticText4 = new wxStaticText(m_panel1, wxID_ANY, pharmacyType, wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText4->SetFont(wxFontInfo(6).AntiAliased());
+	m_staticText4->Wrap(-1);
+	bSizer2->Add(m_staticText4, 0, wxALIGN_CENTER | wxALL, FromDIP(1));
+
+	bSizer2->Add(0, 5, 0, wxEXPAND, FromDIP(5));
+
+
+	m_panel1->SetSizer(bSizer2);
+	m_panel1->Layout();
+	bSizer2->Fit(m_panel1);
+	bSizer1->Add(m_panel1, 0, wxEXPAND | wxALL, FromDIP(0));
+	m_panel1->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	wxPanel* m_panel3 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxSizer* bLineSizer = new wxBoxSizer(wxHORIZONTAL);
+	bLineSizer->AddSpacer(FromDIP(20));
+	auto line = new wxStaticLine(m_panel3, -1, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL);
+	line->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	bLineSizer->Add(line, wxSizerFlags().Proportion(1).Expand());
+	bLineSizer->AddSpacer(FromDIP(20));
+
+	m_panel3->SetSizer(bLineSizer);
+	m_panel3->Layout();
+	bLineSizer->Fit(m_panel3);
+	m_panel3->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	m_panel2 = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer3;
+	bSizer3 = new wxBoxSizer(wxVERTICAL);
+
+	mModuleTree = new wxTreeCtrl(m_panel2, ID_TREE, wxDefaultPosition, wxDefaultSize, wxTR_EDIT_LABELS | wxTR_FULL_ROW_HIGHLIGHT | wxTR_NO_LINES | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_SINGLE | wxNO_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT);
+	bSizer3->AddSpacer(FromDIP(10));
+	bSizer3->Add( mModuleTree, 1, wxLEFT|wxEXPAND, FromDIP(10) );
+	mModuleTree->SetDoubleBuffered(true);
+	mModuleTree->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+	CreateTree();
+	
+	m_panel2->SetSizer( bSizer3 );
+	m_panel2->Layout();
+	bSizer3->Fit( m_panel2 );
+
+	//bSizer1->AddSpacer(FromDIP(10));
+	bSizer1->Add(m_panel3, 0, wxEXPAND, 0);
+	//bSizer1->AddSpacer(FromDIP(10));
+
+	bSizer1->Add( m_panel2, 1, wxEXPAND | wxALL, FromDIP(0) );
+	m_panel2->SetBackgroundColour(wxTheColourDatabase->Find("module"));
+
+
+	Style(); //should it be here ?
+	
+	wxGetApp().MainAccount->updateSig.connect(std::bind_front(&pof::Modules::OnAccountUpdated, this));
+	wxGetApp().MainPharmacy->updateSig.connect(std::bind_front(&pof::Modules::OnPharmacyUpdated, this));
+	this->SetSizer( bSizer1 );
+	this->Layout();
+}
+
+pof::Modules::~Modules()
+{
+}
+
+void pof::Modules::CreateTree()
+{
+	mModuleTree->SetIndent(20);
+	wxTreeItemId root = mModuleTree->AddRoot("Root", -1);
+
+
+	mPharmacy      = mModuleTree->AppendItem(root, "Pharamacy", 9);
+	mTransactions  = mModuleTree->AppendItem(root, "Transactions", 10);
+
+
+	mProducts      = mModuleTree->AppendItem(mPharmacy, "Products", 5);
+	mPaitents      = mModuleTree->AppendItem(mPharmacy, "Patients", 7);
+	mPrescriptions = mModuleTree->AppendItem(mPharmacy, "Prescriptions", 11);
+	mPoisionBook   = mModuleTree->AppendItem(mPharmacy, "Poision Book", 12);
+	
+	mSales         = mModuleTree->AppendItem(mTransactions, "Sales", 6);
+	mAuditTrails   = mModuleTree->AppendItem(mTransactions, "Audit Trails", 13);
+	mRequisitions  = mModuleTree->AppendItem(mTransactions, "Requisitions", 15);
+	mOrders        = mModuleTree->AppendItem(mTransactions, "ADR Reports", 14);
+
+	
+	mModuleTree->Expand(mPharmacy);
+	mModuleTree->Expand(mTransactions);
+}
+
+void pof::Modules::Style()
+{
+	mModuleTree->Freeze();
+	mModuleTree->SetItemFont(mPharmacy, mFonts[FONT_MAIN]);
+	mModuleTree->SetItemFont(mTransactions, mFonts[FONT_MAIN]);
+	
+	mModuleTree->SetItemFont(mPrescriptions, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mPaitents, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mPoisionBook, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mProducts, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mSales, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mOrders, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mRequisitions, mFonts[FONT_CHILD]);
+	mModuleTree->SetItemFont(mAuditTrails, mFonts[FONT_CHILD]);
+
+	mModuleTree->SetSpacing(FromDIP(mFonts[FONT_MAIN].GetPointSize()));
+	mModuleTree->Thaw();
+}
+
+void pof::Modules::activateModule(wxTreeItemId mod)
+{
+	auto winIter = mModuleViews.find(mod);
+	if (winIter == mModuleViews.end()) {
+		//what to do here, main not pressed check children of main
+		auto found = std::ranges::find(mChildId, mod);
+		if (found != mChildId.end()) {
+			auto string = mModuleTree->GetItemText(mod).ToStdString();
+			mChildSignal(std::move(string));
+		}
+		return;
+	}
+	mSig(winIter, Evt::ACTIVATED);
+}
+
+std::string pof::Modules::GetText(const_iterator item) const
+{
+	return mModuleTree->GetItemText(item->first).ToStdString();
+}
+
+int pof::Modules::GetImage(const_iterator item) const
+{
+	return mModuleTree->GetItemImage(item->first);
+}
+
+pof::Modules::const_iterator::value_type pof::Modules::GetModuleItem(wxTreeItemId item) const
+{
+	auto iter = mModuleViews.find(item);
+	if (iter == mModuleViews.end()) {
+		return std::make_pair<wxTreeItemId, wxWindow*>(wxTreeItemId{}, nullptr);
+	}
+	return *iter;
+}
+
+void pof::Modules::ReloadAccountDetails()
+{
+	std::string AccountType = wxGetApp().MainAccount->GetAccountTypeString();
+	std::string AccountName = fmt::format("{} {}", wxGetApp().MainAccount->name, wxGetApp().MainAccount->lastname);
+	std::transform(AccountName.begin(), AccountName.end(),
+		AccountName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+	std::string PharmacyName = wxGetApp().MainPharmacy->GetName();
+	std::transform(PharmacyName.begin(), PharmacyName.end(),
+		PharmacyName.begin(), [&](unsigned char c) -> unsigned char { return std::toupper(c); });
+
+	std::string PharmacyType = wxGetApp().MainPharmacy->GetPharmacyTypeAsString();
+
+	m_panel1->Freeze();
+
+	m_staticText1->SetLabel(std::move(AccountName));
+	m_staticText2->SetLabel(std::move(PharmacyName));
+	m_staticText3->SetLabel(std::move(AccountType));
+	m_staticText4->SetLabel(std::move(PharmacyType));
+
+	m_panel1->Layout();
+	m_panel1->Thaw();
+	m_panel1->Refresh();
+
+}
+
+boost::signals2::connection pof::Modules::SetSlot(signal_t::slot_type&& slot)
+{
+	return mSig.connect(std::forward<signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeSlot(childtree_signal_t::slot_type&& slot)
+{
+	return mChildSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeRemoveSlot(childtree_signal_t::slot_type&& slot)
+{
+	return mChildRemoveSignal.connect(std::forward<childtree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetChildTreeEditSlot(childEditTree_signal_t::slot_type&& slot)
+{
+	return mChildEditedSignal.connect(std::forward<childEditTree_signal_t::slot_type>(slot));
+}
+
+boost::signals2::connection pof::Modules::SetPatientChildSlot(patientChildSignal::slot_type&& slot)
+{
+	return mPatientChildSignal.connect(std::forward<patientChildSignal::slot_type>(slot));
+}

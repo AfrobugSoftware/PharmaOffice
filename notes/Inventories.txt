@@ -1,0 +1,7 @@
+INVENTORY DESIGN
+Batch NO 
+
+3 lists for formulary optimising
+list of inventory that you want have that is in the formulary
+list of inventory that you dont have but that is in the formulary
+list of inventory that you have but that is not in the formulary 

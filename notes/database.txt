@@ -1,0 +1,13 @@
+The mysql database manager create the query internally and returns a future with a type 
+std::optional<pof::base::data>, if it a select query the optional contains the data, 
+if it is not, then the validity of the optional signals the success of the operation
+in both cases too
+
+The mysql database can be accessed in the manager classes, busy waits are called via
+wxGetApp().BusyWait("text"); The busy wait max duration is got from
+wxGetApp().mBusyWaitDuration which is a std::chrono::system_clock::time_point::duration type
+and failures are called wxGetApp().DatabaseFailed("text");
+both these functions forward calls to MainFrame to draw to the screen
+
+MainFrame needs a way to show the database is connected, connecting to the database is 
+a problem i still need to figure out, but this is the approch I am going to take

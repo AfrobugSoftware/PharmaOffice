@@ -1,0 +1,23 @@
+FORMULARY DESIGN
+The following is the proprosed design for a formulary system for pharmaoffice:
+
+A formulary system, is a system that tracks formularies across the country, it allows the pharmacy stock to be more compliant to a specific formulary,
+different formularies are used, some can be used by hospitals, some are maintained for specific reasons. it helps the pharmacy know the type of medication that they should
+priorities and the type that they shouldn't, one or more forumlary can be used at the same time 
+
+first what are the benefits of using a formulary system:
+
+MAKEUP:
+Formularies are broken down into sections that can have subsections, each section comprises of a name, a datastore of medications and a list of sections that represents its
+subsections, This therefore forms a tree like structure with the formulary containing all the roots. Sections are loaded and offloaded as needed. sections can aslo be cached in the system for easy access
+or medications used most offen can be to avoid going to the network
+
+Medications:
+A single row in the datastore of a section represents a medication, a medication is made up of,a uuid, name, strength which is madeup of the qunatity and unit eg: g, mg, l, ml etc.
+The dosage form, which includes tablets, capsules, iv, im etc more would be added as research continues. All these forms the unique identification for the medication
+therefore, 3 medications can have the same everything except differ in strength and they are considered seperate medications in pharmaOffice and therefore would have different uuids.
+Medication cannot be entered from pharmaoffice, only used, These are replicas of standard documents and are going to be maintained by afrobug software, pharmaoffice users can use
+new formularies as they are published by the governing body. 
+
+In pharmaOffice, products can have medication uuid to link a particular brand of product to a medication, for example, ferife ds would contain a uuid for athermter lumefantrine 80/480mg tablets.
+ferife ds being the product can then be used for stock optimisation, prescription resolution and dispensing etc. 

@@ -1,0 +1,57 @@
+#pragma once
+#include <wx/dataview.h>
+#include <wx/aui/aui.h>
+#include <wx/popupwin.h>
+#include <wx/sizer.h>
+#include "DataModel.h"
+
+#include <boost/signals2/signal.hpp>
+#include <vector>
+#include <utility>
+
+namespace pof {
+	class SearchPopup : public wxPopupTransientWindow {
+	public:
+		boost::signals2::signal<void(const pof::base::data::row_t&)> sSelectedSignal;
+		enum {
+			ID_DATA_VIEW = 10,
+		};
+
+		enum {
+			DATA_VIEW = 0,
+			NO_RESULT
+		};
+
+		SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data> ptrData,
+			const std::vector<std::pair<std::string, size_t>>& colNames = {}, const std::vector<size_t>& colSizes = {});
+
+		bool SearchString(size_t col, const std::string& searchString);
+		void CaptureFocus();
+		void PushSpecialCol(pof::DataModel::SpeicalColHandler_t&& spc,
+			size_t col);
+		void ChangeFont(const wxFont& font);
+
+		void SetSelected(const wxDataViewItem& item);
+		void SetActivated(const wxDataViewItem& item);
+		wxDataViewItem GetSelected() const { return mTable->GetSelection(); }
+		wxDataViewItem GetNext(int dir = 1);
+		wxDataViewItem GetTop() const;
+		wxDataViewItem GetLast() const;
+		size_t GetItemCount() const { return mTableModel->GetDataViewItems().size(); }
+	private:
+		void CreateDataView(const std::vector<std::pair<std::string, size_t>>& colNames, const std::vector<size_t>& colSizes);
+		void CreateNoResultPanel();
+		void OnDataItemSelected(wxDataViewEvent& evt);
+		void OnSetFocus(wxFocusEvent& evt);
+		void OnKillFocus(wxFocusEvent& evt);
+		void ShowNoResult(const std::string& search);
+
+		wxAuiManager mPopManager;
+		wxSimplebook* mBook = nullptr;
+		wxPanel* mNoResult = nullptr;
+		wxStaticText* mNoResultText = nullptr;
+		wxDataViewCtrl* mTable = nullptr;
+		pof::DataModel* mTableModel = nullptr;
+		DECLARE_EVENT_TABLE()
+	};
+};

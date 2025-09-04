@@ -1,0 +1,359 @@
+#include "AuditView.h"
+#include "PofPch.h"
+
+BEGIN_EVENT_TABLE(pof::AuditView, wxPanel)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnItemActivated)
+	EVT_DATAVIEW_CACHE_HINT(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnCacheHint)
+	EVT_COMBOBOX(pof::AuditView::ID_FILTER_TYPE, pof::AuditView::OnFilterSelected)
+	EVT_TOOL(wxID_APPLY, pof::AuditView::OnApplyFilter)
+	EVT_TOOL(wxID_FORWARD, pof::AuditView::OnNextPage)
+	EVT_TOOL(wxID_BACKWARD, pof::AuditView::OnBackPage)
+	EVT_TOOL(pof::AuditView::ID_COLOUR_TYPE, pof::AuditView::OnColourAuditType)
+	EVT_TOOL(pof::AuditView::ID_DOWNLOAD_EXCEL, pof::AuditView::OnDownloadExcel)
+	EVT_TOOL(pof::AuditView::ID_CLEAR, pof::AuditView::OnCleared)
+//Search
+	EVT_SEARCH(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchMessage)
+	EVT_SEARCH_CANCEL(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchCleared)
+	//EVT_TEXT(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchMessage)
+
+END_EVENT_TABLE()
+
+
+pof::AuditView::AuditView(wxWindow* parent, wxWindowID id, const wxPoint& position, const wxSize& size, long style)
+	: wxPanel(parent, id, position, size, style) {
+	mAuiManager.SetManagedWindow(this);
+	SetBackgroundColour(*wxWHITE); //move to theme
+	CreateToolBar();
+	CreateDataView();
+	SetupAuiTheme();
+	mAuiManager.SetFlags(AUIMGRSTYLE);
+	mAuiManager.Update();
+}
+
+pof::AuditView::~AuditView()
+{
+	mAuiManager.UnInit();
+}
+
+void pof::AuditView::CreateToolBar()
+{
+	mToolBar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_LAYOUT | wxAUI_TB_HORZ_TEXT | wxAUI_TB_NO_AUTORESIZE | wxAUI_TB_OVERFLOW | wxNO_BORDER);
+	mToolBar->SetToolBitmapSize(FromDIP(wxSize(16, 16)));
+
+	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Backward");
+	mToolBar->AddSpacer(FromDIP(5));
+	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("forward", wxART_OTHER, FromDIP(wxSize(16,16))), "Forward");
+
+
+	m_searchCtrl1 = new wxSearchCtrl(mToolBar, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(450), FromDIP(-1)), wxWANTS_CHARS);
+#ifndef __WXMAC__
+	m_searchCtrl1->ShowSearchButton(true);
+#endif
+	m_searchCtrl1->ShowCancelButton(true);
+	m_searchCtrl1->SetDescriptiveText("Search");
+	mToolBar->AddSeparator();
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddControl(m_searchCtrl1);
+
+	wxArrayString choices;
+	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));
+
+
+	choices.push_back("INFORMATION");
+	choices.push_back("SALE");
+	choices.push_back("PRODUCT");
+	choices.push_back("CATEGORY");
+	choices.push_back("ALL");
+
+	mToolBar->AddSeparator();
+	mToolBar->AddStretchSpacer();
+	mFilterType = new wxChoice(mToolBar, ID_FILTER_TYPE, wxDefaultPosition, FromDIP(wxSize(200, -1)), choices);
+	mFilterType->Bind(wxEVT_PAINT, [=](wxPaintEvent& evt) {
+		wxPaintDC dc(mFilterType);
+	wxRect rect(0, 0, dc.GetSize().GetWidth(), dc.GetSize().GetHeight());
+
+	dc.SetBrush(*wxWHITE);
+	dc.SetPen(*wxGREY_PEN);
+	dc.DrawRoundedRectangle(rect, 2.0f);
+	dc.DrawBitmap(wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, FromDIP(wxSize(10, 10))), wxPoint(rect.GetWidth() - FromDIP(15), (rect.GetHeight() / 2) - FromDIP(5)));
+	auto sel = mFilterType->GetStringSelection();
+	if (!sel.IsEmpty()) {
+		dc.DrawLabel(sel, rect, wxALIGN_CENTER);
+	}
+	});
+	auto text = new wxStaticText(mToolBar, wxID_ANY, "Filter: ");
+	text->SetBackgroundColour(*wxWHITE);
+	mToolBar->AddControl(text);
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddControl(mFilterType, "Filter");
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddTool(ID_COLOUR_TYPE, "Type Highlight", wxArtProvider::GetBitmap("pen"), "Highlight different audit types", wxITEM_CHECK);
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Apply selected filter");
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddTool(ID_CLEAR, "Clear", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16, 16))), "Clear audit");
+	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))), "Download Audit as EXCEL worksheet");
+
+	mToolBar->Realize();
+	mAuiManager.AddPane(mToolBar, wxAuiPaneInfo().Name("ToolBar").ToolbarPane().Top().MinSize(FromDIP(wxSize(- 1, 30))).ToolbarPane().Resizable().Top().DockFixed().Row(1).LeftDockable(false).RightDockable(false).Floatable(false).BottomDockable(false));
+}
+
+void pof::AuditView::CreateDataView()
+{
+	wxPanel* panel = new wxPanel(this, wxID_ANY,wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* size = new wxBoxSizer(wxVERTICAL);
+
+	mInfoBar = new wxInfoBar(panel, ID_INFOBAR);
+	mDataView = new wxDataViewCtrl(panel, ID_DATA_VIEW, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxDV_ROW_LINES | wxDV_HORIZ_RULES | wxDV_VERT_RULES);
+	auto& ad = wxGetApp().mAuditManager.GetAuditData();
+	mDataView->AssociateModel(ad.get());
+	mDataView->SetDoubleBuffered(true);
+	//columns
+	mDataView->AppendTextColumn("Type", pof::AuditManager::AUDIT_TYPE, wxDATAVIEW_CELL_INERT, FromDIP(100));
+	mDataView->AppendTextColumn("Date", pof::AuditManager::AUDIT_DATE, wxDATAVIEW_CELL_INERT, FromDIP(100));
+	mDataView->AppendTextColumn("Username", pof::AuditManager::AUDIT_USER_NAME, wxDATAVIEW_CELL_INERT, FromDIP(100));
+	mDataView->AppendTextColumn("Audit Log", pof::AuditManager::AUDIT_MESSAGE, wxDATAVIEW_CELL_INERT);
+
+	size->Add(mInfoBar, wxSizerFlags().Expand().Proportion(0).Border(wxALL, FromDIP(2)));
+	size->Add(mDataView, wxSizerFlags().Expand().Proportion(1).Border(wxALL, FromDIP(2)));
+
+	panel->SetSizer(size);
+	size->Fit(panel);
+	panel->Layout();
+
+	//SetupDataViewStyle();
+	mAuiManager.AddPane(panel, wxAuiPaneInfo().Name("DataView").CenterPane().CaptionVisible(false));
+}
+
+void pof::AuditView::CreatePopupMenu()
+{
+}
+
+void pof::AuditView::CreatePopupAdditionalInformation()
+{
+	mAdditionalInfoPopup = new wxPopupTransientWindow(mDataView);
+	wxPanel* panel = new wxPanel(mAdditionalInfoPopup);
+
+	panel->SetSize(400, 400);
+}
+
+void pof::AuditView::OnCacheHint(wxDataViewEvent& evt)
+{
+	spdlog::info("On Cache Hint from {:d} to {:d}", evt.GetCacheFrom(), evt.GetCacheTo());
+}
+
+void pof::AuditView::OnItemActivated(wxDataViewEvent& evt)
+{
+}
+
+void pof::AuditView::OnBackPage(wxCommandEvent& evt)
+{
+	if (mPageRanges.empty() || mPageRanges.size() == 1) return;
+	mPageRanges.pop(); //remove the added page range
+	auto& top = mPageRanges.top();
+
+	if (mCurType == pof::AuditManager::auditType::ALL) {
+		wxGetApp().mAuditManager.LoadCache(top.first, top.second);
+	}
+	else {
+		wxGetApp().mAuditManager.LoadType(mCurType, top.first, top.second);
+	}
+}
+
+void pof::AuditView::OnNextPage(wxCommandEvent& evt)
+{
+	if (mPageRanges.empty()) return;
+	auto& curTop = mPageRanges.top();
+	range_t newRange = std::make_pair(curTop.first - mDataView->GetCountPerPage(), mDataView->GetCountPerPage());
+	
+	
+	bool loaded = false;
+	if (mCurType == pof::AuditManager::auditType::ALL)
+	{
+		loaded = wxGetApp().mAuditManager.LoadCache(newRange.first, newRange.second);
+	}
+	else {
+		loaded = wxGetApp().mAuditManager.LoadType(mCurType, newRange.first, newRange.second);
+	}
+	if (loaded) {
+		mPageRanges.push(std::move(newRange));
+	}
+}
+
+void pof::AuditView::OnFilterSelected(wxCommandEvent& evt)
+{
+
+}
+
+void pof::AuditView::OnApplyFilter(wxCommandEvent& evt)
+{
+	int sel = mFilterType->GetSelection();
+	if (sel == wxNOT_FOUND) return;
+	
+
+	mCurType = static_cast<pof::AuditManager::auditType>(sel);
+	bFilterType = true;
+	int count = mDataView->GetCountPerPage();
+	mPageRanges = {};
+	wxGetApp().mAuditManager.GetAuditData()->Clear();
+	auto dataSize = wxGetApp().mAuditManager.GetDataSize();
+	assert(dataSize);
+	auto s = std::make_pair(dataSize.value(), count);
+	mPageRanges.push(s);
+
+	if (mCurType == pof::AuditManager::auditType::ALL){
+		wxGetApp().mAuditManager.LoadCache(s.first,s.second);
+	}
+	else {
+		wxGetApp().mAuditManager.LoadType(mCurType, s.first, s.second);
+	}
+}
+
+void pof::AuditView::OnColourAuditType(wxCommandEvent& evt)
+{
+	wxGetApp().mAuditManager.bColourAuditTypes = evt.IsChecked();
+}
+
+void pof::AuditView::OnDownloadExcel(wxCommandEvent& evt)
+{
+	auto rel = wxGetApp().mAuditManager.GetAuditDump();
+	if (!rel.has_value()) {
+		wxMessageBox("Could not get audit logs from database, an error occured", "Audit", wxICON_ERROR | wxOK);
+		return;
+	}
+
+	if (rel->empty()) {
+		wxMessageBox("No audit data", "Audit", wxICON_INFORMATION | wxOK);
+		return;
+	}
+	wxFileDialog dialog(this, "Save audit excel file", wxEmptyString, wxEmptyString, "Excel files (*.xlsx)|*.xlsx",
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL) return;
+	auto filename = dialog.GetPath().ToStdString();
+	auto fullPath = fs::path(filename);
+
+	if (fullPath.extension() != ".xlsx") {
+		wxMessageBox("File extension is not compactable with .xlsx or .xls files", "Export Excel",
+			wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	wxBusyCursor cursor;
+	excel::XLDocument doc;
+	doc.create(fullPath.string());
+	if (!doc.isOpen()) {
+		spdlog::error("Canont open xlsx file");
+		return;
+	}
+
+	auto wks = doc.workbook().worksheet("Sheet1");
+	wks.setName("Audit Logs");
+	const size_t colSize = 4;
+	const size_t rowSize = rel.value().size() + 1; //plus title row
+	const size_t firstRow = 1;
+	const size_t firstCol = 1;
+
+	auto range = wks.range(excel::XLCellReference(firstRow, firstCol), excel::XLCellReference(rowSize, colSize));
+	auto iter = range.begin();
+	//write header
+	auto writeHeader = [&](const std::string& name) {
+		iter->value().set(name);
+		iter++;
+	};
+
+	writeHeader("DATE/TIME");
+	writeHeader("TYPE");
+	writeHeader("USERNAME");
+	writeHeader("LOG");
+	auto& v = rel.value();
+
+	for (auto it = v.begin(); it != v.end() && iter != range.end(); it++) {
+		auto& row = *it;
+		iter->value().set(fmt::format("{:%d/%m/%Y %H:%M:%S}", std::get<1>(row)));
+		iter++;
+
+		iter->value().set(pof::AuditManager::types[std::get<2>(row)]);
+		iter++;
+
+		iter->value().set(std::get<3>(row));
+		iter++;
+
+		iter->value().set(std::get<4>(row));
+		iter++;
+	}
+
+	doc.save();
+	doc.close();
+	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Audit", wxICON_INFORMATION | wxOK);
+}
+
+void pof::AuditView::OnSearchCleared(wxCommandEvent& evt)
+{
+	m_searchCtrl1->Clear();
+	auto& datastore = wxGetApp().mAuditManager.GetAuditData();
+	datastore->Clear();
+}
+
+void pof::AuditView::OnSearchMessage(wxCommandEvent& evt)
+{
+	const std::string message = evt.GetString().ToStdString();
+	if (message.empty()) return;
+
+	wxBusyInfo wait("Loading search audit\nPlease wait...");
+	auto rel = wxGetApp().mAuditManager.SearchForParticularTextInAudit(message);
+	if (!rel.has_value()) {
+		wxMessageBox(fmt::format("Message does not contain {} in any audit", message), "Audit", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	auto& datastore = wxGetApp().mAuditManager.GetAuditData();
+	datastore->Clear();
+	for (const auto& r : *rel) {
+		pof::base::data::row_t row;
+		row.first = std::move(pof::base::make_row_from_tuple(r));
+		datastore->EmplaceData(std::move(row));
+	}
+
+}
+
+void pof::AuditView::OnCleared(wxCommandEvent& evt)
+{
+	auto& p  = wxGetApp().mAuditManager.GetAuditData();
+	p->Clear();
+	while (!mPageRanges.empty()) {
+		mPageRanges.pop();
+	}
+}
+
+void pof::AuditView::OnAuiThemeChange()
+{
+	auto auiArtProvider = mAuiManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+}
+
+void pof::AuditView::ShowAdditionalInfoPopup()
+{
+}
+
+void pof::AuditView::SetupAuiTheme()
+{
+	auto auiArtProvider = mAuiManager.GetArtProvider();
+	pof::AuiTheme::Update(auiArtProvider);
+	pof::AuiTheme::sSignal.connect(std::bind_front(&pof::AuditView::OnAuiThemeChange, this));
+}
+
+void pof::AuditView::SetupDataViewStyle()
+{
+	mRowHeights = 50;
+	mHeaderAttr.SetBackgroundColour(*wxLIGHT_GREY);
+	auto Info = wxFontInfo(10).Weight(24).FaceName("Helvetica").Bold();
+	mHeaderAttr.SetFont(wxFont(std::move(Info)));
+
+	auto Info2 = wxFontInfo(11).FaceName("Helvetica");
+	mDataViewFont = wxFont(std::move(Info2));
+
+
+	mDataView->SetFont(mDataViewFont);
+	mDataView->SetHeaderAttr(mHeaderAttr);
+	mDataView->SetRowHeight(mRowHeights);
+}
