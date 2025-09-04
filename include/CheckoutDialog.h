@@ -36,6 +36,7 @@ namespace pof
 		void OnUpdate(wxUpdateUIEvent& evt);
 		std::tuple<std::string, pof::base::currency, std::string,
 			pof::base::currency> mPayments;
+		pof::base::currency mChange;
 	private:
 		wxChoice* paytype1  = nullptr;
 		wxTextCtrl* amount1 = nullptr;
@@ -46,6 +47,7 @@ namespace pof
 		wxStaticText* totalAmount = nullptr;
 		wxStaticText* totalPaid   = nullptr;
 		wxStaticText* totalChange = nullptr;
+		wxStaticText* totalOverPaid = nullptr;
 		wxPanel* summary = nullptr;
 
 		DECLARE_EVENT_TABLE()

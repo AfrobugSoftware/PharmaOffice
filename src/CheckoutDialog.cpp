@@ -81,7 +81,7 @@ pof::CheckoutDialog::CheckoutDialog(wxWindow* parent, const pof::base::currency&
 	gsizer->Add(totalAmount, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	auto s2 = new wxStaticText(summary, wxID_ANY, wxT("Paid: "), wxDefaultPosition, wxDefaultSize, 0);
-	s1->Wrap(-1);
+	s2->Wrap(-1);
 	gsizer->Add(s2, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	totalPaid = new wxStaticText(summary, ID_TOTAL_PAID, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
@@ -89,12 +89,20 @@ pof::CheckoutDialog::CheckoutDialog(wxWindow* parent, const pof::base::currency&
 	gsizer->Add(totalPaid, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	auto s3 = new wxStaticText(summary, wxID_ANY, wxT("Amount left: "), wxDefaultPosition, wxDefaultSize, 0);
-	s1->Wrap(-1);
+	s3->Wrap(-1);
 	gsizer->Add(s3, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 
 	totalChange = new wxStaticText(summary, ID_TOTAL_CHANGE, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
 	totalChange->Wrap(-1);
 	gsizer->Add(totalChange, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
+
+	auto s4 = new wxStaticText(summary, wxID_ANY, wxT("Change: "), wxDefaultPosition, wxDefaultSize, 0);
+	s4->Wrap(-1);
+	gsizer->Add(s4, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
+
+	totalOverPaid = new wxStaticText(summary, ID_TOTAL_CHANGE, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
+	totalOverPaid->Wrap(-1);
+	gsizer->Add(totalOverPaid, 0, wxALIGN_RIGHT | wxALL, FromDIP(5));
 	
 	summary->SetSizer(gsizer);
 	summary->Layout();
@@ -163,11 +171,46 @@ bool pof::CheckoutDialog::TransferDataFromWindow()
 		return false;
 	}
 	else if (total > mTotalPayment) {
-		wxMessageBox("Cannot pay more than what was asked to pay.\nPlease reduce amount in one of the options.", "Checkout", wxICON_WARNING | wxOK);
-		return false;
+		wxArrayString strs;
+		strs.push_back(std::get<0>(mPayments));
+		strs.push_back(std::get<2>(mPayments));
+		while (1) {
+			wxSingleChoiceDialog dialog(nullptr, "Please select where the change should come from", "Checkout", strs);
+			int ret = dialog.ShowModal();
+			if (ret != wxID_OK) {
+				return false;
+			}
+			int sel = dialog.GetSelection();
+			if (sel == wxNOT_FOUND) {
+				wxMessageBox("Invalid selection, please try again", "Checkout", wxICON_ERROR | wxOK);
+				continue;
+			}
+			//we have where to deduct the money from
+			double proposed = 0.0;
+			double change = 0.0;
+			if (sel == 0) {
+				proposed = static_cast<double>(std::get<1>(mPayments));
+				change = proposed - mChange;
+				if (change < 0.0) {
+					wxMessageBox("Amount is too low to deduct change from, please select another", "Checkout", wxICON_ERROR | wxOK);
+					return false;
+				}
+				std::get<1>(mPayments) = change;
+			}
+			else if (sel == 1) {
+				proposed = static_cast<double>(std::get<3>(mPayments));
+				change = proposed - mChange;
+				if (change < 0.0) {
+					wxMessageBox("Amount is too low to deduct change from, please select another", "Checkout", wxICON_ERROR | wxOK);
+					return false;
+				}
+				std::get<3>(mPayments) = change;
+
+			}
+			break;
+		}
+		return true;
 	}
-
-
 	return true;
 }
 
@@ -189,7 +232,13 @@ void pof::CheckoutDialog::OnUpdate(wxUpdateUIEvent& evt)
 		t = pof::base::currency{};
 	}
 
+	auto change = ((static_cast<double>(a1) + static_cast<double>(a2))) - static_cast<double>(mTotalPayment);
+	if (std::signbit(static_cast<double>(change))) {
+		change = pof::base::currency{};
+	}
+	mChange = change;
 	totalPaid->SetLabelText(fmt::format("{:cu}", (a1 + a2)));
 	totalChange->SetLabelText(fmt::format("{:cu}", pof::base::currency(t)));
+	totalOverPaid->SetLabelText(fmt::format("{:cu}", pof::base::currency(change)));
 	summary->Layout();
 }
