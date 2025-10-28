@@ -171,80 +171,53 @@ void pof::DataModel::Reload(const std::vector<wxDataViewItem>& items)
 	mSignals[static_cast<size_t>(Signals::LOADED)](datastore->begin());
 }
 
-bool pof::DataModel::StringSearchAndReload(size_t col, const std::string& search_for)
+bool pof::DataModel::StringSearchAndReload(size_t col, std::string& search_for)
 {
 	if (datastore->empty() || col > datastore->get_metadata().size() 
 			|| datastore->get_metadata()[col] != pof::base::data::kind::text) return true;
-	std::string reg;
-	reg.reserve(search_for.size() * 2);
-	for (auto& c : search_for)
-	{
-		if (!std::isalnum(c) && !std::isspace(c)  && c != '-') {
-			//what to do
-			return true;
-		}
-		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
-	}
-	reg += "(?:.*)?";
-	std::regex searchreg(std::move(reg));
+
+	boost::trim(search_for);
+	boost::to_lower(search_for);
 	Cleared();
 	mItems.clear();
 	attributes.clear(); //dont know if i should clear the attributes here?
-	for (size_t i = 0; i < datastore->size(); i++) {
-		auto& datum = (*datastore)[i].first[col];
-		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
-		if (std::regex_match(text, searchreg)) {
+	boost::algorithm::boyer_moore searcher(search_for.begin(), search_for.end());
+	size_t i = 0;
+	mItems.reserve(datastore->size());
+	for (auto& row : *datastore) {
+		auto& text = boost::variant2::get<pof::base::data::text_t>(row.first[col]);
+		auto s = searcher(text.begin(), text.end());
+		if (s.first != std::end(text)) {
 			mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
 		}
+		i++;
 	}
-
-	//Cleared();
-	//mItems.clear();
-	//attributes.clear(); //dont know if i should clear the attributes here?
-	//boost::algorithm::boyer_moore searcher(search_for.begin(), search_for.end());
-	//size_t i = 0;
-	//for (auto& row : *datastore) {
-	//	auto& text = boost::variant2::get<pof::base::data::text_t>(row.first[col]);
-	//	auto s = searcher(text.begin(), text.end());
-	//	if (s.first != std::end(text)) {
-	//		mItems.push_back(wxDataViewItem{ reinterpret_cast<void*>(i + 1) });
-	//	}
-	//	i++;
-	//}
-
+	mItems.shrink_to_fit();
 	ItemsAdded(wxDataViewItem(0), mItems);
 	mSignals[static_cast<size_t>(Signals::SEARCHED)](datastore->begin());
 	return mItems.IsEmpty();
 }
 
-bool pof::DataModel::StringSearchAndReloadSet(size_t col, const std::string& searchFor)
+bool pof::DataModel::StringSearchAndReloadSet(size_t col, std::string& searchFor)
 {
 	if (mItems.empty() || col > datastore->get_metadata().size()
 		|| datastore->get_metadata()[col] != pof::base::data::kind::text) return false;
 
-	std::string reg;
-	reg.reserve(searchFor.size() * 2);
-	for (auto& c : searchFor)
-	{
-		if (!std::isalnum(c) && !std::isspace(c) && c != '-') {
-			//what to do
-			return true;
-		}
-		reg += fmt::format("[{:c}|{:c}]", (char)std::tolower(c), (char)std::toupper(c));
-	}
-	reg += "(?:.*)?";
-	std::regex searchreg(std::move(reg));
-
+	boost::trim(searchFor);
+	boost::to_lower(searchFor);
 	Cleared();
 	attributes.clear();
 	wxDataViewItemArray ars;
 	ars.reserve(mItems.size());
+	boost::algorithm::boyer_moore searcher(searchFor.begin(), searchFor.end());
+
 	for (auto& item : mItems) {
 		size_t idx = GetIdxFromItem(item);
 
 		auto& datum = (*datastore)[idx].first[col];
 		auto& text = boost::variant2::get<pof::base::data::text_t>(datum);
-		if (std::regex_match(text, searchreg)) {
+		auto s = searcher(text.begin(), text.end());
+		if (s.first != std::end(text)) {
 			ars.push_back(item);
 		}
 	}

@@ -400,15 +400,16 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 			auto productIter = std::ranges::find_if(wxGetApp().mProductManager.GetProductData()->GetDatastore(),
 				[&](const pof::base::data::row_t& prod) -> bool {
 					return v[pof::SaleManager::PRODUCT_UUID] == prod.first[pof::ProductManager::PRODUCT_UUID];
-			});
-			//do not use minimum stock count here, as sale, should sell it is more than the current stock
-			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(productIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-			if (quan > curStock) {
-				wxMessageBox("Cannot set a quanity that is more than the current stock", "SALE", wxICON_WARNING | wxOK);
-				return false;
+				});
+			if (!CheckIsService(*productIter)) {
+				//do not use minimum stock count here, as sale, should sell it is more than the current stock
+				std::uint64_t curStock = boost::variant2::get<std::uint64_t>(productIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+				if (quan > curStock) {
+					wxMessageBox("Cannot set a quanity that is more than the current stock", "SALE", wxICON_WARNING | wxOK);
+					return false;
+				}
+				stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
 			}
-			stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
-
 			auto& price = boost::variant2::get<pof::base::data::currency_t>(v[pof::SaleManager::PRODUCT_PRICE]);
 			pof::base::currency extPrice = price * static_cast<double>(quan);
 
@@ -435,9 +436,9 @@ void pof::SaleView::CreateSpecialColumnHandlers()
 
 	discountCol.first = [&](size_t row, size_t col) -> wxVariant {
 		auto& datum = dataStore[row];
-		auto& v = datum.first;
-		auto& pid = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
-		auto iter = mDiscounts.find(pid);
+		auto& v     = datum.first;
+		auto& pid   = boost::variant2::get<boost::uuids::uuid>(v[pof::SaleManager::PRODUCT_UUID]);
+		auto iter   = mDiscounts.find(pid);
 		pof::base::currency ret;
 		if (iter != mDiscounts.end()) {
 			ret = iter->second;
@@ -455,9 +456,9 @@ void pof::SaleView::CreateSearchPopup()
 	auto sharedData = wxGetApp().mProductManager.GetProductData()->ShareDatastore();
 	mSearchPopup = new pof::SearchPopup(mProductNameValue, sharedData, { {"Name", pof::ProductManager::PRODUCT_NAME}, 
 			{"Formulation", pof::ProductManager::PRODUCT_FORMULATION}, 
-			{"Strength", pof::ProductManager::PRODUCT_STRENGTH}, 
-			{"Package size", pof::ProductManager::PRODUCT_PACKAGE_SIZE}, 
-			{"Cost", pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
+			{"Strength",    pof::ProductManager::PRODUCT_STRENGTH}, 
+			{"Stock count", pof::ProductManager::PRODUCT_STOCK_COUNT}, 
+			{"Cost",	    pof::ProductManager::PRODUCT_UNIT_PRICE} }, 
 			{275, 100, 100, 100, 100});
 	pof::DataModel::SpeicalColHandler_t spl;
 	spl.first = [sd = sharedData](size_t row, size_t col) -> wxVariant {
@@ -840,12 +841,14 @@ void pof::SaleView::OnProductNameSearch(wxCommandEvent& evt)
 {
 	auto searchString = evt.GetString().ToStdString();
 	if (searchString.empty()) {
-		mPopupSelect = wxDataViewItem{};
+		mPopupSelect = wxDataViewItem(nullptr);
 		mPopupItemIdx = -1;
 		mSearchPopup->Dismiss();
 		return;
 	}
-	
+	boost::trim(searchString);
+	boost::to_lower(searchString);
+
 	wxPoint pos = mProductNameValue->ClientToScreen(wxPoint(0, 0));
 	wxSize sz = mProductNameValue->GetClientSize();
 
@@ -1441,30 +1444,32 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 
 	if (row.has_value()) {
 		auto& val = row.value();
-		bool status = CheckInStock(val);
-		if (!status) {
-			wxMessageBox(fmt::format("{} is out of stock",
-				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			return;
-		}
-		if (CheckExpired(val)) {
-			if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
-				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
-			{
+		bool isService = CheckIsService(val);
+		if (!isService) {
+			bool status = CheckInStock(val);
+			if (!status) {
+				wxMessageBox(fmt::format("{} is out of stock",
+					boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
 				return;
 			}
+			if (CheckExpired(val)) {
+				if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+					boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
+				{
+					return;
+				}
+			}
+			status = CheckProductClass(val);
+			if (status) {
+				if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue",
+					boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
+			}
+			CheckControlled(val);
 		}
-		status = CheckProductClass(val);
-		if (status) {
-			if(wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue",
-				boost::variant2::get<pof::base::data::text_t>(val.first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) return;
-		}
-
-		CheckControlled(val);
 
 		std::optional<pof::base::data::iterator> iterOpt;
 		auto& v = val.first;
-		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
+		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))) && !isService)
 		{
 			auto& iterS = iterOpt.value();
 			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
@@ -1495,7 +1500,8 @@ void pof::SaleView::DropData(const pof::DataObject& dat)
 			v[pof::SaleManager::PRODUCT_UUID] = val.first[pof::ProductManager::PRODUCT_UUID];
 			v[pof::SaleManager::PRODUCT_NAME] = val.first[pof::ProductManager::PRODUCT_NAME];
 			v[pof::SaleManager::PRODUCT_PRICE] = val.first[pof::ProductManager::PRODUCT_UNIT_PRICE];
-			v[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(val.first[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
+			v[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(val.first[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0
+				 || isService ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
 			v[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(val.first[pof::ProductManager::PRODUCT_UNIT_PRICE]) *
 				static_cast<double>(boost::variant2::get<std::uint64_t>(v[pof::SaleManager::PRODUCT_QUANTITY]));
 
@@ -1526,31 +1532,33 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 
 	try {
 		auto& v = row.first;
-		bool status = CheckInStock(row);
-		if (!status) {
-			wxMessageBox(fmt::format("{} is out of stock",
-				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			return;
-		}
-		if (CheckExpired(row)){
-			if(wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
+		bool isService = CheckIsService(row);
+		if (!isService) {
+			bool status = CheckInStock(row);
+			if (!status) {
+				wxMessageBox(fmt::format("{} is out of stock",
+					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				return;
+			}
+			if (CheckExpired(row)) {
+				if (wxMessageBox(fmt::format("{} is expired in the inventory, please check expiry date, do you wish to continue?",
 					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO)
-			{
-				return;
+				{
+					return;
+				}
 			}
-		}
-		status = CheckProductClass(row);
-		if (status) {
-			if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue?",
-				boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) {
-				return;
+			status = CheckProductClass(row);
+			if (status) {
+				if (wxMessageBox(fmt::format("{} is a prescription only medication, Requires a prescription for sale, do you wish to continue?",
+					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxYES_NO) == wxNO) {
+					return;
+				}
 			}
+			CheckControlled(row);
 		}
-
-		CheckControlled(row);
-
 		std::optional<pof::base::data::iterator> iterOpt;
-		if (( iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
+		if (( iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))) &&
+			 !isService)
 		{
 			auto& iterS = iterOpt.value();
 			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
@@ -1582,7 +1590,8 @@ void pof::SaleView::OnSearchPopup(const pof::base::data::row_t& row)
 			vS[pof::SaleManager::PRODUCT_UUID] = v[pof::ProductManager::PRODUCT_UUID];
 			vS[pof::SaleManager::PRODUCT_NAME] = v[pof::ProductManager::PRODUCT_NAME];
 			vS[pof::SaleManager::PRODUCT_PRICE] = v[pof::ProductManager::PRODUCT_UNIT_PRICE];
-			vS[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
+			vS[pof::SaleManager::PRODUCT_QUANTITY] = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]) > 0 
+				|| isService ? static_cast<std::uint64_t>(1) : static_cast<std::uint64_t>(0);
 			vS[pof::SaleManager::PRODUCT_EXT_PRICE] = boost::variant2::get<pof::base::currency>(v[pof::ProductManager::PRODUCT_UNIT_PRICE]) * 
 					static_cast<double>(boost::variant2::get<std::uint64_t>(vS[pof::SaleManager::PRODUCT_QUANTITY]));
 			
@@ -1652,18 +1661,20 @@ void pof::SaleView::OnScanBarCode(wxCommandEvent& evt)
 		if ((iterOpt = CheckAlreadyAdded(boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME]))))
 		{
 			auto& iterS = iterOpt.value();
-			std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
-			auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
-			if (quan > curStock) {
-				wxMessageBox(fmt::format("Cannot add \'{}\', out of stock",
-					boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE", wxICON_WARNING | wxOK);
-				quan--;
-				return;
-			}
-			if (mPropertyManager->IsShown()) {
-				//update product details
-				stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
-				LoadProductDetails(*iter);
+			if (!CheckIsService(*iter)) {
+				std::uint64_t curStock = boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT]);
+				auto& quan = boost::variant2::get<std::uint64_t>(iterS->first[pof::SaleManager::PRODUCT_QUANTITY]);
+				if (quan > curStock) {
+					wxMessageBox(fmt::format("Cannot add \'{}\', out of stock",
+						boost::variant2::get<pof::base::data::text_t>(v[pof::ProductManager::PRODUCT_NAME])), "SALE", wxICON_WARNING | wxOK);
+					quan--;
+					return;
+				}
+				if (mPropertyManager->IsShown()) {
+					//update product details
+					stock->SetValue(wxVariant(static_cast<std::int32_t>(curStock - quan)));
+					LoadProductDetails(*iter);
+				}
 			}
 		}
 		else {
@@ -1806,20 +1817,17 @@ void pof::SaleView::OnReturnLastSale(wxCommandEvent& evt)
 	}
 
 	//show what you want to return
-
-
-
 	bool status = false;
 	for (auto& retSale : lastSale.value()) {
 		auto& pid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::PRODUCT_UUID]);
 		auto& rid = boost::variant2::get<pof::base::data::duuid_t>(retSale.first[pof::SaleManager::SALE_UUID]);
 
 		auto retQuan = wxGetApp().mSaleManager.GetReturnedProductQuan(pid, rid);
-		if (!retQuan.has_value()) goto err;
+		if (!retQuan.has_value()) continue;
 		status = wxGetApp().mProductManager.ReturnToInventory(pid, retQuan.value());
-		if (!status) goto err;
+		if (!status) continue;
 		status = wxGetApp().mSaleManager.ReturnFromSales(rid, pid);
-		if (!status) goto err;
+		if (!status) continue;
 
 		//get product
 		auto& prodDatastore = wxGetApp().mProductManager.GetProductData()->GetDatastore();
@@ -1828,21 +1836,19 @@ void pof::SaleView::OnReturnLastSale(wxCommandEvent& evt)
 				return boost::variant2::get<pof::base::data::duuid_t>(r.first[pof::ProductManager::PRODUCT_UUID])
 				== pid;
 			});
-		if (std::end(prodDatastore) == prodIter) goto err;
+		if (std::end(prodDatastore) == prodIter) {
+			mInfoBar->ShowMessage("Return failed", wxICON_ERROR);
+			continue;
+		};
+		if (CheckIsService(*prodIter)) {
+			continue; //cannot return a service stock;
+		}
 		wxGetApp().mProductManager.RefreshRowFromDatabase(pid, *prodIter);
-
-
 		auto name = boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME]);
 		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::SALE, fmt::format("Returned {} from {}", name, boost::lexical_cast<std::string>(rid)));
 	}
-	mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
-	return;
-
-
-err:
-	mInfoBar->ShowMessage("Return failed", wxICON_ERROR);
-	return;
-
+	if(status)
+		mInfoBar->ShowMessage("Return successfull", wxICON_INFORMATION);
 }
 
 bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
@@ -1862,21 +1868,22 @@ bool pof::SaleView::OnAddMedicationsToSale(const pof::base::data& data)
 				continue;
 			}
 		}
-		bool status = CheckInStock(*prodIter);
-		if (!status) {
-			wxMessageBox(fmt::format("{} is out of stock",
-				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			continue;
-		}
-		//check that the stock is enough for what we are adding
-		if (boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]) >
+		if (!CheckIsService(*prodIter)) {
+			bool status = CheckInStock(*prodIter);
+			if (!status) {
+				wxMessageBox(fmt::format("{} is out of stock",
+					boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				continue;
+			}
+			//check that the stock is enough for what we are adding
+			if (boost::variant2::get<std::uint64_t>(med.first[pof::PatientManager::MED_STOCK]) >
 				boost::variant2::get<std::uint64_t>(prodIter->first[pof::ProductManager::PRODUCT_STOCK_COUNT])) {
-			wxMessageBox(fmt::format("{} required is more than the current stock stock",
-				boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
-			continue;
+				wxMessageBox(fmt::format("{} required is more than the current stock stock",
+					boost::variant2::get<pof::base::data::text_t>(prodIter->first[pof::ProductManager::PRODUCT_NAME])), "SALE PRODUCT", wxICON_WARNING | wxOK);
+				continue;
+			}
+			CheckControlled(*prodIter);
 		}
-		
-		CheckControlled(*prodIter);
 
 		if (mCurSaleuuid == boost::uuids::nil_uuid()) {
 			mCurSaleuuid = uuidGen();
@@ -2256,6 +2263,13 @@ bool pof::SaleView::CheckControlled(const pof::base::data::row_t& product)
 	return false;
 }
 
+bool pof::SaleView::CheckIsService(const pof::base::data::row_t& product)
+{
+	const std::string& _class =
+		boost::variant2::get<std::string>(product.first[pof::ProductManager::PRODUCT_CLASS]);
+	return (_class == pof::ProductManager::CLASS_TYPE[3]);
+}
+
 std::optional<pof::base::data::iterator> pof::SaleView::CheckAlreadyAdded(const pof::base::data::text_t& productName)
 {
 	auto& datastore = wxGetApp().mSaleManager.GetSaleData()->GetDatastore();
@@ -2412,7 +2426,6 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 		mInfoBar->ShowMessage("Sale is locked, check out or clear sale to unlock");
 		return;
 	}
-	if (wxMessageBox("Are you sure you want to transfer these items?", "Transfer", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 	wxBusyCursor cursor;
 	pof::DataModel* model = dynamic_cast<pof::DataModel*>(m_dataViewCtrl1->GetModel());
 	pof::base::data& dataStore = model->GetDatastore();
@@ -2420,13 +2433,12 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 		wxMessageBox("No products to transfer", "Transfer from pharmacy", wxICON_WARNING | wxOK);
 		return;
 	}
+	if (wxMessageBox("Are you sure you want to transfer these items?", "Transfer", wxICON_INFORMATION | wxYES_NO) == wxNO) return;
 
 	auto now = pof::base::data::clock_t::now();
 	std::vector<std::tuple<pof::base::data::duuid_t, std::uint64_t>> quans;
 	std::vector<pof::SaleManager::transfer> trns;
 	std::vector<std::reference_wrapper<pof::base::data::row_t>> orderList;
-
-	
 	quans.reserve(dataStore.size());
 
 
@@ -2437,6 +2449,7 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
 			});
 		auto& v = pIter->first;
+		if (CheckIsService(*pIter)) continue;
 		//stock count is guranteed from the sale checks not to be less than the amount sold
 		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
 			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])
@@ -2461,6 +2474,8 @@ void pof::SaleView::OnTransfer(wxCommandEvent& evt)
 
 
 		trns.emplace_back(std::move(t));
+		wxGetApp().mAuditManager.WriteAudit(pof::AuditManager::auditType::PRODUCT, fmt::format("Updated Transfer {} product quantity: {:d}", t.productName, t.quantity));
+
 
 		//check if stock is low
 		//stock is low
@@ -2553,6 +2568,7 @@ void pof::SaleView::BookSale()
 			return (puid == boost::variant2::get<pof::base::data::duuid_t>(row.first[pof::ProductManager::PRODUCT_UUID]));
 			});
 		auto& v = pIter->first;
+		if (CheckIsService(*pIter)) continue;
 		//stock count is guranteed from the sale checks not to be less than the amount sold
 		v[pof::ProductManager::PRODUCT_STOCK_COUNT] =
 			boost::variant2::get<std::uint64_t>(v[pof::ProductManager::PRODUCT_STOCK_COUNT])

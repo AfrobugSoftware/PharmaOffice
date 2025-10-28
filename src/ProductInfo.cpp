@@ -83,9 +83,57 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	histToolBar->Realize();
 
 	mHistBook = new wxSimplebook(histPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxPanel* m_panel3 = new wxPanel(mHistBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER);
+	wxBoxSizer* pSizer3;
+	pSizer3 = new wxBoxSizer(wxVERTICAL);
+
+	mHistView = new wxDataViewCtrl( m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
+	m_panel4 = new wxPanel(m_panel3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer(wxHORIZONTAL);
+
+	bSizer4->AddStretchSpacer();
+
+	m_staticText1 = new wxStaticText(m_panel4, wxID_ANY, wxT("Total:"), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText1->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	m_staticText1->Wrap(-1);
+	bSizer4->Add(m_staticText1, 0, wxALL, FromDIP(5));
+
+	m_staticText2 = new wxStaticText(m_panel4, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText2->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	m_staticText2->Wrap(-1);
+	bSizer4->Add(m_staticText2, 0, wxALL, FromDIP(5));
+
+	bSizer4->AddSpacer(FromDIP(5));
+
+	bSizer4->Add(new wxStaticLine(m_panel4, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), wxSizerFlags().Expand());
+
+	bSizer4->AddSpacer(FromDIP(5));
+
+
+	m_staticText3 = new wxStaticText(m_panel4, wxID_ANY, wxT("Total sold: "), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText3->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	m_staticText3->Wrap(-1);
+	bSizer4->Add(m_staticText3, 0, wxALL, FromDIP(5));
+
+	m_staticText4 = new wxStaticText(m_panel4, wxID_ANY, fmt::format("{:cu}", pof::base::currency{}), wxDefaultPosition, wxDefaultSize, 0);
+	m_staticText4->SetFont(wxFont(wxFontInfo().AntiAliased()));
+	m_staticText4->Wrap(-1);
+	bSizer4->Add(m_staticText4, 0, wxALL, FromDIP(5));
+
+
+	m_panel4->SetSizer(bSizer4);
+	m_panel4->Layout();
+	bSizer4->Fit(m_panel4);
+	//bSizer3->Add(m_panel4, 1, wxEXPAND | wxALL, 0);
+
+	pSizer3->Add(mHistView, 1, wxEXPAND, 0);
+	pSizer3->Add(m_panel4, 0, wxEXPAND | wxALL, FromDIP(2));
+	m_panel3->SetSizer(pSizer3);
+	m_panel3->Layout();
+	pSizer3->Fit(m_panel3);
 	
-	mHistView = new wxDataViewCtrl( mHistBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_SINGLE | wxNO_BORDER | wxDV_ROW_LINES );
-	mHistBook->AddPage(mHistView, wxEmptyString, true);
+	mHistBook->AddPage(m_panel3, wxEmptyString, true);
 
 
 	bSizer21->Add(histToolBar, wxSizerFlags().Expand().Border(wxALL, FromDIP(0)));
@@ -151,6 +199,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
 	ProductClassChoices.Add("CONTROLLED");
+	ProductClassChoices.Add("SERVICE");
 	mProductClass = m_propertyGridPage1->Append(new wxEnumProperty(wxT("CLASS"), wxPG_LABEL, ProductClassChoices));
 	m_propertyGridPage1->SetPropertyHelpString( mProductClass, wxT("Products can be POM for Prescription only medication, these medicines can only be sold with a valid prescription. Either online or offline. OTC for Over the counter medicines. There are medications that can be sold on pharmacy. Without a prescription. An alert is sent when an attempt is made to sell a POM without a prescription. Controlled medications are medications that are to be sold only be a pharmacist.") );
 	
@@ -194,7 +243,7 @@ pof::ProductInfo::ProductInfo( wxWindow* parent, wxWindowID id, const wxPoint& p
 	mCostPrice = m_propertyGridPage1->Append(new wxFloatProperty(wxT("COST PRICE"), wxPG_LABEL));
 	m_propertyGridPage1->SetPropertyHelpString(mUnitPrice, wxT("Cost price per package size of the product\n"));
 	wxFloatingPointValidator<double> val(2, &mStubPrice, wxNUM_VAL_ZERO_AS_BLANK);
-	val.SetRange(0, 999999999999);
+	val.SetRange(0, 999999999);
 	mUnitPrice->SetValidator(val);
 	mCostPrice->SetValidator(val);
 
@@ -560,9 +609,17 @@ void pof::ProductInfo::OnAddInventory(wxCommandEvent& evt)
 {
 	//check if product has expired inventory
 	if (!wxGetApp().HasPrivilage(pof::Account::Privilage::PHARMACIST) && !wxGetApp().bAllowOtherUsersInventoryPermission){
-		wxMessageBox("User accoount cannot add inventory to stock", "Add Inventory", wxICON_INFORMATION | wxOK);
+		wxMessageBox("User accoount cannot add inventory to stock", "Add stock", wxICON_INFORMATION | wxOK);
 		return;
 	}
+
+	//check if product is a service
+	if (boost::variant2::get<std::string>(mProductData.first[pof::ProductManager::PRODUCT_CLASS]) ==
+		pof::ProductManager::CLASS_TYPE[3]) {
+		wxMessageBox("Cannot add stock to a service product type", "Add stock", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
 	//check if product has stock
 	if (boost::variant2::get<std::uint64_t>(mProductData.first[pof::ProductManager::PRODUCT_STOCK_COUNT])
 		!= static_cast<std::uint64_t>(0) &&
@@ -774,6 +831,7 @@ void pof::ProductInfo::LoadHistoryByDate(const pof::base::data::datetime_t& dt)
 		wxMessageBox("Cannot load history by date", "History", wxICON_INFORMATION | wxOK);
 
 	}
+	UpdateTexts();
 }
 
 
@@ -782,6 +840,18 @@ void pof::ProductInfo::OnPropertyChanged(wxPropertyGridEvent& evt)
 	wxBusyCursor cursor;
 	wxPGProperty* props = evt.GetProperty();
 	if(props->IsCategory()) return;
+
+	constexpr const int p = static_cast<int>(pof::Account::Privilage::PHARMACIST);
+	constexpr const int m = static_cast<int>(pof::Account::Privilage::MANAGER);
+
+	auto accountPriv = wxGetApp().MainAccount->priv;
+	auto& productManager = wxGetApp().mProductManager;
+	if (!accountPriv.test(p) && !accountPriv.test(m)) {
+		wxMessageBox("This account do not have the privilage to edit a product", "Product information", wxICON_WARNING | wxOK);
+		evt.Skip();
+		return;
+	}
+
 	spdlog::info("Editing prop: {}", evt.GetPropertyName().ToStdString());
 	auto PropIter = mNameToProductElem.find(evt.GetPropertyName().ToStdString());
 	if (PropIter == mNameToProductElem.end()) {
@@ -937,6 +1007,7 @@ void pof::ProductInfo::OnShowProducSaleHistory(wxCommandEvent& evt)
 			wxGetApp().mSaleManager.GetProductHistory()->Reload();
 			mBook->SetSelection(PAGE_SALE_HIST);
 		}
+		UpdateTexts();
 	}
 	else {
 		wxGetApp().mSaleManager.GetProductHistory()->Clear();
@@ -1341,4 +1412,28 @@ void pof::ProductInfo::OnShowHist(wxCommandEvent& evt)
 	default:
 		break;
 	}
+}
+
+void pof::ProductInfo::UpdateTexts()
+{
+	pof::base::currency cur;
+	std::uint64_t quan = 0llu;
+	auto& datastore = wxGetApp().mSaleManager.GetProductHistory()->GetDatastore();
+	cur = std::accumulate(datastore.begin(), datastore.end(), cur, [&](const pof::base::currency&, const pof::base::data::row_t& row) {
+		auto& orderAmount = boost::variant2::get<pof::base::currency>(row.first[3]);
+		auto& rowQuan = boost::variant2::get<std::uint64_t>(row.first[2]);
+
+		return(cur = cur + (orderAmount * static_cast<double>(rowQuan)));
+	});
+	quan = std::accumulate(datastore.begin(), datastore.end(), quan, [&](const auto& q, const pof::base::data::row_t& row) {
+		return q + boost::variant2::get<std::uint64_t>(row.first[2]);
+	});
+	m_panel4->Freeze();
+	m_staticText2->SetLabel(fmt::format("{:d}",  quan));
+	m_staticText4->SetLabel(fmt::format("{:cu}", cur));
+
+
+	m_panel4->Layout();
+	m_panel4->Thaw();
+	m_panel4->Refresh();
 }

@@ -29,6 +29,7 @@
 #include "SupplierView.h"
 #include "ChartDialog.h"
 #include "TranferView.h"
+#include "ExpiredView.h"
 
 #include <boost/signals2/signal.hpp>
 #include <OpenXLSX.hpp>
@@ -101,6 +102,7 @@ namespace pof
 			ID_REPORTS_PROFITLOSS,
 			ID_REPORTS_INVENTORY,
 			ID_REPORTS_PRODUCT_SOLD,
+			ID_REPORTS_EXPIRED_PRODUCTS,
 			ID_DOWNLOAD_ACTUAL_STOCK,
 			ID_CHARTS,
 			ID_CHARTS_WEEKLY_SALES,

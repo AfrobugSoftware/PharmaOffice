@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <set>
 #include <shared_mutex>
+#include <array>
 #include "DataModel.h"
 #include "database.h"
 /// <summary>
@@ -32,6 +33,12 @@ namespace std
 namespace pof {
 	class ProductManager : private boost::noncopyable {
 	public:
+		static constexpr std::array<std::string_view, 4> CLASS_TYPE = {
+			"POM",
+			"OTC",
+			"CONTROLLED",
+			"SERVICE"
+		};
 		enum : std::uint8_t {
 			PRODUCT_UUID,
 			PRODUCT_SERIAL_NUM,
@@ -318,6 +325,7 @@ namespace pof {
 		bool MoveStockToExpire(const pof::base::data::duuid_t& pid, std::uint64_t stock);
 		std::optional<std::uint64_t> GetTotalExpired(const pof::base::data::duuid_t& pid, pof::base::data::datetime_t date);
 		std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> GetExpiredProductsStock(pof::base::data::datetime_t m);
+		std::optional<pof::base::data> GetExpiredStockReport(const std::chrono::system_clock::time_point& dt);
  		//product uuid generators
 		bool bUsingLocalDatabase = false;
 		float gMarkup = 0.3f;
@@ -334,7 +342,7 @@ namespace pof {
 		//data functions
 		std::optional<std::vector<wxDataViewItem>> DoExpireProductPeriod();
 		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts();
-		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts(std::chrono::months months);
+		std::optional<std::vector<wxDataViewItem>> DoExpiredProducts(std::chrono::system_clock::time_point months);
 		std::optional<std::vector<wxDataViewItem>> DoOutOfStock();
 		std::optional<pof::base::data::datetime_t> GetCurrentExpireDate(const pof::base::data::duuid_t& prod);
 		std::optional<pof::base::currency> GetTotalStockCost();

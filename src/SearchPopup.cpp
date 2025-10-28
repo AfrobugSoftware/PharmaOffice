@@ -19,7 +19,7 @@ pof::SearchPopup::SearchPopup(wxWindow* parent, std::shared_ptr<pof::base::data>
 
 bool pof::SearchPopup::SearchString(size_t col, const std::string& searchString)
 {
-	bool empty = mTableModel->StringSearchAndReload(col, searchString);
+	bool empty = mTableModel->StringSearchAndReload(col, const_cast<std::string&>(searchString));
 	auto& modelItems = mTableModel->GetDataViewItems();
 	if (empty) {
 		ShowNoResult(searchString);
@@ -135,9 +135,8 @@ void pof::SearchPopup::SetSelected(const wxDataViewItem& item)
 
 void pof::SearchPopup::SetActivated(const wxDataViewItem& item)
 {
-	auto sel = mTable->GetSelection();
-	if (sel.IsOk()) {
-		size_t idx = pof::DataModel::GetIdxFromItem(sel);
+	if (item.IsOk()) {
+		size_t idx = pof::DataModel::GetIdxFromItem(item);
 		sSelectedSignal(mTableModel->GetDatastore()[idx]);
 
 		Dismiss();

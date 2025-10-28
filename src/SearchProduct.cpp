@@ -441,7 +441,7 @@ void pof::SearchProduct::DoSearch(const std::string& search_for)
 			mBook->SetSelection(VIEW);
 	}
 	else {
-		bool empty = mModel->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, search_for);
+		bool empty = mModel->StringSearchAndReload(pof::ProductManager::PRODUCT_NAME, const_cast<std::string&>(search_for));
 		if (empty) {
 			ShowEmpty(fmt::format("No product \"{}\" in store", search_for));
 		}

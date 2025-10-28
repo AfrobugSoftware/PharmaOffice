@@ -2,14 +2,20 @@
 #include "PofPch.h"
 
 BEGIN_EVENT_TABLE(pof::AuditView, wxPanel)
-EVT_DATAVIEW_ITEM_ACTIVATED(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnItemActivated)
-EVT_DATAVIEW_CACHE_HINT(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnCacheHint)
-EVT_COMBOBOX(pof::AuditView::ID_FILTER_TYPE, pof::AuditView::OnFilterSelected)
-EVT_TOOL(wxID_APPLY, pof::AuditView::OnApplyFilter)
-EVT_TOOL(wxID_FORWARD, pof::AuditView::OnNextPage)
-EVT_TOOL(wxID_BACKWARD, pof::AuditView::OnBackPage)
-EVT_TOOL(pof::AuditView::ID_COLOUR_TYPE, pof::AuditView::OnColourAuditType)
-EVT_TOOL(pof::AuditView::ID_DOWNLOAD_EXCEL, pof::AuditView::OnDownloadExcel)
+	EVT_DATAVIEW_ITEM_ACTIVATED(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnItemActivated)
+	EVT_DATAVIEW_CACHE_HINT(pof::AuditView::ID_DATA_VIEW, pof::AuditView::OnCacheHint)
+	EVT_COMBOBOX(pof::AuditView::ID_FILTER_TYPE, pof::AuditView::OnFilterSelected)
+	EVT_TOOL(wxID_APPLY, pof::AuditView::OnApplyFilter)
+	EVT_TOOL(wxID_FORWARD, pof::AuditView::OnNextPage)
+	EVT_TOOL(wxID_BACKWARD, pof::AuditView::OnBackPage)
+	EVT_TOOL(pof::AuditView::ID_COLOUR_TYPE, pof::AuditView::OnColourAuditType)
+	EVT_TOOL(pof::AuditView::ID_DOWNLOAD_EXCEL, pof::AuditView::OnDownloadExcel)
+	EVT_TOOL(pof::AuditView::ID_CLEAR, pof::AuditView::OnCleared)
+//Search
+	EVT_SEARCH(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchMessage)
+	EVT_SEARCH_CANCEL(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchCleared)
+	//EVT_TEXT(pof::AuditView::ID_SEARCH, pof::AuditView::OnSearchMessage)
+
 END_EVENT_TABLE()
 
 
@@ -37,6 +43,17 @@ void pof::AuditView::CreateToolBar()
 	mBack = mToolBar->AddTool(wxID_BACKWARD, wxEmptyString, wxArtProvider::GetBitmap("back", wxART_OTHER, FromDIP(wxSize(16,16))), "Backward");
 	mToolBar->AddSpacer(FromDIP(5));
 	mNext = mToolBar->AddTool(wxID_FORWARD, wxEmptyString, wxArtProvider::GetBitmap("forward", wxART_OTHER, FromDIP(wxSize(16,16))), "Forward");
+
+
+	m_searchCtrl1 = new wxSearchCtrl(mToolBar, ID_SEARCH, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(450), FromDIP(-1)), wxWANTS_CHARS);
+#ifndef __WXMAC__
+	m_searchCtrl1->ShowSearchButton(true);
+#endif
+	m_searchCtrl1->ShowCancelButton(true);
+	m_searchCtrl1->SetDescriptiveText("Search");
+	mToolBar->AddSeparator();
+	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddControl(m_searchCtrl1);
 
 	wxArrayString choices;
 	choices.reserve(static_cast<size_t>(pof::AuditManager::auditType::MAX));
@@ -74,6 +91,7 @@ void pof::AuditView::CreateToolBar()
 	mToolBar->AddSpacer(FromDIP(5));
 	mToolBar->AddTool(wxID_APPLY, "Apply", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16,16))), "Apply selected filter");
 	mToolBar->AddSpacer(FromDIP(5));
+	mToolBar->AddTool(ID_CLEAR, "Clear", wxArtProvider::GetBitmap("select_check", wxART_OTHER, FromDIP(wxSize(16, 16))), "Clear audit");
 	mToolBar->AddTool(ID_DOWNLOAD_EXCEL, "Download as EXCEL", wxArtProvider::GetBitmap("download_down", wxART_OTHER, FromDIP(wxSize(16,16))), "Download Audit as EXCEL worksheet");
 
 	mToolBar->Realize();
@@ -267,6 +285,44 @@ void pof::AuditView::OnDownloadExcel(wxCommandEvent& evt)
 	doc.save();
 	doc.close();
 	wxMessageBox(fmt::format("Saved data to {}", fullPath.string()), "Audit", wxICON_INFORMATION | wxOK);
+}
+
+void pof::AuditView::OnSearchCleared(wxCommandEvent& evt)
+{
+	m_searchCtrl1->Clear();
+	auto& datastore = wxGetApp().mAuditManager.GetAuditData();
+	datastore->Clear();
+}
+
+void pof::AuditView::OnSearchMessage(wxCommandEvent& evt)
+{
+	const std::string message = evt.GetString().ToStdString();
+	if (message.empty()) return;
+
+	wxBusyInfo wait("Loading search audit\nPlease wait...");
+	auto rel = wxGetApp().mAuditManager.SearchForParticularTextInAudit(message);
+	if (!rel.has_value()) {
+		wxMessageBox(fmt::format("Message does not contain {} in any audit", message), "Audit", wxICON_INFORMATION | wxOK);
+		return;
+	}
+
+	auto& datastore = wxGetApp().mAuditManager.GetAuditData();
+	datastore->Clear();
+	for (const auto& r : *rel) {
+		pof::base::data::row_t row;
+		row.first = std::move(pof::base::make_row_from_tuple(r));
+		datastore->EmplaceData(std::move(row));
+	}
+
+}
+
+void pof::AuditView::OnCleared(wxCommandEvent& evt)
+{
+	auto& p  = wxGetApp().mAuditManager.GetAuditData();
+	p->Clear();
+	while (!mPageRanges.empty()) {
+		mPageRanges.pop();
+	}
 }
 
 void pof::AuditView::OnAuiThemeChange()

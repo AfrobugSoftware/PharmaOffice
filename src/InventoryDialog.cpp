@@ -98,7 +98,11 @@ bool pof::InventoryDialog::TransferDataFromWindow()
 				i[pof::ProductManager::INVOICE_PROD_UUID] = mProductUuid;
 				i[pof::ProductManager::INVOICE_INVENTORY_ID] = boost::variant2::get<std::uint64_t>(mInventoryData.first[pof::ProductManager::INVENTORY_ID]);
 
+				//
+				it->second.second.set(pof::ProductManager::SUPPLIER_DATE_MODIFIED);
+				it->first[pof::ProductManager::SUPPLIER_DATE_MODIFIED] = std::chrono::system_clock::now();
 
+				wxGetApp().mProductManager.UpdateSupplier(it);
 				wxGetApp().mProductManager.GetInvoices()->StoreData(std::move(inv));
 			}
 		}

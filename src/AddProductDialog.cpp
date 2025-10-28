@@ -122,6 +122,7 @@ pof::AddProdutDialog::AddProdutDialog( wxWindow* parent, wxWindowID id, const wx
 	ProductClassChoices.Add("POM");
 	ProductClassChoices.Add("OTC");
 	ProductClassChoices.Add("CONTROLLED");
+	ProductClassChoices.Add("SERVICE");
 	mClassValue = new wxChoice(mProductDetailsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, ProductClassChoices, 0);
 	mClassValue->SetSelection(0);
 	fgSizer2->Add(mClassValue, 1, wxALL | wxEXPAND, 5);
@@ -395,6 +396,7 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 	}
 	std::string name = mProductNameValue->GetValue().ToStdString();
 	boost::trim(name);
+	boost::to_lower(name);
 
 	v[pof::ProductManager::PRODUCT_UUID] = boost::uuids::random_generator_mt19937{}();
 	v[pof::ProductManager::PRODUCT_SERIAL_NUM] =  pof::GenRandomId(); //change this 
@@ -433,8 +435,9 @@ bool pof::AddProdutDialog::TransferDataFromWindow()
 		}
 	}
 
-	//only emplace when the fields are 
-	if (mAddInventory->GetValue()) {
+	//only emplace when the fields are and the product is not a service
+	const auto& _class = boost::variant2::get<std::string>(v[pof::ProductManager::PRODUCT_CLASS]);
+	if (mAddInventory->GetValue() && _class != pof::ProductManager::CLASS_TYPE[3]) {
 		datumInven.emplace();
 		datumInven->second.first.set(static_cast<std::underlying_type_t<pof::base::data::state>>(pof::base::data::state::CREATED));
 		auto& i = datumInven->first;

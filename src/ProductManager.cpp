@@ -2245,6 +2245,48 @@ std::optional<std::vector<std::pair<pof::base::data::duuid_t, std::uint64_t>>> p
 	return std::nullopt;
 }
 
+std::optional<pof::base::data> pof::ProductManager::GetExpiredStockReport(const std::chrono::system_clock::time_point& dt)
+{
+	if (mLocalDatabase) {
+		constexpr std::string_view sql = R"(SELECT p.name, s.stock, p.unit_price, s.date
+		FROM expired_stock s, products p  
+		WHERE p.uuid = s.prod_uuid AND Months(s.date) = ?;)";
+		auto stmt = mLocalDatabase->prepare(sql);
+		assert(stmt);
+
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(dt) };
+		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
+
+		bool status = mLocalDatabase->bind(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)));
+		assert(status);
+
+		auto rel = mLocalDatabase->retrive<
+			std::string,
+			std::uint64_t,
+			pof::base::currency,
+			std::chrono::system_clock::time_point
+		>(*stmt);
+		if (!rel.has_value()) {
+			spdlog::error("{}", mLocalDatabase->err_msg());
+			return std::nullopt;
+		}
+		pof::base::data data;
+		data.set_metadata({
+			pof::base::data::kind::text,
+			pof::base::data::kind::uint64,
+			pof::base::data::kind::currency,
+			pof::base::data::kind::datetime
+		});
+		data.reserve(rel->size());
+		for (const auto& r : *rel) {
+			data.emplace(pof::base::make_row_from_tuple(r));
+		}
+		data.shrink_to_fit();
+		return data;
+	}
+	return std::nullopt;
+}
+
 std::optional<pof::base::data> pof::ProductManager::GetEndOfDay(pof::base::data::datetime_t dt)
 {
 	if (mLocalDatabase){
@@ -2649,7 +2691,7 @@ auto pof::ProductManager::DoExpiredProducts() -> std::optional<std::vector<wxDat
 	return std::nullopt;
 }
 
-std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProducts(std::chrono::months months)
+std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProducts(std::chrono::system_clock::time_point months)
 {
 	if (mLocalDatabase){
 		constexpr const std::string_view sql = R"(
@@ -2668,9 +2710,7 @@ std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProduct
 			spdlog::error(mLocalDatabase->err_msg());
 			return std::nullopt;
 		}
-		auto m = std::chrono::system_clock::now() + months;
-		spdlog::info("expire month to check {:%m/%Y}", m);
-		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(m) };
+		const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(months) };
 		int out = (static_cast<int>(ymd.year()) - 1970) * 12 + (static_cast<unsigned>(ymd.month()) - 1);
 
 		bool status = mLocalDatabase->bind_para(*stmt, std::make_tuple(static_cast<std::uint64_t>(out)), {"m"});
@@ -2683,7 +2723,6 @@ std::optional<std::vector<wxDataViewItem>> pof::ProductManager::DoExpiredProduct
 			return std::nullopt;
 		}
 		mLocalDatabase->finalise(*stmt);
-
 		if (rel->empty()) return std::vector<wxDataViewItem>{};
 
 		std::set<pof::base::data::duuid_t> set;
